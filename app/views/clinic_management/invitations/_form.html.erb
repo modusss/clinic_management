@@ -1,0 +1,47 @@
+<%= form_with(model: invitation) do |form| %>
+  <% if invitation.errors.any? %>
+    <div style="color: red">
+      <h2><%= pluralize(invitation.errors.count, "error") %> prohibited this invitation from being saved:</h2>
+
+      <ul>
+        <% invitation.errors.each do |error| %>
+          <li><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= form.label :patient_name, style: "display: block" %>
+    <%= form.text_field :patient_name %>
+  </div>
+
+  <div>
+    <%= form.label :notes, style: "display: block" %>
+    <%= form.text_field :notes %>
+  </div>
+
+  <div>
+    <%= form.label :lead_id, style: "display: block" %>
+    <%= form.text_field :lead_id %>
+  </div>
+
+  <div>
+    <%= form.label :referral_id, style: "display: block" %>
+    <%= form.text_field :referral_id %>
+  </div>
+
+  <div>
+    <%= form.label :region_id, style: "display: block" %>
+    <%= form.text_field :region_id %>
+  </div>
+
+  <div>
+    <%= form.label :appointment_id, style: "display: block" %>
+    <%= form.text_field :appointment_id %>
+  </div>
+
+  <div>
+    <%= form.submit %>
+  </div>
+<% end %>

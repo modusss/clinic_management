@@ -1,0 +1,42 @@
+<%= form_with(model: service) do |form| %>
+  <% if service.errors.any? %>
+    <div style="color: red">
+      <h2><%= pluralize(service.errors.count, "error") %> prohibited this service from being saved:</h2>
+
+      <ul>
+        <% service.errors.each do |error| %>
+          <li><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= form.label :weekday, style: "display: block" %>
+    <%= form.number_field :weekday %>
+  </div>
+
+  <div>
+    <%= form.label :start_time, style: "display: block" %>
+    <%= form.datetime_field :start_time %>
+  </div>
+
+  <div>
+    <%= form.label :end_time, style: "display: block" %>
+    <%= form.datetime_field :end_time %>
+  </div>
+
+  <div>
+    <%= form.label :date, style: "display: block" %>
+    <%= form.datetime_field :date %>
+  </div>
+
+  <div>
+    <%= form.label :time_slot_id, style: "display: block" %>
+    <%= form.text_field :time_slot_id %>
+  </div>
+
+  <div>
+    <%= form.submit %>
+  </div>
+<% end %>

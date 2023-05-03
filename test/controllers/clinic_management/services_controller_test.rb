@@ -1,0 +1,52 @@
+require "test_helper"
+
+module ClinicManagement
+  class ServicesControllerTest < ActionDispatch::IntegrationTest
+    include Engine.routes.url_helpers
+
+    setup do
+      @service = clinic_management_services(:one)
+    end
+
+    test "should get index" do
+      get services_url
+      assert_response :success
+    end
+
+    test "should get new" do
+      get new_service_url
+      assert_response :success
+    end
+
+    test "should create service" do
+      assert_difference("Service.count") do
+        post services_url, params: { service: { date: @service.date, end_time: @service.end_time, start_time: @service.start_time, time_slot_id: @service.time_slot_id, weekday: @service.weekday } }
+      end
+
+      assert_redirected_to service_url(Service.last)
+    end
+
+    test "should show service" do
+      get service_url(@service)
+      assert_response :success
+    end
+
+    test "should get edit" do
+      get edit_service_url(@service)
+      assert_response :success
+    end
+
+    test "should update service" do
+      patch service_url(@service), params: { service: { date: @service.date, end_time: @service.end_time, start_time: @service.start_time, time_slot_id: @service.time_slot_id, weekday: @service.weekday } }
+      assert_redirected_to service_url(@service)
+    end
+
+    test "should destroy service" do
+      assert_difference("Service.count", -1) do
+        delete service_url(@service)
+      end
+
+      assert_redirected_to services_url
+    end
+  end
+end

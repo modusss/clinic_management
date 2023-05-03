@@ -1,0 +1,15 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  weekday: 1
+  start_time: 2023-05-03 13:41:46
+  end_time: 2023-05-03 13:41:46
+  date: 2023-05-03 13:41:46
+  time_slot: one
+
+two:
+  weekday: 1
+  start_time: 2023-05-03 13:41:46
+  end_time: 2023-05-03 13:41:46
+  date: 2023-05-03 13:41:46
+  time_slot: two
