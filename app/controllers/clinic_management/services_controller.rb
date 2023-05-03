@@ -4,7 +4,7 @@ module ClinicManagement
 
     # GET /services
     def index
-      @services = Service.all
+      @services = ClinicManagement::Service.all
     end
 
     # GET /services/1
