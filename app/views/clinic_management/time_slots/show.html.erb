@@ -1,10 +1,11 @@
-<p style="color: green"><%= notice %></p>
+<div class="container mx-auto px-4 mt-6">
+  <div class="bg-white p-4 rounded-lg shadow-md">
+    <%= render @time_slot %>
+  </div>
 
-<%= render @time_slot %>
-
-<div>
-  <%= link_to "Edit this time slot", edit_time_slot_path(@time_slot) %> |
-  <%= link_to "Back to time slots", time_slots_path %>
-
-  <%= button_to "Destroy this time slot", @time_slot, method: :delete %>
+  <div class="flex items-center justify-between mt-6">
+    <%= link_to "Editar este horário", edit_time_slot_path(@time_slot), class: "text-blue-600 hover:text-blue-800" %>
+    <%= link_to "Voltar aos horários", time_slots_path, class: "text-blue-600 hover:text-blue-800" %>
+    <%= button_to "Excluir este horário", @time_slot, method: :delete, class: "bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" %>
+  </div>
 </div>

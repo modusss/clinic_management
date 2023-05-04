@@ -1,32 +1,44 @@
-<%= form_with(model: time_slot) do |form| %>
+<%= form_with(model: time_slot, class: "w-full max-w-lg mx-auto mt-6") do |form| %>
   <% if time_slot.errors.any? %>
-    <div style="color: red">
-      <h2><%= pluralize(time_slot.errors.count, "error") %> prohibited this time_slot from being saved:</h2>
+    <div class="bg-red-200 border-red-600 border-l-4 p-4 mb-6">
+      <h2 class="text-red-800 font-bold"><%= pluralize(time_slot.errors.count, "error") %> prohibited this time_slot from being saved:</h2>
 
-      <ul>
+      <ul class="list-disc pl-6">
         <% time_slot.errors.each do |error| %>
-          <li><%= error.full_message %></li>
+          <li class="text-red-600"><%= error.full_message %></li>
         <% end %>
       </ul>
     </div>
   <% end %>
 
-  <div>
-    <%= form.label :weekday, style: "display: block" %>
-    <%= form.number_field :weekday %>
+  <div class="mb-4">
+    <%= form.label "Dia da semana", class: "block text-gray-700 font-bold" %>
+    <%= form.select :weekday, 
+        [
+          ['Domingo', 1],
+          ['Segunda-feira', 2],
+          ['Terça-feira', 3],
+          ['Quarta-feira', 4],
+          ['Quinta-feira', 5],
+          ['Sexta-feira', 6],
+          ['Sábado', 7]
+        ],
+        {},
+        class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+    %>
+  </div>
+
+  <div class="mb-4">
+    <%= form.label "Início", class: "block text-gray-700 font-bold" %>
+    <%= form.time_field :start_time, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+  </div>
+
+  <div class="mb-4">
+    <%= form.label "Fim", class: "block text-gray-700 font-bold" %>
+    <%= form.time_field :end_time, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
   </div>
 
   <div>
-    <%= form.label :start_time, style: "display: block" %>
-    <%= form.datetime_field :start_time %>
-  </div>
-
-  <div>
-    <%= form.label :end_time, style: "display: block" %>
-    <%= form.datetime_field :end_time %>
-  </div>
-
-  <div>
-    <%= form.submit %>
+    <%= form.submit "Salvar", class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" %>
   </div>
 <% end %>

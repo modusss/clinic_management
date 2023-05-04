@@ -1,17 +1,16 @@
-<div id="<%= dom_id time_slot %>">
+<div id="<%= dom_id time_slot %>" class="space-y-2">
   <p>
-    <strong>Weekday:</strong>
-    <%= time_slot.weekday %>
+    <strong class="font-semibold">Dia da semana:</strong>
+    <%= show_week_day time_slot.weekday %>
   </p>
 
   <p>
-    <strong>Start time:</strong>
-    <%= time_slot.start_time %>
+    <strong class="font-semibold">Horário de início:</strong>
+    <%= time_slot.start_time.strftime("%H:%M") %>
   </p>
 
   <p>
-    <strong>End time:</strong>
-    <%= time_slot.end_time %>
+    <strong class="font-semibold">Horário de término:</strong>
+    <%= time_slot.end_time.strftime("%H:%M") %>
   </p>
-
 </div>

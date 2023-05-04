@@ -1,0 +1,14 @@
+<header class="bg-blue-600 py-4">
+  <div class="container mx-auto flex justify-between items-center">
+    <h1 class="text-white text-xl font-bold">
+      <%= yield(:header) || "Nome do seu aplicativo" %>
+    </h1>
+    <nav class="flex space-x-4">
+      <%= link_to "Marcações", clinic_management.appointments_path, class: "text-white hover:text-blue-300" %>
+      <%= link_to "Convites", clinic_management.invitations_path, class: "text-white hover:text-blue-300" %>
+      <%= link_to "Regiões", clinic_management.regions_path, class: "text-white hover:text-blue-300" %>
+      <%= link_to "Serviços", clinic_management.services_path, class: "text-white hover:text-blue-300" %>
+      <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-white hover:text-blue-300" %>
+    </nav>
+  </div>
+</header>

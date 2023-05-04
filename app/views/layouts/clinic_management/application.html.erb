@@ -6,10 +6,26 @@
   <%= csp_meta_tag %>
 
   <%= stylesheet_link_tag    "clinic_management/application", media: "all" %>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.16/dist/tailwind.min.css" rel="stylesheet">
+
 </head>
-<body>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+  <%= render "clinic_management/shared/navbar" %>
+  <br>
+  <br>
+  <br>
+  <main class="my-8">
+    <div class="container mx-auto px-4">
+      <%= yield %>
+    </div>
+  </main>
 
-<%= yield %>
-
+  <footer class="bg-blue-600 py-4 mt-16">
+    <div class="container mx-auto text-center">
+      <p class="text-white text-sm">
+        &copy; <%= Time.now.year %> - <%= yield(:footer) || "Nome da sua empresa" %>
+      </p>
+    </div>
+  </footer>
 </body>
 </html>
