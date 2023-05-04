@@ -1,47 +1,54 @@
-<%= form_with(model: invitation) do |form| %>
+<%= form_with(model: invitation, class: "w-full max-w-lg mx-auto mt-6") do |form| %>
   <% if invitation.errors.any? %>
-    <div style="color: red">
-      <h2><%= pluralize(invitation.errors.count, "error") %> prohibited this invitation from being saved:</h2>
+    <div class="bg-red-200 border-red-600 border-l-4 p-4 mb-6">
+      <h2 class="text-red-800 font-bold"><%= pluralize(invitation.errors.count, "erro") %> impediram que o convite fosse salvo:</h2>
 
-      <ul>
+      <ul class="list-disc pl-6">
         <% invitation.errors.each do |error| %>
-          <li><%= error.full_message %></li>
+          <li class="text-red-600"><%= error.full_message %></li>
         <% end %>
       </ul>
     </div>
   <% end %>
 
-  <div>
-    <%= form.label :patient_name, style: "display: block" %>
-    <%= form.text_field :patient_name %>
+  <div class="mb-4">
+    <%= form.label "Dia da marcação", class: "block text-gray-700 font-bold" %>
+    <%= form.collection_select :date, 
+      [        ["Hoje, " + Date.today.strftime("%d/%m/%Y"), Date.today],
+        ["Ontem, " + (Date.today - 1.day).strftime("%d/%m/%Y"), (Date.today - 1.day)],
+        ["Há 2 dias, " + (Date.today - 2.days).strftime("%d/%m/%Y"), (Date.today - 2.days)],
+        ["Há 3 dias, " + (Date.today - 3.days).strftime("%d/%m/%Y"), (Date.today - 3.days)]
+      ], 
+      :last, 
+      :first,
+      {},
+      class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+    %>
   </div>
 
-  <div>
-    <%= form.label :notes, style: "display: block" %>
-    <%= form.text_field :notes %>
+  <div class="mb-4">
+    <%= form.label "Região", class: "block text-gray-700 font-bold" %>
+    <%= form.collection_select :region_id, @regions, :id, :name, {}, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
   </div>
 
-  <div>
-    <%= form.label :lead_id, style: "display: block" %>
-    <%= form.text_field :lead_id %>
+  <%= form.fields_for :appointment do |appointment_fields| %>
+    <div class="mb-4">
+      <%= appointment_fields.label "Serviço destinado", class: "block text-gray-700 font-bold" %>
+      <%= appointment_fields.select :service_id, options_for_select(@services.map { |s| [description_service(s), s.id] }), {}, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+    </div>
+  <% end %>
+
+  <div class="mb-4">
+    <%= form.label "Nome do paciente", class: "block text-gray-700 font-bold" %>
+    <%= form.text_field :patient_name, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
   </div>
 
-  <div>
-    <%= form.label :referral_id, style: "display: block" %>
-    <%= form.text_field :referral_id %>
+  <div class="mb-4">
+    <%= form.label "Observações", class: "block text-gray-700 font-bold" %>
+    <%= form.text_field :notes, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
   </div>
 
-  <div>
-    <%= form.label :region_id, style: "display: block" %>
-    <%= form.text_field :region_id %>
-  </div>
-
-  <div>
-    <%= form.label :appointment_id, style: "display: block" %>
-    <%= form.text_field :appointment_id %>
-  </div>
-
-  <div>
-    <%= form.submit %>
-  </div>
+  <div class="my-4">
+    <%= form.submit "Salvar", class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" %>
+</div>
 <% end %>

@@ -1,27 +1,22 @@
-<div id="<%= dom_id service %>">
+<div id="<%= dom_id service %>" class="space-y-2">
   <p>
-    <strong>Weekday:</strong>
-    <%= service.weekday %>
+    <strong class="text-gray-700 font-semibold">Dia da Semana:</strong>
+    <span class="text-gray-900"><%= show_week_day service.weekday %></span>
   </p>
 
   <p>
-    <strong>Start time:</strong>
-    <%= service.start_time %>
+    <strong class="text-gray-700 font-semibold">Início:</strong>
+    <span class="text-gray-900"><%= service.start_time.strftime("%H:%M") %>h</span>
   </p>
 
   <p>
-    <strong>End time:</strong>
-    <%= service.end_time %>
+    <strong class="text-gray-700 font-semibold">Término:</strong>
+    <span class="text-gray-900"><%= service.end_time.strftime("%H:%M") %>h</span>
   </p>
 
   <p>
-    <strong>Date:</strong>
-    <%= service.date %>
-  </p>
-
-  <p>
-    <strong>Time slot:</strong>
-    <%= service.time_slot_id %>
+    <strong class="text-gray-700 font-semibold">Data:</strong>
+    <span class="text-gray-900"><%= service.date.strftime("%d/%m/%Y") %></span>
   </p>
 
 </div>

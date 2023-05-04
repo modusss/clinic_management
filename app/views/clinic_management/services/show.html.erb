@@ -1,10 +1,12 @@
-<p style="color: green"><%= notice %></p>
+<div class="container mx-auto px-4 mt-6">
+  <p class="text-green-600"><%= notice %></p>
 
-<%= render @service %>
+  <%= render @service %>
 
-<div>
-  <%= link_to "Edit this service", edit_service_path(@service) %> |
-  <%= link_to "Back to services", services_path %>
+  <div class="mt-4">
+    <%= link_to "Editar serviço", edit_service_path(@service), class: "text-blue-500 hover:text-blue-700 mr-4" %> |
+    <%= link_to "Voltar aos serviços", services_path, class: "text-blue-500 hover:text-blue-700 ml-4" %>
 
-  <%= button_to "Destroy this service", @service, method: :delete %>
+    <%= button_to "Excluir serviço", @service, method: :delete, class: "bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ml-4" %>
+  </div>
 </div>

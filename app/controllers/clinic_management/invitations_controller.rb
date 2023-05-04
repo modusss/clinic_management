@@ -13,7 +13,11 @@ module ClinicManagement
 
     # GET /invitations/new
     def new
+      # @invitation = Invitation.new
+      @services = Service.all    
       @invitation = Invitation.new
+      @appointment = @invitation.build_appointment
+      @regions = Region.all
     end
 
     # GET /invitations/1/edit
@@ -56,5 +60,9 @@ module ClinicManagement
       def invitation_params
         params.require(:invitation).permit(:patient_name, :notes, :lead_id, :referral_id, :region_id, :appointment_id)
       end
+      def invitation_params
+        params.require(:invitation).permit(:patient_name, :notes, :referral_id, :region_id, :appointment_id, lead_attributes: [:id, :name, :email])
+      end
+      
   end
 end

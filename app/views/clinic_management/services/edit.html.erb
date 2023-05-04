@@ -1,10 +1,12 @@
-<h1>Editing service</h1>
+<div class="container mx-auto px-4 mt-6">
+  <h1 class="text-2xl font-bold mb-4">Editando serviço</h1>
+  
+  <%= render "form", service: @service %>
 
-<%= render "form", service: @service %>
+  <br>
 
-<br>
-
-<div>
-  <%= link_to "Show this service", @service %> |
-  <%= link_to "Back to services", services_path %>
+  <div class="mt-4">
+    <%= link_to "Exibir serviço", @service, class: "text-blue-500 hover:text-blue-700 mr-4" %> |
+    <%= link_to "Voltar aos serviços", services_path, class: "text-blue-500 hover:text-blue-700 ml-4" %>
+  </div>
 </div>

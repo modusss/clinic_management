@@ -1,14 +1,20 @@
-<p style="color: green"><%= notice %></p>
+<div class="container mx-auto px-4 mt-6">
+  <p class="text-green-500 mb-4"><%= notice %></p>
 
-<h1>Services</h1>
+  <h1 class="text-2xl font-bold mb-6">Atendimentos</h1>
 
-<div id="services">
-  <% @services.each do |service| %>
-    <%= render service %>
-    <p>
-      <%= link_to "Show this service", service %>
-    </p>
-  <% end %>
+  <div id="services" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <% @services.each do |service| %>
+      <div class="bg-white border rounded-lg shadow p-4">
+        <%= render service %>
+        <p class="mt-4">
+          <%= link_to "Detalhes e edições", service, class: "text-blue-500 hover:text-blue-700" %>
+        </p>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="mt-6">
+    <%= link_to "Novo atendimento", new_service_path, class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" %>
+  </div>
 </div>
-
-<%= link_to "New service", new_service_path %>

@@ -23,9 +23,12 @@ module ClinicManagement
     # POST /services
     def create
       @service = Service.new(service_params)
-
+      @time_slot = TimeSlot.find(service_params[:time_slot_id])
+      @service.weekday = @time_slot.weekday
+      @service.start_time = @time_slot.start_time
+      @service.end_time = @time_slot.end_time
       if @service.save
-        redirect_to @service, notice: "Service was successfully created."
+        redirect_to @service, notice: "Atendimento criado com sucesso!"
       else
         render :new, status: :unprocessable_entity
       end
