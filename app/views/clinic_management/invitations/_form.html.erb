@@ -2,7 +2,6 @@
   <% if invitation.errors.any? %>
     <div class="bg-red-200 border-red-600 border-l-4 p-4 mb-6">
       <h2 class="text-red-800 font-bold"><%= pluralize(invitation.errors.count, "erro") %> impediram que o convite fosse salvo:</h2>
-
       <ul class="list-disc pl-6">
         <% invitation.errors.each do |error| %>
           <li class="text-red-600"><%= error.full_message %></li>
@@ -11,6 +10,7 @@
     </div>
   <% end %>
 
+  <h2 class="text-lg font-bold mb-4">Dados do marcação</h2>
   <div class="mb-4">
     <%= form.label "Dia da marcação", class: "block text-gray-700 font-bold" %>
     <%= form.collection_select :date, 
@@ -33,15 +33,34 @@
 
   <%= form.fields_for :appointment do |appointment_fields| %>
     <div class="mb-4">
-      <%= appointment_fields.label "Serviço destinado", class: "block text-gray-700 font-bold" %>
+      <%= appointment_fields.label "Dia destinado", class: "block text-gray-700 font-bold" %>
       <%= appointment_fields.select :service_id, options_for_select(@services.map { |s| [description_service(s), s.id] }), {}, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
     </div>
   <% end %>
-
+  <br>
+  <br>
+  <h2 class="text-lg font-bold mb-4">Dados do convidado</h2>
   <div class="mb-4">
     <%= form.label "Nome do paciente", class: "block text-gray-700 font-bold" %>
     <%= form.text_field :patient_name, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
   </div>
+
+  <%= form.fields_for :lead do |lead_fields| %>
+    <div class="mb-4">
+      <label for="lead_name" class="block text-gray-700 font-bold mb-2">Nome</label>
+      <%= lead_fields.text_field :name, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+    </div>
+
+    <div class="mb-4">
+      <label for="lead_phone" class="block text-gray-700 font-bold mb-2">Telefone</label>
+      <%= lead_fields.text_field :phone, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+    </div>
+
+    <div class="mb-4">
+      <label for="lead_address" class="block text-gray-700 font-bold mb-2">Endereço</label>
+      <%= lead_fields.text_field :address, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+    </div>
+  <% end %>
 
   <div class="mb-4">
     <%= form.label "Observações", class: "block text-gray-700 font-bold" %>

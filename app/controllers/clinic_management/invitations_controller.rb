@@ -18,6 +18,7 @@ module ClinicManagement
       @invitation = Invitation.new
       @appointment = @invitation.build_appointment
       @regions = Region.all
+      @lead = @invitation.build_lead
     end
 
     # GET /invitations/1/edit
