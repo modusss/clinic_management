@@ -15,9 +15,9 @@ module ClinicManagement
     def new
       # @invitation = Invitation.new
       @services = Service.all    
+      @regions = Region.all
       @invitation = Invitation.new
       @appointment = @invitation.build_appointment
-      @regions = Region.all
       @lead = @invitation.build_lead
     end
 
@@ -27,12 +27,17 @@ module ClinicManagement
 
     # POST /invitations
     def create
-      @invitation = Invitation.new(invitation_params)
-
-      if @invitation.save
-        redirect_to @invitation, notice: "Invitation was successfully created."
+      @invitation = build_invitation_with_associations
+      result = save_all_and_report_errors(@invitation.appointment, @invitation)
+      if result[:status] == :error
+        @invitation.lead.destroy
+        result[:errors].each do |model, error_messages|
+          puts "Errors for #{model.class.name}:"
+          error_messages.each { |message| puts "- #{message}" }
+        end
       else
-        render :new, status: :unprocessable_entity
+        associate_appointment_with_lead
+        redirect_to @invitation, notice: "Invitation was successfully created."
       end
     end
 
@@ -52,6 +57,61 @@ module ClinicManagement
     end
 
     private
+
+      def associate_appointment_with_lead
+        appointment = @invitation.appointment
+        appointment.lead = @invitation.lead
+        appointment.save
+      end
+
+      def build_invitation_with_associations
+        Invitation.new(invitation_params).tap do |invitation|
+          invitation.lead = set_lead(invitation)
+          if invitation.lead.save # Save the Lead first
+            invitation.appointment = set_appointment(invitation, invitation.lead)
+            invitation.referral = Referral.first
+          end
+        end
+      end
+
+      def build_invitation_with_associations
+        Invitation.new(invitation_params).tap do |invitation|
+          invitation.lead = set_lead(invitation)
+          invitation.appointment = set_appointment(invitation, invitation.lead)
+          invitation.referral = Referral.first
+        end
+      end
+
+      def save_all_and_report_errors(*models)
+        errors = {}
+        all_saved = models.all? do |model|
+          if model.save
+            true
+          else
+            errors[model] = model.errors.full_messages
+            false
+          end
+        end
+        all_saved ? { status: :success } : { status: :error, errors: errors }
+      end
+      
+
+      def set_lead(invitation)
+        lead = invitation.build_lead
+        lead.name = invitation_params[:lead_attributes][:name]
+        lead.phone = invitation_params[:lead_attributes][:phone]
+        lead.address = invitation_params[:lead_attributes][:address]
+        lead
+      end
+
+      def set_appointment(invitation, lead)
+        appointment = invitation.build_appointment
+        appointment.service_id = invitation_params[:appointment_attributes][:service_id]
+        appointment.status = "agendado"
+        appointment.lead = lead
+        appointment
+      end
+
       # Use callbacks to share common setup or constraints between actions.
       def set_invitation
         @invitation = Invitation.find(params[:id])
@@ -59,11 +119,20 @@ module ClinicManagement
 
       # Only allow a list of trusted parameters through.
       def invitation_params
-        params.require(:invitation).permit(:patient_name, :notes, :lead_id, :referral_id, :region_id, :appointment_id)
+        params.require(:invitation).permit(
+          :date,
+          :notes,
+          :region_id,
+          :patient_name,
+          appointment_attributes: [
+            :service_id
+          ],
+          lead_attributes: [
+            :name,
+            :phone,
+            :address
+          ]
+        )      
       end
-      def invitation_params
-        params.require(:invitation).permit(:patient_name, :notes, :referral_id, :region_id, :appointment_id, lead_attributes: [:id, :name, :email])
-      end
-      
   end
 end
