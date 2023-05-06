@@ -74,14 +74,6 @@ module ClinicManagement
         end
       end
 
-      def build_invitation_with_associations
-        Invitation.new(invitation_params).tap do |invitation|
-          invitation.lead = set_lead(invitation)
-          invitation.appointment = set_appointment(invitation, invitation.lead)
-          invitation.referral = Referral.first
-        end
-      end
-
       def save_all_and_report_errors(*models)
         errors = {}
         all_saved = models.all? do |model|
@@ -97,20 +89,22 @@ module ClinicManagement
       
 
       def set_lead(invitation)
-        lead = invitation.build_lead
-        lead.name = invitation_params[:lead_attributes][:name]
-        lead.phone = invitation_params[:lead_attributes][:phone]
-        lead.address = invitation_params[:lead_attributes][:address]
-        lead
+        params = invitation_params[:lead_attributes]
+        invitation.build_lead(
+          name: params[:name].blank? ? invitation.patient_name : params[:name],
+          phone: params[:phone],
+          address: params[:address]
+        )
       end
-
+      
       def set_appointment(invitation, lead)
-        appointment = invitation.build_appointment
-        appointment.service_id = invitation_params[:appointment_attributes][:service_id]
-        appointment.status = "agendado"
-        appointment.lead = lead
-        appointment
+        invitation.build_appointment.tap do |appointment|
+          appointment.service_id = invitation_params[:appointment_attributes][:service_id]
+          appointment.status = "agendado"
+          appointment.lead = lead
+        end
       end
+      
 
       # Use callbacks to share common setup or constraints between actions.
       def set_invitation
