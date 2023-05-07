@@ -9,6 +9,15 @@ module ClinicManagement
 
     # GET /services/1
     def show
+      @appointments = @service.appointments
+      @appointments_map = @appointments.map do |ap|
+        [
+          ap.invitation.patient_name,
+          ap.lead.phone,
+          ap.invitation.referral.name
+        ]
+      end
+      @headers = ["Paciente", "Telefone", "Indicação"]
     end
 
     # GET /services/new
