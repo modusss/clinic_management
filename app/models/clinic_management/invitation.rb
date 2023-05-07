@@ -5,7 +5,6 @@ module ClinicManagement
     belongs_to :region
     belongs_to :appointment
     has_one :invitation, dependent: :destroy
-    has_one :appointment, dependent: :destroy
     
     accepts_nested_attributes_for :lead
     accepts_nested_attributes_for :appointment
