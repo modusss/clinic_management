@@ -10,14 +10,29 @@ module ClinicManagement
     # GET /services/1
     def show
       @appointments = @service.appointments
-      @appointments_map = @appointments.map do |ap|
-        [
+      @appointments_map = @appointments.order(:created_at).each_with_index.map do |ap,index|
+        [ index + 1,
           ap.invitation.patient_name,
           ap.lead.phone,
-          ap.invitation.referral.name
+          ap.invitation.referral.name,
+          ap.invitation.lead.address,
+          ap.attendance.to_s,
+          "",
+          "",
+          "",
+          ""
         ]
       end
-      @headers = ["Paciente", "Telefone", "Indicação"]
+      @headers = ["#",
+                  "Paciente", 
+                  "Telefone", 
+                  "Indicação", 
+                  "Endereço",
+                  "Comprecimento",
+                  "Mensagem",
+                  "Remarcação",
+                  "Cancelar?",
+                  "Cliente?"]
     end
 
     # GET /services/new
