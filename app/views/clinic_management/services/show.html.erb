@@ -1,2 +1,25 @@
 
-<%= data_table(@headers, @appointments_map) %>
+<%= breadcrumb({title: "Início", path: services_path}, {title: "Convites", path: nil}) %>
+
+<!-- Restante do código da view -->
+
+
+<div class="container mx-auto px-4 py-8">
+  <div class="mb-8">
+    <h1 class="text-2xl font-bold text-gray-900">Convites</h1>
+    <p class="text-gray-600">Lista de convites e informações relacionadas.</p>
+  </div>
+
+  <% if @appointments_map.present? %>
+    <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+      <%= data_table(@headers, @appointments_map) %>
+    </div>
+  <% else %>
+    <div class="bg-white shadow sm:rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <h2 class="text-xl font-medium text-gray-900">Nenhum convite encontrado.</h2>
+        <p class="mt-2 text-sm text-gray-600">Não há convites cadastrados no sistema.</p>
+      </div>
+    </div>
+  <% end %>
+</div>

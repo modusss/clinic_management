@@ -1,6 +1,25 @@
 module ClinicManagement
   module ApplicationHelper
 
+    def breadcrumb(*crumbs)
+      content_for :breadcrumb do
+        render "clinic_management/shared/breadcrumb" do
+          crumbs.each_with_index.map do |crumb, index|
+            is_last = index == crumbs.length - 1
+  
+            content_tag(:li, class: "flex items-center") do
+              concat(link_to(crumb[:title], crumb[:path], class: "#{is_last ? 'text-gray-600' : 'text-blue-600 hover:text-blue-800'}"))
+              unless is_last
+                concat(content_tag(:svg, class: "flex-shrink-0 h-5 w-5 text-gray-500 mx-4", xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor", aria_hidden: "true") do
+                  content_tag(:path, "", d: "M5.555 17.776l8-16 .894.448-8 16-.894-.448z")
+                end)
+              end
+            end
+          end.join.html_safe
+        end
+      end
+    end
+
     def data_table(headers, data)
       content_tag(:div, class: "flex flex-col") do
         content_tag(:div, class: "-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8") do
