@@ -1,10 +1,28 @@
 module ClinicManagement
   class ServicesController < ApplicationController
     before_action :set_service, only: %i[ show edit update destroy ]
-
+    include TimeSlotsHelper
     # GET /services
     def index
       @services = ClinicManagement::Service.all
+      @services = @services.order(:date).reverse.each_with_index.map do |ser,index|
+        [
+          index + 1,
+          ser.date.strftime("%d/%m/%Y"),
+          helpers.show_week_day(ser.weekday),
+          ser.start_time.strftime("%H:%M"),
+          ser.end_time.strftime("%H:%M"),
+          ser.appointments.count,
+          helpers.link_to("Detalhes", ser, class: "text-blue-500 hover:text-blue-700")
+        ]
+      end
+      @headers = ["#",
+                "Data",
+                "Dia da Semana",
+                "Início",
+                "Fim",
+                "Pacientes",
+                "Detalhes"]
     end
 
     # GET /services/1

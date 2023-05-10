@@ -1,9 +1,9 @@
-<h1>New region</h1>
+<div class="my-8 mx-auto max-w-md">
+  <h1 class="text-2xl font-bold mb-4">Nova Região</h1>
 
-<%= render "form", region: @region %>
+  <%= render "form", region: @region %>
 
-<br>
-
-<div>
-  <%= link_to "Back to regions", regions_path %>
+  <div class="mt-4">
+    <%= link_to "Voltar para regiões", regions_path, class: "text-blue-500 hover:underline" %>
+  </div>
 </div>

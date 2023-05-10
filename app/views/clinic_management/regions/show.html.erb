@@ -1,10 +1,9 @@
-<p style="color: green"><%= notice %></p>
-
+<div class="my-8 mx-auto max-w-md">
+  <p class="text-green-500"><%= notice %></p>
 <%= render @region %>
-
-<div>
-  <%= link_to "Edit this region", edit_region_path(@region) %> |
-  <%= link_to "Back to regions", regions_path %>
-
-  <%= button_to "Destroy this region", @region, method: :delete %>
+  <div class="mt-4">
+    <%= link_to "Editar esta região", edit_region_path(@region), class: "px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" %>
+    <%= link_to "Voltar para regiões", regions_path, class: "px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600" %>
+    <%= button_to "Deletar esta região", @region, method: :delete, data: { confirm: "Você tem certeza que deseja deletar esta região?" }, class: "px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600" %>
+  </div>
 </div>
