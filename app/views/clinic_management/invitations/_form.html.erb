@@ -53,8 +53,9 @@
 
     <div class="mb-4">
       <label for="lead_phone" class="block text-gray-700 font-bold mb-2">Telefone</label>
-      <%= lead_fields.text_field :phone, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+      <%= lead_fields.text_field :phone, id: "lead_phone", class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
     </div>
+
 
     <div class="mb-4">
       <label for="lead_address" class="block text-gray-700 font-bold mb-2">Endereço</label>
@@ -71,3 +72,15 @@
     <%= form.submit "Adicionar novo paciente", class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" %>
 </div>
 <% end %>
+
+
+<script src="https://unpkg.com/imask"></script>
+
+<script>
+  var phoneMask = IMask(
+    document.getElementById('lead_phone'),
+    {
+      mask: '(00) 00000-0000'
+    }
+  );
+</script>
