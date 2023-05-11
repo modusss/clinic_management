@@ -1,9 +1,10 @@
-<h1>New service</h1>
+<%= breadcrumb({title: "Todas os atendimentos", path: services_path}, {title: "Novo atendimento", path: nil}) %>
+<div class="my-8 mx-auto max-w-md">
+  <h1 class="text-2xl font-bold mb-4">Novo atendimento</h1>
 
-<%= render "form", service: @service %>
+  <%= render "form", service: @service %>
 
-<br>
-
-<div>
-  <%= link_to "Back to services", services_path %>
+  <div class="mt-4">
+    <%= link_to "Voltar para atendimentos", services_path, class: "text-blue-500 hover:underline" %>
+  </div>
 </div>
