@@ -12,7 +12,7 @@
 
   <% if @appointments_map.present? %>
     <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-      <%= data_table(@headers, @appointments_map) %>
+      <%= data_table(@headers, @appointments_map, 5) %>
     </div>
   <% else %>
     <div class="bg-white shadow sm:rounded-lg">
@@ -23,3 +23,9 @@
     </div>
   <% end %>
 </div>
+
+
+<style>
+
+
+</style>
