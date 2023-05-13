@@ -4,21 +4,15 @@ module ClinicManagement
 
     # GET /regions
     def index
-      @regions = Region.all.order(:name).each_with_index.map do |reg,index|
+      @rows = Region.all.order(:name).map.with_index(1) do |reg, index|
         [
-          index + 1,
-          reg.name,
-          reg.invitations.count,
-          edit_button(reg),
-          delete_button(reg)
-        ]
+          { header: "#", content: index },
+          { header: "Nome", content: reg.name },
+          { header: "Convites", content: reg.invitations.count },
+          { header: "Conviar", content: edit_button(reg) },
+          { header: "Excluir", content: delete_button(reg) }
+        ] 
       end
-      
-      @headers = ["#",
-                  "Nome",
-                  "Convites",
-                  "Editar",
-                  "Excluir"]
     end
 
     # GET /regions/1

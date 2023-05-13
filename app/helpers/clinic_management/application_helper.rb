@@ -20,29 +20,26 @@ module ClinicManagement
       end
     end
 
-    def data_table(headers, data, fix_to = nil)
+    def data_table(rows, fix_to = nil)
       content_tag(:div, class: "flex", data: { controller: "scroll-sync" }) do
         if fix_to
-          fixed_columns = headers.take(fix_to)
-          scrollable_columns = headers.drop(fix_to)
+          fixed_rows = rows.map { |row| row.take(fix_to) }
+          scrollable_rows = rows.map { |row| row.drop(fix_to) }
     
-          fixed_data = data.map { |row| row.take(fix_to) }
-          scrollable_data = data.map { |row| row.drop(fix_to) }
-    
-          table_wrapper("fixed", fixed_columns, fixed_data, "shadow overflow-hidden border-b border-gray-200 sm:rounded-lg", "position: relative; z-index: 2;") +
-            table_wrapper("scrollable", scrollable_columns, scrollable_data, "shadow overflow-hidden border-b border-gray-200 sm:rounded-lg", "position: relative; z-index: 1;", 'overflow-x-auto')
+          table_wrapper("fixed", fixed_rows, "shadow overflow-hidden border-b border-gray-200 sm:rounded-lg", "position: relative; z-index: 2;") +
+            table_wrapper("scrollable", scrollable_rows, "shadow overflow-hidden border-b border-gray-200 sm:rounded-lg", "position: relative; z-index: 1;", 'overflow-x-auto')
         else
-          table_wrapper("scrollable", headers, data, "shadow overflow-hidden border-b border-gray-200 sm:rounded-lg")
+          table_wrapper("scrollable", rows, "shadow overflow-hidden border-b border-gray-200 sm:rounded-lg")
         end
       end
     end
     
-    def table_wrapper(id, headers, data, inner_classes, style = nil, outer_overflow_class = '')
+    def table_wrapper(id, rows, inner_classes, style = nil, outer_overflow_class = '')
       content_tag(:div, class: "-my-2 #{outer_overflow_class} sm:-mx-6 lg:-mx-8", data: { scroll_sync_target: id }, style: style) do
         content_tag(:div, class: "py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8") do
           content_tag(:div, class: inner_classes) do
             content_tag(:table, class: "min-w-full divide-y divide-gray-200") do
-              table_header(headers) + table_body(data)
+              table_header(rows.first.map { |cell| cell[:header] }) + table_body(rows)
             end
           end
         end
@@ -59,18 +56,18 @@ module ClinicManagement
       end
     end
     
-    def table_body(data)
+    def table_body(rows)
       content_tag(:tbody, class: "bg-white divide-y divide-gray-200") do
-        data.map.with_index do |row, index|
-          content_tag(:tr, class: (index.even? ? 'bg-gray-50' : 'bg-white')) do
-            row.map.with_index do |value, index|
-              content_tag(:td, value, class: "px-6 py-4 whitespace-nowrap text-sm text-gray-900 column-#{index}")
+        rows.map.with_index do |row, row_index|
+          content_tag(:tr, class: (row_index.even? ? 'bg-gray-50' : 'bg-white')) do
+            row.map.with_index do |cell, cell_index|
+              content_tag(:td, cell[:content], id: cell[:id], class: "px-6 py-4 whitespace-nowrap text-sm text-gray-900 column-#{cell_index}")
             end.join.html_safe
           end
         end.join.html_safe
       end
     end
     
-    
+  
   end
 end

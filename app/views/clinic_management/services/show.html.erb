@@ -10,9 +10,9 @@
     <p class="text-gray-600">Lista de convites e informações relacionadas.</p>
   </div>
 
-  <% if @appointments_map.present? %>
+  <% if @rows.present? %>
     <div class="overflow-hidden border-gray-200 sm:rounded-lg">
-      <%= data_table(@headers, @appointments_map, 5) %>
+      <%= data_table(@rows, 3) %>
     </div>
   <% else %>
     <div class="bg-white shadow sm:rounded-lg">

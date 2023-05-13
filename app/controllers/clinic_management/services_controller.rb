@@ -5,63 +5,42 @@ module ClinicManagement
     # GET /services
     def index
       @services = ClinicManagement::Service.all
-      @services = @services.order(:date).reverse.each_with_index.map do |ser,index|
+      @rows = @services.order(:date).reverse.each_with_index.map do |ser,index|
         [
-          index + 1,
-          ser.date.strftime("%d/%m/%Y"),
-          helpers.show_week_day(ser.weekday),
-          ser.start_time.strftime("%H:%M"),
-          ser.end_time.strftime("%H:%M"),
-          ser.appointments.count,
-          helpers.link_to("Detalhes", ser, class: "text-blue-500 hover:text-blue-700")
+          { header: "#", content: index + 1},
+          { header: "Data", content: ser.date.strftime("%d/%m/%Y")},
+          { header: "Dia da semana", content: helpers.show_week_day(ser.weekday)},
+          { header: "Início", content: ser.start_time.strftime("%H:%M")},
+          { header: "Fim", content: ser.end_time.strftime("%H:%M")},
+          { header: "Pacientes", content: ser.appointments.count},
+          { header: "Detalhes",content: helpers.link_to("Detalhes", ser, class: "text-blue-500 hover:text-blue-700")}
         ]
       end
-      @headers = ["#",
-                "Data",
-                "Dia da Semana",
-                "Início",
-                "Fim",
-                "Pacientes",
-                "Detalhes"]
     end
 
     # GET /services/1
     def show
       @appointments = @service.appointments
-      @appointments_map = @appointments.order(:created_at).map.with_index(1) do |ap, index|
+      @rows = @appointments.order(:created_at).map.with_index(1) do |ap, index|
         [
-          index,
-          ap.invitation.patient_name,
-          ap.lead.phone,
-          ap.status,
-          ap.invitation.referral.name,
-          ap.invitation.region.name,
-          ap.invitation.lead.address,
-          ap.invitation.notes,
-          ap.attendance.to_s,
-          ap.lead.appointments.count,
-          "botão",
-          "",
-          "",
-          "",
-          ""
+          { header: "#", content: index },
+          { header: "Paciente", content: ap.invitation.patient_name },
+          { header: "Telefone", content: ap.lead.phone },
+          { header: "Status", content: ap.status },
+          { header: "Indicação", content: ap.invitation.referral.name },
+          { header: "Região", content: ap.invitation.region.name },
+          { header: "Endereço", content: ap.invitation.lead.address },
+          { header: "Observações", content: ap.invitation.notes },
+          { header: "Comparecimento", content: attendance_status(ap), id: "attendance-#{ap.id}" },
+          { header: "Nº de Comparecimentos", content: ap.lead.appointments.count },
+          { header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}" },
+          { header: "Mensagem", content: "" },
+          { header: "Remarcação", content: "" },
+          { header: "Cancelar?", content: "" },
+          { header: "Cliente?", content: "" }
         ]     
       end
-      @headers = ["#",
-                  "Paciente",
-                  "Telefone",
-                  "Status", 
-                  "Indicação", 
-                  "Região",
-                  "Endereço",
-                  "Observações",
-                  "Comprecimento",
-                  "Nº de Comparecimentos",
-                  "Ação",
-                  "Mensagem",
-                  "Remarcação",
-                  "Cancelar?",
-                  "Cliente?"]
+      
     end
 
     # GET /services/new
@@ -103,6 +82,19 @@ module ClinicManagement
     end
 
     private
+
+      def set_appointment_button(ap)
+        if ap.attendance.present?
+          "--"
+        else
+          helpers.button_to('Presente ok', set_attendance_appointment_path(ap), method: :patch, remote: true, class: "")
+        end
+      end
+
+      def attendance_status(ap)
+        ap.attendance == true ? "Sim" : "Não"
+      end
+
       # Use callbacks to share common setup or constraints between actions.
       def set_service
         @service = Service.find(params[:id])

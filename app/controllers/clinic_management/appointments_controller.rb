@@ -46,6 +46,21 @@ module ClinicManagement
       redirect_to appointments_url, notice: "Appointment was successfully destroyed."
     end
 
+    def set_attendance
+      @appointment = Appointment.find(params[:id])
+      id = "set-attendance-button-#{@appointment.id}"
+      @appointment.attendance = true
+      @appointment.save
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: [ 
+                                turbo_stream.update("set-attendance-button-#{@appointment.id}", "--"),
+                                turbo_stream.update("attendance-#{@appointment.id}", "Sim")
+                                ]
+        end
+      end      
+    end
+
     private
       # Use callbacks to share common setup or constraints between actions.
       def set_appointment
