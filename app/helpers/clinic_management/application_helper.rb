@@ -61,7 +61,7 @@ module ClinicManagement
         rows.map.with_index do |row, row_index|
           content_tag(:tr, class: (row_index.even? ? 'bg-gray-50' : 'bg-white')) do
             row.map.with_index do |cell, cell_index|
-              content_tag(:td, cell[:content], id: cell[:id], class: "px-6 py-4 whitespace-nowrap text-sm text-gray-900 column-#{cell_index}")
+              content_tag(:td, cell[:content], id: cell[:id], class: "px-6 py-4 whitespace-nowrap text-sm text-gray-900 #{cell[:class]} column-#{cell_index}")
             end.join.html_safe
           end
         end.join.html_safe

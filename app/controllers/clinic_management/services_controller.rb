@@ -7,14 +7,18 @@ module ClinicManagement
       @services = ClinicManagement::Service.all
       @rows = @services.order(:date).reverse.each_with_index.map do |ser,index|
         [
-          { header: "#", content: index + 1},
-          { header: "Data", content: ser.date.strftime("%d/%m/%Y")},
-          { header: "Dia da semana", content: helpers.show_week_day(ser.weekday)},
-          { header: "Início", content: ser.start_time.strftime("%H:%M")},
-          { header: "Fim", content: ser.end_time.strftime("%H:%M")},
-          { header: "Pacientes", content: ser.appointments.count},
-          { header: "Detalhes",content: helpers.link_to("Detalhes", ser, class: "text-blue-500 hover:text-blue-700")}
-        ]
+          { header: "#", content: index + 1 },
+          { header: "Data", content: ser.date.strftime("%d/%m/%Y") },
+          { header: "Dia da semana", content: helpers.show_week_day(ser.weekday) },
+          { header: "Início", content: ser.start_time.strftime("%H:%M") },
+          { header: "Fim", content: ser.end_time.strftime("%H:%M") },
+          { header: "Pacientes", content: ser.appointments.count },
+          { header: "Presentes", content: ser.appointments.where(attendance: true).count, class: "text-blue-700" },
+          { header: "Agendados", content: ser.appointments.where(status: "agendado").count, class: "text-yellow-600" },
+          { header: "Remarcados", content: ser.appointments.where(status: "remarcado").count, class: "text-green-600" },
+          { header: "Cancelados", content: ser.appointments.where(status: "cancelado").count, class: "text-red-600" },
+          { header: "Detalhes", content: helpers.link_to("Detalhes", ser, class: "text-blue-500 hover:text-blue-700") }
+        ]        
       end
     end
 
@@ -26,19 +30,32 @@ module ClinicManagement
           { header: "#", content: index },
           { header: "Paciente", content: ap.invitation.patient_name },
           { header: "Telefone", content: ap.lead.phone },
-          { header: "Status", content: ap.status },
-          { header: "Indicação", content: ap.invitation.referral.name },
-          { header: "Região", content: ap.invitation.region.name },
           { header: "Endereço", content: ap.invitation.lead.address },
-          { header: "Observações", content: ap.invitation.notes },
-          { header: "Comparecimento", content: attendance_status(ap), id: "attendance-#{ap.id}" },
+          { header: "Região", content: ap.invitation.region.name },
+          { header: "Indicação", content: ap.invitation.referral.name },
+          { 
+            header: "Status", 
+            content: ap.status,
+            class: case ap.status
+                    when "agendado"
+                      "text-yellow-600"
+                    when "remarcado"
+                      "text-orange-500"
+                    when "cancelado"
+                      "text-red-600"
+                    else
+                      ""
+                    end
+          },          
+          { header: "Comparecimento", content: attendance_status(ap), id: "attendance-#{ap.id}", class: "text-blue-700" },
           { header: "Nº de Comparecimentos", content: ap.lead.appointments.count },
-          { header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}" },
+          { header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "text-green-600" },
+          { header: "Observações", content: ap.invitation.notes },
           { header: "Mensagem", content: "" },
-          { header: "Remarcação", content: "" },
-          { header: "Cancelar?", content: "" },
-          { header: "Cliente?", content: "" }
-        ]     
+          { header: "Remarcação", content: "", class: "text-orange-500" },
+          { header: "Cancelar?", content: "", class: "text-red-600" },
+          { header: "Cliente?", content: "", class: "text-purple-500" }
+        ]                 
       end
       
     end
