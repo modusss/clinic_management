@@ -1,0 +1,9 @@
+<% if appointment.attendance %>
+    <td id="attendance-<%=appointment.id%>%" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-green-600 column-4">
+        Sim
+    </td>
+<% else %>
+    <td id="attendance-<%=appointment.id%>%" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-red-600 column-4">
+        Não
+    </td>
+<% end %>

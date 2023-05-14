@@ -47,9 +47,19 @@ module ClinicManagement
                       ""
                     end
           },          
-          { header: "Comparecimento", content: attendance_status(ap), id: "attendance-#{ap.id}", class: "text-blue-700" },
+          { 
+            header: "Comparecimento", 
+            content: ap.attendance ? "Sim" : "Não", 
+            id: "attendance-#{ap.id}", 
+            class: ap.attendance ? "text-green-600" : "text-red-600" 
+          },          
           { header: "Nº de Comparecimentos", content: ap.lead.appointments.count },
-          { header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "text-green-600" },
+          { 
+            header: "Ação", 
+            content: set_appointment_button(ap), 
+            id: "set-attendance-button-#{ap.id}", 
+            class: "pt-2 pb-0"
+          },          
           { header: "Observações", content: ap.invitation.notes },
           { header: "Mensagem", content: "" },
           { header: "Remarcação", content: "", class: "text-orange-500" },
@@ -100,17 +110,14 @@ module ClinicManagement
 
     private
 
-      def set_appointment_button(ap)
-        if ap.attendance.present?
-          "--"
-        else
-          helpers.button_to('Presente ok', set_attendance_appointment_path(ap), method: :patch, remote: true, class: "")
-        end
+    def set_appointment_button(ap)
+      if ap.attendance.present?
+        "--"
+      else
+        helpers.button_to('Marcar como presente', set_attendance_appointment_path(ap), method: :patch, remote: true, class: "py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-700")
       end
-
-      def attendance_status(ap)
-        ap.attendance == true ? "Sim" : "Não"
-      end
+    end
+    
 
       # Use callbacks to share common setup or constraints between actions.
       def set_service

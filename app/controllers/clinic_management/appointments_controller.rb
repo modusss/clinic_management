@@ -55,7 +55,7 @@ module ClinicManagement
         format.turbo_stream do
           render turbo_stream: [ 
                                 turbo_stream.update("set-attendance-button-#{@appointment.id}", "--"),
-                                turbo_stream.update("attendance-#{@appointment.id}", "Sim")
+                                turbo_stream.replace("attendance-#{@appointment.id}", partial: 'clinic_management/appointments/attendance_table_status', locals: { appointment: @appointment })
                                 ]
         end
       end      
