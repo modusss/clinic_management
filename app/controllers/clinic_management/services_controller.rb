@@ -6,17 +6,32 @@ module ClinicManagement
     def index
       @services = ClinicManagement::Service.all
       @rows = @services.order(:date).reverse.each_with_index.map do |ser,index|
+      total_appointments = ser.appointments.where(attendance: true).count
+      scheduled = ser.appointments.where(status: "agendado").count
+      rescheduled = ser.appointments.where(status: "remarcado").count
+      canceleds = ser.appointments.where(status: "cancelado").count
         [
           { header: "#", content: index + 1 },
           { header: "Data", content: ser.date.strftime("%d/%m/%Y") },
           { header: "Dia da semana", content: helpers.show_week_day(ser.weekday) },
           { header: "Início", content: ser.start_time.strftime("%H:%M") },
           { header: "Fim", content: ser.end_time.strftime("%H:%M") },
-          { header: "Pacientes", content: ser.appointments.count },
-          { header: "Presentes", content: ser.appointments.where(attendance: true).count, class: "text-blue-700" },
-          { header: "Agendados", content: ser.appointments.where(status: "agendado").count, class: "text-yellow-600" },
-          { header: "Remarcados", content: ser.appointments.where(status: "remarcado").count, class: "text-green-600" },
-          { header: "Cancelados", content: ser.appointments.where(status: "cancelado").count, class: "text-red-600" },
+          { header: "Pacientes", content: total_appointments },
+          { 
+            header: "Presentes", 
+            content: "#{scheduled} <span class='bg-blue-200 text-blue-700 p-1 rounded'>(#{(scheduled.to_f/total_appointments*100).round(2)}%)</span>".html_safe, 
+            class: "text-blue-700" 
+          },
+          { 
+            header: "Remarcados", 
+            content: "#{rescheduled} <span class='bg-green-200 text-green-700 p-1 rounded'>(#{(rescheduled.to_f/total_appointments*100).round(2)}%)</span>".html_safe, 
+            class: "text-green-600" 
+          },
+          { 
+            header: "Cancelados", 
+            content: "#{canceleds} <span class='bg-red-200 text-red-700 p-1 rounded'>(#{(canceleds.to_f/total_appointments*100).round(2)}%)</span>".html_safe, 
+            class: "text-red-600" 
+          },                
           { header: "Detalhes", content: helpers.link_to("Detalhes", ser, class: "text-blue-500 hover:text-blue-700") }
         ]        
       end
