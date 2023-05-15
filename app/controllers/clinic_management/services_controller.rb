@@ -39,8 +39,8 @@ module ClinicManagement
 
     # GET /services/1
     def show
-      @appointments = @service.appointments
-      @rows = @appointments.order(:created_at).map.with_index(1) do |ap, index|
+      @appointments = @service.appointments.includes(:invitation).sort_by { |ap| ap.invitation.patient_name }
+      @rows = @appointments.map.with_index(1) do |ap, index|
         [
           { header: "#", content: index },
           { header: "Paciente", content: ap.invitation.patient_name },
