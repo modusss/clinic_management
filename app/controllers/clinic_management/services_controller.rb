@@ -51,11 +51,12 @@ module ClinicManagement
           { 
             header: "Status", 
             content: ap.status,
+            id: "status-#{ap.id}", 
             class: case ap.status
                     when "agendado"
                       "text-yellow-600"
                     when "remarcado"
-                      "text-orange-500"
+                      "text-orange-600"
                     when "cancelado"
                       "text-red-600"
                     else
@@ -78,7 +79,12 @@ module ClinicManagement
           { header: "Observações", content: ap.invitation.notes },
           { header: "Mensagem", content: "" },
           { header: "Remarcação", content: "", class: "text-orange-500" },
-          { header: "Cancelar?", content: "", class: "text-red-600" },
+          { 
+            header: "Cancelar?", 
+            content: set_cancel_button(ap), 
+            id: "cancel-attendance-button-#{ap.id}", 
+            class: "pt-2 pb-0"
+            },
           { header: "Cliente?", content: "", class: "text-purple-500" }
         ]                 
       end
@@ -130,6 +136,14 @@ module ClinicManagement
         "--"
       else
         helpers.button_to('Marcar como presente', set_attendance_appointment_path(ap), method: :patch, remote: true, class: "py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-700")
+      end
+    end
+
+    def set_cancel_button(ap)
+      if ["agendado", "remarcado"].include? ap.status
+        helpers.button_to('Cancelar', cancel_attendance_appointment_path(ap), method: :patch, remote: true, class: "py-2 px-4 bg-red-500 text-white rounded hover:bg-red-700")
+      else
+        "--"
       end
     end
     

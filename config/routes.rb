@@ -4,6 +4,9 @@ ClinicManagement::Engine.routes.draw do
     member do
       patch :set_attendance
     end
+    member do
+      patch :cancel_attendance
+    end
   end
   resources :services
   resources :time_slots

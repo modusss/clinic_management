@@ -48,17 +48,33 @@ module ClinicManagement
 
     def set_attendance
       @appointment = Appointment.find(params[:id])
-      id = "set-attendance-button-#{@appointment.id}"
+      button_id = "set-attendance-button-#{@appointment.id}"
       @appointment.attendance = true
       @appointment.save
       respond_to do |format|
         format.turbo_stream do
           render turbo_stream: [ 
-                                turbo_stream.update("set-attendance-button-#{@appointment.id}", "--"),
+                                turbo_stream.update(button_id, "--"),
                                 turbo_stream.replace("attendance-#{@appointment.id}", partial: 'clinic_management/appointments/attendance_table_status', locals: { appointment: @appointment })
                                 ]
         end
       end      
+    end
+
+    def cancel_attendance
+      @appointment = Appointment.find(params[:id])
+      button_id = "cancel-attendance-button-#{@appointment.id}"
+      status_id = "status-#{@appointment.id}"
+      @appointment.status = "cancelado"
+      @appointment.save
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: [ 
+                                turbo_stream.update(button_id, "--"),
+                                turbo_stream.replace(status_id, partial: 'clinic_management/appointments/status_table', locals: { status: @appointment.status })
+                               ]
+        end
+      end
     end
 
     private
