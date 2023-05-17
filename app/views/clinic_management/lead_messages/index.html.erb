@@ -1,0 +1,33 @@
+<div class="my-8">
+  <h5 class="text-2xl font-bold">Mensagens customizadas</h5>
+</div>
+
+<%#= data_table(@rows) %>
+
+<div class="w-full">
+  <table class="w-full table-auto border-collapse border-2 border-gray-200 text-left">
+    <thead>
+      <tr>
+        <th class="px-4 py-2">Nome da mensagem</th>
+        <th class="px-4 py-2">Texto da mensagem</th>
+        <th class="px-4 py-2">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @messages.each do |message| %>
+        <tr class="border-b border-gray-200">
+          <td class="px-4 py-2"><%= message.name %></td>
+          <td class="px-4 py-2"><%= message.text %></td>
+          <td class="px-4 py-2">
+            <%= link_to 'Editar', edit_lead_message_path(message), class: "px-2 py-1 bg-yellow-500 text-white rounded" %>
+            <%= link_to 'Excluir', message, method: :delete, data: { confirm: 'Tem certeza que deseja excluir esta mensagem?' }, class: "px-2 py-1 bg-red-500 text-white rounded" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<div class="mt-8">
+  <%= link_to 'Criar nova mensagem customizada', new_lead_message_path, class: "px-4 py-2 bg-blue-500 text-white rounded" %>
+</div>

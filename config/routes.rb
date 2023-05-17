@@ -1,5 +1,6 @@
 ClinicManagement::Engine.routes.draw do
   resources :invitations
+  resources :lead_messages
   resources :appointments do
     member do
       patch :set_attendance

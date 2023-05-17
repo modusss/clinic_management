@@ -6,10 +6,10 @@ module ClinicManagement
     def index
       @services = ClinicManagement::Service.all
       @rows = @services.order(:date).reverse.each_with_index.map do |ser,index|
-      total_appointments = ser.appointments.count
-      scheduled = ser.appointments.where(attendance: true).count
-      rescheduled = ser.appointments.where(status: "remarcado").count
-      canceleds = ser.appointments.where(status: "cancelado").count
+        total_appointments = ser.appointments.count
+        scheduled = ser.appointments.where(attendance: true).count
+        rescheduled = ser.appointments.where(status: "remarcado").count
+        canceleds = ser.appointments.where(status: "cancelado").count
         [
           { header: "#", content: index + 1 },
           { header: "Data", content: ser.date.strftime("%d/%m/%Y") },
