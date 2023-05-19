@@ -12,7 +12,7 @@
 
   <% if @rows.present? %>
     <div class="overflow-hidden border-gray-200 sm:rounded-lg">
-      <%= data_table(@rows, 3) %>
+      <%= data_table(@rows, 5) %>
     </div>
   <% else %>
     <div class="bg-white shadow sm:rounded-lg">
@@ -29,3 +29,26 @@
 
 
 </style>
+
+<script>
+  window.onload = function() {
+  var table = document.querySelector('table'); // ajuste o seletor conforme necessário
+
+  Array.from(table.rows).forEach(function(row) {
+    var widths = Array.from(row.cells).map(function(cell) {
+      return cell.offsetWidth;
+    });
+
+    Array.from(row.cells).forEach(function(cell, index) {
+      if (cell.classList.contains('sticky')) {
+        cell.style.position = 'sticky';
+        cell.style.left = widths.slice(0, index).reduce((a, b) => a + b, 0) + 'px';
+        cell.style.backgroundColor = 'white'; // para garantir que a célula seja visível sobre as outras células
+        cell.style.borderBottom = '1px solid #dee2e6'; // adicione uma borda inferior à célula
+      }
+    });
+  });
+};
+
+
+</script>

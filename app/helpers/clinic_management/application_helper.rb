@@ -20,54 +20,54 @@ module ClinicManagement
       end
     end
 
-    def data_table(rows, fix_to = nil)
-      content_tag(:div, class: "flex", data: { controller: "scroll-sync" }) do
-        if fix_to
-          fixed_rows = rows.map { |row| row.take(fix_to) }
-          scrollable_rows = rows.map { |row| row.drop(fix_to) }
-    
-          table_wrapper("fixed", fixed_rows, "shadow overflow-hidden border-b border-gray-200 sm:rounded-lg", "position: relative; z-index: 2;") +
-            table_wrapper("scrollable", scrollable_rows, "shadow overflow-hidden border-b border-gray-200 sm:rounded-lg", "position: relative; z-index: 1;", 'overflow-x-auto')
-        else
-          table_wrapper("scrollable", rows, "shadow overflow-hidden border-b border-gray-200 sm:rounded-lg")
-        end
+
+    # table with calculation of width
+
+
+    def data_table(rows, fix_to = 3)
+      content_tag(:div, class: "flex overflow-x-scroll", data: { controller: "table" }) do
+        table_wrapper("scrollable", rows, "min-w-full divide-y divide-gray-200", fix_to)
       end
     end
     
-    def table_wrapper(id, rows, inner_classes, style = nil, outer_overflow_class = '')
-      content_tag(:div, class: "-my-2 #{outer_overflow_class} sm:-mx-6 lg:-mx-8", data: { scroll_sync_target: id }, style: style) do
-        content_tag(:div, class: "py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8") do
-          content_tag(:div, class: inner_classes) do
-            content_tag(:table, class: "min-w-full divide-y divide-gray-200") do
-              table_header(rows.first.map { |cell| cell[:header] }) + table_body(rows)
-            end
-          end
-        end
+    def table_wrapper(id, rows, inner_classes, fix_to)
+      content_tag(:table, class: inner_classes) do
+        table_header(rows.first.map { |cell| cell[:header] }, fix_to) + table_body(rows, fix_to)
       end
     end
     
-    def table_header(headers)
+    def table_header(headers, fix_to)
       content_tag(:thead, class: "bg-gray-50") do
-        content_tag(:tr, style: "height: 60px;") do
-          headers.map do |header|
-            content_tag(:th, header, scope: "col", class: "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider")
+        content_tag(:tr) do
+          headers.map.with_index do |header, header_index|
+            classes = "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            styles = ''
+            if header_index < fix_to
+              classes += ' sticky'
+            end
+            content_tag(:th, header, scope: "col", class: classes, style: styles)
           end.join.html_safe
         end
       end
     end
     
-    def table_body(rows)
+    def table_body(rows, fix_to)
       content_tag(:tbody, class: "bg-white divide-y divide-gray-200") do
         rows.map.with_index do |row, row_index|
-          content_tag(:tr, class: (row_index.even? ? 'bg-gray-50' : 'bg-white')) do
+          content_tag(:tr) do
             row.map.with_index do |cell, cell_index|
-              content_tag(:td, cell[:content], id: cell[:id], class: "px-6 py-4 whitespace-nowrap text-sm text-gray-900 #{cell[:class]} column-#{cell_index}")
+              classes = "px-6 py-4 whitespace-nowrap text-sm text-gray-900 #{cell[:class]}"
+              styles = ''
+              if cell_index < fix_to
+                classes += ' sticky'
+              end
+              content_tag(:td, cell[:content], id: cell[:id], class: classes, style: styles)
             end.join.html_safe
           end
         end.join.html_safe
       end
     end
     
-  
+    
   end
 end
