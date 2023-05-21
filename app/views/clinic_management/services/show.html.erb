@@ -31,24 +31,33 @@
 </style>
 
 <script>
-  window.onload = function() {
-  var table = document.querySelector('table'); // ajuste o seletor conforme necessário
 
-  Array.from(table.rows).forEach(function(row) {
-    var widths = Array.from(row.cells).map(function(cell) {
-      return cell.offsetWidth;
-    });
+  // Adjust freezed columns to run
 
-    Array.from(row.cells).forEach(function(cell, index) {
+document.addEventListener("DOMContentLoaded", function() { 
+  var table = document.querySelector('table');
+
+  for (let row of table.rows) {
+    let widths = [];
+    let cells = row.cells;
+    let cellLength = cells.length;
+
+    for (let i = 0; i < cellLength; i++) {
+      widths.push(cells[i].offsetWidth);
+    }
+
+    for (let i = 0; i < cellLength; i++) {
+      let cell = cells[i];
       if (cell.classList.contains('sticky')) {
         cell.style.position = 'sticky';
-        cell.style.left = widths.slice(0, index).reduce((a, b) => a + b, 0) + 'px';
-        cell.style.backgroundColor = 'white'; // para garantir que a célula seja visível sobre as outras células
-        cell.style.borderBottom = '1px solid #dee2e6'; // adicione uma borda inferior à célula
+        cell.style.left = widths.slice(0, i).reduce((a, b) => a + b, 0) + 'px';
+        cell.style.backgroundColor = 'white';
+        cell.style.borderBottom = '1px solid #dee2e6';
       }
-    });
-  });
-};
+    }
+  }
+})
+
 
 
 </script>

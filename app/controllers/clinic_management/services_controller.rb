@@ -77,7 +77,11 @@ module ClinicManagement
             class: "pt-2 pb-0"
           },          
           { header: "Observações", content: ap.invitation.notes },
-          { header: "Mensagem", content: "" },
+          { 
+            header: "Mensagem", 
+            content: render_to_string(partial: "clinic_management/lead_messages/lead_message_form", locals: { lead: ap.lead }),
+            id: "whatsapp-link-" + ap.lead.id.to_s
+          },
           { header: "Remarcação", content: "", class: "text-orange-500" },
           { 
             header: "Cancelar?", 
