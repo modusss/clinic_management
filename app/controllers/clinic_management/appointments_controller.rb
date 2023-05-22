@@ -25,6 +25,7 @@ module ClinicManagement
       @appointment = Appointment.new(appointment_params)
 
       if @appointment.save
+        @appointment.lead.update(last_appointment_id: @appointment.id)
         redirect_to @appointment, notice: "Appointment was successfully created."
       else
         render :new, status: :unprocessable_entity
@@ -34,6 +35,7 @@ module ClinicManagement
     # PATCH/PUT /appointments/1
     def update
       if @appointment.update(appointment_params)
+        @appointment.lead.update(last_appointment_id: @appointment.id)
         redirect_to @appointment, notice: "Appointment was successfully updated."
       else
         render :edit, status: :unprocessable_entity
