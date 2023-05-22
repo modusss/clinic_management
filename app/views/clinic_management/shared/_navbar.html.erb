@@ -4,12 +4,20 @@
       <%= yield(:header) || "Nome do seu aplicativo" %>
     </h1>
     <nav class="flex space-x-4">
-      <%= link_to "Marcações", clinic_management.appointments_path, class: "text-white hover:text-blue-300" %>
-      <%= link_to "Convites", clinic_management.invitations_path, class: "text-white hover:text-blue-300" %>
-      <%= link_to "Regiões", clinic_management.regions_path, class: "text-white hover:text-blue-300" %>
-      <%= link_to "Atendimentos", clinic_management.services_path, class: "text-white hover:text-blue-300" %>
-      <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-white hover:text-blue-300" %>
-      <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-blue-300"  %>
+      <%= link_to "Marcações", clinic_management.appointments_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'appointments'}" %>
+      <%= link_to "Convites", clinic_management.invitations_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'invitations'}" %>
+      <%= link_to "Regiões", clinic_management.regions_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'regions'}" %>
+      <%= link_to "Atendimentos", clinic_management.services_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'services'}" %>
+      <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'time_slots'}" %>
+      <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'lead_messages'}"  %>
     </nav>
   </div>
 </header>
+
+
+
+<style>
+a.active {
+  border-bottom: 2px solid white;
+}
+</style>
