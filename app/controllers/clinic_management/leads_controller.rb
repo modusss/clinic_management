@@ -46,6 +46,34 @@ module ClinicManagement
       redirect_to leads_url, notice: "Lead was successfully destroyed."
     end
 
+    def absent
+      @leads = Lead.joins(appointments: [:invitation, :service])
+                   .where(clinic_management_appointments: { id: :last_appointment_id, attendance: false })
+                   .where('clinic_management_services.date < ?', Date.today)
+                   .order('clinic_management_invitations.created_at DESC')
+                   .distinct
+      render :index
+    end
+    
+    def attended
+      @leads = Lead.joins(appointments: [:invitation, :service])
+                   .where(clinic_management_appointments: { id: :last_appointment_id, attendance: true })
+                   .where('clinic_management_services.date < ?', Date.today)
+                   .order('clinic_management_invitations.created_at DESC')
+                   .distinct
+      render :index
+    end
+    
+    def cancelled
+      @leads = Lead.joins(appointments: [:invitation, :service])
+                   .where(clinic_management_appointments: { id: :last_appointment_id, status: 'cancelado' })
+                   .where('clinic_management_services.date < ?', Date.today)
+                   .order('clinic_management_invitations.created_at DESC')
+                   .distinct
+      render :index
+    end
+    
+
     private
       # Use callbacks to share common setup or constraints between actions.
       def set_lead
