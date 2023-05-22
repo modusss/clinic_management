@@ -6,8 +6,10 @@
 
 <div class="container mx-auto px-4 py-8">
   <div class="mb-8">
-    <h1 class="text-2xl font-bold text-gray-900">Convites</h1>
-    <p class="text-gray-600">Lista de convites e informações relacionadas.</p>
+    <h1 class="text-2xl font-bold text-gray-900">Atendimento de <%= show_week_day @service.time_slot.weekday %></h1>
+    <h2 class="text-xl text-gray-700"><%= @service.date.strftime("%d/%m/%Y") %></h2>
+    <h2 class="text-xl text-gray-700"><%= @service.time_slot.start_time.strftime('%H:%M') %>h às <%= @service.time_slot.end_time.strftime('%H:%M') %>h</h2>
+    <p class="text-gray-600">Lista de convidados do atendimento e informações relacionadas.</p>
   </div>
 
   <% if @rows.present? %>
