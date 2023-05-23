@@ -1,6 +1,7 @@
 module ClinicManagement
   class InvitationsController < ApplicationController
     before_action :set_invitation, only: %i[ show edit update destroy ]
+    include GeneralHelper
 
     # GET /invitations
     def index
@@ -62,22 +63,17 @@ module ClinicManagement
         invitations.map do |invite|
           last_appointment = invite.lead.appointments.last
           [
-            {header: "Data do convite", content: invite.date.strftime("%d/%m/%Y")},
-            {header: "Convitre para", content: helpers.link_to(invite_day(invite), service_path(invite.appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
-            {header: "Nome do paciente", content: invite.patient_name},
-            {header: "Nome do responsável", content: responsible_content(invite)},   
+            {header: "Data", content: invite.date.strftime("%d/%m/%Y")},
+            {header: "Para", content: helpers.link_to(invite_day(invite), service_path(invite.appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
+            {header: "Paciente", content: invite.patient_name},
+            {header: "Responsável", content: responsible_content(invite)},   
             {header: "Telefone", content: invite.lead.phone},
             {header: "Observação", content: invite.notes},
             {header: "Indicação", content: invite.referral.name},
-            {header: "Vezes que foi convidado", content: invite.lead.appointments.count},
+            {header: "Quantidade de convites", content: invite.lead.appointments.count},
             {header: "Região", content: invite.region.name}
           ]
         end
-      end
-
-      def invite_day(invite)
-        service = invite.appointment.service
-        helpers.show_week_day(service.time_slot.weekday) + " " + service.date.strftime("%d/%m") + ", " + service.start_time.strftime("%H:%M") + "h às " + service.end_time.strftime("%H:%M") + "h"
       end
 
       def responsible_content(invite)

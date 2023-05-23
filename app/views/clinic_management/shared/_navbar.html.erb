@@ -4,6 +4,7 @@
       <%= yield(:header) || "Nome do seu aplicativo" %>
     </h1>
     <nav class="flex space-x-4">
+      <%= link_to "Pacientes", clinic_management.leads_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'leads'}" %>
       <%= link_to "Marcações", clinic_management.appointments_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'appointments'}" %>
       <%= link_to "Convites", clinic_management.invitations_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'invitations'}" %>
       <%= link_to "Regiões", clinic_management.regions_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'regions'}" %>

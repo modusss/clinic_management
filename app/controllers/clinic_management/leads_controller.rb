@@ -1,10 +1,13 @@
 module ClinicManagement
   class LeadsController < ApplicationController
     before_action :set_lead, only: %i[ show edit update destroy ]
+    before_action :set_menu, only: %i[ index absent attended cancelled ]
+    include GeneralHelper
 
     # GET /leads
     def index
       @leads = Lead.all
+      @rows = load_leads_data(@leads)
     end
 
     # GET /leads/1
@@ -47,34 +50,74 @@ module ClinicManagement
     end
 
     def absent
-      @leads = Lead.joins(appointments: [:invitation, :service])
-                   .where(clinic_management_appointments: { id: :last_appointment_id, attendance: false })
-                   .where('clinic_management_services.date < ?', Date.today)
-                   .order('clinic_management_invitations.created_at DESC')
-                   .distinct
+      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ?', false)
+      @rows = load_leads_data(@leads)
       render :index
     end
     
     def attended
-      @leads = Lead.joins(appointments: [:invitation, :service])
-                   .where(clinic_management_appointments: { id: :last_appointment_id, attendance: true })
-                   .where('clinic_management_services.date < ?', Date.today)
-                   .order('clinic_management_invitations.created_at DESC')
-                   .distinct
+      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ?', true)
+      @rows = load_leads_data(@leads)
       render :index
     end
     
     def cancelled
-      @leads = Lead.joins(appointments: [:invitation, :service])
-                   .where(clinic_management_appointments: { id: :last_appointment_id, status: 'cancelado' })
-                   .where('clinic_management_services.date < ?', Date.today)
-                   .order('clinic_management_invitations.created_at DESC')
-                   .distinct
+      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.status = ?', 'cancelado')
+      @rows = load_leads_data(@leads)
       render :index
     end
     
-
+    
     private
+
+    def set_menu
+      @menu = [
+        {url_name: 'Todos', url: 'leads', controller_name: 'leads', action_name: 'index'},
+        {url_name: 'Ausentes', url: 'absent_leads', controller_name: 'leads', action_name: 'absent'},
+        {url_name: 'Compareceram', url: 'attended_leads', controller_name: 'leads', action_name: 'attended'},
+        {url_name: 'Cancelados', url: 'cancelled_leads', controller_name: 'leads', action_name: 'cancelled'}
+      ]
+    end
+
+    def load_leads_data(leads)
+      begin
+        leads.map.with_index do |lead, index|
+          last_invitation = lead.invitations.last
+          last_appointment = lead.appointments.last
+          [
+            {header: "Ordem", content: index + 1},
+            {header: "Paciente", content: lead.name},
+            {header: "Responsável", content: responsible_content(last_invitation)},
+            {header: "Telefone", content: lead.phone},
+            {header: "Último indicador", content: last_invitation.referral.name},
+            {header: "Quantidade de convites", content: lead.invitations.count},
+            {header: "Último atendimento", content: helpers.link_to(last_appointment.status + " - " + invite_day(last_invitation), service_path(last_appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
+            {header: "Mensagem", content: ""},
+            {header: "Remarcação", content: ""}
+          ]
+        end
+      rescue
+        [ {header: "", content: ""} ]
+      end
+    end
+    
+
+      def responsible_content(invite)
+        if invite.present?
+          (invite.lead.name != invite.patient_name) ? invite.lead.name : ""
+        else
+          ""
+        end
+      end
+
+      def fetch_leads_by_appointment_condition(condition, value)
+        Lead.select('DISTINCT ON (clinic_management_leads.id) clinic_management_leads.*')
+            .joins(appointments: [:invitation, :service])
+            .where('clinic_management_appointments.id = clinic_management_leads.last_appointment_id AND ' + condition, value)
+            .where('clinic_management_services.date < ?', Date.today)
+            .order('clinic_management_leads.id, clinic_management_invitations.created_at DESC')
+      end
+
       # Use callbacks to share common setup or constraints between actions.
       def set_lead
         @lead = Lead.find(params[:id])
