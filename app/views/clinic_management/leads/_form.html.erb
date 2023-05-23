@@ -1,9 +1,9 @@
-<%= form_with(model: lead) do |form| %>
+<%= form_with(model: lead, class: 'space-y-6') do |form| %>
   <% if lead.errors.any? %>
-    <div style="color: red">
+    <div class="text-lg font-medium text-red-700 mb-4">
       <h2><%= pluralize(lead.errors.count, "error") %> prohibited this lead from being saved:</h2>
 
-      <ul>
+      <ul class="list-disc list-inside">
         <% lead.errors.each do |error| %>
           <li><%= error.full_message %></li>
         <% end %>
@@ -12,26 +12,21 @@
   <% end %>
 
   <div>
-    <%= form.label :name, style: "display: block" %>
-    <%= form.text_field :name %>
+    <%= form.label :name, class: "block text-sm font-medium text-gray-700" %>
+    <%= form.text_field :name, class: "mt-1 block w-full border-gray-300 rounded-md" %>
   </div>
 
   <div>
-    <%= form.label :phone, style: "display: block" %>
-    <%= form.text_field :phone %>
+    <%= form.label :phone, class: "block text-sm font-medium text-gray-700" %>
+    <%= form.text_field :phone, class: "mt-1 block w-full border-gray-300 rounded-md" %>
   </div>
 
   <div>
-    <%= form.label :address, style: "display: block" %>
-    <%= form.text_field :address %>
+    <%= form.label :address, class: "block text-sm font-medium text-gray-700" %>
+    <%= form.text_field :address, class: "mt-1 block w-full border-gray-300 rounded-md" %>
   </div>
 
   <div>
-    <%= form.label :converted, style: "display: block" %>
-    <%= form.check_box :converted %>
-  </div>
-
-  <div>
-    <%= form.submit %>
+    <%= form.submit "Enviar", class: "w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700" %>
   </div>
 <% end %>

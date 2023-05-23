@@ -12,6 +12,7 @@ module ClinicManagement
 
     # GET /leads/1
     def show
+      @rows = get_lead_data
     end
 
     # GET /leads/new
@@ -70,6 +71,20 @@ module ClinicManagement
     
     private
 
+    def get_lead_data
+      @lead.appointments.map.with_index do |ap, index|
+        [
+          {header: "#", content: index + 1},
+          {header: "Data do atendimento", content: ap.service.date.strftime("%d/%m/%Y")},         
+          {header: "Comparecimento", content: (ap.attendance == true ? "Sim" : "Não")},
+          {header: "Status", content: ap.status},
+          {header: "Data do convite", content: ap.invitation.created_at.strftime("%d/%m/%Y")},
+          {header: "Convidado por", content: ap.invitation.referral.name},
+          {header: "Região", content: ap.invitation.region.name}        
+        ]
+      end
+    end
+
     def set_menu
       @menu = [
         {url_name: 'Todos', url: 'leads', controller_name: 'leads', action_name: 'index'},
@@ -86,7 +101,7 @@ module ClinicManagement
           last_appointment = lead.appointments.last
           [
             {header: "Ordem", content: index + 1},
-            {header: "Paciente", content: lead.name},
+            {header: "Paciente", content: helpers.link_to(lead.name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
             {header: "Responsável", content: responsible_content(last_invitation)},
             {header: "Telefone", content: lead.phone},
             {header: "Último indicador", content: last_invitation.referral.name},
