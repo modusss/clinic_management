@@ -9,7 +9,7 @@ module ClinicManagement
           { header: "#", content: index },
           { header: "Nome", content: reg.name },
           { header: "Convites", content: reg.invitations.count },
-          { header: "Conviar", content: edit_button(reg) },
+          { header: "Editar", content: edit_button(reg) },
           { header: "Excluir", content: delete_button(reg) }
         ] 
       end
