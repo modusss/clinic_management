@@ -22,8 +22,9 @@ module ClinicManagement
 
     # POST /time_slots
     def create
-      @time_slot = TimeSlot.new(time_slot_params)
-
+      day_number = get_day_field
+      @time_slot = TimeSlot.new(time_only_slot_params)
+      @time_slot.weekday = day_number
       if @time_slot.save
         redirect_to @time_slot, notice: "Time slot was successfully created."
       else
@@ -33,7 +34,9 @@ module ClinicManagement
 
     # PATCH/PUT /time_slots/1
     def update
-      if @time_slot.update(time_slot_params)
+      day_number = get_day_field(params[:time_slot][:weekday])
+      @time_slot.weekday = day_number
+      if @time_slot.update(time_only_slot_params)
         redirect_to @time_slot, notice: "Time slot was successfully updated."
       else
         render :edit, status: :unprocessable_entity
@@ -47,6 +50,25 @@ module ClinicManagement
     end
 
     private
+      def get_day_field(day)
+        case day.downcase
+        when "domingo"
+          1
+        when "segunda-feira"
+          2
+        when "terça-feira"
+          3
+        when "quarta-feira"
+          4
+        when "quinta-feira"
+          5
+        when "sexta-feira"
+          6
+        when "sábado"
+          7
+        end
+      end
+
       # Use callbacks to share common setup or constraints between actions.
       def set_time_slot
         @time_slot = TimeSlot.find(params[:id])
@@ -55,6 +77,10 @@ module ClinicManagement
       # Only allow a list of trusted parameters through.
       def time_slot_params
         params.require(:time_slot).permit(:weekday, :start_time, :end_time)
+      end
+
+      def time_only_slot_params
+        params.require(:time_slot).permit(:start_time, :end_time)
       end
   end
 end
