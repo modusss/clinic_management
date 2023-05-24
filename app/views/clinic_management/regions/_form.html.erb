@@ -1,2 +1,2 @@
-<% form_fields = [{name: 'Nome', input: :name, type: 'text'}] %>
+<% form_fields = [{name: 'Nome', input: :name, type: 'text', value: @region.name}] %>
 <%= standardized_form_for(@region, form_fields) %>
