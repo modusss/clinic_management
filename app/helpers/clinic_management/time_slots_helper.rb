@@ -13,16 +13,21 @@ module ClinicManagement
       }
     
       time_slots = ClinicManagement::TimeSlot.all
-      next_10_days = (Date.today..Date.today + 29.days)
+      next_30_days = (Date.today..Date.today + 29.days)
     
-      options = next_10_days.flat_map do |date|
+      options = next_30_days.flat_map do |date|
         weekday_slots = time_slots.select { |slot| slot.weekday == date.wday }
         weekday_slots.map do |slot|
+          next if Service.exists?(
+            weekday: slot.weekday,
+            date: date,
+            start_time: slot.start_time
+          )
           display_info = "#{date.strftime('%d/%m/%Y')} - #{week_days[slot.weekday]} - #{slot.start_time.strftime('%H:%M')} até #{slot.end_time.strftime('%H:%M')}"
           value = {time_slot_id: slot.id, date: date}.to_json
           [display_info, value]
-        end        
-      end
+        end
+      end.compact
     
       {type: 'select', selected: "", input: :time_slot_id, name: 'Dias e horários disponíveis', options: options}
     end

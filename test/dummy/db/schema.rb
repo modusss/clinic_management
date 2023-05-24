@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_05_24_161747) do
+ActiveRecord::Schema[7.0].define(version: 2023_05_24_180115) do
   create_table "clinic_management_appointments", force: :cascade do |t|
     t.boolean "attendance"
     t.string "status"
@@ -73,17 +73,17 @@ ActiveRecord::Schema[7.0].define(version: 2023_05_24_161747) do
 
   create_table "clinic_management_services", force: :cascade do |t|
     t.integer "weekday"
-    t.datetime "start_time"
-    t.datetime "end_time"
-    t.datetime "date"
+    t.time "start_time", precision: 6
+    t.time "end_time", precision: 6
+    t.date "date"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
   create_table "clinic_management_time_slots", force: :cascade do |t|
     t.integer "weekday"
-    t.datetime "start_time"
-    t.datetime "end_time"
+    t.time "start_time", precision: 6
+    t.time "end_time", precision: 6
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
