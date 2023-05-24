@@ -1,7 +1,7 @@
 <% form_fields = [
-    {name: 'Nome', input: :name, type: 'text'},
-    {name: 'Telefone', input: :phone, type: 'text'},
-    {name: 'Endereço', input: :address, type: 'text'}
+    {name: 'Nome', input: :name, type: 'text', value: lead.name},
+    {name: 'Telefone', input: :phone, type: 'text', value: lead.phone},
+    {name: 'Endereço', input: :address, type: 'text', value: lead.address}
 ] %>
 <%= standardized_form_for(lead, form_fields) %>
 
