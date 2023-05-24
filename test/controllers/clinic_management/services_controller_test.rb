@@ -20,7 +20,7 @@ module ClinicManagement
 
     test "should create service" do
       assert_difference("Service.count") do
-        post services_url, params: { service: { date: @service.date, end_time: @service.end_time, start_time: @service.start_time, time_slot_id: @service.time_slot_id, weekday: @service.weekday } }
+        post services_url, params: { service: { date: @service.date, end_time: @service.end_time, start_time: @service.start_time, weekday: @service.weekday } }
       end
 
       assert_redirected_to service_url(Service.last)
@@ -37,7 +37,7 @@ module ClinicManagement
     end
 
     test "should update service" do
-      patch service_url(@service), params: { service: { date: @service.date, end_time: @service.end_time, start_time: @service.start_time, time_slot_id: @service.time_slot_id, weekday: @service.weekday } }
+      patch service_url(@service), params: { service: { date: @service.date, end_time: @service.end_time, start_time: @service.start_time, weekday: @service.weekday } }
       assert_redirected_to service_url(@service)
     end
 

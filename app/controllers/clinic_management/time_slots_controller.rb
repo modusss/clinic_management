@@ -22,7 +22,7 @@ module ClinicManagement
 
     # POST /time_slots
     def create
-      day_number = get_day_field
+      day_number = get_day_field(params[:time_slot][:weekday])
       @time_slot = TimeSlot.new(time_only_slot_params)
       @time_slot.weekday = day_number
       if @time_slot.save

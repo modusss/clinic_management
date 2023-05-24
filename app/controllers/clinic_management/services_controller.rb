@@ -23,11 +23,13 @@ module ClinicManagement
 
     # POST /services
     def create
-      @service = Service.new(service_params)
-      @time_slot = TimeSlot.find(service_params[:time_slot_id])
+      json_params = decode_json(params[:service][:time_slot_id])
+      @time_slot = TimeSlot.find(json_params["time_slot_id"])
+      @service = Service.new
       @service.weekday = @time_slot.weekday
       @service.start_time = @time_slot.start_time
       @service.end_time = @time_slot.end_time
+      @service.date = json_params["date"]
       if @service.save
         redirect_to @service, notice: "Atendimento criado com sucesso!"
       else
@@ -51,6 +53,17 @@ module ClinicManagement
     end
 
     private
+
+    def decode_json(json_str)
+      while json_str.is_a?(String)
+        begin
+          json_str = JSON.parse(json_str)
+        rescue JSON::ParserError
+          break
+        end
+      end
+      json_str
+    end
 
     def process_appointments_data(appointments)
       sorted_appointments = appointments.sort_by { |ap| ap.invitation.patient_name }
@@ -165,7 +178,7 @@ module ClinicManagement
 
       # Only allow a list of trusted parameters through.
       def service_params
-        params.require(:service).permit(:weekday, :start_time, :end_time, :date, :time_slot_id)
+        params.require(:service).permit(:weekday, :start_time, :end_time, :date)
       end
   end
 end

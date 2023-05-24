@@ -3,7 +3,7 @@ module ClinicManagement
 
         def invite_day(invite)
             service = invite.appointment.service
-            helpers.show_week_day(service.time_slot.weekday) + " " + service.date.strftime("%d/%m") + ", " + service.start_time.strftime("%H:%M") + "h às " + service.end_time.strftime("%H:%M") + "h"
+            helpers.show_week_day(service.weekday) + " " + service.date.strftime("%d/%m") + ", " + service.start_time.strftime("%H:%M") + "h às " + service.end_time.strftime("%H:%M") + "h"
         end
 
         def render_menu(tabs)

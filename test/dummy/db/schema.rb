@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_05_22_194357) do
+ActiveRecord::Schema[7.0].define(version: 2023_05_24_161747) do
   create_table "clinic_management_appointments", force: :cascade do |t|
     t.boolean "attendance"
     t.string "status"
@@ -76,10 +76,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_05_22_194357) do
     t.datetime "start_time"
     t.datetime "end_time"
     t.datetime "date"
-    t.integer "time_slot_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["time_slot_id"], name: "index_clinic_management_services_on_time_slot_id"
   end
 
   create_table "clinic_management_time_slots", force: :cascade do |t|
@@ -98,5 +96,4 @@ ActiveRecord::Schema[7.0].define(version: 2023_05_22_194357) do
   add_foreign_key "clinic_management_invitations", "leads"
   add_foreign_key "clinic_management_invitations", "referrals"
   add_foreign_key "clinic_management_invitations", "regions"
-  add_foreign_key "clinic_management_services", "time_slots"
 end

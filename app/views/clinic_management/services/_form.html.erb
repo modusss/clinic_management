@@ -1,28 +1,5 @@
-<%= form_with(model: service, class: "w-full max-w-lg mx-auto mt-6") do |form| %>
-  <% if service.errors.any? %>
-    <div class="bg-red-200 border-red-600 border-l-4 p-4 mb-6">
-      <h2 class="text-red-800 font-bold"><%= pluralize(service.errors.count, "error") %> prohibited this service from being saved:</h2>
+<% form_fields = [
+      next_30_days_time_slots
+      ] %>
+<%= standardized_form_for(service, form_fields) %>
 
-      <ul class="list-disc pl-6">
-        <% service.errors.each do |error| %>
-          <li class="text-red-600"><%= error.full_message %></li>
-        <% end %>
-      </ul>
-    </div>
-  <% end %>
-
-  <div class="mb-4">
-    <%= form.label :date, class: "block text-gray-700 font-bold" %>
-    <%= form.date_field :date, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
-  </div>
-
-  <div class="mb-4">
-    <%= form.label :time_slot_id, class: "block text-gray-700 font-bold" %>
-    <%= form.collection_select :time_slot_id, time_slots_with_display_info, :last, :first, {}, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
-  </div>
-
-
-  <div>
-    <%= form.submit "Save", class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" %>
-  </div>
-<% end %>
