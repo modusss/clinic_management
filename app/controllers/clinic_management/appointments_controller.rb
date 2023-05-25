@@ -32,22 +32,26 @@ module ClinicManagement
     end
 
     def reschedule
-      byebug
-=begin
-        @appointment = Appointment.new
-        @service = Service.find(params[:appointment][:service_id])
-        @lead = Lead.find(params[:id])
-        @appointment.lead = @lead
-        @appointment.service = @service
-        @appointment.status = "agendado"
-        if @appointment.save
-          @lead.update(last_appointment_id: @appointment.id)
-          redirect_to @service, notice: "Appointment was successfully updated."
-        else
-          render :edit, status: :unprocessable_entity
-        end
-=end
+      #before appointment
+      before_appointment = Appointment.find(params[:id])
+      before_appointment.update(status: "remarcado")
+      #get lead and next service
+      @lead = Lead.find(params[:id])
+      @next_service = Service.find(params[:appointment][:service_id])
+      # new appointment creation
+      @appointment = @lead.appointments.build(
+        invitation: before_appointment.invitation,
+        service: @next_service,
+        status: "agendado"
+      )    
+      if @appointment.save
+        @lead.update(last_appointment_id: @appointment.id)
+        redirect_to @next_service, notice: "Appointment was successfully updated."
+      else
+        render :edit, status: :unprocessable_entity
+      end
     end
+    
 
     # PATCH/PUT /appointments/1
     def update
