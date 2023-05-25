@@ -110,10 +110,14 @@ module ClinicManagement
   
   
     def reschedule_form(new_appointment, old_appointment)
-      render_to_string(
-        partial: "clinic_management/appointments/update_service_form",
-        locals: { new_appointment: new_appointment, old_appointment: old_appointment, available_services: available_services }
-      )
+      if old_appointment.status != "remarcado"
+        render_to_string(
+          partial: "clinic_management/appointments/update_service_form",
+          locals: { new_appointment: new_appointment, old_appointment: old_appointment, available_services: available_services }
+        )
+      else
+        ""
+      end
     end
 
     def available_services
@@ -146,7 +150,7 @@ module ClinicManagement
     end
 
     def set_appointment_button(ap)
-      if ap.attendance.present?
+      if ap.attendance.present? || ap.status == "remarcado"
         "--"
       else
         helpers.button_to('Marcar como presente', set_attendance_appointment_path(ap), method: :patch, remote: true, class: "py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-700")
@@ -175,7 +179,7 @@ module ClinicManagement
     end
 
     def set_cancel_button(ap)
-      if ["agendado", "remarcado"].include? ap.status
+      if ap.status == "agendado"
         helpers.button_to('Cancelar', cancel_attendance_appointment_path(ap), method: :patch, remote: true, class: "py-2 px-4 bg-red-500 text-white rounded hover:bg-red-700")
       else
         "--"
