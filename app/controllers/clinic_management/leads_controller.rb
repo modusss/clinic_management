@@ -95,7 +95,7 @@ module ClinicManagement
     end
 
     def load_leads_data(leads)
-      begin
+      # begin
         leads.map.with_index do |lead, index|
           last_invitation = lead.invitations.last
           last_appointment = lead.appointments.last
@@ -106,14 +106,12 @@ module ClinicManagement
             {header: "Telefone", content: lead.phone},
             {header: "Último indicador", content: last_invitation.referral.name},
             {header: "Quantidade de convites", content: lead.invitations.count},
-            {header: "Último atendimento", content: helpers.link_to(last_appointment.status + " - " + invite_day(last_invitation), service_path(last_appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
+            {header: "Último atendimento", content: helpers.link_to(last_appointment.status + " - " + invite_day(last_appointment), service_path(last_appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
             {header: "Mensagem", content: ""},
             {header: "Remarcação", content: ""}
           ]
         end
-      rescue
-        [ {header: "", content: ""} ]
-      end
+      # end
     end
     
 

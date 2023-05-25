@@ -1,8 +1,8 @@
 module ClinicManagement
     module GeneralHelper
 
-        def invite_day(invite)
-            service = invite.appointment.service
+        def invite_day(appointment)
+            service = appointment.service
             helpers.show_week_day(service.weekday) + " " + service.date.strftime("%d/%m") + ", " + service.start_time.strftime("%H:%M") + "h às " + service.end_time.strftime("%H:%M") + "h"
         end
 

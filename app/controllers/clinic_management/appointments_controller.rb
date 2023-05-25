@@ -23,13 +23,30 @@ module ClinicManagement
     # POST /appointments
     def create
       @appointment = Appointment.new(appointment_params)
-
       if @appointment.save
         @appointment.lead.update(last_appointment_id: @appointment.id)
         redirect_to @appointment, notice: "Appointment was successfully created."
       else
         render :new, status: :unprocessable_entity
       end
+    end
+
+    def reschedule
+      byebug
+=begin
+        @appointment = Appointment.new
+        @service = Service.find(params[:appointment][:service_id])
+        @lead = Lead.find(params[:id])
+        @appointment.lead = @lead
+        @appointment.service = @service
+        @appointment.status = "agendado"
+        if @appointment.save
+          @lead.update(last_appointment_id: @appointment.id)
+          redirect_to @service, notice: "Appointment was successfully updated."
+        else
+          render :edit, status: :unprocessable_entity
+        end
+=end
     end
 
     # PATCH/PUT /appointments/1

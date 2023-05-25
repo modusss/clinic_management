@@ -5,7 +5,7 @@ module ClinicManagement
 
     # GET /invitations
     def index
-      @rows = process_invitations_data(Invitation.all.includes(:lead, :region, appointment: :service).order(date: :desc))
+      @rows = process_invitations_data(Invitation.all.includes(:lead, :region, appointments: :service).order(date: :desc))
     end
 
     # GET /invitations/1
@@ -64,7 +64,7 @@ module ClinicManagement
           last_appointment = invite.lead.appointments.last
           [
             {header: "Data", content: invite.date.strftime("%d/%m/%Y")},
-            {header: "Para", content: helpers.link_to(invite_day(invite), service_path(invite.appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
+            {header: "Para", content: helpers.link_to(invite_day(last_appointment), service_path(last_appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
             {header: "Paciente", content: invite.patient_name},
             {header: "Responsável", content: responsible_content(invite)},   
             {header: "Telefone", content: invite.lead.phone},

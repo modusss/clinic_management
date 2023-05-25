@@ -3,11 +3,11 @@ module ClinicManagement
     belongs_to :lead
     belongs_to :referral
     belongs_to :region
-    belongs_to :appointment
+    has_many :appointments
     has_one :invitation, dependent: :destroy
     
     accepts_nested_attributes_for :lead
-    accepts_nested_attributes_for :appointment
+    # accepts_nested_attributes_for :appointment
     
   end
 end

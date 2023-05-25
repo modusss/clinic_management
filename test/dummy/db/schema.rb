@@ -10,40 +10,39 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_05_24_180115) do
+ActiveRecord::Schema[7.0].define(version: 2023_05_24_201817) do
+  # These are extensions that must be enabled in order to support this database
+  enable_extension "plpgsql"
+
   create_table "clinic_management_appointments", force: :cascade do |t|
     t.boolean "attendance"
     t.string "status"
-    t.integer "lead_id", null: false
-    t.integer "service_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "lead_id", null: false
+    t.bigint "service_id", null: false
+    t.bigint "invitation_id", null: false
+    t.index ["invitation_id"], name: "index_clinic_management_appointments_on_invitation_id"
     t.index ["lead_id"], name: "index_clinic_management_appointments_on_lead_id"
     t.index ["service_id"], name: "index_clinic_management_appointments_on_service_id"
   end
 
   create_table "clinic_management_conversions", force: :cascade do |t|
-    t.integer "lead_id", null: false
-    t.integer "customers_id", null: false
+    t.bigint "lead_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["customers_id"], name: "index_clinic_management_conversions_on_customers_id"
     t.index ["lead_id"], name: "index_clinic_management_conversions_on_lead_id"
   end
 
   create_table "clinic_management_invitations", force: :cascade do |t|
     t.string "patient_name"
     t.string "notes"
-    t.integer "lead_id", null: false
-    t.integer "referral_id", null: false
-    t.integer "region_id", null: false
-    t.integer "appointment_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "lead_id", null: false
+    t.bigint "region_id", null: false
     t.date "date"
-    t.index ["appointment_id"], name: "index_clinic_management_invitations_on_appointment_id"
     t.index ["lead_id"], name: "index_clinic_management_invitations_on_lead_id"
-    t.index ["referral_id"], name: "index_clinic_management_invitations_on_referral_id"
     t.index ["region_id"], name: "index_clinic_management_invitations_on_region_id"
   end
 
@@ -73,8 +72,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_05_24_180115) do
 
   create_table "clinic_management_services", force: :cascade do |t|
     t.integer "weekday"
-    t.time "start_time", precision: 6
-    t.time "end_time", precision: 6
+    t.time "start_time"
+    t.time "end_time"
     t.date "date"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -82,18 +81,16 @@ ActiveRecord::Schema[7.0].define(version: 2023_05_24_180115) do
 
   create_table "clinic_management_time_slots", force: :cascade do |t|
     t.integer "weekday"
-    t.time "start_time", precision: 6
-    t.time "end_time", precision: 6
+    t.time "start_time"
+    t.time "end_time"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
-  add_foreign_key "clinic_management_appointments", "leads"
-  add_foreign_key "clinic_management_appointments", "services"
-  add_foreign_key "clinic_management_conversions", "customers", column: "customers_id"
-  add_foreign_key "clinic_management_conversions", "leads"
-  add_foreign_key "clinic_management_invitations", "appointments"
-  add_foreign_key "clinic_management_invitations", "leads"
-  add_foreign_key "clinic_management_invitations", "referrals"
-  add_foreign_key "clinic_management_invitations", "regions"
+  add_foreign_key "clinic_management_appointments", "clinic_management_invitations", column: "invitation_id"
+  add_foreign_key "clinic_management_appointments", "clinic_management_leads", column: "lead_id"
+  add_foreign_key "clinic_management_appointments", "clinic_management_services", column: "service_id"
+  add_foreign_key "clinic_management_conversions", "clinic_management_leads", column: "lead_id"
+  add_foreign_key "clinic_management_invitations", "clinic_management_leads", column: "lead_id"
+  add_foreign_key "clinic_management_invitations", "clinic_management_regions", column: "region_id"
 end

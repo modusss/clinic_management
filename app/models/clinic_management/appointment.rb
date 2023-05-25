@@ -2,6 +2,6 @@ module ClinicManagement
   class Appointment < ApplicationRecord
     belongs_to :lead
     belongs_to :service
-    has_one :invitation, dependent: :destroy
+    belongs_to :invitation
   end
 end

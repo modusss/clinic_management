@@ -70,7 +70,7 @@ module ClinicManagement
       
       sorted_appointments.map.with_index(1) do |ap, index|
         attendance_class, status_class = appointment_classes(ap)
-  
+        new_appointment = ClinicManagement::Appointment.new
         [
           { header: "#", content: index },
           { header: "Paciente", content: ap.invitation.patient_name },
@@ -84,7 +84,7 @@ module ClinicManagement
           { header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "pt-2 pb-0" },          
           { header: "Observações", content: ap.invitation.notes },
           { header: "Mensagem", content: generate_message_content(ap), id: "whatsapp-link-#{ap.lead.id}" },
-          { header: "Remarcação", content: "", class: "text-orange-500" },
+          { header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500" },
           { header: "Cancelar?", content: set_cancel_button(ap), id: "cancel-attendance-button-#{ap.id}", class: "pt-2 pb-0" },
           { header: "Cliente?", content: "", class: "text-purple-500" }
         ]                 
@@ -108,6 +108,18 @@ module ClinicManagement
       [attendance_class, status_class]
     end
   
+  
+    def reschedule_form(new_appointment, old_appointment)
+      render_to_string(
+        partial: "clinic_management/appointments/update_service_form",
+        locals: { new_appointment: new_appointment, old_appointment: old_appointment, available_services: available_services }
+      )
+    end
+
+    def available_services
+      ClinicManagement::Service.where("date >= ?", Date.today)
+    end
+
     def generate_message_content(appointment)
       render_to_string(
         partial: "clinic_management/lead_messages/lead_message_form",
