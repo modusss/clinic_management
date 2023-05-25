@@ -113,15 +113,16 @@ module ClinicManagement
       if old_appointment.status != "remarcado"
         render_to_string(
           partial: "clinic_management/appointments/update_service_form",
-          locals: { new_appointment: new_appointment, old_appointment: old_appointment, available_services: available_services }
+          locals: { new_appointment: new_appointment, old_appointment: old_appointment, available_services: available_services(old_appointment.service) }
         )
       else
         ""
       end
     end
 
-    def available_services
-      ClinicManagement::Service.where("date >= ?", Date.today)
+    def available_services(exception_service)
+      exception_service_id = exception_service.id # Get the ID of the exception_service object
+      ClinicManagement::Service.where("date >= ? AND id != ?", Date.today, exception_service_id)
     end
 
     def generate_message_content(appointment)
