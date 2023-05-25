@@ -16,7 +16,8 @@ module ClinicManagement
       next_30_days = (Date.today..Date.today + 29.days)
     
       options = next_30_days.flat_map do |date|
-        weekday_slots = time_slots.select { |slot| slot.weekday == date.wday }
+        weekday = date.wday == 6 ? 7 : date.wday + 1  # ajuste aqui para fazer a correspondência correta
+        weekday_slots = time_slots.select { |slot| slot.weekday == weekday }
         weekday_slots.map do |slot|
           next if Service.exists?(
             weekday: slot.weekday,
@@ -31,6 +32,8 @@ module ClinicManagement
     
       {type: 'select', selected: "", input: :time_slot_id, name: 'Dias e horários disponíveis', options: options}
     end
+    
+    
 
     def show_week_day(weekday)
       case weekday
