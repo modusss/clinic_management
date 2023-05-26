@@ -2,10 +2,10 @@
 <div>
   <div class="row">
     <div class="col s12">
-      <%= form_with(url: replace_lead_attributes_path(lead), method: :post, remote: true, id: "whatsapp_form") do %>
+      <%= form_with(url: build_message_path(lead), method: :post, remote: true, id: "whatsapp_form") do %>
         <div class="input-field">
-          <%= select_tag :custom_message_id, options_from_collection_for_select(get_lead_messages, 'id', 'name'), prompt: "Escolha uma mensagem", class: "browser-default", onchange: "this.form.requestSubmit()"  %>
-          <%= hidden_field_tag :lead_id, lead.id %>
+          <%= select_tag :custom_message_id, options_from_collection_for_select(get_lead_messages(lead, appointment), 'id', 'name'), prompt: "Escolha uma mensagem", class: "browser-default", onchange: "this.form.requestSubmit()"  %>
+          <%= hidden_field_tag :appointment_id, (appointment.present? ? appointment.id : "") %>
         </div>
       <% end %>
       <div id="whatsapp-link-<%=lead.id%>"></div>

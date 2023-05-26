@@ -71,13 +71,20 @@ module ClinicManagement
     
     private
 
+    def generate_message_content(lead, appointment)
+      render_to_string(
+        partial: "clinic_management/lead_messages/lead_message_form",
+        locals: { lead: lead, appointment: appointment }
+      )
+    end
+
     def get_lead_data
       @lead.appointments.map.with_index do |ap, index|
         [
           {header: "#", content: index + 1},
-          {header: "Data do atendimento", content: helpers.link_to(ap.service.date.strftime("%d/%m/%Y"), service_path(ap.service), class: "text-blue-500 hover:text-blue-700")},         
-          {header: "Comparecimento", content: (ap.attendance == true ? "Sim" : "Não")},
-          {header: "Status", content: ap.status},
+          {header: "Data do atendimento", content: helpers.link_to(invite_day(ap), service_path(ap.service), class: "text-blue-500 hover:text-blue-700")},         
+          {header: "Comparecimento", content: (ap.attendance == true ? "Sim" : "Não"), class: helpers.attendance_class(ap)},
+          {header: "Status", content: ap.status, class: helpers.status_class(ap)},
           {header: "Data do convite", content: ap.invitation.created_at.strftime("%d/%m/%Y")},
           {header: "Convidado por", content: ap.invitation.referral.name},
           {header: "Região", content: ap.invitation.region.name}        
@@ -107,7 +114,7 @@ module ClinicManagement
             {header: "Último indicador", content: last_invitation.referral.name},
             {header: "Quantidade de convites", content: lead.invitations.count},
             {header: "Último atendimento", content: helpers.link_to(last_appointment.status + " - " + invite_day(last_appointment), service_path(last_appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
-            {header: "Mensagem", content: ""},
+            {header: "Mensagem", content: generate_message_content(lead, nil), id: "whatsapp-link-#{lead.id}" },
             {header: "Remarcação", content: ""}
           ]
         end

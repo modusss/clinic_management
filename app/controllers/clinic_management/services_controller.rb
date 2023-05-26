@@ -66,10 +66,8 @@ module ClinicManagement
     end
 
     def process_appointments_data(appointments)
-      sorted_appointments = appointments.sort_by { |ap| ap.invitation.patient_name }
-      
+      sorted_appointments = appointments.sort_by { |ap| ap.invitation.patient_name }  
       sorted_appointments.map.with_index(1) do |ap, index|
-        attendance_class, status_class = appointment_classes(ap)
         new_appointment = ClinicManagement::Appointment.new
         [
           { header: "#", content: index },
@@ -78,36 +76,18 @@ module ClinicManagement
           { header: "Endereço", content: ap.invitation.lead.address },
           { header: "Região", content: ap.invitation.region.name },
           { header: "Indicação", content: ap.invitation.referral.name },
-          { header: "Status", content: ap.status, id: "status-#{ap.id}", class: status_class },          
-          { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: attendance_class },          
+          { header: "Status", content: ap.status, id: "status-#{ap.id}", class: helpers.status_class(ap) },          
+          { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
           { header: "Nº de Comparecimentos", content: ap.lead.appointments.count },
           { header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "pt-2 pb-0" },          
           { header: "Observações", content: ap.invitation.notes },
-          { header: "Mensagem", content: generate_message_content(ap), id: "whatsapp-link-#{ap.lead.id}" },
+          { header: "Mensagem", content: generate_message_content(ap.lead, ap), id: "whatsapp-link-#{ap.lead.id}" },
           { header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500" },
           { header: "Cancelar?", content: set_cancel_button(ap), id: "cancel-attendance-button-#{ap.id}", class: "pt-2 pb-0" },
           { header: "Cliente?", content: "", class: "text-purple-500" }
         ]                 
       end
-    end
-  
-    def appointment_classes(appointment)
-      attendance_class = appointment.attendance ? "text-green-600" : "text-red-600"
-  
-      status_class = case appointment.status
-                     when "agendado"
-                       "text-yellow-600"
-                     when "remarcado"
-                       "text-purple-600"
-                     when "cancelado"
-                       "text-red-600"
-                     else
-                       ""
-                     end
-  
-      [attendance_class, status_class]
-    end
-  
+    end  
   
     def reschedule_form(new_appointment, old_appointment)
       if old_appointment.status != "remarcado"
@@ -125,10 +105,10 @@ module ClinicManagement
       ClinicManagement::Service.where("date >= ? AND id != ?", Date.today, exception_service_id)
     end
 
-    def generate_message_content(appointment)
+    def generate_message_content(lead, appointment)
       render_to_string(
         partial: "clinic_management/lead_messages/lead_message_form",
-        locals: { lead: appointment.lead }
+        locals: { lead: lead, appointment: appointment }
       )
     end
 

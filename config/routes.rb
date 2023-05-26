@@ -22,7 +22,7 @@ ClinicManagement::Engine.routes.draw do
       get 'cancelled'
     end
   end
-  post 'replace_lead_attributes/:order_id', to: 'lead_messages#replace_lead_attributes', as: 'replace_lead_attributes'
+  post 'build_message/:lead_id', to: 'lead_messages#build_message', as: 'build_message'
 
 
 end

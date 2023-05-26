@@ -1,6 +1,33 @@
 module ClinicManagement
     module GeneralHelper
 
+
+        def format_day_of_week(date)
+            I18n.l(date, format: "%A")
+        end
+
+        def format_month(date)
+            I18n.l(date, format: "%B")
+        end
+          
+
+        def status_class(appointment)
+            case appointment.status
+            when "agendado"
+                "text-yellow-600"
+            when "remarcado"
+                "text-purple-600"
+            when "cancelado"
+                "text-red-600"
+            else
+                ""
+            end
+        end
+
+        def attendance_class(appointment)
+            appointment.attendance ? "text-green-600" : "text-red-600"
+        end
+
         def invite_day(appointment)
             service = appointment.service
             helpers.show_week_day(service.weekday) + " " + service.date.strftime("%d/%m") + ", " + service.start_time.strftime("%H:%M") + "h às " + service.end_time.strftime("%H:%M") + "h"

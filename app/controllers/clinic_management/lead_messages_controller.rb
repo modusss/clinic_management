@@ -49,11 +49,12 @@ module ClinicManagement
       redirect_to lead_messages_path, notice: 'Mensagem customizada excluída com sucesso.'
     end
 
-    def replace_lead_attributes
+    def build_message
       begin
-        message = LeadMessage.find(params[:custom_message_id])
-        lead = Lead.find(params[:lead_id])
-        message = get_message(message, lead)
+        message = LeadMessage.find_by(id: params[:custom_message_id])
+        appointment = Appointment.find_by(id: params[:appointment_id])
+        lead = Lead.find_by(id: params[:lead_id])
+        message = get_message(message, lead, appointment)
         respond_to do |format|
           format.turbo_stream do
             render turbo_stream: turbo_stream.append(
@@ -68,12 +69,23 @@ module ClinicManagement
   
     private
 
-    def get_message(message, lead)
-      message.text
-      .gsub("{PRIMEIRO_NOME_CLIENTE}", lead.name.split(" ").first)
-      .gsub("{NOME_COMPLETO_CLIENTE}", lead.name)
+    def get_message(message, lead, appointment)
+      result = message.text
+      .gsub("{PRIMEIRO_NOME_PACIENTE}", lead.name.split(" ").first)
+      .gsub("{NOME_COMPLETO_PACIENTE}", lead.name)
       .gsub("\n", "%0A")
       .gsub("\r\n", "%0A")
+      if appointment.present?
+        service = appointment.service
+        result = result
+        .gsub("{DIA_SEMANA_ATENDIMENTO}", helpers.format_day_of_week(service.date))
+        .gsub("{MES_DO_ATENDIMENTO}", format_month(service.date))
+        .gsub("{DIA_ATENDIMENTO_NUMERO}", service.date.strftime("%d"))
+        .gsub("{HORARIO_DE_INICIO}", service.start_time.strftime("%H:%M"))
+        .gsub("{HORARIO_DE_TERMINO}", service.end_time.strftime("%H:%M"))
+        .gsub("{DATA_DO_ATENDIMENTO}", service.date.strftime("%d/%m/%Y"))
+      end
+      result
     end
   
     def set_message
