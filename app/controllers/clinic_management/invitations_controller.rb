@@ -65,7 +65,7 @@ module ClinicManagement
           [
             {header: "Data", content: invite.date.strftime("%d/%m/%Y")},
             {header: "Para", content: helpers.link_to(invite_day(last_appointment), service_path(last_appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
-            {header: "Paciente", content: invite.patient_name},
+            {header: "Paciente", content: helpers.link_to(invite.patient_name, lead_path(invite.lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
             {header: "Responsável", content: responsible_content(invite)},   
             {header: "Telefone", content: invite.lead.phone},
             {header: "Observação", content: invite.notes},
