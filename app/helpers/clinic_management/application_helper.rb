@@ -31,6 +31,10 @@ module ClinicManagement
     end
     
     def table_wrapper(id, rows, inner_classes, fix_to)
+      if rows.empty?
+        return content_tag(:p, 'Não houve resultados.', class: 'text-red-600')
+      end
+      
       content_tag(:table, class: inner_classes) do
         table_header(rows.first.map { |cell| cell[:header] }, fix_to) + table_body(rows, fix_to)
       end
