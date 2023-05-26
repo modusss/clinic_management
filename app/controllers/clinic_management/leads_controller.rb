@@ -87,7 +87,8 @@ module ClinicManagement
           {header: "Status", content: ap.status, class: helpers.status_class(ap)},
           {header: "Data do convite", content: ap.invitation.created_at.strftime("%d/%m/%Y")},
           {header: "Convidado por", content: ap.invitation.referral.name},
-          {header: "Região", content: ap.invitation.region.name}        
+          {header: "Região", content: ap.invitation.region.name},
+          {header: "Mensagem", content: generate_message_content(@lead, ap), id: "whatsapp-link-#{@lead.id}" }
         ]
       end
     end
@@ -114,7 +115,7 @@ module ClinicManagement
             {header: "Último indicador", content: last_invitation.referral.name},
             {header: "Quantidade de convites", content: lead.invitations.count},
             {header: "Último atendimento", content: helpers.link_to(last_appointment.status + " - " + invite_day(last_appointment), service_path(last_appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
-            {header: "Mensagem", content: generate_message_content(lead, nil), id: "whatsapp-link-#{lead.id}" },
+            {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}" },
             {header: "Remarcação", content: ""}
           ]
         end
