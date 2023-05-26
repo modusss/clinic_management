@@ -14,13 +14,13 @@ module ClinicManagement
 
     # GET /invitations/new
     def new
-      # @invitation = Invitation.new
       @services = Service.all    
       @regions = Region.all
       @invitation = Invitation.new
-      @appointment = @invitation.build_appointment
+      @appointment = @invitation.appointments.build
       @lead = @invitation.build_lead
     end
+    
 
     # GET /invitations/1/edit
     def edit
