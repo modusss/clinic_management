@@ -113,11 +113,10 @@ module ClinicManagement
             {header: "Responsável", content: responsible_content(last_invitation)},
             {header: "Telefone", content: lead.phone},
             {header: "Último indicador", content: last_invitation.referral.name},
-            {header: "Quantidade de convites", content: lead.invitations.count},
+            {header: "Qtd. de convites", content: lead.invitations.count},
+            {header: "Qtd. de atendimentos", content: lead.appointments.count},
             {header: "Último atendimento", content: helpers.link_to(last_appointment.status + " - " + invite_day(last_appointment), service_path(last_appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
-            {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}" },
-            {header: "Remarcação", content: ""}
-          ]
+            {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}" }          ]
         end
       # end
     end
