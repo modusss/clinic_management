@@ -73,7 +73,7 @@ module ClinicManagement
         new_appointment = ClinicManagement::Appointment.new
         [
           { header: "#", content: index },
-          { header: "Paciente", content: ap.invitation.patient_name },
+          { header: "Paciente", content: helpers.link_to(ap.invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700") },
           { header: "Telefone", content: ap.lead.phone },
           { header: "Endereço", content: ap.invitation.lead.address },
           { header: "Região", content: ap.invitation.region.name },
@@ -137,16 +137,14 @@ module ClinicManagement
         total_appointments, scheduled, rescheduled, canceleds = appointment_counts(ser)
         [
           { header: "#", content: index + 1 },
-          { header: "Data", content: ser.date.strftime("%d/%m/%Y") },
+          { header: "Data", content: helpers.link_to(ser.date.strftime("%d/%m/%Y"), ser, class: "text-blue-500 hover:text-blue-700") },
           { header: "Dia da semana", content: helpers.show_week_day(ser.weekday) },
           { header: "Início", content: ser.start_time.strftime("%H:%M") },
           { header: "Fim", content: ser.end_time.strftime("%H:%M") },
           { header: "Pacientes", content: total_appointments },
           percentage_content("Presentes", scheduled, total_appointments, "text-blue-700", "bg-blue-200"),
           percentage_content("Remarcados", rescheduled, total_appointments, "text-green-600", "bg-green-200"),
-          percentage_content("Cancelados", canceleds, total_appointments, "text-red-600", "bg-red-200"),
-          { header: "Detalhes", content: helpers.link_to("Detalhes", ser, class: "text-blue-500 hover:text-blue-700") }
-        ]
+          percentage_content("Cancelados", canceleds, total_appointments, "text-red-600", "bg-red-200")        ]
       end
     end
 

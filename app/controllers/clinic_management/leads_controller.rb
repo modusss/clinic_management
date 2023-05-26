@@ -75,7 +75,7 @@ module ClinicManagement
       @lead.appointments.map.with_index do |ap, index|
         [
           {header: "#", content: index + 1},
-          {header: "Data do atendimento", content: ap.service.date.strftime("%d/%m/%Y")},         
+          {header: "Data do atendimento", content: helpers.link_to(ap.service.date.strftime("%d/%m/%Y"), service_path(ap.service), class: "text-blue-500 hover:text-blue-700")},         
           {header: "Comparecimento", content: (ap.attendance == true ? "Sim" : "Não")},
           {header: "Status", content: ap.status},
           {header: "Data do convite", content: ap.invitation.created_at.strftime("%d/%m/%Y")},

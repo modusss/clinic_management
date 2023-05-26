@@ -1,5 +1,5 @@
 
-<%= breadcrumb({title: "Início", path: services_path}, {title: "Convites", path: nil}) %>
+<%= breadcrumb({title: "Todos os atendimentos", path: services_path}, {title: "Atendimento de " + @service.date.strftime("%d/%m"), path: nil}) %>
 
 <!-- Restante do código da view -->
 
