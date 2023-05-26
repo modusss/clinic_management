@@ -98,7 +98,7 @@ module ClinicManagement
                      when "agendado"
                        "text-yellow-600"
                      when "remarcado"
-                       "text-orange-600"
+                       "text-purple-600"
                      when "cancelado"
                        "text-red-600"
                      else
