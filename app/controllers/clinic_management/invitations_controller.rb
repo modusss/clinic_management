@@ -19,14 +19,12 @@ module ClinicManagement
       @invitation = Invitation.new
       @appointment = @invitation.appointments.build
       @lead = @invitation.build_lead
+      @referrals = Referral.all    
     end
-    
-    
 
     # GET /invitations/1/edit
     def edit
     end
-
 
     def create
       begin
@@ -43,8 +41,16 @@ module ClinicManagement
           @appointment.lead = @lead
           @appointment.save!
         end
-    
-        redirect_to @invitation, notice: 'Invitation was successfully created.'
+        invitation_list_locals = {invitation: @invitation, appointment: @appointment}
+        @associated_service = @service
+        new_form_sets
+        respond_to do |format|
+          format.turbo_stream do
+            render turbo_stream: turbo_stream.prepend("invitations_list", partial: "invitation", locals: invitation_list_locals) +
+                                 turbo_stream.replace("new_invitation", partial: "form", locals: { invitation: @invitation })
+          end        
+        end
+        # redirect_to new_invitation_path, notice: 'Convite de ' + @lead.name + ' criado com sucesso!'
       rescue ActiveRecord::RecordInvalid
         render :new
       end
@@ -67,6 +73,15 @@ module ClinicManagement
 
     private
 
+      def new_form_sets
+        @services = Service.all    
+        @regions = Region.all
+        @invitation = Invitation.new
+        @appointment = @invitation.appointments.build
+        @lead = @invitation.build_lead
+        @referrals = Referral.all
+      end
+
       def process_invitations_data(invitations)
         invitations.map do |invite|
           last_appointment = invite.lead.appointments.last
@@ -85,7 +100,12 @@ module ClinicManagement
       end
 
       def set_lead_name
-
+        @services = Service.all    
+        @regions = Region.all
+        @invitation = Invitation.new
+        @appointment = @invitation.appointments.build
+        @lead = @invitation.build_lead
+        @referrals = Referral.all
       end
 
       def responsible_content(invite)
@@ -104,6 +124,7 @@ module ClinicManagement
           :notes,
           :region_id,
           :patient_name,
+          :referral_id,
           appointments_attributes: [
             :id,
             :service_id
