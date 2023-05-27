@@ -1,28 +1,5 @@
-<div id="<%= dom_id invitation %>">
-  <p>
-    <strong>Patient name:</strong>
-    <%= invitation.patient_name %>
-  </p>
-
-  <p>
-    <strong>Notes:</strong>
-    <%= invitation.notes %>
-  </p>
-
-  <p>
-    <strong>Lead:</strong>
-    <%= invitation.lead_id %>
-  </p>
-
-  <p>
-    <strong>Referral:</strong>
-    <%= invitation.referral_id %>
-  </p>
-
-  <p>
-    <strong>Region:</strong>
-    <%= invitation.region_id %>
-  </p>
-
-
-</div>
+<tr>
+  <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><%= invitation.lead.name %></td>
+  <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><%= invitation.lead.phone %></td>
+  <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><%= invite_day appointment %></td>
+</tr>
