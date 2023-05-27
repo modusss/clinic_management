@@ -30,8 +30,28 @@ module ClinicManagement
 
         def invite_day(appointment)
             service = appointment.service
-            helpers.show_week_day(service.weekday) + " " + service.date.strftime("%d/%m") + ", " + service.start_time.strftime("%H:%M") + "h às " + service.end_time.strftime("%H:%M") + "h"
+            show_week_day(service.weekday) + " " + service.date.strftime("%d/%m") + ", " + service.start_time.strftime("%H:%M") + "h às " + service.end_time.strftime("%H:%M") + "h"
         end
+
+
+        def show_week_day(weekday)
+            case weekday
+            when 1
+              "Domingo"
+            when 2
+              "Segunda-feira"
+            when 3
+              "Terça-feira"
+            when 4
+              "Quarta-feira"
+            when 5
+              "Quinta-feira"
+            when 6
+              "Sexta-feira"
+            when 7
+              "Sábado"
+            end
+          end
 
         def render_menu(tabs)
             html = '<div class="mb-6">'

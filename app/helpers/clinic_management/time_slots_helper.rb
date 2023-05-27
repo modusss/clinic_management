@@ -33,26 +33,6 @@ module ClinicManagement
       {type: 'select', selected: "", input: :time_slot_id, name: 'Dias e horários disponíveis', options: options}
     end
     
-    
-
-    def show_week_day(weekday)
-      case weekday
-      when 1
-        "Domingo"
-      when 2
-        "Segunda-feira"
-      when 3
-        "Terça-feira"
-      when 4
-        "Quarta-feira"
-      when 5
-        "Quinta-feira"
-      when 6
-        "Sexta-feira"
-      when 7
-        "Sábado"
-      end
-    end
 
   end
 end
