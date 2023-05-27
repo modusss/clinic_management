@@ -14,7 +14,7 @@
   <div class="mb-4">
     <%= form.label "Dia da marcação", class: "block text-gray-700 font-bold" %>
     <%= form.collection_select :date, 
-      [        ["Hoje, " + Date.today.strftime("%d/%m/%Y"), Date.today],
+      [ ["Hoje, " + Date.today.strftime("%d/%m/%Y"), Date.today],
         ["Ontem, " + (Date.today - 1.day).strftime("%d/%m/%Y"), (Date.today - 1.day)],
         ["Há 2 dias, " + (Date.today - 2.days).strftime("%d/%m/%Y"), (Date.today - 2.days)],
         ["Há 3 dias, " + (Date.today - 3.days).strftime("%d/%m/%Y"), (Date.today - 3.days)]
@@ -31,7 +31,7 @@
     <%= form.collection_select :region_id, @regions, :id, :name, {}, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
   </div>
 
-  <%= form.fields_for :appointment do |appointment_fields| %>
+  <%= form.fields_for :appointments do |appointment_fields| %>
     <div class="mb-4">
       <%= appointment_fields.label "Dia destinado", class: "block text-gray-700 font-bold" %>
       <%= appointment_fields.select :service_id, options_for_select(@services.map { |s| [description_service(s), s.id] }), {}, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>

@@ -21,24 +21,32 @@ module ClinicManagement
       @lead = @invitation.build_lead
     end
     
+    
 
     # GET /invitations/1/edit
     def edit
     end
 
-    # POST /invitations
+
     def create
-      @invitation = build_invitation_with_associations
-      result = save_all_and_report_errors(@invitation.appointment, @invitation)
-      if result[:status] == :error
-        @invitation.lead.destroy
-        result[:errors].each do |model, error_messages|
-          puts "Errors for #{model.class.name}:"
-          error_messages.each { |message| puts "- #{message}" }
+      begin
+        ActiveRecord::Base.transaction do
+          @lead = Lead.create!(invitation_params[:lead_attributes])
+          @invitation = Invitation.new(invitation_params.except(:lead_attributes, :appointments_attributes))
+          @invitation.lead = @lead
+          @invitation.referral = Referral.last
+          @invitation.save!
+          @lead.name = @invitation.patient_name if @lead.name.blank?
+          @lead.save               
+          @appointment = @invitation.appointments.build(invitation_params[:appointments_attributes]["0"])
+          @appointment.status = "agendado"
+          @appointment.lead = @lead
+          @appointment.save!
         end
-      else
-        associate_appointment_with_lead
-        redirect_to @invitation, notice: "Invitation was successfully created."
+    
+        redirect_to @invitation, notice: 'Invitation was successfully created.'
+      rescue ActiveRecord::RecordInvalid
+        render :new
       end
     end
 
@@ -76,58 +84,14 @@ module ClinicManagement
         end
       end
 
+      def set_lead_name
+
+      end
+
       def responsible_content(invite)
         (invite.lead.name != invite.patient_name) ? invite.lead.name : ""
       end
-
-      def associate_appointment_with_lead
-        appointment = @invitation.appointment
-        appointment.lead = @invitation.lead
-        appointment.save
-      end
-
-      def build_invitation_with_associations
-        Invitation.new(invitation_params).tap do |invitation|
-          invitation.lead = set_lead(invitation)
-          if invitation.lead.save # Save the Lead first
-            invitation.appointment = set_appointment(invitation, invitation.lead)
-            invitation.referral = Referral.first
-          end
-        end
-      end
-
-      def save_all_and_report_errors(*models)
-        errors = {}
-        all_saved = models.all? do |model|
-          if model.save
-            true
-          else
-            errors[model] = model.errors.full_messages
-            false
-          end
-        end
-        all_saved ? { status: :success } : { status: :error, errors: errors }
-      end
       
-
-      def set_lead(invitation)
-        params = invitation_params[:lead_attributes]
-        invitation.build_lead(
-          name: params[:name].blank? ? invitation.patient_name : params[:name],
-          phone: params[:phone],
-          address: params[:address]
-        )
-      end
-      
-      def set_appointment(invitation, lead)
-        invitation.build_appointment.tap do |appointment|
-          appointment.service_id = invitation_params[:appointment_attributes][:service_id]
-          appointment.status = "agendado"
-          appointment.lead = lead
-        end
-      end
-      
-
       # Use callbacks to share common setup or constraints between actions.
       def set_invitation
         @invitation = Invitation.find(params[:id])
@@ -140,7 +104,8 @@ module ClinicManagement
           :notes,
           :region_id,
           :patient_name,
-          appointment_attributes: [
+          appointments_attributes: [
+            :id,
             :service_id
           ],
           lead_attributes: [
@@ -149,6 +114,6 @@ module ClinicManagement
             :address
           ]
         )      
-      end
+      end      
   end
 end

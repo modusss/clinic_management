@@ -112,16 +112,24 @@ module ClinicManagement
             {header: "Paciente", content: helpers.link_to(lead.name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
             {header: "Responsável", content: responsible_content(last_invitation)},
             {header: "Telefone", content: lead.phone},
-            {header: "Último indicador", content: last_invitation.referral.name},
+            {header: "Último indicador", content: last_referral(last_invitation)},
             {header: "Qtd. de convites", content: lead.invitations.count},
             {header: "Qtd. de atendimentos", content: lead.appointments.count},
-            {header: "Último atendimento", content: helpers.link_to(last_appointment.status + " - " + invite_day(last_appointment), service_path(last_appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
+            {header: "Último atendimento", content: last_appointment_link(last_appointment)},
             {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}" }          ]
         end
       # end
     end
-    
 
+    def last_referral(last_invitation)
+      last_invitation&.referral&.name || ""
+    end
+
+    def last_appointment_link(last_appointment)
+      last_appointment.present? ? helpers.link_to("#{last_appointment.status} - #{invite_day(last_appointment)}", service_path(last_appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank") : ""
+    end
+    
+    
       def responsible_content(invite)
         if invite.present?
           (invite.lead.name != invite.patient_name) ? invite.lead.name : ""

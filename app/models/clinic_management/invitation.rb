@@ -4,7 +4,7 @@ module ClinicManagement
     belongs_to :referral
     belongs_to :region
     has_many :appointments
-    
+
     accepts_nested_attributes_for :lead
     accepts_nested_attributes_for :appointments
   end
