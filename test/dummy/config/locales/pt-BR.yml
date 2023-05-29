@@ -5,15 +5,13 @@ pt-BR:
       update: "Atualizar %{model}"
       delete: "Remover %{model}"
   activerecord:
-      models:
-        region: "região"
-        user: "usuário"
-          one: "Usuário"
-          other: "Usuários"
-        region:
-          one: "Região"
-          other: "Regiões"
-      attributes:
-        user:
-          name: "Nome"
-          email: "E-mail"
+    models:
+      lead: "paciente"
+      region: "região"
+      user: "usuário"
+      invitation: "convite"
+    attributes:
+      lead:
+        phone: "telefone"
+      invitation:
+        patient_name: "nome do paciente"

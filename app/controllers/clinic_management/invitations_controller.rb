@@ -5,7 +5,11 @@ module ClinicManagement
 
     # GET /invitations
     def index
-      @rows = process_invitations_data(Invitation.all.includes(:lead, :region, appointments: :service).order(date: :desc))
+      if Invitation.all.present?
+        @rows = process_invitations_data(Invitation.all.includes(:lead, :region, appointments: :service).order(date: :desc))
+      else
+        @rows = ""
+      end
     end
 
     # GET /invitations/1
@@ -32,7 +36,6 @@ module ClinicManagement
           @lead = Lead.create!(invitation_params[:lead_attributes])
           @invitation = Invitation.new(invitation_params.except(:lead_attributes, :appointments_attributes))
           @invitation.lead = @lead
-          @invitation.referral = Referral.last
           @invitation.save!
           @lead.name = @invitation.patient_name if @lead.name.blank?
           @lead.save               
@@ -42,18 +45,25 @@ module ClinicManagement
           @appointment.save!
         end
         invitation_list_locals = {invitation: @invitation, appointment: @appointment}
-        @associated_service = @service
+        before_referral = @invitation.referral
         new_form_sets
+        @invitation.referral = before_referral
         respond_to do |format|
           format.turbo_stream do
             render turbo_stream: turbo_stream.prepend("invitations_list", partial: "invitation", locals: invitation_list_locals) +
-                                 turbo_stream.replace("new_invitation", partial: "form", locals: { invitation: @invitation })
+                                 turbo_stream.replace("new_invitation", partial: "form", locals: { invitation: @invitation, referrals: Referral.all, regions: Region.all })
           end        
         end
         # redirect_to new_invitation_path, notice: 'Convite de ' + @lead.name + ' criado com sucesso!'
-      rescue ActiveRecord::RecordInvalid
-        render :new
+      rescue ActiveRecord::RecordInvalid => exception
+        validation_content = exception.record.errors.full_messages.join(', ')
+        respond_to do |format|
+          format.turbo_stream do
+            render turbo_stream: turbo_stream.update("validation", validation_content)
+          end
+        end
       end
+      
     end
 
     # PATCH/PUT /invitations/1
@@ -86,7 +96,7 @@ module ClinicManagement
         invitations.map do |invite|
           last_appointment = invite.lead.appointments.last
           [
-            {header: "Data", content: invite.date.strftime("%d/%m/%Y")},
+            {header: "Data", content: invite&.date&.strftime("%d/%m/%Y")},
             {header: "Para", content: helpers.link_to(invite_day(last_appointment), service_path(last_appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
             {header: "Paciente", content: helpers.link_to(invite.patient_name, lead_path(invite.lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
             {header: "Responsável", content: responsible_content(invite)},   

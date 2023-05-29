@@ -2,12 +2,12 @@
 
 <div class="container mx-auto px-4 mt-6">
   <h1 class="text-2xl font-bold mb-4">Novo Convite</h1>
-<%= render "form", invitation: @invitation %>
+  <%= render "form", invitation: @invitation, referrals: @referrals, regions: @regions %>
   <br>
 
 <div class="w-full overflow-x-auto max-w-2/3 mx-auto">
 
-<h2 class="w-full max-w-lg mx-auto mt-6 text-xl font-bold mb-4">Convites criados</h2>
+<h2 class="w-full max-w-lg mx-auto mt-6 text-xl font-bold mb-4">Convites lançados agora</h2>
     <table class="w-full max-w-lg mx-auto mt-6">
       <thead>
         <tr>

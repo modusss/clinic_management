@@ -7,5 +7,8 @@ module ClinicManagement
 
     accepts_nested_attributes_for :lead
     accepts_nested_attributes_for :appointments
+
+    validates :patient_name, presence: true
+
   end
 end

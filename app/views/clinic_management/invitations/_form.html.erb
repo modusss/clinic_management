@@ -12,8 +12,8 @@
 
   <h2 class="text-lg font-bold mb-4">1. Dados do marcação</h2>
   <div class="mb-4">
-    <%#= form.label :referral_id, "Indicador", class: "block text-gray-700 font-bold" %>
-    <%#= form.collection_select :referral_id, referrals, :id, :name, {prompt: 'Selecione um indicador'}, {class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline"} %>
+    <%= form.label :referral_id, "Indicador", class: "block text-gray-700 font-bold" %>
+    <%= form.collection_select :referral_id, referrals, :id, :name, {selected: invitation.referral_id}, {class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline"} %>
   </div>
   <div class="mb-4">
     <%= form.label "Dia da marcação", class: "block text-gray-700 font-bold" %>
@@ -31,7 +31,7 @@
   </div>
    <div class="mb-4">
     <%= form.label "Região", class: "block text-gray-700 font-bold" %>
-    <%= form.collection_select :region_id, @regions, :id, :name, {}, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+    <%= form.collection_select :region_id, regions, :id, :name, {}, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
   </div>
 
 
@@ -73,5 +73,10 @@
 
   <div class="my-4">
     <%= form.submit "Adicionar novo paciente", class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" %>
+  <br>
+  <br>
+  <div class="text-red-700" id="validation"></div>
+
 </div>
 <% end %>
+
