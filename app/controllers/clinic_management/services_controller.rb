@@ -69,19 +69,22 @@ module ClinicManagement
       sorted_appointments = appointments.sort_by { |ap| ap.invitation.patient_name }  
       sorted_appointments.map.with_index(1) do |ap, index|
         new_appointment = ClinicManagement::Appointment.new
+        lead = ap.lead
+        invitation = ap.invitation
         [
           { header: "#", content: index },
-          { header: "Paciente", content: helpers.link_to(ap.invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700") },
-          { header: "Telefone", content: ap.lead.phone },
-          { header: "Endereço", content: ap.invitation.lead.address },
-          { header: "Região", content: ap.invitation.region.name },
-          { header: "Indicação", content: ap.invitation.referral.name },
+          { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700") },
+          { header: "Responsável", content: ((lead.name == invitation.patient_name) ? "" : lead.name) },
+          { header: "Telefone", content: lead.phone },
+          { header: "Endereço", content: invitation.lead.address },
+          { header: "Região", content: invitation.region.name },
+          { header: "Indicação", content: invitation.referral.name },
           { header: "Status", content: ap.status, id: "status-#{ap.id}", class: helpers.status_class(ap) },          
           { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
-          { header: "Nº de Comparecimentos", content: ap.lead.appointments.count },
+          { header: "Nº de Comparecimentos", content: lead.appointments.count },
           { header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "pt-2 pb-0" },          
-          { header: "Observações", content: ap.invitation.notes },
-          { header: "Mensagem", content: generate_message_content(ap.lead, ap), id: "whatsapp-link-#{ap.lead.id}" },
+          { header: "Observações", content: invitation.notes },
+          { header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id}" },
           { header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500" },
           { header: "Cancelar?", content: set_cancel_button(ap), id: "cancel-attendance-button-#{ap.id}", class: "pt-2 pb-0" },
           { header: "Cliente?", content: "", class: "text-purple-500" }

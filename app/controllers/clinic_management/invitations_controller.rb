@@ -51,7 +51,9 @@ module ClinicManagement
         respond_to do |format|
           format.turbo_stream do
             render turbo_stream: turbo_stream.prepend("invitations_list", partial: "invitation", locals: invitation_list_locals) +
-                                 turbo_stream.replace("new_invitation", partial: "form", locals: { invitation: @invitation, referrals: Referral.all, regions: Region.all })
+                                 turbo_stream.replace("new_invitation", partial: "form", locals: { invitation: @invitation, referrals: Referral.all, regions: Region.all }) + 
+                                 turbo_stream.update("validation", "")
+
           end        
         end
         # redirect_to new_invitation_path, notice: 'Convite de ' + @lead.name + ' criado com sucesso!'
