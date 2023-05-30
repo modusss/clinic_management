@@ -35,7 +35,11 @@
           Cliente convertido?
         </dt>
         <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-          <%= lead.converted %>
+          <% if lead.leads_conversion.present? %>
+            <%= link_to "Página do cliente", main_app.customer_orders_path(lead.customer), class: "text-blue-500 hover:text-blue-800 underline" %>
+          <% else %>
+            <%= link_to "Converter para cliente", main_app.new_conversion_path(lead_id: lead.id), class: "text-red-500 hover:text-red-800 underline" %>
+          <% end %>
         </dd>
       </div>
     </dl>

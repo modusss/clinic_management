@@ -87,10 +87,18 @@ module ClinicManagement
           { header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id}" },
           { header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500" },
           { header: "Cancelar?", content: set_cancel_button(ap), id: "cancel-attendance-button-#{ap.id}", class: "pt-2 pb-0" },
-          { header: "Cliente?", content: "", class: "text-purple-500" }
+          { header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500" }
         ]                 
       end
     end  
+
+    def set_conversion_link(lead)
+       if lead.leads_conversion.present?
+         helpers.link_to("Página do cliente", main_app.customer_orders_path(lead.customer), class: "text-blue-500 hover:text-blue-800 underline")
+       else
+         helpers.link_to("Converter para cliente", main_app.new_conversion_path(lead_id: lead.id), class: "text-red-500 hover:text-red-800 underline")
+       end
+    end
   
     def reschedule_form(new_appointment, old_appointment)
       if old_appointment.status != "remarcado"
