@@ -6,12 +6,12 @@ pt-BR:
       delete: "Remover %{model}"
   activerecord:
     models:
-      lead: "paciente"
-      region: "região"
+      clinic_management_lead: "paciente"
+      clinic_management_region: "região"
       user: "usuário"
-      invitation: "convite"
+      clinic_management_invitation: "convite"
     attributes:
-      lead:
+      clinic_management_lead:
         phone: "telefone"
-      invitation:
+      clinic_management_invitation:
         patient_name: "nome do paciente"
