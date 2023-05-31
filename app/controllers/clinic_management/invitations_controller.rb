@@ -45,17 +45,28 @@ module ClinicManagement
           @appointment.save!
         end
         invitation_list_locals = {invitation: @invitation, appointment: @appointment}
-        before_referral = @invitation.referral
+        # attributes that is going to be kept as slected fields when reloads form for next invitation
+        before_attributes = {
+          referral: @invitation.referral.id,
+          region: @invitation.region.id,
+          service: @appointment.service.id,
+          date: @invitation.date
+        }
         new_form_sets
-        @invitation.referral = before_referral
+        new_form_locals = { 
+            invitation: @invitation, 
+            referrals: Referral.all, 
+            regions: Region.all
+        }
         respond_to do |format|
           format.turbo_stream do
             render turbo_stream: turbo_stream.prepend("invitations_list", partial: "invitation", locals: invitation_list_locals) +
-                                 turbo_stream.replace("new_invitation", partial: "form", locals: { invitation: @invitation, referrals: Referral.all, regions: Region.all }) + 
+                                 turbo_stream.replace("new_invitation", partial: "form", locals: new_form_locals.merge(before_attributes) ) + 
                                  turbo_stream.update("validation", "")
 
           end        
         end
+
         # redirect_to new_invitation_path, notice: 'Convite de ' + @lead.name + ' criado com sucesso!'
       rescue ActiveRecord::RecordInvalid => exception
         validation_content = exception.record.errors.full_messages.join(', ')
