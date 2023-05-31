@@ -34,50 +34,17 @@ module ClinicManagement
       begin
         ActiveRecord::Base.transaction do
           @lead = Lead.create!(invitation_params[:lead_attributes])
-          @invitation = Invitation.new(invitation_params.except(:lead_attributes, :appointments_attributes))
-          @invitation.lead = @lead
-          @invitation.save!
-          @lead.name = @invitation.patient_name if @lead.name.blank?
-          @lead.save               
-          @appointment = @invitation.appointments.build(invitation_params[:appointments_attributes]["0"])
-          @appointment.status = "agendado"
-          @appointment.lead = @lead
+          @invitation = @lead.invitations.build(invitation_params.except(:lead_attributes, :appointments_attributes))
+          @lead.update!(name: @invitation.patient_name) if @lead.name.blank?
+          @appointment = @invitation.appointments.build(invitation_params[:appointments_attributes]["0"].merge({status: "agendado", lead: @lead}))
           @appointment.save!
         end
-        invitation_list_locals = {invitation: @invitation, appointment: @appointment}
-        # attributes that is going to be kept as slected fields when reloads form for next invitation
-        before_attributes = {
-          referral: @invitation.referral.id,
-          region: @invitation.region.id,
-          service: @appointment.service.id,
-          date: @invitation.date
-        }
-        new_form_sets
-        new_form_locals = { 
-            invitation: @invitation, 
-            referrals: Referral.all, 
-            regions: Region.all
-        }
-        respond_to do |format|
-          format.turbo_stream do
-            render turbo_stream: turbo_stream.prepend("invitations_list", partial: "invitation", locals: invitation_list_locals) +
-                                 turbo_stream.replace("new_invitation", partial: "form", locals: new_form_locals.merge(before_attributes) ) + 
-                                 turbo_stream.update("validation", "")
-
-          end        
-        end
-
-        # redirect_to new_invitation_path, notice: 'Convite de ' + @lead.name + ' criado com sucesso!'
+        render_turbo_stream
       rescue ActiveRecord::RecordInvalid => exception
-        validation_content = exception.record.errors.full_messages.join(', ')
-        respond_to do |format|
-          format.turbo_stream do
-            render turbo_stream: turbo_stream.update("validation", validation_content)
-          end
-        end
+        render_validation_errors(exception)
       end
-      
     end
+    
 
     # PATCH/PUT /invitations/1
     def update
@@ -95,6 +62,38 @@ module ClinicManagement
     end
 
     private
+
+    def render_turbo_stream
+      invitation_list_locals = {invitation: @invitation, appointment: @appointment}
+      before_attributes = {
+        referral: @invitation.referral.id,
+        region: @invitation.region.id,
+        service: @appointment.service.id,
+        date: @invitation.date
+      }
+      new_form_sets
+      new_form_locals = { 
+          invitation: @invitation, 
+          referrals: Referral.all, 
+          regions: Region.all
+      }
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.prepend("invitations_list", partial: "invitation", locals: invitation_list_locals) +
+                               turbo_stream.replace("new_invitation", partial: "form", locals: new_form_locals.merge(before_attributes) ) + 
+                               turbo_stream.update("validation", "")
+        end
+      end
+    end
+    
+    def render_validation_errors(exception)
+      validation_content = exception.record.errors.full_messages.join(', ')
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.update("validation", validation_content)
+        end
+      end
+    end
 
       def new_form_sets
         @services = Service.all    
