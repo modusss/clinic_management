@@ -1,7 +1,7 @@
 module ClinicManagement
   class Invitation < ApplicationRecord
     belongs_to :lead
-    belongs_to :referral
+    belongs_to :referral, class_name: '::Referral', optional: true
     belongs_to :region
     has_many :appointments
 

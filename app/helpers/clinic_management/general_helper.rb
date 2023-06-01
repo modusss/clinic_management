@@ -2,6 +2,14 @@ module ClinicManagement
     module GeneralHelper
 
 
+        def local_referral
+          referral = Referral.where(name: "Local").first
+          unless referral.present?
+              Referral.create(name: "Local")
+          end
+          return referral
+        end
+
         def format_day_of_week(date)
             I18n.l(date, format: "%A")
         end

@@ -13,7 +13,7 @@
   <h2 class="text-lg font-bold mb-4">1. Dados do marcação</h2>
   <div class="mb-4">
     <%= form.label :referral_id, "Indicador", class: "block text-gray-700 font-bold" %>
-    <%= form.collection_select :referral_id, referrals, :id, :name, {selected: referral}, {class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline"} %>
+    <%= form.collection_select :referral_id, referrals, :id, :name, {selected: local_referral.id}, {class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline"} %>
   </div>
 
   <%= form.fields_for :appointments do |appointment_fields| %>

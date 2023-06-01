@@ -7,6 +7,9 @@ ClinicManagement::Engine.routes.draw do
   end
   resources :lead_messages
   resources :appointments do
+    collection do
+      get 'index_by_referral/:referral_id', action: "index_by_referral", as: "index_by_referral"
+    end
     member do
       patch :set_attendance
     end
