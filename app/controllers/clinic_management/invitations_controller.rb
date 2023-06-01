@@ -45,6 +45,31 @@ module ClinicManagement
       end
     end
     
+    def new_patient_fitted
+      @service = Service.find(params[:service_id])
+      # @services = Service.all    
+      @invitation = Invitation.new
+      @appointment = @invitation.appointments.build
+      @lead = @invitation.build_lead
+      @referrals = Referral.all    
+    end
+
+    def create_patient_fitted
+      begin
+        ActiveRecord::Base.transaction do
+          @lead = Lead.create!(invitation_params[:lead_attributes])
+          @invitation = @lead.invitations.new(invitation_params.except(:lead_attributes, :appointments_attributes))       
+          @invitation.region = set_local_region
+          @invitation.save
+          @lead.update!(name: @invitation.patient_name) if @lead.name.blank?
+          @appointment = @invitation.appointments.build(invitation_params[:appointments_attributes]["0"].merge({status: "agendado", lead: @lead}))
+          @appointment.save!
+        end
+        redirect_to @appointment.service
+      rescue ActiveRecord::RecordInvalid => exception
+        render_validation_errors(exception)
+      end
+    end
 
     # PATCH/PUT /invitations/1
     def update
@@ -62,6 +87,14 @@ module ClinicManagement
     end
 
     private
+
+    def set_local_region
+      region = Region.find_by(name: "Local")
+      unless region.present?
+        region = Region.create(name: "Local")
+      end
+      region
+    end
 
     def render_turbo_stream
       invitation_list_locals = {invitation: @invitation, appointment: @appointment}

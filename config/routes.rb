@@ -1,5 +1,10 @@
 ClinicManagement::Engine.routes.draw do
-  resources :invitations
+  resources :invitations do
+    collection do
+      get 'new_patient_fitted/:service_id', action: "new_patient_fitted", as: "new_patient_fitted"
+      post 'create_patient_fitted', action: "create_patient_fitted", as: "create_patient_fitted"
+    end
+  end
   resources :lead_messages
   resources :appointments do
     member do
@@ -12,7 +17,7 @@ ClinicManagement::Engine.routes.draw do
       post :reschedule
     end
   end
-  resources :services
+  resources :services 
   resources :time_slots
   resources :regions
   resources :leads do

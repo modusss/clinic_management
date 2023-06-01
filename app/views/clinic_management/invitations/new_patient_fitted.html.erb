@@ -1,0 +1,13 @@
+<%= breadcrumb({title: "Voltar ao atendimento", path: service_path(@service)}, {title: "Novo encaixe", path: nil}) %>
+
+<div class="container mx-auto px-4 mt-6">
+  <h1 class="text-2xl font-bold mb-4">Encaixar novo paciente para <%= @service.date.strftime("%d/%m") %></h1>
+  <%= render "form_patient_fitted", invitation: @invitation,
+            referrals: @referrals,
+            service: @service,
+            referral: "",
+            date: "" %>
+
+  <br>
+
+</div>
