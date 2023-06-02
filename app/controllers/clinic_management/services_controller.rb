@@ -19,6 +19,14 @@ module ClinicManagement
       @rows = process_appointments_data(@service.appointments.includes(:invitation, :lead))       
     end
 
+    def show_by_referral
+      @referral = Referral.find(params[:referral_id])
+      all_services = @referral.invitations.map { |i| i.appointments.map(&:service) }.flatten.uniq
+      @service = all_services.find { |s| s.id == params[:id].to_i }
+      @rows = process_appointments_by_referral_data(@service.appointments.includes(:invitation, :lead))
+    end
+    
+
     # GET /services/new
     def new
       @service = Service.new
@@ -70,6 +78,25 @@ module ClinicManagement
         end
       end
       json_str
+    end
+
+    def process_appointments_by_referral_data(appointments)
+      sorted_appointments = appointments.select { |appointment| appointment.invitation.referral_id == @referral.id }
+      sorted_appointments.map.with_index(1) do |ap, index|
+        lead = ap.lead
+        invitation = ap.invitation
+        [
+          { header: "#", content: index },
+          { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700") },
+          { header: "Responsável", content: ((lead.name == invitation.patient_name) ? "" : lead.name) },
+          { header: "Telefone", content: lead.phone },
+          { header: "Endereço", content: invitation.lead.address },
+          { header: "Região", content: invitation.region.name },
+          { header: "Status", content: ap.status, id: "status-#{ap.id}", class: helpers.status_class(ap) },          
+          { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
+          { header: "Observações", content: invitation.notes }
+        ]
+      end
     end
 
     def process_appointments_data(appointments)
@@ -133,9 +160,10 @@ module ClinicManagement
     def process_services_data(services)
       services.map.with_index do |ser, index|
         total_appointments, scheduled, rescheduled, canceleds = appointment_counts(ser)
+        link = action_name == 'index_by_referral' ? show_by_referral_services_path(referral_id: @referral.id, id: ser.id) : ser
         [
           { header: "#", content: index + 1 },
-          { header: "Data", content: helpers.link_to(ser.date.strftime("%d/%m/%Y"), ser, class: "text-blue-500 hover:text-blue-700") },
+          { header: "Data", content: helpers.link_to(ser.date.strftime("%d/%m/%Y"), link, class: "text-blue-500 hover:text-blue-700") },
           { header: "Dia da semana", content: helpers.show_week_day(ser.weekday) },
           { header: "Início", content: ser.start_time.strftime("%H:%M") },
           { header: "Fim", content: ser.end_time.strftime("%H:%M") },
@@ -145,6 +173,7 @@ module ClinicManagement
           percentage_content("Cancelados", canceleds, total_appointments, "text-red-600", "bg-red-200")        ]
       end
     end
+    
 
     def set_appointment_button(ap)
       if ap.attendance.present? || ap.status == "remarcado"

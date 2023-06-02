@@ -21,6 +21,9 @@ ClinicManagement::Engine.routes.draw do
     collection do
       get 'index_by_referral/:referral_id', action: "index_by_referral", as: "index_by_referral"
     end
+    collection do
+      get 'show_by_referral/:referral_id', action: "show_by_referral", as: "show_by_referral"
+    end
   end
   resources :time_slots
   resources :regions
