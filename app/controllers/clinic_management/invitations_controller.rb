@@ -5,12 +5,15 @@ module ClinicManagement
 
     # GET /invitations
     def index
-      if Invitation.all.present?
-        @rows = process_invitations_data(Invitation.all.includes(:lead, :region, appointments: :service).order(date: :desc))
+      @invitations = Invitation.all.includes(:lead, :region, appointments: :service).order(created_at: :desc).page(params[:page]).per(30)
+      if @invitations.present?
+        @rows = process_invitations_data(@invitations)
       else
         @rows = ""
       end
     end
+    
+    
 
     # GET /invitations/1
     def show

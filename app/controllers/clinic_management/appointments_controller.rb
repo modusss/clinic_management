@@ -2,28 +2,6 @@ module ClinicManagement
   class AppointmentsController < ApplicationController
     before_action :set_appointment, only: %i[ show edit update destroy ]
 
-    # GET /appointments
-    def index
-    end
-
-    def index_by_referral
-      @referral = Referral.find(params[:referral_id])
-      @appointments = @referral.invitations.includes(:appointments).map(&:appointments).flatten
-    end    
-
-    # GET /appointments/1
-    def show
-    end
-
-    # GET /appointments/new
-    def new
-      @appointment = Appointment.new
-    end
-
-    # GET /appointments/1/edit
-    def edit
-    end
-
     # POST /appointments
     def create
       @appointment = Appointment.new(appointment_params)

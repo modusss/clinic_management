@@ -6,9 +6,10 @@ module ClinicManagement
 
     # GET /leads
     def index
-      @leads = Lead.all
+      @leads = Lead.includes(:invitations, :appointments).page(params[:page]).per(50)  # 10 leads por página
       @rows = load_leads_data(@leads)
     end
+    
 
     # GET /leads/1
     def show
@@ -105,22 +106,20 @@ module ClinicManagement
     end
 
     def load_leads_data(leads)
-      # begin
-        leads.map.with_index do |lead, index|
-          last_invitation = lead.invitations.last
-          last_appointment = lead.appointments.last
-          [
-            {header: "Ordem", content: index + 1},
-            {header: "Paciente", content: helpers.link_to(lead.name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
-            {header: "Responsável", content: responsible_content(last_invitation)},
-            {header: "Telefone", content: lead.phone},
-            {header: "Último indicador", content: last_referral(last_invitation)},
-            {header: "Qtd. de convites", content: lead.invitations.count},
-            {header: "Qtd. de atendimentos", content: lead.appointments.count},
-            {header: "Último atendimento", content: last_appointment_link(last_appointment)},
-            {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}" }          ]
-        end
-      # end
+      leads.map.with_index do |lead, index|
+        last_invitation = lead.invitations.last
+        last_appointment = lead.appointments.last
+        [
+          {header: "Ordem", content: index + 1},
+          {header: "Paciente", content: helpers.link_to(lead.name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
+          {header: "Responsável", content: responsible_content(last_invitation)},
+          {header: "Telefone", content: lead.phone},
+          {header: "Último indicador", content: last_referral(last_invitation)},
+          {header: "Qtd. de convites", content: lead.invitations.count},
+          {header: "Qtd. de atendimentos", content: lead.appointments.count},
+          {header: "Último atendimento", content: last_appointment_link(last_appointment)},
+          {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}" }          ]
+      end
     end
 
     def last_referral(last_invitation)

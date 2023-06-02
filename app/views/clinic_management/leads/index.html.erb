@@ -1,3 +1,11 @@
 <%= render_menu(@menu) %>
 
 <%= data_table(@rows, 3) %>
+
+<% if @leads.present? %>
+<%= paginate @leads %>
+<% end %>
+
+<style>
+
+/* application.css */
