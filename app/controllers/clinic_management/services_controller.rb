@@ -1,6 +1,7 @@
 module ClinicManagement
   class ServicesController < ApplicationController
     before_action :set_service, only: %i[ show edit update destroy ]
+    skip_before_action :authenticate_user!, only: [:index_by_referral, :show_by_referral]
     include TimeSlotsHelper
     # GET /services
     def index
