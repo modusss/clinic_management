@@ -52,19 +52,19 @@ module ClinicManagement
     end
 
     def absent
-      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ?', false)
+      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ?', false).page(params[:page]).per(50)
       @rows = load_leads_data(@leads)
       render :index
     end
     
     def attended
-      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ?', true)
+      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ?', true).page(params[:page]).per(50)
       @rows = load_leads_data(@leads)
       render :index
     end
     
     def cancelled
-      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.status = ?', 'cancelado')
+      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.status = ?', 'cancelado').page(params[:page]).per(50)
       @rows = load_leads_data(@leads)
       render :index
     end
@@ -139,14 +139,11 @@ module ClinicManagement
         end
       end
 
-      def fetch_leads_by_appointment_condition(condition, value)
-        Lead.select('DISTINCT ON (clinic_management_leads.id) clinic_management_leads.*')
-            .joins(appointments: [:invitation, :service])
-            .where('clinic_management_appointments.id = clinic_management_leads.last_appointment_id AND ' + condition, value)
-            .where('clinic_management_services.date < ?', Date.today)
-            .order('clinic_management_leads.id, clinic_management_invitations.created_at DESC')
-      end
-
+      def fetch_leads_by_appointment_condition(query_condition, value)
+        ClinicManagement::Lead.where(id: ClinicManagement::Appointment.where(query_condition, value).select(:lead_id))
+                              .where('last_appointment_id IN (?)', ClinicManagement::Appointment.where(query_condition, value).pluck(:id))
+      end   
+              
       # Use callbacks to share common setup or constraints between actions.
       def set_lead
         @lead = Lead.find(params[:id])

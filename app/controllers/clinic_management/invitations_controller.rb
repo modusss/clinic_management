@@ -13,8 +13,6 @@ module ClinicManagement
       end
     end
     
-    
-
     # GET /invitations/1
     def show
     end
@@ -42,6 +40,7 @@ module ClinicManagement
           @appointment = @invitation.appointments.build(invitation_params[:appointments_attributes]["0"].merge({status: "agendado", lead: @lead}))
           @appointment.save!
         end
+        @lead.update(last_appointment_id: @appointment.id)
         render_turbo_stream
       rescue ActiveRecord::RecordInvalid => exception
         render_validation_errors(exception)
