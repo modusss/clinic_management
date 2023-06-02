@@ -4,7 +4,14 @@ module ClinicManagement
     include TimeSlotsHelper
     # GET /services
     def index
+      @referrals = Referral.all
       @rows = process_services_data(ClinicManagement::Service.includes(:appointments).order(date: :desc))
+    end
+
+    def index_by_referral
+      @referral = Referral.find(params[:referral_id])
+      @services = @referral.invitations.map { |invitation| invitation.appointments.map(&:service) }.flatten.uniq
+      @rows = process_services_data(@services)
     end
 
     # GET /services/1
@@ -148,13 +155,22 @@ module ClinicManagement
     end
 
     def appointment_counts(service)
-      appointments = service.appointments
+      appointments = service.appointments.to_a
+    
+      if action_name == "index_by_referral"
+        referral_id = @referral.id
+        appointments.select! { |a| a.invitation.referral_id == referral_id }
+      end
+    
       total_appointments = appointments.count
-      scheduled = appointments.where(attendance: true).count
-      rescheduled = appointments.where(status: "remarcado").count
-      canceleds = appointments.where(status: "cancelado").count
+      scheduled = appointments.select { |a| a.attendance == true }.count
+      rescheduled = appointments.select { |a| a.status == "remarcado" }.count
+      canceleds = appointments.select { |a| a.status == "cancelado" }.count
+    
       [total_appointments, scheduled, rescheduled, canceleds]
     end
+    
+    
   
     def percentage_content(header, count, total, text_class, bg_class)
       {

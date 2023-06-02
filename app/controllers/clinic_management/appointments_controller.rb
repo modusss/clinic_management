@@ -4,14 +4,12 @@ module ClinicManagement
 
     # GET /appointments
     def index
-      @referrals = Referral.all
     end
 
     def index_by_referral
       @referral = Referral.find(params[:referral_id])
       @appointments = @referral.invitations.includes(:appointments).map(&:appointments).flatten
-    end
-    
+    end    
 
     # GET /appointments/1
     def show
