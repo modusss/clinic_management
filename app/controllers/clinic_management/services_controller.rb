@@ -87,7 +87,7 @@ module ClinicManagement
         invitation = ap.invitation
         [
           { header: "#", content: index },
-          { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700") },
+          { header: "Paciente", content: invitation.patient_name },
           { header: "Responsável", content: ((lead.name == invitation.patient_name) ? "" : lead.name) },
           { header: "Telefone", content: lead.phone },
           { header: "Endereço", content: invitation.lead.address },
