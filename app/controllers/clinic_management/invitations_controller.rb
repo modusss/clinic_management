@@ -1,7 +1,7 @@
 module ClinicManagement
   class InvitationsController < ApplicationController
     before_action :set_invitation, only: %i[ show edit update destroy ]
-    skip_before_action :authenticate_user!, only: [:new, :create, :update]
+    skip_before_action :redirect_referral_users, only: [:new, :create, :update]
 
     include GeneralHelper
 
