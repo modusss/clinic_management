@@ -1,5 +1,8 @@
-
-<%= breadcrumb({title: "Todos os atendimentos", path: services_path}, {title: "Atendimentos de " + @referral.name, path: index_by_referral_services_path(@referral)}, {title: @service.date.strftime("%d/%m/%Y"), path: nil}) %>
+<% if referral? current_user %>
+  <%= breadcrumb({title: "Painel de conversões", path: main_app.referral_path(user_referral)}, {title: "Atendimentos de " + @referral.name, path: index_by_referral_services_path(@referral)}, {title: @service.date.strftime("%d/%m/%Y"), path: nil}) %>
+<% else %>
+  <%= breadcrumb({title: "Todos os atendimentos", path: services_path}, {title: "Atendimentos de " + @referral.name, path: index_by_referral_services_path(@referral)}, {title: @service.date.strftime("%d/%m/%Y"), path: nil}) %>
+<% end %>
 
 <!-- Restante do código da view -->
 
