@@ -28,7 +28,7 @@ module ClinicManagement
       @appointment = @invitation.appointments.build
       @lead = @invitation.build_lead
       @referrals = Referral.all    
-      @today_invitations = helpers.user_referral.invitations.where('created_at >= ?', Date.today.beginning_of_day)
+      @today_invitations = helpers.user_referral&.invitations&.where('created_at >= ?', Date.today.beginning_of_day)
     end
 
     # GET /invitations/1/edit

@@ -15,21 +15,25 @@
     </nav>
   </header>
 <% else %>
-  <header class="bg-blue-600 py-4">
-    <div class="container mx-auto flex flex-wrap justify-between items-center">
-      <h1 class="text-white text-xl font-bold w-full sm:w-auto">
-        <%= yield(:header) || "Nome do seu aplicativo" %>
-      </h1>
-      <nav class="w-full sm:w-auto mt-4 sm:mt-0 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-        <%= link_to "Pacientes", clinic_management.leads_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'leads'}" %>
-        <%= link_to "Convites", clinic_management.invitations_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'invitations'}" %>
-        <%= link_to "Regiões", clinic_management.regions_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'regions'}" %>
-        <%= link_to "Atendimentos", clinic_management.services_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'services'}" %>
-        <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'time_slots'}" %>
-        <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'lead_messages'}"  %>
-      </nav>
-    </div>
-  </header>
+<header class="bg-blue-600 py-4">
+  <div class="container mx-auto flex flex-wrap justify-between items-center">
+    <h1 class="text-white text-xl font-bold w-full sm:w-auto">
+      <%= link_to "Lipepay", main_app.root_path, class: "text-white hover:text-blue-300" %>
+    </h1>
+    <nav class="w-full sm:w-auto mt-4 sm:mt-0 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+      <%= link_to "Pacientes", clinic_management.leads_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'leads'}" %>
+      <%= link_to "Convites", clinic_management.invitations_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'invitations'}" %>
+      <%= link_to "Regiões", clinic_management.regions_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'regions'}" %>
+      <%= link_to "Atendimentos", clinic_management.services_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'services'}" %>
+      <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'time_slots'}" %>
+      <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'lead_messages'}"  %>
+      <% if user_signed_in? %>
+        <%= link_to "Sair", main_app.destroy_user_session_path, method: :delete, class: "text-white hover:text-blue-300" %>
+      <% end %>
+    </nav>
+  </div>
+</header>
+
 <% end %>
 
 <style>
