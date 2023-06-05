@@ -177,7 +177,7 @@ module ClinicManagement
     
 
     def set_appointment_button(ap)
-      if ap.attendance.present? || ap.status == "remarcado"
+      if ap.attendance.present? || ap.status == "remarcado" || ap.service.date > Date.today
         "--"
       else
         helpers.button_to('Marcar como presente', set_attendance_appointment_path(ap), method: :patch, remote: true, class: "py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-700")
