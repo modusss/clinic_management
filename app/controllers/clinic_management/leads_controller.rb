@@ -54,7 +54,7 @@ module ClinicManagement
     end
 
     def absent
-      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ?', false).page(params[:page]).per(50)
+      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, Date.today).page(params[:page]).per(50)
       @rows = load_leads_data(@leads)
       render :index
     end
@@ -141,11 +141,18 @@ module ClinicManagement
         end
       end
 
-      def fetch_leads_by_appointment_condition(query_condition, value)
-        ClinicManagement::Lead.where(id: ClinicManagement::Appointment.where(query_condition, value).select(:lead_id))
-                              .where('last_appointment_id IN (?)', ClinicManagement::Appointment.where(query_condition, value).pluck(:id))
-      end   
-              
+      def fetch_leads_by_appointment_condition(query_condition, value, date = nil)
+        if date
+          ClinicManagement::Lead.joins(appointments: :service)
+                                .where(query_condition, value, date)
+                                .where('last_appointment_id IN (?)', ClinicManagement::Appointment.joins(:service).where(query_condition, value, date).pluck(:id))
+        else
+          ClinicManagement::Lead.where(id: ClinicManagement::Appointment.where(query_condition, value).select(:lead_id))
+                                .where('last_appointment_id IN (?)', ClinicManagement::Appointment.where(query_condition, value).pluck(:id))
+        end
+      end
+      
+
       # Use callbacks to share common setup or constraints between actions.
       def set_lead
         @lead = Lead.find(params[:id])
