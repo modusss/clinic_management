@@ -2,6 +2,8 @@ module ClinicManagement
   class LeadsController < ApplicationController
     before_action :set_lead, only: %i[ show edit update destroy ]
     before_action :set_menu, only: %i[ index absent attended cancelled ]
+    skip_before_action :redirect_referral_users, only: [:destroy]
+
     include GeneralHelper
 
     # GET /leads
@@ -10,7 +12,6 @@ module ClinicManagement
       @rows = load_leads_data(@leads)
     end
     
-
     # GET /leads/1
     def show
       @rows = get_lead_data
@@ -48,7 +49,8 @@ module ClinicManagement
     # DELETE /leads/1
     def destroy
       @lead.destroy
-      redirect_to leads_url, notice: "Lead was successfully destroyed."
+      # Use `fallback_location` to handle cases where the referrer is missing or invalid.
+      redirect_back(fallback_location: root_path, notice: 'Convite excluido com sucesso.')
     end
 
     def absent

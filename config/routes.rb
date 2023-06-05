@@ -1,4 +1,5 @@
 ClinicManagement::Engine.routes.draw do
+  root 'invitations#new'
   resources :invitations do
     collection do
       get 'new_patient_fitted/:service_id', action: "new_patient_fitted", as: "new_patient_fitted"

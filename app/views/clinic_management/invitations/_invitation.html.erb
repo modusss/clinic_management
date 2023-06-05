@@ -2,4 +2,11 @@
   <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><%= invitation.lead.name %></td>
   <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><%= invitation.lead.phone %></td>
   <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><%= invite_day invitation.appointments.last %></td>
+  <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm justify-center">
+    <%= button_to lead_path(invitation.lead), method: :delete, data: { confirm: 'Are you sure?' } do %>
+      <svg class="w-6 h-6 text-red-500 hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41l-3.59 3.59z"></path>
+      </svg>
+    <% end %>
+  </td>
 </tr>
