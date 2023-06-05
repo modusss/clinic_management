@@ -1,6 +1,6 @@
 
 <% if referral? current_user %>
-  <%= breadcrumb({title: "Painel de indicações", path: main_app.referral_path(user_referral)}, {title: "Novo convite", path: nil}) %>
+  <%= breadcrumb({title: "Painel de indicações", path: main_app.referral_path(user_referral)}, {title: "Novo convite de " + user_referral.name , path: nil}) %>
 <% else %>
   <%= breadcrumb({title: "Todos os convites", path: invitations_path}, {title: "Novo convite", path: nil}) %>
 <% end %>
@@ -19,7 +19,7 @@
 
 <div class="w-full overflow-x-auto max-w-2/3 mx-auto">
 
-<h2 class="w-full max-w-lg mx-auto mt-6 text-xl font-bold mb-4">Convites lançados agora</h2>
+<h2 class="w-full max-w-lg mx-auto mt-6 text-xl font-bold mb-4">Convites lançados hoje</h2>
     <table class="w-full max-w-lg mx-auto mt-6">
       <thead>
         <tr>
