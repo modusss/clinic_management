@@ -1,6 +1,6 @@
 <tr>
-  <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><%= invitation.lead.name %></td>
-  <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><%= invitation.lead.phone %></td>
+  <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><%= invitation&.lead&.name %></td>
+  <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><%= invitation&.lead&.phone %></td>
   <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><%= invite_day invitation.appointments.last %></td>
   <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm justify-center">
     <%= button_to lead_path(invitation.lead), method: :delete, data: { confirm: 'Are you sure?' } do %>
