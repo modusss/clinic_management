@@ -22,13 +22,13 @@ module ClinicManagement
 
     # GET /invitations/new
     def new
-      @services = Service.all    
+      @services = Service.where("date >= ?", Date.today)
       @regions = Region.all
       @invitation = Invitation.new
       @appointment = @invitation.appointments.build
       @lead = @invitation.build_lead
       @referrals = Referral.all    
-      @today_invitations = helpers.user_referral&.invitations&.where('created_at >= ?', Date.today.beginning_of_day)
+      @today_invitations = helpers.user_referral&.invitations&.where('created_at >= ?', Date.today.beginning_of_day).limit(100)
     end
 
     # GET /invitations/1/edit
