@@ -1,37 +1,7 @@
-<%= form_with(model: lead) do |form| %>
-  <% if lead.errors.any? %>
-    <div style="color: red">
-      <h2><%= pluralize(lead.errors.count, "error") %> prohibited this lead from being saved:</h2>
+<% form_fields = [
+    {name: 'Nome', input: :name, type: 'text', value: lead.name},
+    {name: 'Telefone', input: :phone, type: 'text', value: lead.phone},
+    {name: 'Endereço', input: :address, type: 'text', value: lead.address}
+] %>
+<%= standardized_form_for(lead, form_fields) %>
 
-      <ul>
-        <% lead.errors.each do |error| %>
-          <li><%= error.full_message %></li>
-        <% end %>
-      </ul>
-    </div>
-  <% end %>
-
-  <div>
-    <%= form.label :name, style: "display: block" %>
-    <%= form.text_field :name %>
-  </div>
-
-  <div>
-    <%= form.label :phone, style: "display: block" %>
-    <%= form.text_field :phone %>
-  </div>
-
-  <div>
-    <%= form.label :address, style: "display: block" %>
-    <%= form.text_field :address %>
-  </div>
-
-  <div>
-    <%= form.label :converted, style: "display: block" %>
-    <%= form.check_box :converted %>
-  </div>
-
-  <div>
-    <%= form.submit %>
-  </div>
-<% end %>

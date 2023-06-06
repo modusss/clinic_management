@@ -4,13 +4,19 @@
   <title>Clinic management</title>
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
+  
+  <%= javascript_importmap_tags %>
 
+  <%#= javascript_pack_tag 'application' %>
   <%= stylesheet_link_tag    "clinic_management/application", media: "all" %>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.16/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
 </head>
-<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+<body class="bg-gray-100 font-sans leading-normal tracking-normal" style="margin-bottom: 200px">
   <%= render "clinic_management/shared/navbar" %>
+  <%= content_for?(:breadcrumb) ? yield(:breadcrumb) : '' %>
   <br>
   <br>
   <br>
@@ -20,7 +26,7 @@
     </div>
   </main>
 
-  <footer class="bg-blue-600 py-4 mt-16">
+  <footer class="bg-blue-600 py-4 mt-16 fixed bottom-0 inset-x-0">
     <div class="container mx-auto text-center">
       <p class="text-white text-sm">
         &copy; <%= Time.now.year %> - <%= yield(:footer) || "Nome da sua empresa" %>

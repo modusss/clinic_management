@@ -1,14 +1,11 @@
-<p style="color: green"><%= notice %></p>
+<%= render_menu(@menu) %>
 
-<h1>Leads</h1>
+<%= data_table(@rows, 3) %>
 
-<div id="leads">
-  <% @leads.each do |lead| %>
-    <%= render lead %>
-    <p>
-      <%= link_to "Show this lead", lead %>
-    </p>
-  <% end %>
-</div>
+<% if @leads.present? %>
+<%= paginate @leads %>
+<% end %>
 
-<%= link_to "New lead", new_lead_path %>
+<style>
+
+/* application.css */

@@ -1,11 +1,11 @@
-<div class="container mx-auto px-4 mt-6">
+<%= breadcrumb({title: "Todos os horários", path: time_slots_path}, {title: "Detalhes do horário", path: nil}) %>
+<div class="my-8 mx-auto max-w-md">
   <div class="bg-white p-4 rounded-lg shadow-md">
     <%= render @time_slot %>
   </div>
 
   <div class="flex items-center justify-between mt-6">
     <%= link_to "Editar este horário", edit_time_slot_path(@time_slot), class: "text-blue-600 hover:text-blue-800" %>
-    <%= link_to "Voltar aos horários", time_slots_path, class: "text-blue-600 hover:text-blue-800" %>
     <%= button_to "Excluir este horário", @time_slot, method: :delete, class: "bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" %>
   </div>
 </div>

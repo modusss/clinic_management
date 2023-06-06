@@ -13,6 +13,7 @@ module Dummy
 
     # For compatibility with applications that use this config
     config.action_controller.include_all_helpers = false
+    config.i18n.default_locale = :'pt-BR'
 
     # Configuration for the application, engines, and railties goes here.
     #

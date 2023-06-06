@@ -1,0 +1,33 @@
+<div class="flex flex-wrap">
+  <div class="w-full md:w-1/2 p-2">
+    <%= form_with(model: message, local: true) do |form| %>
+      <% if message.errors.any? %>
+        <div id="error_explanation" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong class="font-bold"><%= pluralize(message.errors.count, "erro") %> encontrado(s):</strong>
+          <ul class="list-disc list-inside">
+            <% message.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <div class="field mb-4">
+        <%= form.label :name, "Nome da mensagem", class: "block text-gray-700 text-sm font-bold mb-2" %>
+        <%= form.text_field :name, class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+      </div>
+
+      <div class="field mb-4">
+        <%= form.label :text, "Texto da mensagem", class: "block text-gray-700 text-sm font-bold mb-2" %>
+        <%= form.text_area :text, rows: 30, class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+      </div>
+
+      <div class="actions">
+        <%= form.submit "Enviar", class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" %>
+      </div>
+    <% end %>
+  </div>
+  <div class="w-full md:w-1/2 p-2">
+    <%= render "instructions" %>
+  </div>
+</div>

@@ -18,7 +18,6 @@ module ClinicManagement
       fill_in "Date", with: @service.date
       fill_in "End time", with: @service.end_time
       fill_in "Start time", with: @service.start_time
-      fill_in "Time slot", with: @service.time_slot_id
       fill_in "Weekday", with: @service.weekday
       click_on "Create Service"
 

@@ -4,7 +4,15 @@ module ClinicManagement
 
     # GET /regions
     def index
-      @regions = Region.all
+      @rows = Region.all.order(:name).map.with_index(1) do |reg, index|
+        [
+          { header: "#", content: index },
+          { header: "Nome", content: reg.name },
+          { header: "Convites", content: reg.invitations.count },
+          { header: "Editar", content: edit_button(reg) },
+          { header: "Excluir", content: delete_button(reg) }
+        ] 
+      end
     end
 
     # GET /regions/1
@@ -25,7 +33,7 @@ module ClinicManagement
       @region = Region.new(region_params)
 
       if @region.save
-        redirect_to @region, notice: "Region was successfully created."
+        redirect_to regions_path, notice: "Nova região criada com sucesso!"
       else
         render :new, status: :unprocessable_entity
       end
@@ -34,7 +42,7 @@ module ClinicManagement
     # PATCH/PUT /regions/1
     def update
       if @region.update(region_params)
-        redirect_to @region, notice: "Region was successfully updated."
+        redirect_to regions_path, notice: "Região editada com sucesso!"
       else
         render :edit, status: :unprocessable_entity
       end
@@ -43,10 +51,27 @@ module ClinicManagement
     # DELETE /regions/1
     def destroy
       @region.destroy
-      redirect_to regions_url, notice: "Region was successfully destroyed."
+      redirect_to regions_url, notice: "Região removida com sucesso."
     end
 
     private
+
+      def edit_button(reg)
+        helpers.link_to(edit_region_path(reg)) do
+          helpers.content_tag(:i, "", class: "fas fa-edit")
+        end
+      end
+
+      def delete_button(reg)
+        if reg.invitations.present?
+          "--"
+        else
+          helpers.button_to(region_path(reg), method: :delete, data: { confirm: "Are you sure?" }) do
+            helpers.content_tag(:i, "", class: "fas fa-trash") 
+          end
+        end
+      end
+
       # Use callbacks to share common setup or constraints between actions.
       def set_region
         @region = Region.find(params[:id])

@@ -1,0 +1,17 @@
+pt-BR:
+  helpers:
+    submit:
+      create: "Criar %{model}"
+      update: "Atualizar %{model}"
+      delete: "Remover %{model}"
+  activerecord:
+    models:
+      clinic_management_lead: "paciente"
+      clinic_management_region: "região"
+      user: "usuário"
+      clinic_management_invitation: "convite"
+    attributes:
+      clinic_management_lead:
+        phone: "telefone"
+      clinic_management_invitation:
+        patient_name: "nome do paciente"

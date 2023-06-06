@@ -1,0 +1,9 @@
+<%= form_with model: new_appointment, url: reschedule_appointment_path(old_appointment), method: :post do |f| %>
+  <div class="field">
+    <%= f.select :service_id, options_from_collection_for_select(available_services, :id, -> (service) { display_service_name(service) }), include_blank: true %>
+  </div>
+  <br>
+  <div class="actions">
+    <%= f.submit "Remarcar", class: "bg-blue-600 hover:bg-blue-800 text-white font-bold py-1 px-4 rounded" %>
+  </div>
+<% end %>
