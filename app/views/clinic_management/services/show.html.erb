@@ -13,7 +13,11 @@
   </div>
 
   <%= link_to "Encaixar novo paciente", clinic_management.new_patient_fitted_invitations_path(@service), class: "inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-6" %>
-
+  <% unless @service.appointments.count > 0%>
+  <br>
+  <%= button_to "Excluir atendimento", service_path(@service), method: :delete, class: "bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" %>
+  <br>
+  <% end %>
   <p class="text-lg text-gray-700 mb-4">Número de pacientes: <%= @rows.count %></p>
 
   <% if @rows.present? %>

@@ -64,8 +64,10 @@ module ClinicManagement
 
     # DELETE /services/1
     def destroy
-      @service.destroy
-      redirect_to services_url, notice: "Service was successfully destroyed."
+      unless @service.appointments.count > 0
+        @service.destroy
+        redirect_to services_url, notice: "Service was successfully destroyed."
+      end
     end
 
     private
