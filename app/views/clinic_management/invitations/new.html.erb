@@ -30,10 +30,8 @@
         </tr>
       </thead>
       <tbody id="invitations_list">
-          <% if @today_invitations.present ? %>
-            <% @today_invitations.each do |invitation| %>
-              <%= render "invitation", invitation: invitation  %>
-            <% end %>
+          <% @today_invitations.each do |invitation| %>
+            <%= render "invitation", invitation: invitation  %>
           <% end %>
       </tbody>
     </table>
