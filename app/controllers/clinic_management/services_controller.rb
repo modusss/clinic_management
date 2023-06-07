@@ -11,9 +11,12 @@ module ClinicManagement
 
     def index_by_referral
       @referral = Referral.find(params[:referral_id])
-      @services = @referral.invitations.map { |invitation| invitation.appointments.map(&:service) }.flatten.uniq
+      @services = Service.joins(appointments: {invitation: :referral})
+                         .where(referrals: { id: @referral.id })
+                         .order(date: :desc)
+                         .distinct
       @rows = process_services_data(@services)
-    end
+    end    
 
     # GET /services/1
     def show
@@ -22,7 +25,7 @@ module ClinicManagement
 
     def show_by_referral
       @referral = Referral.find(params[:referral_id])
-      all_services = @referral.invitations.map { |i| i.appointments.map(&:service) }.flatten.uniq
+      all_services = @referral.invitations.map { |i| i.appointments.map(&:service) }.order(date: :desc).flatten.uniq
       @service = all_services.find { |s| s.id == params[:id].to_i }
       @rows = process_appointments_by_referral_data(@service.appointments.includes(:invitation, :lead))
     end
