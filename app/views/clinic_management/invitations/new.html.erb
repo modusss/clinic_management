@@ -19,7 +19,7 @@
 
 <div class="w-full overflow-x-auto max-w-2/3 mx-auto">
 
-<h2 class="w-full max-w-lg mx-auto mt-6 text-xl font-bold mb-4">Convites lançados hoje</h2>
+<h2 class="w-full max-w-lg mx-auto mt-6 text-xl font-bold mb-4">Últimos lançados hoje</h2>
     <table class="w-full max-w-lg mx-auto mt-6">
       <thead>
         <tr>
@@ -30,9 +30,11 @@
         </tr>
       </thead>
       <tbody id="invitations_list">
-          <%# @today_invitations.each do |invitation| %>
-            <%#= render "invitation", invitation: invitation  %>
-          <%# end %>
+          <% if @today_invitations.present? %>
+            <% @today_invitations.each do |invitation| %>
+              <%= render "invitation", invitation: invitation  %>
+            <% end %>
+          <% end %>
       </tbody>
     </table>
 </div>
