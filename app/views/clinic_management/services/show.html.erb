@@ -22,7 +22,11 @@
 
   <% if @rows.present? %>
     <div class="overflow-hidden border-gray-200 sm:rounded-lg">
-      <%= data_table(@rows, 3) %>
+      <% if mobile_device? %>
+        <%= data_table(@rows) %>
+      <% else %>
+        <%= data_table(@rows, 3) %>
+      <% end %>
     </div>
   <% else %>
     <div class="bg-white shadow sm:rounded-lg">
