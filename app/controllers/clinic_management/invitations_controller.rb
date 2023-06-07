@@ -29,7 +29,7 @@ module ClinicManagement
       @lead = @invitation.build_lead
       @referrals = Referral.all    
       begin
-        @today_invitations = helpers.user_referral&.invitations&.where('created_at >= ?', Date.today.beginning_of_day)
+        @today_invitations = helpers.user_referral.invitations.where('created_at >= ?', Date.today.beginning_of_day).limit(100)
       rescue
         @today_invitations = nil
       end
