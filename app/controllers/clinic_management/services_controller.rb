@@ -25,7 +25,9 @@ module ClinicManagement
 
     def show_by_referral
       @referral = Referral.find(params[:referral_id])
-      all_services = @referral.invitations.map { |i| i.appointments.map(&:service) }.order(date: :desc).flatten.uniq
+      all_appointments = @referral.invitations.map(&:appointments).flatten
+      all_services = all_appointments.map(&:service).uniq
+      all_services = all_services.sort_by { |service| service.date }.reverse
       @service = all_services.find { |s| s.id == params[:id].to_i }
       @rows = process_appointments_by_referral_data(@service.appointments.includes(:invitation, :lead))
     end
@@ -114,13 +116,13 @@ module ClinicManagement
         [
           { header: "#", content: index },
           { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700") },
+          { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
           { header: "Responsável", content: ((lead.name == invitation.patient_name) ? "" : lead.name) },
           { header: "Telefone", content: lead.phone },
           { header: "Endereço", content: invitation.lead.address },
           { header: "Região", content: invitation.region.name },
           { header: "Indicação", content: invitation.referral.name },
           { header: "Status", content: ap.status, id: "status-#{ap.id}", class: helpers.status_class(ap) },          
-          { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
           { header: "Nº de Comparecimentos", content: lead.appointments.count },
           { header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "pt-2 pb-0" },          
           { header: "Observações", content: invitation.notes },
