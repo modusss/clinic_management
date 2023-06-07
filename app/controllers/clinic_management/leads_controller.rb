@@ -146,13 +146,16 @@ module ClinicManagement
           ClinicManagement::Lead.joins(appointments: :service)
                                 .where(query_condition, value, date)
                                 .where('last_appointment_id IN (?)', ClinicManagement::Appointment.joins(:service).where(query_condition, value, date).pluck(:id))
+                                .order('clinic_management_services.date DESC')
         else
-          ClinicManagement::Lead.where(id: ClinicManagement::Appointment.where(query_condition, value).select(:lead_id))
+          ClinicManagement::Lead.joins(appointments: :service)
+                                .where(id: ClinicManagement::Appointment.where(query_condition, value).select(:lead_id))
                                 .where('last_appointment_id IN (?)', ClinicManagement::Appointment.where(query_condition, value).pluck(:id))
+                                .order('clinic_management_services.date DESC')
         end
       end
       
-
+      
       # Use callbacks to share common setup or constraints between actions.
       def set_lead
         @lead = Lead.find(params[:id])
