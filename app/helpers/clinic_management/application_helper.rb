@@ -1,6 +1,13 @@
 module ClinicManagement
   module ApplicationHelper
 
+    def mobile_device?
+      browser = Browser.new(request.user_agent)
+      return true if browser.device.mobile?
+      false
+    end
+
+
     def breadcrumb(*crumbs)
       content_for :breadcrumb do
         render "clinic_management/shared/breadcrumb" do
