@@ -46,12 +46,12 @@ module ClinicManagement
         table_header(rows.first.map { |cell| cell[:header] }, fix_to) + table_body(rows, fix_to)
       end
     end
-    
+  
     def table_header(headers, fix_to)
       content_tag(:thead, class: "bg-gray-50") do
         content_tag(:tr) do
           headers.map.with_index do |header, header_index|
-            classes = "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-center"
+            classes = "px-6 py-3 text-left text-base font-medium text-gray-500 uppercase tracking-wider text-center"
             styles = ''
             if header_index < fix_to
               classes += ' sticky'
@@ -65,9 +65,10 @@ module ClinicManagement
     def table_body(rows, fix_to)
       content_tag(:tbody, class: "bg-white divide-y divide-gray-200") do
         rows.map.with_index do |row, row_index|
-          content_tag(:tr) do
+          row_class = row_index.even? ? 'bg-blue-50' : 'bg-white'
+          content_tag(:tr, class: row_class) do
             row.map.with_index do |cell, cell_index|
-              classes = "px-6 py-4 whitespace-nowrap text-sm text-gray-900 #{cell[:class]} text-center"
+              classes = "px-6 py-4 whitespace-nowrap text-base text-gray-900 #{cell[:class]} text-center align-middle" 
               styles = ''
               if cell_index < fix_to
                 classes += ' sticky'
@@ -78,6 +79,7 @@ module ClinicManagement
         end.join.html_safe
       end
     end
+    
     
     
   end
