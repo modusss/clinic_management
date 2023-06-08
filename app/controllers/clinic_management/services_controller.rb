@@ -11,13 +11,17 @@ module ClinicManagement
 
     def index_by_referral
       @referral = Referral.find(params[:referral_id])
-      @services = Service.joins(appointments: {invitation: :referral})
-                         .where(referrals: { id: @referral.id })
-                         .order(date: :desc)
-                         .distinct
+      @services = Rails.cache.read("referral_#{@referral.id}_services")
+      if @services.nil?
+        @services = Service.joins(appointments: {invitation: :referral})
+                           .where(referrals: { id: @referral.id })
+                           .order(date: :desc)
+                           .distinct
+      end
       @rows = process_services_data(@services)
-    end    
-
+    end
+    
+    
     # GET /services/1
     def show
       @rows = process_appointments_data(@service.appointments.includes(:invitation, :lead))       

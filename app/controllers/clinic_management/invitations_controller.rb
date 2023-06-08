@@ -23,7 +23,7 @@ module ClinicManagement
     # GET /invitations/new
     def new
       @services = Service.where("date >= ?", Date.today)
-      @regions = Region.all
+      @regions = Region.all.order(:name)
       @invitation = Invitation.new
       @appointment = @invitation.appointments.build
       @lead = @invitation.build_lead
@@ -152,7 +152,7 @@ module ClinicManagement
           last_appointment = invite.lead.appointments.last
           [
             {header: "Data", content: invite&.date&.strftime("%d/%m/%Y")},
-            {header: "Para", content: helpers.link_to(invite_day(last_appointment), service_path(last_appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
+            {header: "Para", content: last_appointment_link(last_appointment)},
             {header: "Paciente", content: helpers.link_to(invite.patient_name, lead_path(invite.lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
             {header: "Responsável", content: responsible_content(invite)},   
             {header: "Telefone", content: invite.lead.phone},
@@ -161,6 +161,14 @@ module ClinicManagement
             {header: "Quantidade de convites", content: invite.lead.appointments.count},
             {header: "Região", content: invite.region.name}
           ]
+        end
+      end
+
+      def last_appointment_link(last_appointment)
+        if last_appointment&.service.present?
+          helpers.link_to(invite_day(last_appointment), service_path(last_appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank" )
+        else
+          ""
         end
       end
 
