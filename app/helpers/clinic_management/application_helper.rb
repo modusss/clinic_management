@@ -51,7 +51,7 @@ module ClinicManagement
       content_tag(:thead, class: "bg-gray-50") do
         content_tag(:tr) do
           headers.map.with_index do |header, header_index|
-            classes = "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            classes = "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-center"
             styles = ''
             if header_index < fix_to
               classes += ' sticky'
@@ -67,7 +67,7 @@ module ClinicManagement
         rows.map.with_index do |row, row_index|
           content_tag(:tr) do
             row.map.with_index do |cell, cell_index|
-              classes = "px-6 py-4 whitespace-nowrap text-sm text-gray-900 #{cell[:class]}"
+              classes = "px-6 py-4 whitespace-nowrap text-sm text-gray-900 #{cell[:class]} text-center"
               styles = ''
               if cell_index < fix_to
                 classes += ' sticky'
