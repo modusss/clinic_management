@@ -180,9 +180,13 @@ module ClinicManagement
           { header: "Início", content: ser.start_time.strftime("%H:%M") },
           { header: "Fim", content: ser.end_time.strftime("%H:%M") },
           { header: "Pacientes", content: total_appointments },
-          percentage_content("Presentes", scheduled, total_appointments, "text-blue-700", "bg-blue-200"),
-          percentage_content("Remarcados", rescheduled, total_appointments, "text-green-600", "bg-green-200"),
-          percentage_content("Cancelados", canceleds, total_appointments, "text-red-600", "bg-red-200")        ]
+          { header: "Compareceram", content: scheduled },
+          { header: "Remarcados", content:rescheduled },
+          { header: "Cancelados", content: canceleds }
+          # percentage_content("Presentes", scheduled, total_appointments, "text-blue-700", "bg-blue-200"),
+          # percentage_content("Remarcados", rescheduled, total_appointments, "text-green-600", "bg-green-200"),
+          # percentage_content("Cancelados", canceleds, total_appointments, "text-red-600", "bg-red-200")        
+        ]
       end
     end
     
