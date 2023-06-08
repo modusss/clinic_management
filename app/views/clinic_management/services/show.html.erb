@@ -41,15 +41,20 @@
 
 <script>
 
+
   // Adjust freezed columns to run
 
 document.addEventListener("DOMContentLoaded", function() { 
   var table = document.querySelector('table');
 
-  for (let row of table.rows) {
+  for (let rowIndex in table.rows) {
+    let row = table.rows[rowIndex];
     let widths = [];
     let cells = row.cells;
     let cellLength = cells.length;
+    
+    // Verifique se a linha é par ou ímpar
+    let isEvenRow = rowIndex % 2 === 0;
 
     for (let i = 0; i < cellLength; i++) {
       widths.push(cells[i].offsetWidth);
@@ -60,8 +65,10 @@ document.addEventListener("DOMContentLoaded", function() {
       if (cell.classList.contains('sticky')) {
         cell.style.position = 'sticky';
         cell.style.left = widths.slice(0, i).reduce((a, b) => a + b, 0) + 'px';
-        cell.style.backgroundColor = 'white';
         cell.style.borderBottom = '1px solid #dee2e6';
+        
+        // Aplicar a cor de fundo baseada na paridade da linha
+        cell.style.backgroundColor = isEvenRow ? '#fff' : '#EFF6FF';
       }
     }
   }
@@ -70,3 +77,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 </script>
+
+
+<style>
