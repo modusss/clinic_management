@@ -1,6 +1,10 @@
 module ClinicManagement
     module GeneralHelper
 
+        def whatsapp_link(phone, message = "")
+          "https://api.whatsapp.com/send/?phone=+55#{phone}&text=#{message}"
+        end
+
         def referral?(user)
           current_membership.role == "referral"
         end
