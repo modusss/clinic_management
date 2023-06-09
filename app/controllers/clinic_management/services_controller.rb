@@ -2,7 +2,10 @@ module ClinicManagement
   class ServicesController < ApplicationController
     before_action :set_service, only: %i[ show edit update destroy ]
     skip_before_action :redirect_referral_users, only: [:index_by_referral, :show_by_referral]
-    include TimeSlotsHelper
+    include TimeSlotsHelper, GeneralHelper
+
+    require 'cgi'
+
     # GET /services
     def index
       @referrals = Referral.all
@@ -101,7 +104,7 @@ module ClinicManagement
           { header: "#", content: index },
           { header: "Paciente", content: invitation.patient_name },
           { header: "Responsável", content: ((lead.name == invitation.patient_name) ? "" : lead.name) },
-          { header: "Telefone", content: lead.phone },
+          { header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, set_zap_message(ap.service, invitation))}'>#{lead.phone}</a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
           { header: "Endereço", content: invitation.lead.address },
           { header: "Região", content: invitation.region.name },
           { header: "Status", content: ap.status, id: "status-#{ap.id}", class: helpers.status_class(ap) },          
@@ -109,6 +112,11 @@ module ClinicManagement
           { header: "Observações", content: invitation.notes }
         ]
       end
+    end
+
+    def set_zap_message(service, invitation)
+      message = "Oi #{invitation.patient_name.split.first}! Tudo bem?😊 Aqui é a #{invitation.referral.name}!\n\nLembra que tínhamos marcado aquele exame de vista para o dia de #{ I18n.l(service.date, format: "%A, %d/%m")}?\n\nVi que não deu para você comparecer... 😔\n\nQue tal a gente remarcar?\n\nAssim garantimos a saúde dos seus olhos e esclarecemos qualquer dúvida que você possa ter! 😊👓\n\nAguardo seu retorno, obrigado!"
+      CGI::escape(message)
     end
 
     def process_appointments_data(appointments)
