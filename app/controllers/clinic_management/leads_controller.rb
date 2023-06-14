@@ -50,7 +50,7 @@ module ClinicManagement
     def destroy
       @lead.destroy
       # Use `fallback_location` to handle cases where the referrer is missing or invalid.
-      redirect_back(fallback_location: root_path, notice: 'Convite excluido com sucesso.')
+      redirect_to services_path
     end
 
     def absent
