@@ -19,6 +19,8 @@ module ClinicManagement
       # Aqui estamos supondo que CacheWarmupJob está definido no aplicativo principal
       # Você deve ajustar de acordo com sua configuração real
       ::CacheWarmupJob.perform_later(self.referral_id, "index_by_referral")
+      rescue => e
+        Rails.logger.error "Falha ao executar CacheWarmupJob para Invitation id: #{id}. Erro: #{e.message}"
     end
 
   end

@@ -1,0 +1,9 @@
+<% if leads.present? %>
+    <ul class="space-y-2 top-full mt-2 w-64 bg-white rounded-lg shadow-lg p-4 z-10">
+      <% leads.each do |lead| %>
+        <li>
+          <%= link_to "#{lead.name} / Telefone: #{lead.phone}", lead_path(lead), class: "text-blue-600 hover:text-blue-800 visited:text-purple-600" %>
+        </li>
+      <% end %>
+    </ul>
+<% end %>

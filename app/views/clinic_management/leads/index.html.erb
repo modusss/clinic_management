@@ -1,11 +1,7 @@
 <%= render_menu(@menu) %>
 
 
-<% if mobile_device? %>
-    <%= data_table(@rows) %>
-<% else %>
-    <%= data_table(@rows, 2) %>
-<% end %>
+<%= data_table(@rows) %>
 
 <% if @leads.present? %>
 <%= paginate @leads %>

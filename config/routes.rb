@@ -33,6 +33,7 @@ ClinicManagement::Engine.routes.draw do
       get 'absent'
       get 'attended'
       get 'cancelled'
+      post 'search'
     end
   end
   post 'build_message/:lead_id', to: 'lead_messages#build_message', as: 'build_message'

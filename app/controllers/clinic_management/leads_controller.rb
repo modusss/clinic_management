@@ -50,7 +50,21 @@ module ClinicManagement
     def destroy
       @lead.destroy
       # Use `fallback_location` to handle cases where the referrer is missing or invalid.
-      redirect_back(fallback_location: root_path, notice: 'Convite excluido com sucesso.')
+      redirect_to services_path
+    end
+
+    def search
+      params = request.params[:q]
+      @leads = params.blank? ? [] : Lead.search_by_name_or_phone(params)   
+      @leads.limit(10) unless @leads.blank?
+      respond_to do |format|
+        format.turbo_stream do
+            render turbo_stream: 
+                  turbo_stream.update("lead-results", 
+                                      partial: "lead_results", 
+                                      locals: { leads: @leads })
+        end
+      end
     end
 
     def absent
