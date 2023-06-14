@@ -53,6 +53,20 @@ module ClinicManagement
       redirect_to services_path
     end
 
+    def search
+      params = request.params[:q]
+      @leads = params.blank? ? [] : Lead.search_by_name_or_phone(params)   
+      @leads.limit(10) unless @leads.blank?
+      respond_to do |format|
+        format.turbo_stream do
+            render turbo_stream: 
+                  turbo_stream.update("lead-results", 
+                                      partial: "lead_results", 
+                                      locals: { leads: @leads })
+        end
+      end
+    end
+
     def absent
       @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, Date.today).page(params[:page]).per(50)
       @rows = load_leads_data(@leads)

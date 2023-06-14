@@ -13,5 +13,10 @@ module ClinicManagement
       appointments.destroy_all
     end
 
+    private
+    def self.search_by_name_or_phone(query)
+      where("name ILIKE :query OR phone ILIKE :query", query: "%#{query}%")
+    end
+
   end
 end
