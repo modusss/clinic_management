@@ -56,7 +56,7 @@ module ClinicManagement
     def search
       params = request.params[:q]
       @leads = params.blank? ? [] : Lead.search_by_name_or_phone(params)   
-      @leads.limit(10) unless @leads.blank?
+      @leads = @leads.limit(10) unless @leads.blank?
       respond_to do |format|
         format.turbo_stream do
             render turbo_stream: 
