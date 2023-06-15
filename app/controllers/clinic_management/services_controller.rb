@@ -37,6 +37,7 @@ module ClinicManagement
       all_services = all_services.sort_by { |service| service.date }.reverse
       @service = all_services.find { |s| s.id == params[:id].to_i }
       @rows = process_appointments_by_referral_data(@service.appointments.includes(:invitation, :lead))
+      session[:return_to] = action_name
     end
     
 
@@ -99,16 +100,18 @@ module ClinicManagement
       sorted_appointments = appointments.select { |appointment| appointment.invitation.referral_id == @referral.id }
       sorted_appointments.map.with_index(1) do |ap, index|
         lead = ap.lead
+        new_appointment = ClinicManagement::Appointment.new
         invitation = ap.invitation
         [
           { header: "#", content: index },
           { header: "Paciente", content: invitation.patient_name },
+          { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
           { header: "Responsável", content: ((lead.name == invitation.patient_name) ? "" : lead.name) },
           { header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, set_zap_message(ap.service, invitation))}'>#{lead.phone}</a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
+          { header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500" },
           { header: "Endereço", content: invitation.lead.address },
           { header: "Região", content: invitation.region.name },
           { header: "Status", content: ap.status, id: "status-#{ap.id}", class: helpers.status_class(ap) },          
-          { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
           { header: "Observações", content: invitation.notes }
         ]
       end

@@ -4,12 +4,24 @@ module ClinicManagement
 
     # POST /appointments
     def create
-      @appointment = Appointment.new(appointment_params)
-      if @appointment.save
-        @appointment.lead.update(last_appointment_id: @appointment.id)
-        redirect_to @appointment, notice: "Appointment was successfully created."
-      else
-        render :new, status: :unprocessable_entity
+      params = request.params[:appointment]
+      @lead = Lead.find_by(id: params[:lead_id])
+      @service = Service.find_by(id: params[:service_id])
+      @invitation = Invitation.new(
+        referral_id: Referral.find_by(name: "Local").id,
+        region_id: Region.find_by(name: "Local").id,
+        patient_name: @lead.name,
+        lead_id: @lead.id
+      )
+      if @invitation.save
+        @appointment = @lead.appointments.build(
+          invitation: @invitation,
+          service: @service,
+          status: "agendado"
+        )
+        if @appointment.save
+          redirect_to @service
+        end
       end
     end
 
@@ -26,7 +38,12 @@ module ClinicManagement
         if @appointment.save
           before_appointment.update(status: "remarcado")
           @lead.update(last_appointment_id: @appointment.id)
-          redirect_to @next_service, notice: "Appointment was successfully updated."
+          if session[:return_to] == "show_by_referral"
+            # redirect_to request.original_url
+            redirect_to show_by_referral_services_path(referral_id: @appointment.invitation.referral.id, id: @next_service.id)
+          else
+            redirect_to @next_service
+          end
         else
           render :edit, status: :unprocessable_entity
         end
