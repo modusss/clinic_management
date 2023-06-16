@@ -42,7 +42,7 @@ module ClinicManagement
     def create
       begin
         ActiveRecord::Base.transaction do
-          @lead = Lead.create!(invitation_params[:lead_attributes])
+          @lead = check_existing_leads(invitation_params)
           @invitation = @lead.invitations.build(invitation_params.except(:lead_attributes, :appointments_attributes))
           @lead.update!(name: @invitation.patient_name) if @lead.name.blank?
           @appointment = @invitation.appointments.build(invitation_params[:appointments_attributes]["0"].merge({status: "agendado", lead: @lead}))
@@ -67,7 +67,7 @@ module ClinicManagement
     def create_patient_fitted
       begin
         ActiveRecord::Base.transaction do
-          @lead = Lead.create!(invitation_params[:lead_attributes])
+          @lead = check_existing_leads(invitation_params)
           @invitation = @lead.invitations.new(invitation_params.except(:lead_attributes, :appointments_attributes))       
           @invitation.region = set_local_region
           @invitation.save
@@ -98,6 +98,15 @@ module ClinicManagement
 
     private
 
+
+    def check_existing_leads(params)
+      first_name = params.dig(:lead_attributes, :name)&.split&.first || invitation_params[:patient_name]&.split&.first   
+      phone = params.dig(:lead_attributes, :phone)
+      lead = Lead.find_by_phone(phone)
+      return Lead.create!(params) unless lead   
+      lead.name.match?(/#{Regexp.escape(first_name)}/i) ? lead : Lead.create!(params)
+    end
+    
     def set_local_region
       region = Region.find_by(name: "Local")
       unless region.present?
