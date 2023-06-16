@@ -15,6 +15,9 @@ module ClinicManagement
     # GET /leads/1
     def show
       @rows = get_lead_data
+      @new_appointment = ClinicManagement::Appointment.new
+      @old_appointment = @lead.appointments&.last
+      @available_services = available_services(@old_appointment.service)
     end
 
     # GET /leads/new
@@ -87,6 +90,12 @@ module ClinicManagement
     
     
     private
+
+    def available_services(exception_service)
+      exception_service_id = exception_service&.id # Get the ID of the exception_service object
+      ClinicManagement::Service.where("date >= ?", Date.today).where.not(id: exception_service_id)
+    end
+    
 
     def generate_message_content(lead, appointment)
       render_to_string(

@@ -1,9 +1,37 @@
-<%= form_with model: new_appointment, url: reschedule_appointment_path(old_appointment), method: :post do |f| %>
-  <div class="field">
-    <%= f.select :service_id, options_from_collection_for_select(available_services, :id, -> (service) { display_service_name(service) }), include_blank: true %>
+<%= form_with model: new_appointment, url: old_appointment.present? ? reschedule_appointment_path(old_appointment) : appointments_path, method: :post, local: true, html: { class: "p-6 bg-white rounded-lg shadow-lg"} do |f| %>
+  <div class="mb-4 max-w-md mx-auto">
+    <%= f.label :service_id, "Atendimento para", class: "block text-gray-700 text-sm font-bold mb-2" %>
+    <%= f.select :service_id, options_from_collection_for_select(available_services, :id, -> (service) { display_service_name(service) }), include_blank: true, class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
   </div>
-  <br>
-  <div class="actions">
-    <%= f.submit "Remarcar", class: "bg-blue-600 hover:bg-blue-800 text-white font-bold py-1 px-4 rounded" %>
+
+  <% if controller_name == "leads" %>
+    <div class="mb-4 max-w-md mx-auto">
+      <%= f.label :referral_id, "Indicação", class: "block text-gray-700 text-sm font-bold mb-2" %>
+      <%= f.collection_select :referral_id, Referral.all, :id, :name, {selected: old_appointment&.invitation&.referral&.id}, {class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"} %>
+    </div>
+  <% end %>
+
+  <% if old_appointment.blank? %>
+    <%= f.hidden_field :lead_id, value: lead.id %>
+  <% end %>
+
+  <% if controller_name == "leads"%>
+    <div class="flex items-center justify-between max-w-md mx-auto">
+      <%= f.submit old_appointment.present? ? "Remarcar" : "Marcar", class: "bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded w-full" %>
+    </div>
+  <% else %>
+    <div class="flex items-center justify-between max-w-md mx-auto">
+      <%= f.submit "Remarcação de " + old_appointment&.invitation&.referral&.name, class: "bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded w-full" %>
+    </div>
+  <% end %>
+
+<% end %>
+
+<% if old_appointment.blank? %>
+  <div class="mt-4 text-gray-700 max-w-md mx-auto">
+    <p>Obs: indicador e região serão setados como <b>Local</b></p>
   </div>
 <% end %>
+
+
+

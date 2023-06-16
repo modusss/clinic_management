@@ -1,32 +1,61 @@
 module ClinicManagement
   class AppointmentsController < ApplicationController
     before_action :set_appointment, only: %i[ show edit update destroy ]
+    skip_before_action :redirect_referral_users, only: [:reschedule]
 
     # POST /appointments
     def create
-      @appointment = Appointment.new(appointment_params)
-      if @appointment.save
-        @appointment.lead.update(last_appointment_id: @appointment.id)
-        redirect_to @appointment, notice: "Appointment was successfully created."
-      else
-        render :new, status: :unprocessable_entity
+      params = request.params[:appointment]
+      @lead = Lead.find_by(id: params[:lead_id])
+      @service = Service.find_by(id: params[:service_id])
+      @invitation = Invitation.new(
+        referral_id: Referral.find_by(name: "Local").id,
+        region_id: Region.find_by(name: "Local").id,
+        patient_name: @lead.name,
+        lead_id: @lead.id
+      )
+      if @invitation.save
+        @appointment = @lead.appointments.build(
+          invitation: @invitation,
+          service: @service,
+          status: "agendado"
+        )
+        if @appointment.save
+          redirect_to @service
+        end
       end
     end
 
     def reschedule
       before_appointment = Appointment.find_by(id: params[:id])
       @lead = before_appointment.lead
+      if params[:appointment][:referral_id].present?
+        referral = Referral.find_by(id: params[:appointment][:referral_id])
+        invitation = Invitation.create(
+          referral_id: referral.id,
+          region_id: reschedule_region(referral, @lead).id,
+          patient_name: @lead.name,
+          lead_id: @lead.id
+        )      
+      else
+        invitation = before_appointment.invitation
+      end
       @next_service = Service.find_by(id: params[:appointment][:service_id])
       if before_appointment&.present? && @lead&.present? && @next_service&.present?
         @appointment = @lead.appointments.build(
-          invitation: before_appointment.invitation,
+          invitation: invitation,
           service: @next_service,
           status: "agendado"
         )
         if @appointment.save
           before_appointment.update(status: "remarcado")
           @lead.update(last_appointment_id: @appointment.id)
-          redirect_to @next_service, notice: "Appointment was successfully updated."
+          if helpers.referral? current_user
+            # redirect_to request.original_url
+            redirect_to show_by_referral_services_path(referral_id: @appointment.invitation.referral.id, id: @next_service.id)
+          else
+            redirect_to @next_service
+          end
         else
           render :edit, status: :unprocessable_entity
         end
@@ -81,6 +110,15 @@ module ClinicManagement
     end
 
     private
+
+      def reschedule_region(referral, lead)
+        if referral.name.downcase == "local"
+          Region.find_by(name: "Local")
+        else
+          lead.invitations.last.region
+        end
+      end
+    
       # Use callbacks to share common setup or constraints between actions.
       def set_appointment
         @appointment = Appointment.find(params[:id])
