@@ -37,7 +37,6 @@ module ClinicManagement
       all_services = all_services.sort_by { |service| service.date }.reverse
       @service = all_services.find { |s| s.id == params[:id].to_i }
       @rows = process_appointments_by_referral_data(@service.appointments.includes(:invitation, :lead))
-      session[:return_to] = action_name
     end
     
 

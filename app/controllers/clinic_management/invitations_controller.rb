@@ -107,7 +107,12 @@ module ClinicManagement
     end
 
     def render_turbo_stream
-      invitation_list_locals = {invitation: @invitation, appointment: @appointment}
+      invitation_list_locals = {
+        invitation: @invitation, 
+        appointment: @appointment,
+        service: @appointment.service.id,
+        referral: @invitation.referral.id
+        }
       before_attributes = {
         referral: @invitation.referral.id,
         region: @invitation.region.id,
