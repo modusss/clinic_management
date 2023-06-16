@@ -26,7 +26,7 @@ module ClinicManagement
 
 
     def data_table(rows, fix_to = 3)
-      content_tag(:div, class: "flex overflow-x-scroll", style: "height: 70vh; overflow-y: auto;", data: { controller: "table" }) do 
+      content_tag(:div, class: "flex overflow-x-scroll", style: "max-height: 70vh; overflow-y: auto;", data: { controller: "table" }) do 
         table_wrapper("scrollable", rows, "min-w-full divide-y divide-gray-200", fix_to)
       end      
     end    

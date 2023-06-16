@@ -42,11 +42,18 @@ module ClinicManagement
     def create
       begin
         ActiveRecord::Base.transaction do
-          @lead = Lead.create!(invitation_params[:lead_attributes])
+          @lead = check_existing_leads(invitation_params)
           @invitation = @lead.invitations.build(invitation_params.except(:lead_attributes, :appointments_attributes))
           @lead.update!(name: @invitation.patient_name) if @lead.name.blank?
-          @appointment = @invitation.appointments.build(invitation_params[:appointments_attributes]["0"].merge({status: "agendado", lead: @lead}))
-          @appointment.save!
+          appointment_params = invitation_params[:appointments_attributes]["0"].merge({status: "agendado", lead: @lead})
+          existing_appointment = @lead.appointments.find_by(service_id: appointment_params[:service_id])    
+          if existing_appointment
+            @lead.errors.add(:base, "Este paciente chamado #{@lead.name} já está agendado para este atendimento.")
+            raise ActiveRecord::RecordInvalid.new(@lead)
+          else
+            @appointment = @invitation.appointments.build(appointment_params)
+            @appointment.save!
+          end
         end
         @lead.update(last_appointment_id: @appointment.id)
         render_turbo_stream
@@ -55,6 +62,7 @@ module ClinicManagement
       end
     end
     
+
     def new_patient_fitted
       @service = Service.find(params[:service_id])
       # @services = Service.all    
@@ -67,19 +75,27 @@ module ClinicManagement
     def create_patient_fitted
       begin
         ActiveRecord::Base.transaction do
-          @lead = Lead.create!(invitation_params[:lead_attributes])
+          @lead = check_existing_leads(invitation_params)
           @invitation = @lead.invitations.new(invitation_params.except(:lead_attributes, :appointments_attributes))       
           @invitation.region = set_local_region
-          @invitation.save
-          @lead.update!(name: @invitation.patient_name) if @lead.name.blank?
-          @appointment = @invitation.appointments.build(invitation_params[:appointments_attributes]["0"].merge({status: "agendado", lead: @lead}))
-          @appointment.save!
+          @invitation.save!
+          @lead.update!(name: @invitation.patient_name) if @lead.name.blank?    
+          appointment_params = invitation_params[:appointments_attributes]["0"].merge({status: "agendado", lead: @lead})
+          existing_appointment = @lead.appointments.find_by(service_id: appointment_params[:service_id])
+          if existing_appointment
+            @lead.errors.add(:base, "Este paciente chamado #{@lead.name} já está agendado para este atendimento.")
+            raise ActiveRecord::RecordInvalid.new(@lead)
+          else
+            @appointment = @invitation.appointments.build(appointment_params)
+            @appointment.save!
+          end
         end
         redirect_to @appointment.service
       rescue ActiveRecord::RecordInvalid => exception
         render_validation_errors(exception)
       end
     end
+    
 
     # PATCH/PUT /invitations/1
     def update
@@ -98,6 +114,14 @@ module ClinicManagement
 
     private
 
+    def check_existing_leads(params)
+      first_name = params.dig(:lead_attributes, :name)&.split&.first || invitation_params[:patient_name]&.split&.first   
+      phone = params.dig(:lead_attributes, :phone)
+      lead = Lead.find_by_phone(phone)
+      return Lead.create!(params[:lead_attributes]) unless lead   
+      lead.name.match?(/#{Regexp.escape(first_name)}/i) ? lead : Lead.create!(params[:lead_attributes])
+    end
+    
     def set_local_region
       region = Region.find_by(name: "Local")
       unless region.present?
