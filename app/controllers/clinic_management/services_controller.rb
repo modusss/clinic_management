@@ -210,11 +210,9 @@ module ClinicManagement
     end
 
     def appointment_counts(service)
-      p "###### params: " + params
-      p "###### check referral data: " + @referral.id.to_s
       appointments = service.appointments.to_a
       if action_name == "index_by_referral"
-        appointments.select! { |a| a.invitation.referral == @referral }
+        appointments.select! { |a| a&.invitation&.referral == @referral }
       end
       total_appointments = appointments.count
       scheduled = appointments.select { |a| a.attendance == true }.count
