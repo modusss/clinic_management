@@ -14,8 +14,6 @@ module ClinicManagement
 
     def index_by_referral
       @referral = Referral.find(params[:referral_id])
-      p "###### Referral id: " + @referral.id.to_s
-      p "###### params[:referral_id]: " + params[:referral_id]
       @services = Rails.cache.read("referral_#{@referral.id}_services")
       if @services.nil?
         @services = Service.joins(appointments: {invitation: :referral})
@@ -212,6 +210,7 @@ module ClinicManagement
     end
 
     def appointment_counts(service)
+      p "###### params: " + params
       p "###### check referral data: " + @referral.id.to_s
       appointments = service.appointments.to_a
       if action_name == "index_by_referral"
