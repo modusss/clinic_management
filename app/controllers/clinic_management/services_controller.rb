@@ -96,7 +96,7 @@ module ClinicManagement
     end
 
     def process_appointments_by_referral_data(appointments)
-      sorted_appointments = appointments.select { |appointment| appointment.invitation.referral_id == @referral.id }
+      sorted_appointments = appointments.select { |appointment| appointment&.invitation&.referral == @referral }
       sorted_appointments.map.with_index(1) do |ap, index|
         lead = ap.lead
         new_appointment = ClinicManagement::Appointment.new
