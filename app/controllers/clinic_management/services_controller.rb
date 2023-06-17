@@ -210,7 +210,7 @@ module ClinicManagement
     end
 
     def appointment_counts(service)
-      p "###### params: " + params
+      p "###### params: " + params.to_s
       p "###### check referral data: " + @referral.id.to_s
       appointments = service.appointments.to_a
       if action_name == "index_by_referral"
