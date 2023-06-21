@@ -14,16 +14,12 @@ module ClinicManagement
 
     def index_by_referral
       @referral = Referral.find(params[:referral_id])
-      @services = Rails.cache.read("referral_#{@referral.id}_services")
-      if @services.nil?
-        @services = Service.joins(appointments: {invitation: :referral})
-                           .where(referrals: { id: @referral.id })
-                           .order(date: :desc)
-                           .distinct
-      end
+      @services = Service.joins(appointments: {invitation: :referral})
+                          .where(referrals: { id: @referral.id })
+                          .order(date: :desc)
+                          .distinct
       @rows = process_services_data(@services)
     end
-    
     
     # GET /services/1
     def show
@@ -39,7 +35,6 @@ module ClinicManagement
       @rows = process_appointments_by_referral_data(@service.appointments.includes(:invitation, :lead))
     end
     
-
     # GET /services/new
     def new
       @service = Service.new
@@ -122,7 +117,7 @@ module ClinicManagement
     end
 
     def process_appointments_data(appointments)
-      sorted_appointments = appointments.sort_by { |ap| ap.invitation.patient_name }  
+      sorted_appointments = appointments.sort_by { |ap| ap&.invitation&.patient_name }  
       sorted_appointments.map.with_index(1) do |ap, index|
         new_appointment = ClinicManagement::Appointment.new
         lead = ap.lead
