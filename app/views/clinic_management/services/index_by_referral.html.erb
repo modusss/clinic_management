@@ -12,4 +12,8 @@
     <div class="overflow-hidden border-gray-200 sm:rounded-lg">
       <%= data_table(@rows) %>
     </div>
+    <br>
+    <% if @services.present? %>
+      <%= paginate @services %>
+    <% end %>
 </div>
