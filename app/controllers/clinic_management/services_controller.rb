@@ -9,7 +9,8 @@ module ClinicManagement
     # GET /services
     def index
       @referrals = Referral.all
-      @rows = process_services_data(ClinicManagement::Service.includes(:appointments).order(date: :desc))
+      @services = ClinicManagement::Service.includes(:appointments).order(date: :desc).page(params[:page]).per(20)
+      @rows = process_services_data(@services)
     end
 
     def index_by_referral
@@ -18,12 +19,13 @@ module ClinicManagement
                           .where(appointments: { referral_code: @referral.code })
                           .order(date: :desc)
                           .distinct
+                          .page(params[:page]).per(20)
       @rows = process_services_data(@services)
     end
     
     # GET /services/1
     def show
-      @rows = process_appointments_data(@service.appointments)       
+      @rows = process_appointments_data(@service.appointments) 
     end
 
     def show_by_referral

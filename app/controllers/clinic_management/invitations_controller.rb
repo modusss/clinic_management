@@ -52,6 +52,7 @@ module ClinicManagement
             raise ActiveRecord::RecordInvalid.new(@lead)
           else
             @appointment = @invitation.appointments.build(appointment_params)
+            @appointment.referral_code = @invitation&.referral&.code
             @appointment.save!
           end
         end
@@ -62,7 +63,6 @@ module ClinicManagement
       end
     end
     
-
     def new_patient_fitted
       @service = Service.find(params[:service_id])
       # @services = Service.all    
@@ -87,6 +87,7 @@ module ClinicManagement
             raise ActiveRecord::RecordInvalid.new(@lead)
           else
             @appointment = @invitation.appointments.build(appointment_params)
+            @appointment.referral_code = @invitation&.referral&.code
             @appointment.save!
           end
         end

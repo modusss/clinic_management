@@ -18,6 +18,7 @@ module ClinicManagement
         @appointment = @lead.appointments.build(
           invitation: @invitation,
           service: @service,
+          referral_code: @invitation&.referral&.code,
           status: "agendado"
         )
         if @appointment.save
@@ -45,7 +46,8 @@ module ClinicManagement
         @appointment = @lead.appointments.build(
           invitation: invitation,
           service: @next_service,
-          status: "agendado"
+          status: "agendado",
+          referral_code: invitation&.referral&.code
         )
         if @appointment.save
           before_appointment.update(status: "remarcado")
