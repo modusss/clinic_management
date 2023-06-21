@@ -14,8 +14,8 @@ module ClinicManagement
 
     def index_by_referral
       @referral = Referral.find(params[:referral_id])
-      @services = Service.joins(appointments: {invitation: :referral})
-                          .where(referrals: { id: @referral.id })
+      @services = Service.joins(:appointments)
+                          .where(appointments: { referral_code: @referral.code })
                           .order(date: :desc)
                           .distinct
       @rows = process_services_data(@services)
@@ -23,16 +23,16 @@ module ClinicManagement
     
     # GET /services/1
     def show
-      @rows = process_appointments_data(@service.appointments.includes(:invitation, :lead))       
+      @rows = process_appointments_data(@service.appointments)       
     end
 
     def show_by_referral
       @referral = Referral.find(params[:referral_id])
-      all_appointments = @referral.invitations.map(&:appointments).flatten
+      all_appointments = Appointment.where(referral_code: @referral.code)
       all_services = all_appointments.map(&:service).uniq
       all_services = all_services.sort_by { |service| service.date }.reverse
       @service = all_services.find { |s| s.id == params[:id].to_i }
-      @rows = process_appointments_by_referral_data(@service.appointments.includes(:invitation, :lead))
+      @rows = process_appointments_by_referral_data(@service.appointments)
     end
     
     # GET /services/new
@@ -91,7 +91,7 @@ module ClinicManagement
     end
 
     def process_appointments_by_referral_data(appointments)
-      sorted_appointments = appointments.select { |appointment| appointment&.invitation&.referral == @referral }
+      sorted_appointments = appointments.select { |appointment| appointment.referral_code == @referral.code }
       sorted_appointments.map.with_index(1) do |ap, index|
         lead = ap.lead
         new_appointment = ClinicManagement::Appointment.new
