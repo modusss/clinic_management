@@ -4,7 +4,7 @@ module ClinicManagement
     def translate_type(type)
       case type
       when 'sphere'
-        'Esfera'
+        'Esférico'
       when 'cylinder'
         'Cilindro'
       when 'axis'
