@@ -1,0 +1,36 @@
+<%= form_with(model: [appointment, prescription], class: "w-full max-w-lg mx-auto mt-6", id: "new_prescription") do |f| %>
+  <% if prescription.errors.any? %>
+    <div class="bg-red-200 border-red-600 border-l-4 p-4 mb-6">
+      <h2 class="text-red-800 font-bold"><%= pluralize(prescription.errors.count, "erro") %> impediram que fosse salvo:</h2>
+      <ul class="list-disc pl-6">
+        <% prescription.errors.each do |error| %>
+          <li class="text-red-600"><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="mb-4">
+    <%= f.label :appointment_id, "Appointment", class: "block text-gray-700 text-sm font-bold mb-2" %>
+    <%= f.select :appointment_id, patients, {}, {class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"} %>
+  </div>
+
+  <% ['right', 'left'].each do |side| %>
+    <% ['sphere', 'cylinder', 'axis', 'add'].each do |type| %>
+      <div class="mb-4">
+        <%= f.label "#{type}_#{side}", "#{type.capitalize} #{side.capitalize}", class: "block text-gray-700 text-sm font-bold mb-2" %>
+        <%= f.select "#{type}_#{side}", options_for_select(send("collection_for_#{type}"), selected: 0.0), {}, {class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"} %>
+      </div>
+    <% end %>
+  <% end %>
+
+  <div class="mb-4">
+    <%= f.label :comment, "Comment", class: "block text-gray-700 text-sm font-bold mb-2" %>
+    <%= f.text_area :comment, class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+  </div>
+
+  <div class="flex items-center justify-between">
+    <%= f.submit "Submit", class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" %>
+  </div>
+
+<% end %>

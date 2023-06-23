@@ -10,13 +10,10 @@ ClinicManagement::Engine.routes.draw do
   resources :appointments do
     member do
       patch :set_attendance
-    end
-    member do
       patch :cancel_attendance
-    end
-    member do 
       post :reschedule
     end
+    resources :prescriptions
   end
   resources :services do
     collection do
