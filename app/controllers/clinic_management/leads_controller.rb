@@ -192,9 +192,9 @@ module ClinicManagement
 
       def prescription_link(ap)
         if ap.prescription.present?
-          helpers.link_to("editar receita", edit_appointment_prescription_path(ap), class: "text-blue-500 hover:text-blue-700")
+          helpers.link_to("Editar receita", edit_appointment_prescription_path(ap), class: "text-white bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded")
         else
-          helpers.link_to("nova receita", new_appointment_prescription_path(ap), class: "text-blue-500 hover:text-blue-700")
+          helpers.link_to("Lançar receita", new_appointment_prescription_path(ap), class: "bg-blue-600 hover:bg-blue-800 text-white py-2 px-4 rounded")
         end
       end
   end
