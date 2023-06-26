@@ -112,7 +112,7 @@ module ClinicManagement
           {header: "Paciente", content: invitation.patient_name },
           {header: "Data do atendimento", content: helpers.link_to(invite_day(ap), service_path(ap.service), class: "text-blue-500 hover:text-blue-700")},         
           {header: "Comparecimento", content: (ap.attendance == true ? "Sim" : "Não"), class: helpers.attendance_class(ap)},
-          {header: "Receita", content: helpers.link_to("nova receita", new_appointment_prescription_path(ap), class: "text-blue-500 hover:text-blue-700")},
+          {header: "Receita", content: prescription_link(ap)},
           {header: "Status", content: ap.status, class: helpers.status_class(ap)},
           {header: "Data do convite", content: invitation.created_at.strftime("%d/%m/%Y")},
           {header: "Convidado por", content: invitation.referral.name},
@@ -188,6 +188,14 @@ module ClinicManagement
       # Only allow a list of trusted parameters through.
       def lead_params
         params.require(:lead).permit(:name, :phone, :address, :converted)
+      end
+
+      def prescription_link(ap)
+        if ap.prescription.present?
+          helpers.link_to("editar receita", edit_appointment_prescription_path(ap), class: "text-blue-500 hover:text-blue-700")
+        else
+          helpers.link_to("nova receita", new_appointment_prescription_path(ap), class: "text-blue-500 hover:text-blue-700")
+        end
       end
   end
 end

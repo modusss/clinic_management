@@ -16,7 +16,7 @@ module ClinicManagement
     def create
       @prescription = @appointment.build_prescription(prescription_params)
       if @prescription.save
-        redirect_to appointment_prescription_path(@appointment), notice: 'Prescription was successfully created.'
+        redirect_to lead_path(@appointment.lead), notice: 'Prescription was successfully created.'
       else
         render :new
       end
@@ -29,7 +29,7 @@ module ClinicManagement
     def update
       @prescription = @appointment.prescription
       if @prescription.update(prescription_params)
-        redirect_to appointment_prescription_path(@appointment), notice: 'Prescription was successfully updated.'
+        redirect_to lead_path(@appointment.lead), notice: 'Prescription was successfully updated.'
       else
         render :edit
       end
