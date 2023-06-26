@@ -1,4 +1,4 @@
-<%= breadcrumb({title: "Dados de " + @appointment.lead.name, path: lead_path(@appointment.lead)}, {title: "Editar receita de " + @appointment.invitation.patient_name , path: nil}) %>
+<%= breadcrumb({title: "Dados de " + @appointment.lead.name, path: lead_path(@appointment.lead)}, {title: @appointment.invitation.patient_name + " - " + @appointment.service.date.strftime("%d/%m/%Y")  , path: nil}) %>
 
 <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">  
   <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
