@@ -13,7 +13,11 @@ ClinicManagement::Engine.routes.draw do
       patch :cancel_attendance
       post :reschedule
     end
-    resources :prescriptions
+    resources :prescriptions do
+      collection do
+        get 'today_list', action: "today_list", as: "today_list"
+      end
+    end
   end
   resources :services do
     collection do

@@ -1,6 +1,25 @@
 module ClinicManagement
   class PrescriptionsController < ApplicationController
-    before_action :set_appointment
+    before_action :set_appointment, except: [:today_list]
+    
+    def index
+
+    end
+
+    def today_list
+      @service = Service.find_by(date: Date.today)
+      if @service.present?
+        @appointments = @service.appointments
+        @rows = @appointments.map.with_index(1) do |ap, index|
+          invitation = ap.invitation
+          [
+            {header: "#", content: index },
+            {header: "Paciente", content: invitation.patient_name},
+            {header: "Comparecimento", content: ap.attendance == true ? "sim" :  "--"}
+          ]
+        end
+      end
+    end
 
     def show
       @prescription = @appointment.prescription

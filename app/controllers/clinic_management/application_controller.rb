@@ -2,8 +2,13 @@ module ClinicManagement
   class ApplicationController < ActionController::Base
     before_action :authenticate_user!
     before_action :redirect_referral_users
+    before_action :set_today_list
 
     private
+
+    def set_today_list
+      @today_service = Service.find_by(date: Date.today)
+    end
 
     def authenticate_user!
       unless user_signed_in?
