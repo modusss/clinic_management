@@ -16,12 +16,14 @@ ClinicManagement::Engine.routes.draw do
     resources :prescriptions do
       collection do
         get 'index_today', action: "index_today", as: "index_today"
+        get 'new_today', action: "new_today", as: "new_today"
       end
       member do 
         get 'show_today', action: "show_today", as: "show_today"
       end
     end
   end
+  
   resources :services do
     collection do
       get 'index_by_referral/:referral_id', action: "index_by_referral", as: "index_by_referral"

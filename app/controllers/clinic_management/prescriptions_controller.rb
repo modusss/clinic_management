@@ -31,9 +31,11 @@ module ClinicManagement
     end
 
     def new
-      @prescription = @appointment.build_prescription
-      @service = @appointment.service
-      @patients = @service.appointments.joins(:invitation).pluck('clinic_management_invitations.patient_name')
+      new_settings
+    end
+
+    def new_today
+      new_settings
     end
 
     def create
@@ -66,11 +68,17 @@ module ClinicManagement
 
     private
 
+    def new_settings
+      @prescription = @appointment.build_prescription
+      @service = @appointment.service
+      @patients = @service.appointments.joins(:invitation).pluck('clinic_management_invitations.patient_name')
+    end
+
     def prescription_link(ap)
       if ap.prescription.present?
         helpers.link_to("Ver receita", show_today_appointment_prescription_path(ap, ap.prescription), class: "text-white bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded")
       else
-        helpers.link_to("Lançar receita", new_appointment_prescription_path(ap), class: "bg-blue-600 hover:bg-blue-800 text-white py-2 px-4 rounded")
+        helpers.link_to("Lançar receita", new_today_appointment_prescriptions_path(ap), class: "bg-blue-600 hover:bg-blue-800 text-white py-2 px-4 rounded")
       end
     end
 
