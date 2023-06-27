@@ -15,7 +15,7 @@ module ClinicManagement
           invitation = ap.invitation
           [
             {header: "#", content: index },
-            {header: "Paciente", content: invitation.patient_name},
+            patient_name_field(invitation),
             {header: "Comparecimento", content: ap.attendance == true ? "sim" :  "--"},
             {header: "Receita", content: prescription_link(ap)}
           ]
@@ -41,6 +41,7 @@ module ClinicManagement
 
     def create
       @prescription = @appointment.build_prescription(prescription_params)
+      @prescription.doctor_name = current_user.name if helpers.doctor?(current_user)
       if @prescription.save
         if request.referrer.include?("new_today")
           redirect_to index_today_path, notice: 'Prescription was successfully updated.'
@@ -62,6 +63,7 @@ module ClinicManagement
 
     def update
       @prescription = @appointment.prescription
+      @prescription.doctor_name = current_user.name if helpers.doctor?(current_user)
       if @prescription.update(prescription_params)
         if request.referrer.include?("edit_today")
           redirect_to show_today_appointment_prescription_path(@appointment, @prescription), notice: 'Prescription was successfully updated.'
@@ -80,6 +82,15 @@ module ClinicManagement
     end
 
     private
+
+    def patient_name_field(invitation)
+      if helpers.doctor?(current_user)
+        {header: "Paciente", content: invitation.patient_name}
+      else
+        lead = invitation.lead
+        {header: "Paciente", content: helpers.link_to(lead.name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank" )}
+      end
+    end
 
     def new_settings
       @prescription = @appointment.build_prescription
