@@ -15,7 +15,10 @@ ClinicManagement::Engine.routes.draw do
     end
     resources :prescriptions do
       collection do
-        get 'today_list', action: "today_list", as: "today_list"
+        get 'index_today', action: "index_today", as: "index_today"
+      end
+      member do 
+        get 'show_today', action: "show_today", as: "show_today"
       end
     end
   end
