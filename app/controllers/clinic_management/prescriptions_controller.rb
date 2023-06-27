@@ -41,7 +41,11 @@ module ClinicManagement
     def create
       @prescription = @appointment.build_prescription(prescription_params)
       if @prescription.save
-        redirect_to lead_path(@appointment.lead), notice: 'Prescription was successfully created.'
+        if request.referrer.include?("new_today")
+          redirect_to index_today_appointment_prescriptions_path(@today_service&.appointments), notice: 'Prescription was successfully updated.'
+        else
+          redirect_to lead_path(@appointment.lead), notice: 'Prescription was successfully created.'
+        end
       else
         render :new
       end
@@ -51,10 +55,18 @@ module ClinicManagement
       @prescription = @appointment.prescription
     end
 
+    def edit_today
+      @prescription = @appointment.prescription
+    end
+
     def update
       @prescription = @appointment.prescription
       if @prescription.update(prescription_params)
-        redirect_to appointment_prescription_path(@appointment), notice: 'Prescription was successfully updated.'
+        if request.referrer.include?("edit_today")
+          redirect_to show_today_appointment_prescription_path(@appointment, @prescription), notice: 'Prescription was successfully updated.'
+        else
+          redirect_to appointment_prescription_path(@appointment), notice: 'Prescription was successfully updated.'
+        end
       else
         render :edit
       end

@@ -17,6 +17,7 @@ ClinicManagement::Engine.routes.draw do
       collection do
         get 'index_today', action: "index_today", as: "index_today"
         get 'new_today', action: "new_today", as: "new_today"
+        get 'edit_today', action: "edit_today", as: "edit_today"
       end
       member do 
         get 'show_today', action: "show_today", as: "show_today"
