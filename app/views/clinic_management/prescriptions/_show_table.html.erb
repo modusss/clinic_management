@@ -1,0 +1,31 @@
+    <table class="mt-4 min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th></th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Esférico</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cilindro</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Eixo</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adição</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <% ['right', 'left'].each do |side| %>
+          <tr>
+            <td class="px-6 text-center py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= translate_side(side) %></td>
+            <% ['sphere', 'cylinder', 'axis', 'add'].each do |type| %>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                <% if ["0.0", "0"].include? prescription.send("#{type}_#{side}") %>
+                  --
+                <% else %>
+                  <%= prescription.send("#{type}_#{side}") %>
+                <% end %>
+              </td>
+            <% end %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    <div class="mt-8">
+      <h2 class="text-xl font-bold mb-2">Comentário:</h2>
+      <p class="text-gray-700"><%= prescription.comment %></p>
+    </div>
