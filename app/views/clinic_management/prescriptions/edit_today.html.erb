@@ -1,4 +1,4 @@
-<%= breadcrumb({title: "Lista de hoje", path: clinic_management.index_today_appointment_prescriptions_path(@today_service&.appointments)}, {title: @appointment.invitation.patient_name  , path: nil}) %>
+<%= breadcrumb({title: "Lista de hoje", path: index_today_path(@today_service&.appointments)}, {title: @appointment.invitation.patient_name  , path: nil}) %>
 
 <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">  
   <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
