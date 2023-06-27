@@ -42,7 +42,7 @@ module ClinicManagement
       @prescription = @appointment.build_prescription(prescription_params)
       if @prescription.save
         if request.referrer.include?("new_today")
-          redirect_to index_today_appointment_prescriptions_path(@today_service&.appointments), notice: 'Prescription was successfully updated.'
+          redirect_to index_today_path, notice: 'Prescription was successfully updated.'
         else
           redirect_to lead_path(@appointment.lead), notice: 'Prescription was successfully created.'
         end
