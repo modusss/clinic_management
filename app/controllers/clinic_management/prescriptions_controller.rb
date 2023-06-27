@@ -1,6 +1,7 @@
 module ClinicManagement
   class PrescriptionsController < ApplicationController
     before_action :set_appointment, except: [:index_today]
+    skip_before_action :redirect_doctor_users, only: [:index_today, :show_today, :new_today, :update, :create]
     
     def index
 
