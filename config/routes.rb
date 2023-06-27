@@ -10,14 +10,22 @@ ClinicManagement::Engine.routes.draw do
   resources :appointments do
     member do
       patch :set_attendance
-    end
-    member do
       patch :cancel_attendance
-    end
-    member do 
       post :reschedule
     end
+    resources :prescriptions do
+      collection do
+        get 'new_today', action: "new_today", as: "new_today"
+        get 'edit_today', action: "edit_today", as: "edit_today"
+      end
+      member do 
+        get 'show_today', action: "show_today", as: "show_today"
+      end
+    end
   end
+  get 'prescriptions/index_today', to: "prescriptions#index_today", as: "index_today"
+  
+  
   resources :services do
     collection do
       get 'index_by_referral/:referral_id', action: "index_by_referral", as: "index_by_referral"

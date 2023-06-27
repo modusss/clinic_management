@@ -1,0 +1,5 @@
+<% if @appointments.present? %>
+    <%= data_table(@rows) %>
+<% else %>
+    Nenhum atendimento para hoje encontrado.
+<% end %>

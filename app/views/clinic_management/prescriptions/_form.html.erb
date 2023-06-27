@@ -1,0 +1,46 @@
+<%= form_with(model: [appointment, prescription], class: "w-full max-w-lg mx-auto mt-6", id: "new_prescription") do |f| %>
+  <% if prescription.errors.any? %>
+    <div class="bg-red-200 border-red-600 border-l-4 p-4 mb-6">
+      <h2 class="text-red-800 font-bold"><%= pluralize(prescription.errors.count, "erro") %> impediram que fosse salvo:</h2>
+      <ul class="list-disc pl-6">
+        <% prescription.errors.each do |error| %>
+          <li class="text-red-600"><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <table class="table-auto">
+    <thead>
+      <tr>
+        <th></th>
+        <th class="px-4 py-2">Esférico</th>
+        <th class="px-4 py-2">Cilindro</th>
+        <th class="px-4 py-2">Eixo</th>
+        <th class="px-4 py-2">Adição</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% ['right', 'left'].each do |side| %>
+        <tr>
+          <th class="px-4 py-2"><%= translate_side(side) %></th>
+          <% ['sphere', 'cylinder', 'axis', 'add'].each do |type| %>
+            <td class="border px-4 py-2">
+              <%= f.select "#{type}_#{side}", options_for_select(send("collection_for_#{type}"), selected: prescription.new_record? ? 0.0 : prescription.send("#{type}_#{side}")), {}, {class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"} %>
+            </td>
+          <% end %>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <br>
+  <div class="mb-4">
+    <%= f.label :comment, "Comentário", class: "block text-gray-700 text-sm font-bold mb-2" %>
+    <%= f.text_area :comment, value: prescription.comment, class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+  </div>
+
+  <div class="flex items-center justify-between">
+    <%= f.submit "Enviar", class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" %>
+  </div>
+
+<% end %>

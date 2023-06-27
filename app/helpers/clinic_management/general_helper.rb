@@ -9,13 +9,17 @@ module ClinicManagement
           current_membership.role == "referral"
         end
 
+        def doctor?(user)
+          current_membership.role == "doctor"
+        end
+
         def user_referral
           code = current_membership.code
           Referral.find_by(code: code)
         end
         
         def current_membership
-          current_user.memberships.last
+          current_user&.memberships&.last
         end
 
         def local_referral
