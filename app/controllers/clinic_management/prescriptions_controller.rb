@@ -11,7 +11,6 @@ module ClinicManagement
       @service = @appointment.service
       @patients = @service.appointments.joins(:invitation).pluck('clinic_management_invitations.patient_name')
     end
-    
 
     def create
       @prescription = @appointment.build_prescription(prescription_params)
@@ -29,7 +28,7 @@ module ClinicManagement
     def update
       @prescription = @appointment.prescription
       if @prescription.update(prescription_params)
-        redirect_to lead_path(@appointment.lead), notice: 'Prescription was successfully updated.'
+        redirect_to appointment_prescription_path(@appointment), notice: 'Prescription was successfully updated.'
       else
         render :edit
       end

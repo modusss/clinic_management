@@ -1,2 +1,41 @@
-<h1>Prescription#show</h1>
-<p>Find me in app/views/clinic_management/prescription/show.html.erb</p>
+<%= breadcrumb({title: "Dados de " + @appointment.lead.name, path: lead_path(@appointment.lead)}, {title: @appointment.invitation.patient_name + " - " + @appointment.service.date.strftime("%d/%m/%Y")  , path: nil}) %>
+
+<div class="flex flex-col items-center justify-center py-2">
+  <div class="max-w-md w-full space-y-8">
+    <div>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        Receita para <%= @prescription.appointment.invitation.patient_name %>
+      </h2>
+    </div>
+    <table class="mt-4 min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th></th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Esférico</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cilindro</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Eixo</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adição</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <% ['right', 'left'].each do |side| %>
+          <tr>
+            <td class="px-6 text-center py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= translate_side(side) %></td>
+            <% ['sphere', 'cylinder', 'axis', 'add'].each do |type| %>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                <%= @prescription.send("#{type}_#{side}") %>
+              </td>
+            <% end %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    <div class="mt-8">
+      <h2 class="text-xl font-bold mb-2">Comentário:</h2>
+      <p class="text-gray-700"><%= @prescription.comment %></p>
+    </div>
+    <div class="mt-8">
+      <%= link_to("Editar receita", edit_appointment_prescription_path(@prescription.appointment), class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500") %>
+    </div>
+  </div>
+</div>
