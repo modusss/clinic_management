@@ -1,5 +1,5 @@
 
-<% if referral? current_user %>
+<% if (referral? current_user) || (doctor? current_user) %>
   <header class="bg-blue-600 py-4">
     <nav class="container mx-auto flex items-center justify-between p-6">
       <div class="flex items-center text-white mr-6">

@@ -19,7 +19,7 @@ module ClinicManagement
         end
         
         def current_membership
-          current_user.memberships.last
+          current_user&.memberships&.last
         end
 
         def local_referral

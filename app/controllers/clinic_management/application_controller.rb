@@ -24,8 +24,8 @@ module ClinicManagement
 
     def redirect_doctor_users
       unless devise_or_session_or_registration_controller?
-        if helpers.current_membership.role == "doctor"
-          redirect index_today_path
+        if helpers.current_membership&.role == "doctor"
+          redirect_to clinic_management.index_today_path
         end
       end
     end
