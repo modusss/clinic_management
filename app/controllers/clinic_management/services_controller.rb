@@ -138,6 +138,7 @@ module ClinicManagement
           { header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "pt-2 pb-0" },          
           { header: "Observações", content: invitation.notes },
           { header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id}" },
+          { header: "Mensagens enviadas:", content: ap.messages_sent.join(', '), id: "messages-sent-#{ap.id.to_s}" },
           { header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500" },
           { header: "Cancelar?", content: set_cancel_button(ap), id: "cancel-attendance-button-#{ap.id}", class: "pt-2 pb-0" },
           { header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500" }

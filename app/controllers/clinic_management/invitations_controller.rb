@@ -180,15 +180,18 @@ module ClinicManagement
       def process_invitations_data(invitations)
         invitations.map do |invite|
           last_appointment = invite.lead.appointments.last
+          lead = invite.lead
           [
             {header: "Data", content: invite&.date&.strftime("%d/%m/%Y")},
             {header: "Para", content: last_appointment_link(last_appointment)},
-            {header: "Paciente", content: helpers.link_to(invite.patient_name, lead_path(invite.lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
+            {header: "Paciente", content: helpers.link_to(invite.patient_name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
             {header: "Responsável", content: responsible_content(invite)},   
-            {header: "Telefone", content: invite.lead.phone},
+            {header: "Telefone", content: lead.phone},
             {header: "Observação", content: invite.notes},
+            {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}" },
+            {header: "Mensagens enviadas:", content: last_appointment.messages_sent.join(', '), id: "messages-sent-" + last_appointment.id.to_s },
             {header: "Indicação", content: invite.referral.name},
-            {header: "Quantidade de convites", content: invite.lead.appointments.count},
+            {header: "Quantidade de convites", content: lead.appointments.count},
             {header: "Região", content: invite.region.name}
           ]
         end
@@ -213,6 +216,13 @@ module ClinicManagement
 
       def responsible_content(invite)
         (invite.lead.name != invite.patient_name) ? invite.lead.name : ""
+      end
+
+      def generate_message_content(lead, appointment)
+        render_to_string(
+          partial: "clinic_management/lead_messages/lead_message_form",
+          locals: { lead: lead, appointment: appointment }
+        )
       end
       
       # Use callbacks to share common setup or constraints between actions.
