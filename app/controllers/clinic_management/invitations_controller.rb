@@ -189,7 +189,7 @@ module ClinicManagement
             {header: "Telefone", content: lead.phone},
             {header: "Observação", content: invite.notes},
             {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}" },
-            {header: "Mensagens enviadas:", content: last_appointment.messages_sent.join(', ') },
+            {header: "Mensagens enviadas:", content: last_appointment.messages_sent.join(', '), id: "messages-sent-" + last_appointment.id.to_s },
             {header: "Indicação", content: invite.referral.name},
             {header: "Quantidade de convites", content: lead.appointments.count},
             {header: "Região", content: invite.region.name}

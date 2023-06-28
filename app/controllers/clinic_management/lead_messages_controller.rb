@@ -56,14 +56,17 @@ module ClinicManagement
         add_message_sent(appointment, message.name)
         lead = Lead.find_by(id: params[:lead_id])
         message = get_message(message, lead, appointment)
-        respond_to do |format|
-          format.turbo_stream do
-            render turbo_stream: turbo_stream.append(
-                  "whatsapp-link-" + lead.id.to_s, 
-                  partial: "clinic_management/lead_messages/whatsapp_link", 
-                  locals: { phone_number: lead.phone, message: message })
-          end
-        end
+        render turbo_stream: [
+          turbo_stream.append(
+            "whatsapp-link-" + lead.id.to_s, 
+            partial: "clinic_management/lead_messages/whatsapp_link", 
+            locals: { phone_number: lead.phone, message: message }
+          ),
+          turbo_stream.update(
+            "messages-sent-" + appointment.id.to_s, 
+            appointment.messages_sent.join(', ')
+          )
+        ]        
       rescue
       end
     end
