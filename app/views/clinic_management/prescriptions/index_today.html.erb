@@ -1,11 +1,13 @@
 
 <% unless doctor?(current_user)%>
-      <%= link_to "Encaixar novo paciente", new_patient_fitted_invitations_path(@service), class: "inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-6" %>
-      <br>
-      <br>
-      <%= link_to "Página do atendimento", service_path(@service), class: "text-blue-500 hover:text-blue-700" %>
-      <br>
-      <br>
+      <% if @service.present? %>
+        <%= link_to "Encaixar novo paciente", new_patient_fitted_invitations_path(@service), class: "inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-6" %>
+        <br>
+        <br>
+        <%= link_to "Página do atendimento", service_path(@service), class: "text-blue-500 hover:text-blue-700" %>
+        <br>
+        <br>
+      <% end %>
 <% end %>
 
 <% if @appointments.present? %>
