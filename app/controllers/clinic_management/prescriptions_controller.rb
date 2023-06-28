@@ -10,12 +10,13 @@ module ClinicManagement
     def index_today
       @service = Service.find_by(date: Date.today)
       if @service.present?
-        @appointments = @service.appointments
+        @appointments = @service.appointments.sort_by { |ap| ap&.invitation&.patient_name }  
         @rows = @appointments.map.with_index(1) do |ap, index|
           invitation = ap.invitation
           [
             {header: "#", content: index },
             patient_name_field(invitation),
+            lead_conversion_link(invitation.lead),
             {header: "Comparecimento", content: ap.attendance == true ? "sim" :  "--"},
             {header: "Receita", content: prescription_link(ap)}
           ]
@@ -84,6 +85,20 @@ module ClinicManagement
     end
 
     private
+
+    def lead_conversion_link(lead)
+      unless helpers.doctor?(current_user)
+        { header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500" }
+      end
+    end
+
+    def set_conversion_link(lead)
+      if lead.leads_conversion.present?
+        helpers.link_to("Página do cliente", main_app.customer_orders_path(lead.customer), class: "text-blue-500 hover:text-blue-800 underline")
+      else
+        helpers.link_to("Converter para cliente", main_app.new_conversion_path(lead_id: lead.id), class: "text-red-500 hover:text-red-800 underline")
+      end
+   end
 
     def patient_name_field(invitation)
       if helpers.doctor?(current_user)
