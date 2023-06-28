@@ -43,6 +43,8 @@ module ClinicManagement
       @prescription = @appointment.build_prescription(prescription_params)
       @prescription.doctor_name = current_user.name if helpers.doctor?(current_user)
       if @prescription.save
+        @appointment.attendance = true
+        @appointment.save
         if request.referrer.include?("new_today")
           redirect_to index_today_path, notice: 'Prescription was successfully updated.'
         else
