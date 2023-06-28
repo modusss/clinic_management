@@ -91,7 +91,11 @@ module ClinicManagement
             @appointment.save!
           end
         end
-        redirect_to @appointment.service
+        if @appointment.service.date == Date.today
+          redirect_to index_today_path
+        else
+          redirect_to @appointment.service
+        end
       rescue ActiveRecord::RecordInvalid => exception
         render_validation_errors(exception)
       end
