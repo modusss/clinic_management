@@ -10,29 +10,31 @@
     </div>
   <% end %>
 
-  <table class="table-auto">
-    <thead>
-      <tr>
-        <th></th>
-        <th class="px-4 py-2">Esférico</th>
-        <th class="px-4 py-2">Cilindro</th>
-        <th class="px-4 py-2">Eixo</th>
-        <th class="px-4 py-2">Adição</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% ['right', 'left'].each do |side| %>
+  <div class="overflow-x-auto">
+    <table class="table-auto">
+      <thead>
         <tr>
-          <th class="px-4 py-2"><%= translate_side(side) %></th>
-          <% ['sphere', 'cylinder', 'axis', 'add'].each do |type| %>
-            <td class="border px-4 py-2">
-              <%= f.select "#{type}_#{side}", options_for_select(send("collection_for_#{type}"), selected: prescription.new_record? ? 0.0 : prescription.send("#{type}_#{side}")), {}, {class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"} %>
-            </td>
-          <% end %>
+          <th></th>
+          <th class="px-4 py-2">Esférico</th>
+          <th class="px-4 py-2">Cilindro</th>
+          <th class="px-4 py-2">Eixo</th>
+          <th class="px-4 py-2">Adição</th>
         </tr>
-      <% end %>
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        <% ['right', 'left'].each do |side| %>
+          <tr>
+            <th class="px-4 py-2"><%= translate_side(side) %></th>
+              <% ['sphere', 'cylinder', 'axis', 'add'].each do |type| %>
+                <td class="border px-4 py-2 min-w-100">
+                  <%= f.select "#{type}_#{side}", options_for_select(send("collection_for_#{type}"), selected: prescription.new_record? ? 0.0 : prescription.send("#{type}_#{side}")), {}, {class: "text-center shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"} %>
+                </td>
+              <% end %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
   <br>
   <div class="mb-4">
     <%= f.label :comment, "Comentário", class: "block text-gray-700 text-sm font-bold mb-2" %>
@@ -44,3 +46,9 @@
   </div>
 
 <% end %>
+
+<style>
+.min-w-100 {
+  min-width: 100px;
+}
+</style>
