@@ -10,12 +10,16 @@ module ClinicManagement
     def index_today
       @service = Service.find_by(date: Date.today)
       if @service.present?
-        @appointments = @service.appointments
+        @appointments = @service.appointments.sort_by { |ap| ap&.invitation&.patient_name }  
         @rows = @appointments.map.with_index(1) do |ap, index|
           invitation = ap.invitation
+          lead = invitation.lead
           [
             {header: "#", content: index },
             patient_name_field(invitation),
+            set_phone(lead.phone),
+            lead_conversion_link(lead),
+            *messages_link(lead, ap), # * é usado para incluir os elementos do array retornado por messages_link diretamente no array que está sendo mapeado
             {header: "Comparecimento", content: ap.attendance == true ? "sim" :  "--"},
             {header: "Receita", content: prescription_link(ap)}
           ]
@@ -84,6 +88,44 @@ module ClinicManagement
     end
 
     private
+
+    def set_phone(phone)
+      unless helpers.doctor?(current_user)
+        whatsapp_url = "https://wa.me/+55#{phone}"
+        {header: "Telefone", content: helpers.link_to(phone, whatsapp_url, class: "text-blue-500 hover:text-blue-700")}
+      end
+    end
+    
+
+    def messages_link(lead, ap)
+      unless helpers.doctor?(current_user)
+        [
+          { header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id.to_s}" },
+          { header: "Mensagens enviadas:", content: ap&.messages_sent&.join(', '), id: "messages-sent-#{ap.id.to_s}" }
+        ]
+      end
+    end
+
+    def generate_message_content(lead, appointment)
+      render_to_string(
+        partial: "clinic_management/lead_messages/lead_message_form",
+        locals: { lead: lead, appointment: appointment }
+      )
+    end
+
+    def lead_conversion_link(lead)
+      unless helpers.doctor?(current_user)
+        { header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500" }
+      end
+    end
+
+    def set_conversion_link(lead)
+      if lead.leads_conversion.present?
+        helpers.link_to("Página do cliente", main_app.customer_orders_path(lead.customer), class: "text-blue-500 hover:text-blue-800 underline")
+      else
+        helpers.link_to("Converter para cliente", main_app.new_conversion_path(lead_id: lead.id), class: "text-red-500 hover:text-red-800 underline")
+      end
+   end
 
     def patient_name_field(invitation)
       if helpers.doctor?(current_user)
