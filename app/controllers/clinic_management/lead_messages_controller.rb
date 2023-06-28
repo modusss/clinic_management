@@ -53,6 +53,7 @@ module ClinicManagement
       begin
         message = LeadMessage.find_by(id: params[:custom_message_id])
         appointment = Appointment.find_by(id: params[:appointment_id])
+        add_message_sent(appointment, message.name)
         lead = Lead.find_by(id: params[:lead_id])
         message = get_message(message, lead, appointment)
         respond_to do |format|
@@ -68,6 +69,14 @@ module ClinicManagement
     end
   
     private
+
+    # register that this message was sent to this appointment
+    def add_message_sent(appointment, name)
+      unless appointment.messages_sent.include? name
+        appointment.messages_sent << name
+        appointment.save
+      end
+    end
 
     def get_message(message, lead, appointment)
       result = message.text
