@@ -32,7 +32,9 @@
       <tbody id="invitations_list">
           <% if @today_invitations.present? %>
             <% @today_invitations.each do |invitation| %>
-              <%= render "invitation", invitation: invitation, referral: invitation.referral.id, service: invitation.appointments.last.service.id %>
+              <% if invitation&.appointments&.last&.service.id.present? %>
+                <%= render "invitation", invitation: invitation, referral: invitation&.referral&.id, service: invitation&.appointments&.last&.service&.id %>
+              <% end %>
             <% end %>
           <% end %>
       </tbody>
