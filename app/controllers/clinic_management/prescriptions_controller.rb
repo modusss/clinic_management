@@ -2,7 +2,8 @@ module ClinicManagement
   class PrescriptionsController < ApplicationController
     before_action :set_appointment, except: [:index_today]
     skip_before_action :redirect_doctor_users, only: [:index_today, :show_today, :new_today, :edit_today, :update, :create]
-    
+    include GeneralHelper
+
     def index
 
     end
@@ -14,15 +15,25 @@ module ClinicManagement
         @rows = @appointments.map.with_index(1) do |ap, index|
           invitation = ap.invitation
           lead = invitation.lead
-          [
-            {header: "#", content: index },
-            patient_name_field(invitation),
-            set_phone(lead.phone),
-            lead_conversion_link(lead),
-            *messages_link(lead, ap), # * é usado para incluir os elementos do array retornado por messages_link diretamente no array que está sendo mapeado
-            {header: "Comparecimento", content: ap.attendance == true ? "sim" :  "--"},
-            {header: "Receita", content: prescription_link(ap)}
-          ]
+          if helpers.doctor?(current_user)
+            [
+              {header: "#", content: index },
+              {header: "Paciente", content: invitation.patient_name},
+              {header: "Comparecimento", content: ap.attendance == true ? "sim" :  "--"},
+              {header: "Receita", content: prescription_link(ap)}
+            ]
+          else
+            [
+              {header: "#", content: index },
+              {header: "Paciente", content: helpers.link_to(lead.name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
+              {header: "Telefone", content: helpers.link_to(lead.phone, "https://wa.me/+55#{lead.phone}", class: "text-blue-500 hover:text-blue-700")},
+              {header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500" },
+              {header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id.to_s}" },
+              {header: "Mensagens enviadas:", content: ap&.messages_sent&.join(', '), id: "messages-sent-#{ap.id.to_s}" },            
+              {header: "Comparecimento", content: ap.attendance == true ? "sim" :  "--"},
+              {header: "Receita", content: prescription_link(ap)}
+            ]
+          end
         end
       end
     end
@@ -89,34 +100,11 @@ module ClinicManagement
 
     private
 
-    def set_phone(phone)
-      unless helpers.doctor?(current_user)
-        whatsapp_url = "https://wa.me/+55#{phone}"
-        {header: "Telefone", content: helpers.link_to(phone, whatsapp_url, class: "text-blue-500 hover:text-blue-700")}
-      end
-    end
-    
-
-    def messages_link(lead, ap)
-      unless helpers.doctor?(current_user)
-        [
-          { header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id.to_s}" },
-          { header: "Mensagens enviadas:", content: ap&.messages_sent&.join(', '), id: "messages-sent-#{ap.id.to_s}" }
-        ]
-      end
-    end
-
     def generate_message_content(lead, appointment)
       render_to_string(
         partial: "clinic_management/lead_messages/lead_message_form",
         locals: { lead: lead, appointment: appointment }
       )
-    end
-
-    def lead_conversion_link(lead)
-      unless helpers.doctor?(current_user)
-        { header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500" }
-      end
     end
 
     def set_conversion_link(lead)
@@ -126,15 +114,6 @@ module ClinicManagement
         helpers.link_to("Converter para cliente", main_app.new_conversion_path(lead_id: lead.id), class: "text-red-500 hover:text-red-800 underline")
       end
    end
-
-    def patient_name_field(invitation)
-      if helpers.doctor?(current_user)
-        {header: "Paciente", content: invitation.patient_name}
-      else
-        lead = invitation.lead
-        {header: "Paciente", content: helpers.link_to(lead.name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank" )}
-      end
-    end
 
     def new_settings
       @prescription = @appointment.build_prescription
