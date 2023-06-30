@@ -52,8 +52,12 @@ module ClinicManagement
     # DELETE /leads/1
     def destroy
       @lead.destroy
-      # Use `fallback_location` to handle cases where the referrer is missing or invalid.
-      redirect_to services_path
+      if helpers.referral? current_user
+        redirect_to new_invitation_path
+      else
+        # Use `fallback_location` to handle cases where the referrer is missing or invalid.
+        redirect_to services_path
+      end
     end
 
     def search

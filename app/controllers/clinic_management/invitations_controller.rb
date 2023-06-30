@@ -4,8 +4,6 @@ module ClinicManagement
     skip_before_action :redirect_referral_users, only: [:new, :create, :update]
     include GeneralHelper
 
-    include GeneralHelper
-
     # GET /invitations
     def index
       @invitations = Invitation.all.includes(:lead, :region, appointments: :service).order(created_at: :desc).page(params[:page]).per(30)
@@ -30,6 +28,10 @@ module ClinicManagement
       @referrals = Referral.all    
       begin
         @today_invitations = helpers.user_referral.invitations.where('created_at >= ?', Date.today.beginning_of_day).limit(100)
+        @today_invitations = @today_invitations.map do |invitation|
+          service = invitation.appointments.last&.service
+          [invitation, service] if service
+        end.compact
       rescue
         @today_invitations = nil
       end
@@ -49,6 +51,7 @@ module ClinicManagement
           existing_appointment = @lead.appointments.find_by(service_id: appointment_params[:service_id])    
           if existing_appointment
             @lead.errors.add(:base, "Este paciente chamado #{@lead.name} já está agendado para este atendimento.")
+            @invitation.destroy
             raise ActiveRecord::RecordInvalid.new(@lead)
           else
             @appointment = @invitation.appointments.build(appointment_params)
@@ -114,7 +117,7 @@ module ClinicManagement
     # DELETE /invitations/1
     def destroy
       @invitation.destroy
-      redirect_to invitations_url, notice: "Invitation was successfully destroyed."
+      redirect_to new_invitation_url, notice: "Invitation was successfully destroyed."
     end
 
     private
