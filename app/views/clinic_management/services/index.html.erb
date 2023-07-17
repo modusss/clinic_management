@@ -42,3 +42,41 @@
     <% end %>
   </section>
 </div>
+
+
+<style>
+.pagination {
+  display: flex;
+  justify-content: center;
+  padding: 1em 0;
+}
+
+.pagination li {
+  list-style: none;
+}
+
+.pagination li a {
+  margin: 0 0.5em;
+  padding: 0.5em 1em;
+  border: 1px solid #e2e8f0; /* border-gray-300 */
+  color: #4a5568; /* text-gray-700 */
+}
+
+.pagination li.active a,
+.pagination li a:hover {
+  background-color: #edf2f7; /* bg-gray-200 */
+  color: #2d3748; /* text-gray-800 */
+}
+
+.pagination li.disabled a {
+  color: #a0aec0; /* text-gray-400 */
+  cursor: not-allowed;
+}
+
+/* If you are using SVG for the icons: */
+.pagination li a svg {
+  vertical-align: middle;
+}
+</style>
+
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
