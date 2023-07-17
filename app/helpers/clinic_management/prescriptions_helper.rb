@@ -28,13 +28,13 @@ module ClinicManagement
     end
 
     def collection_for_sphere
-      (-20..20).step(0.25).map { |x| x.round(2) }
-    end    
+      (-25..25).step(0.25).map { |x| x.positive? ? "+#{x.round(2)}" : x.round(2).to_s }
+    end
     
     def collection_for_cylinder
-      (-10..0).step(0.25).map { |x| x.round(2) }
+      (-25..25).step(0.25).map { |x| x.positive? ? "+#{x.round(2)}" : x.round(2).to_s }
     end
-
+    
     def collection_for_axis
       (0..180).to_a
     end
