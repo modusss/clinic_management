@@ -32,9 +32,9 @@ module ClinicManagement
     end
     
     def collection_for_cylinder
-      (-25..25).step(0.25).map { |x| x.positive? ? "+#{x.round(2)}" : x.round(2).to_s }
+      (-10..0).step(0.25).map { |x| x.round(2) }
     end
-    
+
     def collection_for_axis
       (0..180).to_a
     end

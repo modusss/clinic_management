@@ -4,6 +4,8 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 # Specify your gem's dependencies in clinic_management.gemspec.
 gemspec
 
+gem "kaminari"
+
 gem "pg"
 
 gem "sprockets-rails"
