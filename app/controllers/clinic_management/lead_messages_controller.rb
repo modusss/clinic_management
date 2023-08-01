@@ -91,7 +91,7 @@ module ClinicManagement
         service = appointment.service
         result = result
         .gsub("{DIA_SEMANA_ATENDIMENTO}", helpers.format_day_of_week(service.date))
-        .gsub("{MES_DO_ATENDIMENTO}", format_month(service.date))
+        .gsub("{MES_DO_ATENDIMENTO}", I18n.localize(service.date, format: "%B"))
         .gsub("{DIA_ATENDIMENTO_NUMERO}", service.date.strftime("%d"))
         .gsub("{HORARIO_DE_INICIO}", service.start_time.strftime("%H:%M"))
         .gsub("{HORARIO_DE_TERMINO}", service.end_time.strftime("%H:%M"))
