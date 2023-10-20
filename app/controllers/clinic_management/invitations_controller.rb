@@ -20,7 +20,7 @@ module ClinicManagement
 
     # GET /invitations/new
     def new
-      @services = Service.where("date >= ?", Date.today)
+      @services_list = next_services
       @regions = Region.all.order(:name)
       @invitation = Invitation.new
       @appointment = @invitation.appointments.build
@@ -149,7 +149,8 @@ module ClinicManagement
         referral: @invitation.referral.id,
         region: @invitation.region.id,
         service: @appointment.service.id,
-        date: @invitation.date
+        date: @invitation.date,
+        services_list: next_services
       }
       new_form_sets
       new_form_locals = { 
@@ -235,6 +236,10 @@ module ClinicManagement
       # Use callbacks to share common setup or constraints between actions.
       def set_invitation
         @invitation = Invitation.find(params[:id])
+      end
+
+      def next_services
+        Service.where("date >= ?", Date.today).order(date: :asc)
       end
 
       # Only allow a list of trusted parameters through.
