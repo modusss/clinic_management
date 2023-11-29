@@ -73,22 +73,32 @@ module ClinicManagement
       end
     end
 
-    def get_message(message, lead, appointment)
+    def get_message(message, lead, service)
       result = message.text
-      .gsub("{PRIMEIRO_NOME_PACIENTE}", lead.name.split(" ").first)
-      .gsub("{NOME_COMPLETO_PACIENTE}", lead.name)
-      .gsub("\n", "%0A")
-      .gsub("\r\n", "%0A")
-      if appointment.present?
-        service = appointment.service
+        .gsub("{PRIMEIRO_NOME_PACIENTE}", lead.name.split(" ").first)
+        .gsub("{NOME_COMPLETO_PACIENTE}", lead.name)
+        .gsub("\n", "%0A")
+        .gsub("\r\n", "%0A")
+      if service.present?
+        appointments = ClinicManagement::Appointment.where(service_id: service.id)
+        patient_names = appointments.map do |appointment|
+          invitation = ClinicManagement::Invitation.find(appointment.invitation_id)
+          invitation.patient_name != lead.name ? invitation.patient_name : nil
+        end.compact
+    
+        patient_list = patient_names.uniq.join(", ")
+        patient_list = "Pacientes: #{patient_list}" unless patient_list.empty?
+    
         result = result
-        .gsub("{DIA_SEMANA_ATENDIMENTO}", helpers.format_day_of_week(service.date))
-        .gsub("{MES_DO_ATENDIMENTO}", I18n.localize(service.date, format: "%B"))
-        .gsub("{DIA_ATENDIMENTO_NUMERO}", service.date.strftime("%d"))
-        .gsub("{HORARIO_DE_INICIO}", service.start_time.strftime("%H:%M"))
-        .gsub("{HORARIO_DE_TERMINO}", service.end_time.strftime("%H:%M"))
-        .gsub("{DATA_DO_ATENDIMENTO}", service.date.strftime("%d/%m/%Y"))
+          .gsub("{DIA_SEMANA_ATENDIMENTO}", service.date.strftime("%A"))
+          .gsub("{MES_DO_ATENDIMENTO}", I18n.l(service.date, format: "%B"))
+          .gsub("{DIA_ATENDIMENTO_NUMERO}", service.date.strftime("%d"))
+          .gsub("{HORARIO_DE_INICIO}", service.start_time.strftime("%H:%M"))
+          .gsub("{HORARIO_DE_TERMINO}", service.end_time.strftime("%H:%M"))
+          .gsub("{DATA_DO_ATENDIMENTO}", service.date.strftime("%d/%m/%Y"))
+          .gsub("{LISTA_DE_PACIENTES}", patient_list)
       end
+    
       result
     end
   
