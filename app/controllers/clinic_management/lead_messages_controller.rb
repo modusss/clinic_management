@@ -6,15 +6,6 @@ module ClinicManagement
 
     def index
       @messages = LeadMessage.all
-=begin
-      @rows = LeadMessage.all.map.with_index(1) do |mes, index|
-        [
-          { header: "#", content: index },
-          { header: "Nome", content: mes.name },
-          { header: "Convites", content: mes.text }
-        ] 
-      end
-=end
     end
   
     def new
@@ -105,7 +96,7 @@ module ClinicManagement
     end
   
     def message_params
-      params.require(:lead_message).permit(:name, :text)
+      params.require(:lead_message).permit(:name, :text, :message_type)
     end
   end
 end
