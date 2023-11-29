@@ -6,6 +6,7 @@ module ClinicManagement
 
     def index
       @messages = LeadMessage.all
+      @messages_by_type = LeadMessage.all.order(created_at: :asc).group_by(&:message_type)
     end
   
     def new
