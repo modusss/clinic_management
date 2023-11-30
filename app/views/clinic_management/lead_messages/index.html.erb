@@ -1,37 +1,40 @@
-<div class="my-8">
-  <h5 class="text-2xl font-bold">Mensagens customizadas</h5>
-</div>
-
-<%#= data_table(@rows) %>
-
-<div class="w-full">
-  <table class="w-full table-auto border-collapse border-2 border-gray-200 text-left">
-    <thead>
-      <tr>
-        <th class="px-4 py-2">Nome da mensagem</th>
-        <th class="px-4 py-2">Texto da mensagem</th>
-        <th class="px-4 py-2">Ações</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @messages.each do |message| %>
-        <tr class="border-b border-gray-200">
-          <td class="px-4 py-2"><%= message.name %></td>
-          <td class="px-4 py-2"><%= message.text %></td>
-          <td class="px-4 py-2">
-            <%= link_to 'Editar', edit_lead_message_path(message), class: "px-2 py-1 bg-yellow-500 text-white rounded" %>
-            <br>
-            <%= button_to 'Excluir', message, 
-                                    method: :delete, 
-                                    form: { data: { turbo_confirm: 'Tem certeza que deseja excluir esta mensagem? "' + message.name + '"' } }, 
-                                    class: "px-2 py-1 bg-red-500 text-white rounded" %>
-          </td>
+<h5>Mensagens customizadas</h5>
+<br>
+<br>
+<div class="row">
+  <div class="col s12">
+    <table class="striped">
+      <thead>
+        <tr>
+          <th>Nome da mensagem</th>
+          <th>Tipo</th>
+          <th>Texto da mensagem</th>
+          <th>Ações</th>
         </tr>
-      <% end %>
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        <% @custom_messages.each do |custom_message| %>
+          <tr>
+            <td><%= custom_message.name %></td>
+            <td><%= custom_message.message_type %></td>
+            <td><%= custom_message.text %></td>
+            <td style="display: inline-flex;">
+              <%= link_to 'Editar', edit_custom_message_path(custom_message), class: "btn-small yellow darken-2" %>
+              <%= button_to 'Excluir', custom_message, 
+                                      method: :delete, 
+                                      form: { data: { turbo_confirm: 'Tem certeza que deseja excluir esta mensagem? "' + custom_message.name + '"' } }, 
+                                      class: "btn-small red" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
 </div>
-
-<div class="mt-8">
-  <%= link_to 'Criar nova mensagem customizada', new_lead_message_path, class: "px-4 py-2 bg-blue-500 text-white rounded" %>
+<br>
+<br>
+<div class="row">
+  <div class="col s12">
+    <%= link_to 'Criar nova mensagem customizada', new_custom_message_path, class: "btn waves-effect waves-light" %>
+  </div>
 </div>
