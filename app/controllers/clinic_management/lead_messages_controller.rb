@@ -5,16 +5,7 @@ module ClinicManagement
     include GeneralHelper
 
     def index
-      @messages = LeadMessage.all
-=begin
-      @rows = LeadMessage.all.map.with_index(1) do |mes, index|
-        [
-          { header: "#", content: index },
-          { header: "Nome", content: mes.name },
-          { header: "Convites", content: mes.text }
-        ] 
-      end
-=end
+      @messages = LeadMessage.order(:message_type, created_at: :desc)
     end
   
     def new
@@ -105,7 +96,8 @@ module ClinicManagement
     end
   
     def message_params
-      params.require(:lead_message).permit(:name, :text)
+      params.require(:lead_message).permit(:name, :text, :message_type)
     end
   end
 end
+
