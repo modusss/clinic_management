@@ -4,7 +4,7 @@
 
 <div class="w-full">
   <% ClinicManagement::LeadMessage.message_types.keys.each do |type| %>
-    <% filtered_messages = @messages.select { |m| m.message_type == type } %>
+  <% filtered_messages = @messages.select { |m| m.message_type == type }.sort_by(&:created_at) %>
     <% if filtered_messages.any? %>
       <h6 class="text-xl font-bold"><%= type.humanize %></h6>
       <table class="w-full table-auto border-collapse border-2 border-gray-200 text-left">
@@ -28,6 +28,7 @@
           <% end %>
         </tbody>
       </table>
+      <br><br>
     <% end %>
   <% end %>
 </div>
