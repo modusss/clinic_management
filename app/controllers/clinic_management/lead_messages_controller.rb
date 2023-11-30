@@ -90,7 +90,7 @@ module ClinicManagement
         # patient_list = "Paciente(s): #{patient_list}" unless patient_list.empty?
     
         result = result
-          .gsub("{DIA_SEMANA_ATENDIMENTO}", service&.date&.strftime("%A"))
+          .gsub("{DIA_SEMANA_ATENDIMENTO}", I18n.l(service.date, format: "%A"))
           .gsub("{MES_DO_ATENDIMENTO}", I18n.l(service.date, format: "%B"))
           .gsub("{DIA_ATENDIMENTO_NUMERO}", service&.date&.strftime("%d"))
           .gsub("{HORARIO_DE_INICIO}", service.start_time.strftime("%H:%M"))
