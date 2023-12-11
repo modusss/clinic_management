@@ -46,6 +46,27 @@ module ClinicManagement
       @prescription = @appointment.prescription
     end
 
+    def pdf
+      @prescription = @appointment.prescription
+      
+      respond_to do |format|
+        format.html
+        format.pdf do
+            render pdf: "receita", 
+            template: "clinic_management/prescriptions/pdf", 
+            formats: [:html],
+            encoding: "UTF-8",
+            page_size: "A4",
+            margin: { top: 10, bottom: 10, left: 10, right: 10 },
+            dpi: 300,
+            zoom: 1,
+            orientation: "Portrait"
+        end
+      end  
+      # render pdf: "pdf",   # Nome do arquivo PDF
+      #        template: "clinic_management/prescriptions/pdf.html.erb"  # Caminho para a view
+    end
+
     def new
       new_settings
     end

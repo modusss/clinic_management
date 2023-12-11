@@ -20,6 +20,7 @@ ClinicManagement::Engine.routes.draw do
       end
       member do 
         get 'show_today', action: "show_today", as: "show_today"
+        get 'pdf', action: "pdf", as: "pdf"
       end
     end
   end
