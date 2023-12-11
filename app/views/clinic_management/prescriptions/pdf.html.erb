@@ -56,9 +56,34 @@
     <p>Se tiver qualquer dúvida, não hesite em nos contatar.</p>
     <br>
     <div style="text-align: center">
-      <p><b>ÓTICA LIGHT</b></p>
+<div style="text-align: center;">
+  <%= image_tag wicked_pdf_asset_base64("otica_logo.jpg"), class: "logo", style: "width: 200px; max-width: 100%; height: auto; margin: 0 auto;" %>
+</div>
+
       <p>Rua Joaquim Nabuco, 99B - Vitória da Conquista - BA</p>
       <p>Telefone: (77) 9.9836-7332 | (77) 9.8804-3621</p>
+      <table style="width: 100%; border: none">
+        <tbody>
+          <td style="border: none">
+              <div class="qr_code" style="text-align: center;">
+                  <%= image_tag wicked_pdf_asset_base64("whatsapp_qrcode.png"), class: "qrcode", style: "width: 80px; height: 80px;" %>
+                  <p style="transform: rotate(-90deg); margin: 0;">Whatsapp 1</p>
+              </div>
+          </td>
+          <td style="border: none">
+              <div class="qr_code" style="text-align: center;">
+                  <%= image_tag wicked_pdf_asset_base64("whatsapp2_qrcode.png"), class: "qrcode", style: "width: 80px; height: 80px;" %>
+                  <p style="transform: rotate(-90deg); margin: 0;">Whatsapp 2</p>
+              </div>
+          </td>
+          <td style="border: none">
+              <div class="qr_code" style="text-align: center;">
+                  <%= image_tag wicked_pdf_asset_base64("instagram_qrcode.png"), class: "qrcode", style: "width: 80px; height: 70px;" %>
+                  <p style="transform: rotate(-90deg); margin: 0;">Instagram</p>
+              </div>
+          </td>
+        </tbody>  
+      </table>
     </div>
   </div>
   
