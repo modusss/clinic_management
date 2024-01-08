@@ -11,7 +11,7 @@
 
       <p>Ordem da fila para impressão:</p>
       <% 40.times do |i| %>
-        <span style="padding: 5px"><%= link_to "#{i+1}", generate_order_pdf_path(order_number: i+1, format: :pdf), class: "", target: "_blank" %></span>
+        <span style="padding: 5px"><%= link_to "#{i+1}", generate_order_pdf_path(order_number: i+1, format: :pdf), class: "text-blue-500 hover:text-blue-700", target: "_blank" %></span>
       <% end %>
       <br>
 
