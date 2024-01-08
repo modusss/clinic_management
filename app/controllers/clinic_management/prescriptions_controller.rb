@@ -45,7 +45,7 @@ module ClinicManagement
     def show
       @prescription = @appointment.prescription
     end
-
+  
     def generate_order_pdf
       @order_number = params[:order_number]
       respond_to do |format|
