@@ -1,6 +1,6 @@
 module ClinicManagement
   class PrescriptionsController < ApplicationController
-    before_action :set_appointment, except: [:index_today]
+    before_action :set_appointment, except: [:index_today, :generate_order_pdf]
     skip_before_action :redirect_doctor_users, only: [:index_today, :show_today, :new_today, :edit_today, :update, :create]
     include GeneralHelper
 
@@ -45,6 +45,24 @@ module ClinicManagement
     def show
       @prescription = @appointment.prescription
     end
+
+    def generate_order_pdf
+      @order_number = params[:order_number]
+      respond_to do |format|
+        format.html
+        format.pdf do
+          render pdf: "ordem_#{@order_number}",
+                 template: "clinic_management/prescriptions/order_pdf",
+                 formats: [:html],
+                 encoding: "UTF-8",
+                 page_height: '80',
+                 page_width: '80',
+                 margin: { top: '5mm', bottom: '5mm', left: '5mm', right: '5mm' },
+                 dpi: '300'
+        end
+      end
+    end
+    
 
     def pdf
       @prescription = @appointment.prescription

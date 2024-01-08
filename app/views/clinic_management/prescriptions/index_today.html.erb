@@ -10,8 +10,21 @@
       <% end %>
 <% end %>
 
+<%# form_with(url: generate_order_pdf_path, method: :get, local: true) do |form| %>
+  <%# form.number_field :order_number, placeholder: "Número da Ordem", class: "border rounded p-2" %>
+  <%# form.submit "Gerar PDF da Ordem do Paciente", class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+<%# end %>
+<p>Ordem da fila para impressão:</p>
+<% 40.times do |i| %>
+  <span style="padding: 5px"><%= link_to "#{i+1}", generate_order_pdf_path(order_number: i+1, format: :pdf), class: "", target: "_blank" %></span>
+<% end %>
+<br>
+
+<%#= link_to 'Ver receita em PDF', pdf_appointment_prescription_path(@prescription.appointment, format: :pdf), class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+
 <% if @appointments.present? %>
     <%= data_table(@rows) %>
 <% else %>
-    Nenhum atendimento para hoje encontrado.
+    <br>
+    <p>Nenhum atendimento para hoje encontrado.</p>
 <% end %>

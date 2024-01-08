@@ -25,7 +25,8 @@ ClinicManagement::Engine.routes.draw do
     end
   end
   get 'prescriptions/index_today', to: "prescriptions#index_today", as: "index_today"
-  
+  get 'generate_order_pdf', to: 'prescriptions#generate_order_pdf', as: :generate_order_pdf
+
   
   resources :services do
     collection do
