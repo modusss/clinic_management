@@ -119,7 +119,7 @@ module ClinicManagement
     end
 
     def process_appointments_data(appointments)
-      sorted_appointments = appointments.sort_by { |ap| ap&.invitation&.patient_name }  
+      sorted_appointments = appointments.sort_by { |ap| ap&.invitation&.patient_name || "" }
       sorted_appointments.map.with_index(1) do |ap, index|
         new_appointment = ClinicManagement::Appointment.new
         lead = ap.lead
