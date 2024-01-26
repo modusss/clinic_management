@@ -96,14 +96,15 @@ module ClinicManagement
       sorted_appointments = appointments.select { |appointment| appointment.referral_code == @referral.code }
       sorted_appointments.map.with_index(1) do |ap, index|
         lead = ap.lead
+        lead_phone = add_phone_mask(lead.phone)
         new_appointment = ClinicManagement::Appointment.new
         invitation = ap.invitation
         [
           { header: "#", content: index },
-          { header: "Paciente", content: invitation.patient_name },
+          { header: "Paciente", content: invitation&.patient_name },
           { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
           { header: "Responsável", content: ((lead.name == invitation.patient_name) ? "" : lead.name) },
-          { header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, set_zap_message(ap.service, invitation))}'>#{lead.phone}</a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
+          { header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead_phone, set_zap_message(ap.service, invitation))}'>#{lead.phone}</a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
           { header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500" },
           { header: "Endereço", content: invitation.lead.address },
           { header: "Região", content: invitation.region.name },
