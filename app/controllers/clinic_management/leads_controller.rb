@@ -17,7 +17,11 @@ module ClinicManagement
       @rows = get_lead_data
       @new_appointment = ClinicManagement::Appointment.new
       @old_appointment = @lead.appointments&.last
-      @available_services = available_services(@old_appointment.service)
+      if @old_appointment.present?
+        @available_services = available_services(@old_appointment&.service)
+      else
+        @available_services = ClinicManagement::Service.where("date >= ?", Date.today)
+      end
     end
 
     # GET /leads/new
