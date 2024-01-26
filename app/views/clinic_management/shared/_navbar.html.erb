@@ -33,7 +33,7 @@
         </div>
       </div>
 
-      <nav class="w-full sm:w-auto mt-4 sm:mt-0 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+      <nav class="text-lg w-full sm:w-auto mt-4 sm:mt-0 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
         <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'prescriptions'}" %>
         <%= link_to "Pacientes", clinic_management.leads_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'leads'}" %>
         <%= link_to "Convites", clinic_management.invitations_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'invitations'}" %>
