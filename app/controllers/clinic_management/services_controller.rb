@@ -124,13 +124,14 @@ module ClinicManagement
       sorted_appointments.map.with_index(1) do |ap, index|
         new_appointment = ClinicManagement::Appointment.new
         lead = ap.lead
+        lead_phone = add_phone_mask(lead.phone)
         invitation = ap.invitation
         [
           { header: "#", content: index },
           { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700") },
           { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
           { header: "Responsável", content: ((lead.name == invitation.patient_name) ? "" : lead.name) },
-          { header: "Telefone", content: lead.phone },
+          { header: "Telefone", content: lead_phone },
           { header: "Endereço", content: invitation.lead.address },
           { header: "Região", content: invitation.region.name },
           { header: "Indicação", content: invitation.referral.name },
