@@ -5,6 +5,10 @@ module ClinicManagement
           "https://api.whatsapp.com/send/?phone=+55#{phone}&text=#{message}"
         end
 
+        def add_phone_mask(phone)
+          phone&.gsub(/[^0-9]/, '')&.gsub(/(\d{2})(\d{5})(\d{4})/, '\1 \2-\3')
+        end
+
         def referral?(user)
           current_membership.role == "referral"
         end
