@@ -2,7 +2,7 @@ module ClinicManagement
     module GeneralHelper
 
         def whatsapp_link(phone, message = "")
-          "https://api.whatsapp.com/send/?phone=+55#{phone}&text=#{message}"
+          "https://api.whatsapp.com/send/?phone=55#{phone}&text=#{message}"
         end
 
         def add_phone_mask(phone)
