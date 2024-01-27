@@ -104,7 +104,7 @@ module ClinicManagement
           { header: "Paciente", content: invitation&.patient_name },
           { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
           { header: "Responsável", content: ((lead.name == invitation.patient_name) ? "" : lead.name) },
-          { header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead_phone, set_zap_message(ap.service, invitation))}'>#{lead.phone}</a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
+          { header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, set_zap_message(ap.service, invitation))}'>#{lead_phone}</a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
           { header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500" },
           { header: "Endereço", content: invitation.lead.address },
           { header: "Região", content: invitation.region.name },
