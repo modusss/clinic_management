@@ -45,7 +45,7 @@ module ClinicManagement
       content_tag(:thead, class: "bg-gray-50") do
         content_tag(:tr) do
           headers.map.with_index do |header, header_index|
-            classes = "text-lg px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-center"
+            classes = "text-lg px-3 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-center"
             styles = ''
             if header_index < fix_to
               classes += ' sticky'
@@ -62,7 +62,7 @@ module ClinicManagement
           row_class = row_index.even? ? 'bg-blue-50' : 'bg-white'
           content_tag(:tr, class: row_class) do
             row.map.with_index do |cell, cell_index|
-              classes = "text-lg px-6 py-4 whitespace-nowrap text-gray-900 #{cell[:class]} text-center align-middle" 
+              classes = "text-lg px-3 py-4 whitespace-nowrap text-gray-900 #{cell[:class]} text-center align-middle" 
               styles = ''
               if cell_index < fix_to
                 classes += ' sticky'
