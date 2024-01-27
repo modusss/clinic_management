@@ -131,7 +131,7 @@ module ClinicManagement
           { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700") },
           { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
           { header: "Responsável", content: ((lead.name == invitation.patient_name) ? "" : lead.name) },
-          { header: "Telefone", content: lead_phone },
+          { header: "Telefone", content:  "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone)}'>#{lead_phone}</a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
           { header: "Endereço", content: invitation.lead.address },
           { header: "Região", content: invitation.region.name },
           { header: "Indicação", content: invitation.referral.name },
