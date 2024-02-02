@@ -9,7 +9,8 @@ module ClinicManagement
     end
 
     def index_today
-      @service = Service.find_by(date: Date.today)
+      # get the last service
+      @service = Service.where(date: Date.today).last
       if @service.present?
         @appointments = @service.appointments.sort_by { |ap| ap&.invitation&.patient_name }  
         @rows = @appointments.map.with_index(1) do |ap, index|
