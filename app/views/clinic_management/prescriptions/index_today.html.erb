@@ -20,9 +20,15 @@
 
 
 <%#= link_to 'Ver receita em PDF', pdf_appointment_prescription_path(@prescription.appointment, format: :pdf), class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
-
-<% if @appointments.present? %>
-    <%= data_table(@rows) %>
+<br>
+<br>
+<% if @services.present? %>
+    <% @rows.each_with_index do |rows, index| %>
+      <h2 class="text-2xl font-bold mb-4">Atendimento <%= index + 1 %></h2>
+      <%= data_table(rows) %>
+      <br>
+      <br>
+    <% end %>
 <% else %>
     <br>
     <p>Nenhum atendimento para hoje encontrado.</p>
