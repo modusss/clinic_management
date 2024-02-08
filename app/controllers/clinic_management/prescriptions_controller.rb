@@ -9,37 +9,38 @@ module ClinicManagement
     end
 
     def index_today
-      # get the last service
-      @service = Service.where(date: Date.today).last
-      if @service.present?
-        @appointments = @service.appointments.sort_by { |ap| ap&.invitation&.patient_name }  
-        @rows = @appointments.map.with_index(1) do |ap, index|
+      # get all services for today
+      @services = Service.where(date: Date.today)
+      @rows = @services.map do |service|
+        appointments = service.appointments.sort_by { |ap| ap&.invitation&.patient_name }
+        appointments.map.with_index(1) do |ap, index|
           invitation = ap.invitation
           lead = invitation.lead
-          if (invitation.present?) && (lead.present?)
-            if helpers.doctor?(current_user)
-              [
-                {header: "#", content: index },
-                {header: "Paciente", content: invitation.patient_name},
-                {header: "Comparecimento", content: ap.attendance == true ? "sim" :  "--"},
-                {header: "Receita", content: prescription_link(ap)}
-              ]
-            else
-              [
-                {header: "#", content: index },
-                {header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
-                {header: "Telefone", content: helpers.link_to(lead.phone, "https://wa.me/+55#{lead.phone}", class: "text-blue-500 hover:text-blue-700")},
-                {header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500" },
-                {header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id.to_s}" },
-                {header: "Mensagens enviadas:", content: ap&.messages_sent&.join(', '), id: "messages-sent-#{ap.id.to_s}" },            
-                {header: "Comparecimento", content: ap.attendance == true ? "sim" :  "--"},
-                {header: "Receita", content: prescription_link(ap)}
-              ]
-            end
+          next unless invitation.present? && lead.present?
+    
+          if helpers.doctor?(current_user)
+            [
+              {header: "#", content: index},
+              {header: "Paciente", content: invitation.patient_name},
+              {header: "Comparecimento", content: ap.attendance == true ? "sim" : "--"},
+              {header: "Receita", content: prescription_link(ap)}
+            ]
+          else
+            [
+              {header: "#", content: index},
+              {header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
+              {header: "Telefone", content: helpers.link_to(lead.phone, "https://wa.me/+55#{lead.phone}", class: "text-blue-500 hover:text-blue-700")},
+              {header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500"},
+              {header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id.to_s}"},
+              {header: "Mensagens enviadas:", content: ap&.messages_sent&.join(', '), id: "messages-sent-#{ap.id.to_s}"},            
+              {header: "Comparecimento", content: ap.attendance == true ? "sim" : "--"},
+              {header: "Receita", content: prescription_link(ap)}
+            ]
           end
-        end
+        end.compact # remove any nil entries resulting from next unless
       end
     end
+    
 
     def show_today
       @prescription = @appointment.prescription
