@@ -5,7 +5,7 @@ Gem::Specification.new do |spec|
   spec.version     = ClinicManagement::VERSION
   spec.authors     = ["fillype"]
   spec.email       = ["fillype1@hotmail.com"]
-  spec.homepage    = "https://www.lipepay.com"
+  spec.homepage    = "https://www.lipe.pro"
   spec.summary     = "Some summary."
   spec.description = "Some description."
   
@@ -14,8 +14,8 @@ Gem::Specification.new do |spec|
   spec.metadata["allowed_push_host"] = "TODO: Set to 'http://mygemserver.com'"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://www.lipepay.com"
-  spec.metadata["changelog_uri"] = "https://www.lipepay.com"
+  spec.metadata["source_code_uri"] = "https://www.lipe.pro"
+  spec.metadata["changelog_uri"] = "https://www.lipe.pro"
 
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
     Dir["{app,config,db,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
