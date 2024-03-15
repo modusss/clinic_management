@@ -95,10 +95,12 @@ module ClinicManagement
     def process_appointments_by_referral_data(appointments)
       sorted_appointments = appointments.select { |appointment| appointment.referral_code == @referral.code }
       sorted_appointments.map.with_index(1) do |ap, index|
-        lead = ap.lead
+        lead = ap&.lead
         lead_phone = add_phone_mask(lead.phone)
         new_appointment = ClinicManagement::Appointment.new
-        invitation = ap.invitation
+        invitation = ap&.invitation
+        next unless (invitation.present?) && (lead.present?) && (ap.present?) && (lead.name.present?) 
+
         if (invitation.present?) && (lead.present?)
           [
             { header: "#", content: index },
@@ -125,9 +127,11 @@ module ClinicManagement
       sorted_appointments = appointments.sort_by { |ap| ap&.invitation&.patient_name || "" }
       sorted_appointments.map.with_index(1) do |ap, index|
         new_appointment = ClinicManagement::Appointment.new
-        lead = ap.lead
+        lead = ap&.lead
         lead_phone = add_phone_mask(lead.phone)
-        invitation = ap.invitation
+        invitation = ap&.invitation
+        next unless (invitation.present?) && (lead.present?) && (ap.present?) && (lead.name.present?) 
+
         if (invitation.present?) && (lead.present?)
           [
             { header: "#", content: index },

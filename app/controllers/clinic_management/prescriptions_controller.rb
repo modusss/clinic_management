@@ -14,9 +14,9 @@ module ClinicManagement
       @rows = @services.map do |service|
         appointments = service.appointments.sort_by { |ap| ap&.invitation&.patient_name }
         appointments.map.with_index(1) do |ap, index|
-          invitation = ap.invitation
-          lead = invitation.lead
-          next unless invitation.present? && lead.present?
+          invitation = ap&.invitation
+          lead = invitation&.lead
+          next unless (invitation.present?) && (lead.present?) && (ap.present?) && (lead.name.present?) 
     
           if helpers.doctor?(current_user)
             [
