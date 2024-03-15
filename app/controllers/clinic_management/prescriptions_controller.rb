@@ -12,7 +12,7 @@ module ClinicManagement
       # get all services for today
       @services = Service.where(date: Date.today)
       @rows = @services.map do |service|
-        appointments = appointments.select { |ap| ap.invitation&.patient_name.present? }
+        appointments = appointments.select { |ap| ap&.invitation&.patient_name.present? }
                                    .sort_by { |ap| ap.invitation.patient_name }
         # appointments = service.appointments.sort_by { |ap| ap&.invitation&.patient_name }
         appointments.map.with_index(1) do |ap, index|

@@ -129,7 +129,7 @@ module ClinicManagement
 
     def process_appointments_data(appointments)
       # Selecionar e ordenar appointments que possuem invitation e patient_name presentes
-      sorted_appointments = appointments.select { |ap| ap.invitation&.patient_name.present? }
+      sorted_appointments = appointments.select { |ap| ap&.invitation&.patient_name.present? }
                                         .sort_by { |ap| ap.invitation.patient_name }
       # sorted_appointments = appointments.sort_by { |ap| ap&.invitation&.patient_name || "" }
       sorted_appointments.map.with_index(1) do |ap, index|
