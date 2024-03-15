@@ -117,14 +117,14 @@ module ClinicManagement
         invitation = ap.invitation
         [
           {header: "#", content: index + 1},
-          {header: "Paciente", content: invitation.patient_name },
+          {header: "Paciente", content: invitation&.patient_name },
           {header: "Data do atendimento", content: helpers.link_to(invite_day(ap), service_path(ap.service), class: "text-blue-500 hover:text-blue-700")},         
           {header: "Comparecimento", content: (ap.attendance == true ? "Sim" : "Não"), class: helpers.attendance_class(ap)},
           {header: "Receita", content: prescription_link(ap)},
           {header: "Status", content: ap.status, class: helpers.status_class(ap)},
-          {header: "Data do convite", content: invitation.created_at.strftime("%d/%m/%Y")},
-          {header: "Convidado por", content: invitation.referral.name},
-          {header: "Região", content: invitation.region.name},
+          {header: "Data do convite", content: invitation&.created_at&.strftime("%d/%m/%Y")},
+          {header: "Convidado por", content: invitation&.referral&.name},
+          {header: "Região", content: invitation&.region&.name},
           {header: "Mensagem", content: generate_message_content(@lead, ap), id: "whatsapp-link-#{@lead.id}" }
         ]
       end

@@ -106,25 +106,32 @@ module ClinicManagement
             { header: "#", content: index },
             { header: "Paciente", content: invitation&.patient_name },
             { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
-            { header: "Responsável", content: ((lead.name == invitation.patient_name) ? "" : lead.name) },
+            { header: "Responsável", content: ((lead.name == invitation&.patient_name) ? "" : lead.name) },
             { header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, set_zap_message(ap.service, invitation))}'>#{lead_phone}</a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
             { header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500" },
-            { header: "Endereço", content: invitation.lead.address },
-            { header: "Região", content: invitation.region.name },
+            { header: "Endereço", content: invitation&.lead&.address },
+            { header: "Região", content: invitation&.region&.name },
             { header: "Status", content: ap.status, id: "status-#{ap.id}", class: helpers.status_class(ap) },          
-            { header: "Observações", content: invitation.notes }
+            { header: "Observações", content: invitation&.notes }
           ]
         end
       end
     end
 
     def set_zap_message(service, invitation)
-      message = "Oi #{invitation.patient_name.split.first}! Tudo bem?😊 Aqui é a #{invitation.referral.name}!\n\nLembra que tínhamos marcado aquele exame de vista para o dia de #{ I18n.l(service.date, format: "%A, %d/%m")}?\n\nVi que não deu para você comparecer... 😔\n\nQue tal a gente remarcar?\n\nAssim garantimos a saúde dos seus olhos e esclarecemos qualquer dúvida que você possa ter! 😊👓\n\nAguardo seu retorno, obrigado!"
-      CGI::escape(message)
+      if service.present? && invitation.present?
+        message = "Oi #{invitation.patient_name.split.first}! Tudo bem?😊 Aqui é a #{invitation.referral.name}!\n\nLembra que tínhamos marcado aquele exame de vista para o dia de #{ I18n.l(service.date, format: "%A, %d/%m")}?\n\nVi que não deu para você comparecer... 😔\n\nQue tal a gente remarcar?\n\nAssim garantimos a saúde dos seus olhos e esclarecemos qualquer dúvida que você possa ter! 😊👓\n\nAguardo seu retorno, obrigado!"
+        CGI::escape(message)
+      else
+        ""
+      end
     end
 
     def process_appointments_data(appointments)
-      sorted_appointments = appointments.sort_by { |ap| ap&.invitation&.patient_name || "" }
+      # Selecionar e ordenar appointments que possuem invitation e patient_name presentes
+      sorted_appointments = appointments.select { |ap| ap.invitation&.patient_name.present? }
+                                        .sort_by { |ap| ap.invitation.patient_name }
+      # sorted_appointments = appointments.sort_by { |ap| ap&.invitation&.patient_name || "" }
       sorted_appointments.map.with_index(1) do |ap, index|
         new_appointment = ClinicManagement::Appointment.new
         lead = ap&.lead
