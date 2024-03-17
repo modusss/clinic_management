@@ -1,6 +1,6 @@
 module ClinicManagement
   class PrescriptionsController < ApplicationController
-    before_action :set_appointment, except: [:index_today, :generate_order_pdf]
+    before_action :set_appointment, except: [:index_today, :generate_order_pdf, :search_index_today]
     skip_before_action :redirect_doctor_users, only: [:index_today, :show_today, :new_today, :edit_today, :update, :create]
     include GeneralHelper
 
@@ -11,38 +11,8 @@ module ClinicManagement
     def index_today
       # get all services for today
       @services = Service.where(date: Date.today)
-      @rows = @services.map do |service|
-        # appointments = appointments.select { |ap| ap&.invitation&.patient_name.present? }
-                                   # .sort_by { |ap| ap.invitation.patient_name }
-        appointments = service.appointments.sort_by { |ap| ap&.invitation&.patient_name }
-        appointments.map.with_index(1) do |ap, index|
-          invitation = ap&.invitation
-          lead = invitation&.lead
-          next unless (invitation.present?) && (lead.present?) && (ap.present?) && (lead.name.present?) 
-    
-          if helpers.doctor?(current_user)
-            [
-              {header: "#", content: index},
-              {header: "Paciente", content: invitation.patient_name},
-              {header: "Comparecimento", content: ap.attendance == true ? "sim" : "--"},
-              {header: "Receita", content: prescription_link(ap)}
-            ]
-          else
-            [
-              {header: "#", content: index},
-              {header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
-              {header: "Telefone", content: helpers.link_to(lead.phone, "https://wa.me/+55#{lead.phone}", class: "text-blue-500 hover:text-blue-700")},
-              {header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500"},
-              {header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id.to_s}"},
-              {header: "Mensagens enviadas:", content: ap&.messages_sent&.join(', '), id: "messages-sent-#{ap.id.to_s}"},            
-              {header: "Comparecimento", content: ap.attendance == true ? "sim" : "--"},
-              {header: "Receita", content: prescription_link(ap)}
-            ]
-          end
-        end.compact # remove any nil entries resulting from next unless
-      end
+      @rows = mapping_rows(@services)
     end
-    
 
     def show_today
       @prescription = @appointment.prescription
@@ -89,6 +59,26 @@ module ClinicManagement
       end  
       # render pdf: "pdf",   # Nome do arquivo PDF
       #        template: "clinic_management/prescriptions/pdf.html.erb"  # Caminho para a view
+    end
+
+    def search_index_today
+      if params[:q].present?
+        # get all appointments from the services which has date = Date.today
+        appointments = Appointment.where(service_id: Service.where(date: Date.today).pluck(:id))
+        # find the appointments with the given patient_name on params[:q]
+        @appointments = appointments.select { |appointment| appointment.invitation.patient_name.downcase.include?(params[:q].downcase) }
+        # display via turbo_stream a tabel of results on div id #appointment-results
+          @rows = process_appointments_data(@appointments)
+        else
+          @rows = "" 
+        end
+        respond_to do |format|
+          format.turbo_stream do
+              render turbo_stream: 
+                    turbo_stream.update("appointments-results", 
+                                        helpers.data_table(@rows, 3))
+          end
+        end    
     end
 
     def new
@@ -144,6 +134,44 @@ module ClinicManagement
     end
 
     private
+
+
+    def mapping_rows(services)
+      @services.map do |service|
+        # appointments = appointments.select { |ap| ap&.invitation&.patient_name.present? }
+                                   # .sort_by { |ap| ap.invitation.patient_name }
+        appointments = service.appointments.sort_by { |ap| ap&.invitation&.patient_name }
+        process_appointments_data(appointments)
+      end
+    end
+
+    def process_appointments_data(appointments)
+      appointments.map.with_index(1) do |ap, index|
+        invitation = ap&.invitation
+        lead = invitation&.lead
+        next unless (invitation.present?) && (lead.present?) && (ap.present?) && (lead.name.present?) 
+  
+        if helpers.doctor?(current_user)
+          [
+            {header: "#", content: index},
+            {header: "Paciente", content: invitation.patient_name},
+            {header: "Comparecimento", content: ap.attendance == true ? "sim" : "--"},
+            {header: "Receita", content: prescription_link(ap)}
+          ]
+        else
+          [
+            {header: "#", content: index},
+            {header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
+            {header: "Telefone", content: helpers.link_to(lead.phone, "https://wa.me/+55#{lead.phone}", class: "text-blue-500 hover:text-blue-700")},
+            {header: "Receita", content: prescription_link(ap)},
+            {header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500"},
+            {header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id.to_s}"},
+            {header: "Mensagens enviadas:", content: ap&.messages_sent&.join(', '), id: "messages-sent-#{ap.id.to_s}"},            
+            {header: "Comparecimento", content: ap.attendance == true ? "sim" : "--"}
+          ]
+        end
+      end.compact # remove any nil entries resulting from next unless
+    end
 
     def generate_message_content(lead, appointment)
       render_to_string(

@@ -11,6 +11,8 @@ ClinicManagement::Engine.routes.draw do
   # post search appointment service_id
   post 'search_appointment/:service_id', to: 'services#search_appointment', as: 'search_appointment'
 
+  post 'search_index_today', to: 'prescriptions#search_index_today', as: 'search_index_today'
+
   resources :appointments do
     member do
       patch :set_attendance
