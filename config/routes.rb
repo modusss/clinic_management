@@ -7,11 +7,18 @@ ClinicManagement::Engine.routes.draw do
     end
   end
   resources :lead_messages
+
+  # post search appointment service_id
+  post 'search_appointment/:service_id', to: 'services#search_appointment', as: 'search_appointment'
+
+  post 'search_index_today', to: 'prescriptions#search_index_today', as: 'search_index_today'
+
   resources :appointments do
     member do
       patch :set_attendance
       patch :cancel_attendance
       post :reschedule
+      post :search
     end
     resources :prescriptions do
       collection do
@@ -27,7 +34,6 @@ ClinicManagement::Engine.routes.draw do
   get 'prescriptions/index_today', to: "prescriptions#index_today", as: "index_today"
   get 'generate_order_pdf', to: 'prescriptions#generate_order_pdf', as: :generate_order_pdf
 
-  
   resources :services do
     collection do
       get 'index_by_referral/:referral_id', action: "index_by_referral", as: "index_by_referral"

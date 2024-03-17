@@ -15,6 +15,18 @@
 <% if @services.present? %>
       <h1 class="text-3xl font-bold text-gray-900 mb-2">Atendimento de <%= show_week_day @services.last.weekday %></h1>
       <h2 class="text-2xl text-gray-700 mb-1"><%= @services.last.date.strftime("%d/%m/%Y") %></h2>
+  <br>
+  <br>
+  <div class="relative">
+    <%= form_with url: search_index_today_path, method: :post, remote: true, class: "w-full sm:w-auto flex justify-center sm:justify-start mt-4 sm:mt-0" do |search| %>
+      <div class="input-field relative">
+        <input id="search-results" type="search-results" name="q" oninput="this.form.requestSubmit()" class="bg-white rounded p-2 w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent" placeholder="Busque pelo paciente...">
+        <label class="n absolute right-2 top-1/2 transform -translate-y-1/2" for="search-results"><i class="fas fa-search text-gray-500"></i></label>
+      </div>
+    <% end %>
+    <div id="appointments-results"></div>
+  </div>
+
     <br>
     <br>
     <br>

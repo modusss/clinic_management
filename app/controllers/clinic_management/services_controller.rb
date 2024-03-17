@@ -28,6 +28,26 @@ module ClinicManagement
       @rows = process_appointments_data(@service.appointments) 
     end
 
+    def search_appointment
+      if params[:q].present?
+      service = Service.find(params[:service_id])
+      appointments = service.appointments
+      # find the appointments with the given patient_name on params[:q]
+      @appointments = appointments.select { |appointment| appointment.invitation.patient_name.downcase.include?(params[:q].downcase) }
+      # display via turbo_stream a tabel of results on div id #appointment-results
+        @rows = process_appointments_data(@appointments)
+      else
+        @rows = "" 
+      end
+      respond_to do |format|
+        format.turbo_stream do
+            render turbo_stream: 
+                  turbo_stream.update("appointments-results", 
+                                      helpers.data_table(@rows, 3))
+        end
+      end
+    end
+
     def show_by_referral
       @referral = Referral.find(params[:referral_id])
       all_appointments = Appointment.where(referral_code: @referral.code)
