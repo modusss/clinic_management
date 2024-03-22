@@ -45,7 +45,7 @@ module ClinicManagement
       content_tag(:thead, class: "bg-gray-50") do
         content_tag(:tr) do
           headers.map.with_index do |header, header_index|
-            classes = "text-lg px-3 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-center"
+            classes = "text-lg px-3 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-center whitespace-nowrap"
             styles = ''
             if header_index < fix_to
               classes += ' sticky'
@@ -58,17 +58,28 @@ module ClinicManagement
     
     def table_body(rows, fix_to)
       content_tag(:tbody, class: "bg-white divide-y divide-gray-200") do
-        rows.map.with_index do |row, row_index|
-          row_class = row_index.even? ? 'bg-blue-50' : 'bg-white'
-          content_tag(:tr, class: row_class) do
-            row.map.with_index do |cell, cell_index|
-              classes = "text-lg px-3 py-4 whitespace-nowrap text-gray-900 #{cell[:class]} text-center align-middle" 
-              styles = ''
-              if cell_index < fix_to
-                classes += ' sticky'
-              end
-              content_tag(:td, cell[:content], id: cell[:id], class: classes, style: styles)
-            end.join.html_safe
+        rows.map do |row|
+          if row.size == 1 && row.first[:colspan]
+            content_tag(:tr, class: "bg-gray-100") do
+              content_tag(:td, row.first[:content], class: "text-lg px-3 py-4 font-bold text-center whitespace-nowrap", colspan: row.first[:colspan])
+            end
+          else
+            row_class = cycle('bg-blue-50', 'bg-white')
+            content_tag(:tr, class: row_class) do
+              row.map.with_index do |cell, cell_index|
+                classes = "text-lg px-3 py-4 text-gray-900 #{cell[:class]} text-center align-middle"
+                styles = ''
+                if cell_index < fix_to
+                  classes += ' sticky'
+                end
+                if cell[:header] == 'Convites' && cell[:content].to_s.length > 50
+                  classes += ' whitespace-normal'
+                else
+                  classes += ' whitespace-nowrap'
+                end
+                content_tag(:td, cell[:content], id: cell[:id], class: classes, style: styles)
+              end.join.html_safe
+            end
           end
         end.join.html_safe
       end

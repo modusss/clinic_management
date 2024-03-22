@@ -6,7 +6,7 @@ module ClinicManagement
 
     # GET /invitations
     def index
-      @invitations = Invitation.all.includes(:lead, :region, appointments: :service).order(created_at: :desc).page(params[:page]).per(30)
+      @invitations = Invitation.all.includes(:lead, :region, appointments: :service).order(created_at: :desc).page(params[:page]).per(500)
       if @invitations.present?
         @rows = process_invitations_data(@invitations)
       else
@@ -186,23 +186,24 @@ module ClinicManagement
       end
 
       def process_invitations_data(invitations)
-        invitations.map do |invite|
-          last_appointment = invite.lead.appointments.last
-          lead = invite.lead
-          [
-            {header: "Data", content: invite&.date&.strftime("%d/%m/%Y")},
-            {header: "Para", content: last_appointment_link(last_appointment)},
-            {header: "Paciente", content: helpers.link_to(invite.patient_name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
-            {header: "Responsável", content: responsible_content(invite)},   
-            {header: "Telefone", content: lead.phone},
-            {header: "Observação", content: invite.notes},
-            {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}" },
-            {header: "Mensagens enviadas:", content: last_appointment.messages_sent.join(', '), id: "messages-sent-" + last_appointment.id.to_s },
-            {header: "Indicação", content: invite.referral.name},
-            {header: "Quantidade de convites", content: lead.appointments.count},
-            {header: "Região", content: invite.region.name}
-          ]
+        rows = []
+        invitations.group_by { |invite| invite.date }.each do |date, date_invitations|
+          rows << [{header: "", content: date&.strftime("%d/%m/%Y"), colspan: 4, class: "bg-gray-100 font-bold"}]
+          date_invitations.group_by { |invite| invite.referral }.each do |referral, referral_invitations|
+            rows << [
+              {header: "Indicador", content: referral&.name},
+              {header: "Qtd de convites", content: referral_invitations.size},
+              {header: "Convites", content: referral_invitations.map { |invite| patient_link(invite) }.join(", ").html_safe},
+              {header: "Regiões", content: referral_invitations.map { |invite| invite&.region&.name }.uniq.join(", ")},
+              {header: "", content: ""}
+            ]
+          end
         end
+        rows
+      end
+      
+      def patient_link(invite)
+        helpers.link_to(invite.patient_name.split(" ").first, lead_path(invite.lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")
       end
 
       def last_appointment_link(last_appointment)
