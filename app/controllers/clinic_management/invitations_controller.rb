@@ -6,7 +6,7 @@ module ClinicManagement
 
     # GET /invitations
     def index
-      @invitations = Invitation.all.includes(:lead, :region, appointments: :service).order(created_at: :desc).page(params[:page]).per(30)
+      @invitations = Invitation.all.includes(:lead, :region, appointments: :service).order(created_at: :desc).page(params[:page]).per(500)
       if @invitations.present?
         @rows = process_invitations_data(@invitations)
       else
