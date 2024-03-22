@@ -186,15 +186,20 @@ module ClinicManagement
       end
 
       def process_invitations_data(invitations)
-        invitations.group_by { |invite| [invite.date, invite.referral] }.map do |(date, referral), invites|
-          [
-            {header: "Data", content: date&.strftime("%d/%m/%Y")},
-            {header: "Indicador" , content: referral&.name},
-            {header: "Qtd de convites", content: invites.size},
-            {header: "Lista de convidados" , content: invites.map { |invite| patient_link(invite) }.join(", ").html_safe},
-            {header: "Regiões" , content: invites.map { |invite| invite&.region&.name }.uniq.join(", ")}
-          ]
+        rows = []
+        invitations.group_by { |invite| invite.date }.each do |date, date_invitations|
+          rows << [{header: "", content: date&.strftime("%d/%m/%Y"), colspan: 4, class: "bg-gray-100 font-bold"}]
+          date_invitations.group_by { |invite| invite.referral }.each do |referral, referral_invitations|
+            rows << [
+              {header: "Indicador", content: referral&.name},
+              {header: "Qtd de convites", content: referral_invitations.size},
+              {header: "Convites", content: referral_invitations.map { |invite| patient_link(invite) }.join(", ").html_safe},
+              {header: "Regiões", content: referral_invitations.map { |invite| invite&.region&.name }.uniq.join(", ")},
+              {header: "", content: ""}
+            ]
+          end
         end
+        rows
       end
       
       def patient_link(invite)
