@@ -186,23 +186,19 @@ module ClinicManagement
       end
 
       def process_invitations_data(invitations)
-        invitations.map do |invite|
-          last_appointment = invite.lead.appointments.last
-          lead = invite.lead
+        invitations.group_by { |invite| [invite.date, invite.referral] }.map do |(date, referral), invites|
           [
-            {header: "Data", content: invite&.date&.strftime("%d/%m/%Y")},
-            {header: "Para", content: last_appointment_link(last_appointment)},
-            {header: "Paciente", content: helpers.link_to(invite.patient_name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
-            {header: "Responsável", content: responsible_content(invite)},   
-            {header: "Telefone", content: lead.phone},
-            {header: "Observação", content: invite.notes},
-            {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}" },
-            {header: "Mensagens enviadas:", content: last_appointment.messages_sent.join(', '), id: "messages-sent-" + last_appointment.id.to_s },
-            {header: "Indicação", content: invite.referral.name},
-            {header: "Quantidade de convites", content: lead.appointments.count},
-            {header: "Região", content: invite.region.name}
+            {header: "Data", content: date&.strftime("%d/%m/%Y")},
+            {header: "Indicador" , content: referral&.name},
+            {header: "Qtd de convites", content: invites.size},
+            {header: "Lista de convidados" , content: invites.map { |invite| patient_link(invite) }.join(", ").html_safe},
+            {header: "Regiões" , content: invites.map { |invite| invite&.region&.name }.uniq.join(", ")}
           ]
         end
+      end
+      
+      def patient_link(invite)
+        helpers.link_to(invite.patient_name.split(" ").first, lead_path(invite.lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")
       end
 
       def last_appointment_link(last_appointment)
