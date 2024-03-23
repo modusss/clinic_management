@@ -69,16 +69,23 @@ module ClinicManagement
         @appointments = appointments.select { |appointment| appointment.invitation.patient_name.downcase.include?(params[:q].downcase) }
         # display via turbo_stream a tabel of results on div id #appointment-results
           @rows = process_appointments_data(@appointments)
-        else
+      else
           @rows = "" 
+      end
+      respond_to do |format|
+        prescription = @appointments&.first&.prescription
+        if @rows.size == 1 && prescription.present?
+          content = render_to_string(partial: "clinic_management/prescriptions/search_patient_info", locals: { prescription: prescription })
+        else
+          content = ""
         end
-        respond_to do |format|
-          format.turbo_stream do
-              render turbo_stream: 
-                    turbo_stream.update("appointments-results", 
-                                        helpers.data_table(@rows, 3))
-          end
-        end    
+        format.turbo_stream do
+            render turbo_stream: [
+                  turbo_stream.update("appointments-results", helpers.data_table(@rows, 3)),
+                  turbo_stream.update("appointment-info", content)
+            ]
+        end
+      end   
     end
 
     def new

@@ -6,7 +6,7 @@ module ClinicManagement
 
     # GET /invitations
     def index
-      @invitations = Invitation.all.includes(:lead, :region, appointments: :service).order(created_at: :desc).page(params[:page]).per(500)
+      @invitations = Invitation.all.includes(:lead, :region, appointments: :service).order(created_at: :desc).page(params[:page]).per(800)
       if @invitations.present?
         @rows = process_invitations_data(@invitations)
       else
@@ -185,22 +185,49 @@ module ClinicManagement
         @referrals = Referral.all
       end
 
+
+
       def process_invitations_data(invitations)
         rows = []
-        invitations.group_by { |invite| invite.date }.each do |date, date_invitations|
-          rows << [{header: "", content: date&.strftime("%d/%m/%Y"), colspan: 4, class: "bg-gray-100 font-bold"}]
-          date_invitations.group_by { |invite| invite.referral }.each do |referral, referral_invitations|
+        invitations = invitations.where.not(date: nil)
+
+        start_date = invitations.map(&:date).min
+        end_date = invitations.map(&:date).max
+        
+        (start_date..end_date).reverse_each do |date|
+          date_invitations = invitations.select { |invite| invite.date == date }
+          
+          if date_invitations.any?
+            rows << [{header: "", content: helpers.show_week_day(date.strftime("%A")) + ", " + date.strftime("%d/%m/%Y"), colspan: 4, class: "bg-gray-100 font-bold"}]
+            date_invitations.group_by { |invite| invite.referral }.each do |referral, referral_invitations|
+              rows << [
+                {header: "Indicador", content: referral&.name},
+                {header: "Qtd de convites", content: referral_invitations.size},
+                {header: "Convites", content: referral_invitations.map { |invite| patient_link(invite) }.join(", ").html_safe},
+                {header: "Regiões", content: referral_invitations.map { |invite| invite&.region&.name }.uniq.join(", ")},
+                {header: "", content: ""}
+              ]
+            end
+          else
+            rows << [{header: "", content: helpers.show_week_day(date.strftime("%A")) + ", " + date.strftime("%d/%m/%Y"), colspan: 4, class: "bg-gray-100 font-bold"}]
             rows << [
-              {header: "Indicador", content: referral&.name},
-              {header: "Qtd de convites", content: referral_invitations.size},
-              {header: "Convites", content: referral_invitations.map { |invite| patient_link(invite) }.join(", ").html_safe},
-              {header: "Regiões", content: referral_invitations.map { |invite| invite&.region&.name }.uniq.join(", ")},
+              {header: "Indicador", content: ""},
+              {header: "Qtd de convites", content: ""},
+              {header: "Convites", content: "Sem lançamentos"},
+              {header: "Regiões", content: ""},
               {header: "", content: ""}
             ]
           end
         end
+        
         rows
       end
+
+
+
+
+
+
       
       def patient_link(invite)
         helpers.link_to(invite.patient_name.split(" ").first, lead_path(invite.lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")

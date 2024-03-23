@@ -72,19 +72,19 @@ module ClinicManagement
 
         def show_week_day(weekday)
             case weekday
-            when 1
+            when 1, "Sunday"
               "Domingo"
-            when 2
+            when 2, "Monday"
               "Segunda-feira"
-            when 3
+            when 3, "Tuesday"
               "Terça-feira"
-            when 4
+            when 4, "Wednesday"
               "Quarta-feira"
-            when 5
+            when 5, "Thursday"
               "Quinta-feira"
-            when 6
+            when 6, "Friday"
               "Sexta-feira"
-            when 7
+            when 7, "Saturday"
               "Sábado"
             end
           end
