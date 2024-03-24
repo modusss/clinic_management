@@ -203,15 +203,21 @@ module ClinicManagement
       
           if date_invitations.any?
             rows << [{header: "", content: helpers.show_week_day(date.strftime("%A")) + ", " + date.strftime("%d/%m/%Y"), colspan: 4, class: "bg-gray-100 font-bold"}]
-            
+      
             referral_invitations = date_invitations.group_by { |invite| invite.referral }
             sorted_referral_invitations = referral_invitations.sort_by { |referral, invites| -invites.size }
-            
+      
             sorted_referral_invitations.each do |referral, referral_invitations|
+              patient_invitations = referral_invitations.group_by { |invite| invite.patient_name }
+              patient_links = patient_invitations.map do |patient_name, invites|
+                count = invites.size
+                patient_link(invites.first, count)
+              end
+      
               rows << [
                 {header: "Indicador", content: referral&.name},
                 {header: "Qtd de convites", content: referral_invitations.size},
-                {header: "Convites", content: referral_invitations.map { |invite| patient_link(invite) }.join(", ").html_safe},
+                {header: "Convites", content: patient_links.join(", ").html_safe},
                 {header: "Regiões", content: referral_invitations.map { |invite| invite&.region&.name }.uniq.join(", ")},
                 {header: "", content: ""}
               ]
@@ -231,14 +237,13 @@ module ClinicManagement
         rows
       end
 
-
-
-
-
-
-      
-      def patient_link(invite)
-        helpers.link_to(invite.patient_name.split(" ").first, lead_path(invite.lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")
+      def patient_link(invite, count = 1)
+        patient_name = invite.patient_name.split(" ").first
+        if count > 1
+          "#{helpers.link_to(patient_name, lead_path(invite.lead), class: 'text-blue-500 hover:text-blue-700', target: '_blank')} (#{count})"
+        else
+          helpers.link_to(patient_name, lead_path(invite.lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")
+        end
       end
 
       def last_appointment_link(last_appointment)
