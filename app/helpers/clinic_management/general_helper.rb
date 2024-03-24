@@ -1,6 +1,54 @@
 module ClinicManagement
     module GeneralHelper
 
+      def is_operator_above?
+        if current_user.present?
+            if ["operator", "manager", "owner"].include? current_user.memberships.first.role
+                return true
+            else
+                return false
+            end
+        else
+            return false
+        end
+    end
+
+    def is_basic_above?
+        if current_user.present?
+            if ["basic", "operator", "manager", "owner"].include? current_user.memberships.first.role
+                return true
+            else
+                return false
+            end
+        else
+            return false
+        end
+    end
+
+    def is_manager_above?
+        if current_user.present?
+            if ["manager", "owner"].include? current_user.memberships.first.role
+                return true
+            else
+                return false
+            end
+        else
+            return false
+        end
+    end
+
+    def is_owner?
+        if current_user.present?
+            if current_user.memberships.first.role == "owner"
+                return true
+            else
+                return false
+            end
+        else
+            return false
+        end
+    end
+
         def whatsapp_link(phone, message = "")
           "https://api.whatsapp.com/send/?phone=55#{phone}&text=#{message}"
         end

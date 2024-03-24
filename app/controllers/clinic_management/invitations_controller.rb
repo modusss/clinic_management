@@ -145,12 +145,19 @@ module ClinicManagement
     
         referral_data = month_invitations.group_by(&:referral).map do |referral, invitations|
           converted_leads = invitations.select { |invitation| invitation.lead&.converted? }.size
+    
+          delivered_orders = referral.commissions.where(created_at: month_start..month_end)
+                                                  .joins(:order)
+                                                  .where(orders: { delivery_status: 'DELIVERED' })
+                                                  .count
+    
           {
             referral: referral.name,
             days_worked: invitations.map(&:date).uniq.size,
             invited: invitations.size,
             conversions: converted_leads,
-            conversion_rate: converted_leads.to_f / invitations.size * 100
+            conversion_rate: converted_leads.to_f / invitations.size * 100,
+            delivered_orders: delivered_orders
           }
         end
     
@@ -162,6 +169,8 @@ module ClinicManagement
     
       report_data
     end
+
+
     def check_existing_leads(params)
       first_name = params.dig(:lead_attributes, :name)&.split&.first || invitation_params[:patient_name]&.split&.first   
       phone = params.dig(:lead_attributes, :phone)
