@@ -6,7 +6,12 @@ module ClinicManagement
 
     # GET /invitations
     def index
-      @invitations = Invitation.all.includes(:lead, :region, appointments: :service).order(created_at: :desc).page(params[:page]).per(800)
+      @referrals = Referral.all
+      if params[:referral_id].present?
+        @invitations = Invitation.where(referral_id: params[:referral_id]).includes(:lead, :region, appointments: :service).order(created_at: :desc).page(params[:page]).per(800)
+      else
+        @invitations = Invitation.all.includes(:lead, :region, appointments: :service).order(created_at: :desc).page(params[:page]).per(800)
+      end
       if @invitations.present?
         @rows = process_invitations_data(@invitations)
       else
@@ -190,20 +195,29 @@ module ClinicManagement
       def process_invitations_data(invitations)
         rows = []
         invitations = invitations.where.not(date: nil)
-
         start_date = invitations.map(&:date).min
         end_date = invitations.map(&:date).max
-        
+      
         (start_date..end_date).reverse_each do |date|
           date_invitations = invitations.select { |invite| invite.date == date }
-          
+      
           if date_invitations.any?
             rows << [{header: "", content: helpers.show_week_day(date.strftime("%A")) + ", " + date.strftime("%d/%m/%Y"), colspan: 4, class: "bg-gray-100 font-bold"}]
-            date_invitations.group_by { |invite| invite.referral }.each do |referral, referral_invitations|
+      
+            referral_invitations = date_invitations.group_by { |invite| invite.referral }
+            sorted_referral_invitations = referral_invitations.sort_by { |referral, invites| -invites.size }
+      
+            sorted_referral_invitations.each do |referral, referral_invitations|
+              patient_invitations = referral_invitations.group_by { |invite| invite.patient_name }
+              patient_links = patient_invitations.map do |patient_name, invites|
+                count = invites.size
+                patient_link(invites.first, count)
+              end
+      
               rows << [
                 {header: "Indicador", content: referral&.name},
                 {header: "Qtd de convites", content: referral_invitations.size},
-                {header: "Convites", content: referral_invitations.map { |invite| patient_link(invite) }.join(", ").html_safe},
+                {header: "Convites", content: patient_links.join(", ").html_safe},
                 {header: "Regiões", content: referral_invitations.map { |invite| invite&.region&.name }.uniq.join(", ")},
                 {header: "", content: ""}
               ]
@@ -219,18 +233,17 @@ module ClinicManagement
             ]
           end
         end
-        
+      
         rows
       end
 
-
-
-
-
-
-      
-      def patient_link(invite)
-        helpers.link_to(invite.patient_name.split(" ").first, lead_path(invite.lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")
+      def patient_link(invite, count = 1)
+        patient_name = invite.patient_name.split(" ").first
+        if count > 1
+          "#{helpers.link_to(patient_name, lead_path(invite.lead), class: 'text-blue-500 hover:text-blue-700', target: '_blank')} (#{count})"
+        else
+          helpers.link_to(patient_name, lead_path(invite.lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")
+        end
       end
 
       def last_appointment_link(last_appointment)
