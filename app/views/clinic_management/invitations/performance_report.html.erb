@@ -1,0 +1,39 @@
+<h1 class="text-3xl font-bold mb-4">Relatório de Desempenho dos Marcadores</h1>
+
+<% @report_data.each do |month_data| %>
+  <% if month_data[:referral_data].any? %>
+    <div class="bg-gray-100 px-6 py-4 mb-4">
+      <h2 class="text-lg font-medium text-gray-900"><%= month_data[:period] %></h2>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-lg font-medium text-gray-500 uppercase tracking-wider">Marcador</th>
+            <th scope="col" class="px-6 py-3 text-left text-lg font-medium text-gray-500 uppercase tracking-wider">Dias trabalhados</th>
+            <th scope="col" class="px-6 py-3 text-left text-lg font-medium text-gray-500 uppercase tracking-wider">Convidados</th>
+            <th scope="col" class="px-6 py-3 text-left text-lg font-medium text-gray-500 uppercase tracking-wider">Conversões</th>
+            <th scope="col" class="px-6 py-3 text-left text-lg font-medium text-gray-500 uppercase tracking-wider">% Conversões</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <% month_data[:referral_data].each do |referral_data| %>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-lg text-gray-900"><%= referral_data[:referral] %></td>
+              <td class="px-6 py-4 whitespace-nowrap text-lg text-gray-500"><%= referral_data[:days_worked] %></td>
+              <td class="px-6 py-4 whitespace-nowrap text-lg text-gray-500"><%= referral_data[:invited] %></td>
+              <td class="px-6 py-4 whitespace-nowrap text-lg text-gray-500"><%= referral_data[:conversions] %></td>
+              <td class="px-6 py-4 whitespace-nowrap text-lg text-gray-500"><%= number_to_percentage(referral_data[:conversion_rate], precision: 0) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <div class="bg-gray-100 px-6 py-4 mb-4">
+      <h2 class="text-lg font-medium text-gray-900"><%= month_data[:period] %></h2>
+      <p class="text-gray-500">Sem dados</p>
+    </div>
+  <% end %>
+<% end %>

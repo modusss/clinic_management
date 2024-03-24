@@ -18,6 +18,10 @@ module ClinicManagement
         @rows = ""
       end
     end
+
+    def performance_report
+      @report_data = generate_performance_report
+    end
     
     # GET /invitations/1
     def show
@@ -127,6 +131,37 @@ module ClinicManagement
 
     private
 
+    def generate_performance_report
+      start_date = Invitation.minimum(:date)
+      end_date = Invitation.maximum(:date)
+    
+      report_data = []
+    
+      (start_date..end_date).group_by { |date| [date.year, date.month] }.each do |(year, month), dates|
+        month_start = dates.first
+        month_end = dates.last
+    
+        month_invitations = Invitation.where(date: month_start..month_end).includes(:referral, :lead)
+    
+        referral_data = month_invitations.group_by(&:referral).map do |referral, invitations|
+          converted_leads = invitations.select { |invitation| invitation.lead&.converted? }.size
+          {
+            referral: referral.name,
+            days_worked: invitations.map(&:date).uniq.size,
+            invited: invitations.size,
+            conversions: converted_leads,
+            conversion_rate: converted_leads.to_f / invitations.size * 100
+          }
+        end
+    
+        report_data << {
+          period: "#{I18n.t('date.month_names')[month]} / #{year}",
+          referral_data: referral_data
+        }
+      end
+    
+      report_data
+    end
     def check_existing_leads(params)
       first_name = params.dig(:lead_attributes, :name)&.split&.first || invitation_params[:patient_name]&.split&.first   
       phone = params.dig(:lead_attributes, :phone)
@@ -191,7 +226,6 @@ module ClinicManagement
       end
 
 
-
       def process_invitations_data(invitations)
         rows = []
         invitations = invitations.where.not(date: nil)
@@ -208,9 +242,9 @@ module ClinicManagement
             sorted_referral_invitations = referral_invitations.sort_by { |referral, invites| -invites.size }
       
             sorted_referral_invitations.each do |referral, referral_invitations|
-              patient_invitations = referral_invitations.group_by { |invite| invite.patient_name }
-              patient_links = patient_invitations.map do |patient_name, invites|
-                count = invites.size
+              lead_invitations = referral_invitations.group_by { |invite| invite.lead }
+              patient_links = lead_invitations.map do |lead, invites|
+                count = lead.appointments.count
                 patient_link(invites.first, count)
               end
       
