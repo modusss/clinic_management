@@ -6,6 +6,7 @@ ClinicManagement::Engine.routes.draw do
       post 'create_patient_fitted', action: "create_patient_fitted", as: "create_patient_fitted"
     end
   end
+  get '/performance_report', to: 'invitations#performance_report', as: 'performance_report'
   resources :lead_messages
 
   # post search appointment service_id
