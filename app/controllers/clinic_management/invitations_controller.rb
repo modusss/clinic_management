@@ -6,7 +6,12 @@ module ClinicManagement
 
     # GET /invitations
     def index
-      @invitations = Invitation.all.includes(:lead, :region, appointments: :service).order(created_at: :desc).page(params[:page]).per(800)
+      @referrals = Referral.all
+      if params[:referral_id].present?
+        @invitations = Invitation.where(referral_id: params[:referral_id]).includes(:lead, :region, appointments: :service).order(created_at: :desc).page(params[:page]).per(800)
+      else
+        @invitations = Invitation.all.includes(:lead, :region, appointments: :service).order(created_at: :desc).page(params[:page]).per(800)
+      end
       if @invitations.present?
         @rows = process_invitations_data(@invitations)
       else
