@@ -18,8 +18,11 @@
     <% end %>
   </ul>
 </div>
-<%= link_to "Relatório de Desempenho", clinic_management.performance_report_path, class: "text-blue-500 hover:text-blue-700"  %>
-<br>
+
+<% if is_manager_above? %>
+  <%= link_to "Relatório de Desempenho", clinic_management.performance_report_path, class: "text-blue-500 hover:text-blue-700"  %>
+<% end %>
+
 <div class="flex justify-between items-end mb-6">
   <h1 class="text-3xl font-bold">Últimos convites lançados</h1>
   <%= link_to "Novo convite", new_invitation_path, class: "inline-block bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded" %>
