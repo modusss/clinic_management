@@ -1,6 +1,6 @@
 <h1 class="text-3xl font-bold mb-4">Relatório de Desempenho dos Marcadores</h1>
 
-<% @report_data.each do |month_data| %>
+<% @report_data.reverse_each do |month_data| %>
   <% if month_data[:referral_data].any? %>
     <div class="bg-gray-100 px-6 py-4 mb-4">
       <h2 class="text-lg font-medium text-gray-900"><%= month_data[:period] %></h2>
