@@ -191,7 +191,6 @@ module ClinicManagement
       end
 
 
-
       def process_invitations_data(invitations)
         rows = []
         invitations = invitations.where.not(date: nil)
@@ -208,9 +207,9 @@ module ClinicManagement
             sorted_referral_invitations = referral_invitations.sort_by { |referral, invites| -invites.size }
       
             sorted_referral_invitations.each do |referral, referral_invitations|
-              patient_invitations = referral_invitations.group_by { |invite| invite.patient_name }
-              patient_links = patient_invitations.map do |patient_name, invites|
-                count = invites.size
+              lead_invitations = referral_invitations.group_by { |invite| invite.lead }
+              patient_links = lead_invitations.map do |lead, invites|
+                count = lead.appointments.count
                 patient_link(invites.first, count)
               end
       
