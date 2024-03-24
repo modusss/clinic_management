@@ -190,16 +190,19 @@ module ClinicManagement
       def process_invitations_data(invitations)
         rows = []
         invitations = invitations.where.not(date: nil)
-
         start_date = invitations.map(&:date).min
         end_date = invitations.map(&:date).max
-        
+      
         (start_date..end_date).reverse_each do |date|
           date_invitations = invitations.select { |invite| invite.date == date }
-          
+      
           if date_invitations.any?
             rows << [{header: "", content: helpers.show_week_day(date.strftime("%A")) + ", " + date.strftime("%d/%m/%Y"), colspan: 4, class: "bg-gray-100 font-bold"}]
-            date_invitations.group_by { |invite| invite.referral }.each do |referral, referral_invitations|
+            
+            referral_invitations = date_invitations.group_by { |invite| invite.referral }
+            sorted_referral_invitations = referral_invitations.sort_by { |referral, invites| -invites.size }
+            
+            sorted_referral_invitations.each do |referral, referral_invitations|
               rows << [
                 {header: "Indicador", content: referral&.name},
                 {header: "Qtd de convites", content: referral_invitations.size},
@@ -219,7 +222,7 @@ module ClinicManagement
             ]
           end
         end
-        
+      
         rows
       end
 
