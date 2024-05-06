@@ -22,7 +22,7 @@
               <td class="px-4 py-2"><%= message.text %></td>
               <td class="px-4 py-2">
                 <%= link_to 'Editar', edit_lead_message_path(message), class: "px-2 py-1 bg-yellow-500 text-white rounded" %>
-                <%= link_to 'Excluir', message, method: :delete, data: { confirm: 'Tem certeza que deseja excluir esta mensagem?' }, class: "px-2 py-1 bg-red-500 text-white rounded" %>
+                <%= button_to 'Excluir', message, method: :delete, data: { confirm: 'Tem certeza que deseja excluir esta mensagem?' }, class: "px-2 py-1 bg-red-500 text-white rounded" %>
               </td>
             </tr>
           <% end %>
