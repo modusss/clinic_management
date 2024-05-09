@@ -76,15 +76,17 @@
 
     <div class="flex mb-2">
       <div class="w-1/2 pr-2">
-        <label for="lead_latitude" class="block text-gray-700 font-bold mb-2">Latitude</label>
-        <%= lead_fields.number_field :latitude, maxlength: 14, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline", placeholder: "14...", step: "any" %>
-      </div>
-      
-      <div class="w-1/2 pl-2">
-        <label for="lead_longitude" class="block text-gray-700 font-bold mb-2">Longitude</label>
-        <%= lead_fields.number_field :longitude,maxlength: 14, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline", placeholder: "40...", step: "any" %>
-      </div>
+      <label for="lead_latitude" class="block text-gray-700 font-bold mb-2">Latitude</label>
+      <%= lead_fields.number_field :latitude, step: "any", class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline", placeholder: "14...", onInput: "updateCoordinates()" %>
+      <div id="latitude_display" class="text-gray-600"></div>
     </div>
+
+    <div class="w-1/2 pl-2">
+      <label for="lead_longitude" class="block text-gray-700 font-bold mb-2">Longitude</label>
+      <%= lead_fields.number_field :longitude, step: "any", class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline", placeholder: "40...", onInput: "updateCoordinates()" %>
+      <div id="longitude_display" class="text-gray-600"></div>
+    </div>
+  </div>
 
   <% end %>
 
@@ -101,4 +103,44 @@
 
 </div>
 <% end %>
+
+<style>
+  #longitude_display, #latitude_display {
+    font-size: 20px;
+    width: 100%;
+    font-weight: bold;
+  }
+</style>
+
+<script>
+  function updateCoordinates() {
+    var latitude = document.getElementById("invitation_lead_attributes_latitude").value;
+    var longitude = document.getElementById("invitation_lead_attributes_longitude").value;
+
+    var latitudeDisplay = document.getElementById("latitude_display");
+    var longitudeDisplay = document.getElementById("longitude_display");
+
+    latitudeDisplay.textContent = formatCoordinate(latitude, "S");
+    longitudeDisplay.textContent = formatCoordinate(longitude, "O");
+  }
+
+ function formatCoordinate(coordinate, direction) {
+    if (coordinate === "") {
+      return "";
+    }
+
+    var degrees = parseInt(coordinate.slice(0, 2));
+    var minutes = parseInt(coordinate.slice(2, 4));
+    var seconds = parseInt(coordinate.slice(4, 6));
+    var decimals = coordinate.slice(6);
+
+    var formattedSeconds = seconds + "," + decimals;
+
+    var formattedCoordinate = degrees + "°" + minutes + "'" + formattedSeconds + "\"";
+
+    formattedCoordinate += direction === "S" ? "S" : "O";
+
+    return formattedCoordinate;
+  }
+</script>
 
