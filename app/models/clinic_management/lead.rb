@@ -44,8 +44,8 @@ module ClinicManagement
       # Calcula a coordenada decimal
       decimal_value = degrees + (minutes / 60.0) + (seconds / 3600.0) + (decimals / 3600.0 / (10 ** (cleaned_value.length - 6)))
   
-      # Verifica se o valor é negativo
-      decimal_value *= -1 if value.to_s.start_with?('-')
+      # Verifica se o valor é positivo e o torna negativo
+      decimal_value *= -1 if decimal_value > 0
   
       decimal_value
     end
