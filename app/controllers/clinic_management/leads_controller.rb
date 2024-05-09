@@ -195,7 +195,7 @@ module ClinicManagement
 
       # Only allow a list of trusted parameters through.
       def lead_params
-        params.require(:lead).permit(:name, :phone, :address, :converted)
+        params.require(:lead).permit(:name, :phone, :address, :converted, :latitude, :longitude)
       end
 
       def prescription_link(ap)

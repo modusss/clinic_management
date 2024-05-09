@@ -73,6 +73,19 @@
       <label for="lead_address" class="block text-gray-700 font-bold mb-2">Endereço</label>
       <%= lead_fields.text_field :address, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
     </div>
+
+    <div class="flex mb-2">
+      <div class="w-1/2 pr-2">
+        <label for="lead_latitude" class="block text-gray-700 font-bold mb-2">Latitude</label>
+        <%= lead_fields.number_field :latitude, maxlength: 14, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline", placeholder: "14...", step: "any" %>
+      </div>
+      
+      <div class="w-1/2 pl-2">
+        <label for="lead_longitude" class="block text-gray-700 font-bold mb-2">Longitude</label>
+        <%= lead_fields.number_field :longitude,maxlength: 14, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline", placeholder: "40...", step: "any" %>
+      </div>
+    </div>
+
   <% end %>
 
   <div class="mb-4">
