@@ -341,7 +341,9 @@ module ClinicManagement
           lead_attributes: [
             :name,
             :phone,
-            :address
+            :address,
+            :latitude,
+            :longitude
           ]
         )      
       end      
