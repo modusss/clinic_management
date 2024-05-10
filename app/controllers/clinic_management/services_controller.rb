@@ -131,10 +131,19 @@ module ClinicManagement
             { header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500" },
             { header: "Endereço", content: invitation&.lead&.address },
             { header: "Região", content: invitation&.region&.name },
+            { header: "Localização", content: get_location_link(lead) },
             { header: "Status", content: ap.status, id: "status-#{ap.id}", class: helpers.status_class(ap) },          
             { header: "Observações", content: invitation&.notes }
           ]
         end
+      end
+    end
+
+    def get_location_link(lead)
+      if lead.latitude.present? && lead.longitude.present?
+        "<a target='_blank' href='https://www.google.com/maps/search/?api=1&query=#{lead.latitude},#{lead.longitude}'>Ver localização</a>".html_safe
+      else
+        ""
       end
     end
 
@@ -168,6 +177,7 @@ module ClinicManagement
             { header: "Telefone", content:  "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone)}'>#{lead_phone}</a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
             { header: "Endereço", content: invitation.lead.address },
             { header: "Região", content: invitation.region.name.upcase },
+            { header: "Localização", content: get_location_link(lead) },
             { header: "Indicação", content: invitation.referral.name.upcase },
             { header: "Status", content: ap.status&.upcase, id: "status-#{ap.id}", class: helpers.status_class(ap) },          
             { header: "Nº de Comparecimentos", content: lead.appointments.count },
