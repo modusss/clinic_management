@@ -59,6 +59,7 @@ module ClinicManagement
     def table_body(rows, fix_to)
       content_tag(:tbody, class: "bg-white divide-y divide-gray-200") do
         rows.map do |row|
+          next if row.nil?
           if row.size == 1 && row.first[:colspan]
             content_tag(:tr, class: "bg-gray-100") do
               content_tag(:td, row.first[:content], class: "text-lg px-3 py-4 font-bold text-center whitespace-nowrap", colspan: row.first[:colspan])
