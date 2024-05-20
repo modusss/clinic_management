@@ -1,0 +1,11 @@
+<div class="my-8 mx-auto max-w-md">
+  <p class="text-green-500"><%= notice %></p>
+
+  <%= render @service_type %>
+
+  <div class="mt-4">
+    <%= link_to "Editar este Tipo de Serviço", edit_service_type_path(@service_type), class: "px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" %>
+    <%= link_to "Voltar para Tipos de Serviço", service_types_path, class: "px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600" %>
+    <%= button_to "Deletar este Tipo de Serviço", @service_type, method: :delete, data: { confirm: "Você tem certeza que deseja deletar este tipo de serviço?" }, class: "px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600" %>
+  </div>
+</div>

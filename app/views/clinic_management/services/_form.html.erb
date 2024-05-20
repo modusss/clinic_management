@@ -1,5 +1,12 @@
 <% form_fields = [
-      next_30_days_time_slots
-      ] %>
-<%= standardized_form_for(service, form_fields) %>
+  next_30_days_time_slots,
+  {name: 'Tipo de Serviço', 
+  input: :service_type_id, 
+  type: 'select', 
+  value: service.service_type_id, 
+  options: ClinicManagement::ServiceType.all.map { |st| [st.name, st.id] },
+  selected: service.service_type_id || ClinicManagement::ServiceType.first.id
+  },
+] %>
 
+<%= standardized_form_for(service, form_fields) %>
