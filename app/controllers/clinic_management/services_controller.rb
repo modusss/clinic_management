@@ -70,7 +70,7 @@ module ClinicManagement
     def create
       json_params = decode_json(params[:service][:time_slot_id])
       @time_slot = TimeSlot.find(json_params["time_slot_id"])
-      @service = Service.new
+      @service = Service.new(service_params)
       @service.weekday = @time_slot.weekday
       @service.start_time = @time_slot.start_time
       @service.end_time = @time_slot.end_time
@@ -295,7 +295,7 @@ module ClinicManagement
 
       # Only allow a list of trusted parameters through.
       def service_params
-        params.require(:service).permit(:weekday, :start_time, :end_time, :date)
+        params.require(:service).permit(:weekday, :start_time, :end_time, :date, :service_type_id)
       end
   end
 end

@@ -45,6 +45,7 @@ ClinicManagement::Engine.routes.draw do
   end
   resources :time_slots
   resources :regions
+  resources :service_types
   resources :leads do
     collection do
       get 'absent'
