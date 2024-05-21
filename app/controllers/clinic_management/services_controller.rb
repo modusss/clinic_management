@@ -244,12 +244,15 @@ module ClinicManagement
           # percentage_content("Cancelados", canceleds, total_appointments, "text-red-600", "bg-red-200")        
         ]
         if helpers.is_manager_above?
-            row << { header: "Ação", content: helpers.link_to("Editar", helpers.edit_service_path(ser), class: "text-blue"), class: "text-center" }
+            row << { header: "Ação", content: should_edit_service?(ser) }
         end
         row
       end
     end
     
+    def should_edit_service?(service)
+      service.date >= Date.today ? helpers.link_to("Editar", edit_service_path(service), class: "text-blue-500 hover:text-blue-700") : "--"
+    end
 
     def set_appointment_button(ap)
       if ap.attendance.present? || ap.status == "remarcado" || ap.service.date > Date.today
