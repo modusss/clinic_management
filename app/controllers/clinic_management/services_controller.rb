@@ -229,7 +229,8 @@ module ClinicManagement
         total_appointments, scheduled, rescheduled, canceleds = appointment_counts(ser)
         link = action_name == 'index_by_referral' ? show_by_referral_services_path(referral_id: @referral.id, id: ser.id) : ser
         [
-          { header: "#", content: index + 1 },
+          #{ header: "#", content: index + 1 },
+          { header: "Serviço", content: ser&.service_type&.name },
           { header: "Data", content: helpers.link_to(ser.date.strftime("%d/%m/%Y"), link, class: "text-blue-500 hover:text-blue-700") },
           { header: "Dia da semana", content: helpers.show_week_day(ser.weekday) },
           { header: "Início", content: ser.start_time.strftime("%H:%M") },
