@@ -2,17 +2,19 @@ module ClinicManagement
   module TimeSlotsHelper
 
     
-    def next_30_days_time_slots
+    def next_30_days_time_slots(service = nil)
       # Agrupar slots de tempo por dia da semana
       time_slots = ClinicManagement::TimeSlot.all.group_by(&:weekday)
+    
       # Buscar serviços existentes nos próximos 30 dias
       existing_services = Service.where(date: Date.today..Date.today + 29.days)
-                                 .pluck(:date, :start_time)
-                                 .group_by { |date, _| date }
+        .pluck(:date, :start_time)
+        .group_by { |date, _| date }
     
       options = (Date.today..Date.today + 29.days).flat_map do |date|
         weekday = date.wday == 6 ? 7 : date.wday + 1
         weekday_slots = time_slots[weekday] || []
+    
         weekday_slots.reject do |slot|
           # Verificar se o slot específico já está ocupado por um serviço existente
           existing_services_for_date = existing_services[date]&.map { |_, start_time| start_time }
@@ -24,7 +26,15 @@ module ClinicManagement
         end
       end.compact
     
-      {type: 'select', selected: "", input: :time_slot_id, name: 'Dias e horários disponíveis', options: options}
+      # Verificar se o serviço existe e encontrar o valor selecionado anteriormente
+      selected_value = if service && service.date && service.start_time
+        slot = ClinicManagement::TimeSlot.find_by(weekday: service.date.wday == 6 ? 7 : service.date.wday + 1, start_time: service.start_time)
+        {time_slot_id: slot&.id, date: service.date}.to_json
+      else
+        ""
+      end
+    
+      {type: 'select', selected: selected_value, input: :time_slot_id, name: 'Dias e horários disponíveis', options: options}
     end
     
     

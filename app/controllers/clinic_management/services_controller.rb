@@ -228,7 +228,7 @@ module ClinicManagement
       services.map.with_index do |ser, index|
         total_appointments, scheduled, rescheduled, canceleds = appointment_counts(ser)
         link = action_name == 'index_by_referral' ? show_by_referral_services_path(referral_id: @referral.id, id: ser.id) : ser
-        [
+        row = [
           #{ header: "#", content: index + 1 },
           { header: "Serviço", content: ser&.service_type&.name },
           { header: "Data", content: helpers.link_to(ser.date.strftime("%d/%m/%Y"), link, class: "text-blue-500 hover:text-blue-700") },
@@ -243,6 +243,10 @@ module ClinicManagement
           # percentage_content("Remarcados", rescheduled, total_appointments, "text-green-600", "bg-green-200"),
           # percentage_content("Cancelados", canceleds, total_appointments, "text-red-600", "bg-red-200")        
         ]
+        if helpers.is_manager_above?
+            row << { header: "Ação", content: helpers.link_to("Editar", helpers.edit_service_path(ser), class: "text-blue"), class: "text-center" }
+        end
+        row
       end
     end
     
