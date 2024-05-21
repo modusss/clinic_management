@@ -10,6 +10,7 @@
       <table class="w-full table-auto border-collapse border-2 border-gray-200 text-left">
         <thead>
           <tr>
+            <th class="px-4 py-2">Tipo de serviço</th>
             <th class="px-4 py-2">Nome da mensagem</th>
             <th class="px-4 py-2">Texto da mensagem</th>
             <th class="px-4 py-2">Ações</th>
@@ -18,6 +19,7 @@
         <tbody>
           <% filtered_messages.each do |message| %>
             <tr class="border-b border-gray-200">
+              <td class="px-4 py-2"><%= message&.service_type&.name %></td>
               <td class="px-4 py-2"><%= message.name %></td>
               <td class="px-4 py-2"><%= message.text %></td>
               <td class="px-4 py-2">
