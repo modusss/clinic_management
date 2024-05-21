@@ -3,23 +3,59 @@
 </div>
 
 <div class="w-full">
-  <% ClinicManagement::LeadMessage.message_types.keys.each do |type| %>
-  <% filtered_messages = @messages.select { |m| m.message_type == type }.sort_by(&:created_at) %>
+  <% service_types = ClinicManagement::ServiceType.all.order(:name) %>
+  <% service_types.each do |service_type| %>
+    <% filtered_messages = @messages.select { |m| m.service_type == service_type }.sort_by(&:created_at) %>
     <% if filtered_messages.any? %>
-      <h6 class="text-xl font-bold"><%= type.humanize %></h6>
+      <h6 class="text-xl font-bold"><%= "#{service_type.name} (#{filtered_messages.count})" %></h6>
       <table class="w-full table-auto border-collapse border-2 border-gray-200 text-left">
         <thead>
           <tr>
-            <th class="px-4 py-2">Tipo de serviço</th>
+            <th class="px-4 py-2">Tipo da mensagem</th>
             <th class="px-4 py-2">Nome da mensagem</th>
             <th class="px-4 py-2">Texto da mensagem</th>
             <th class="px-4 py-2">Ações</th>
           </tr>
         </thead>
         <tbody>
-          <% filtered_messages.each do |message| %>
+          <% ClinicManagement::LeadMessage.message_types.keys.each do |message_type| %>
+            <% type_filtered_messages = filtered_messages.select { |m| m.message_type == message_type } %>
+            <% type_filtered_messages.each_with_index do |message, index| %>
+              <tr class="border-b border-gray-200">
+              <td class="px-4 py-2"><%= "#{message.message_type.humanize} ##{index + 1}" %></td>
+                <td class="px-4 py-2"><%= message.name %></td>
+                <td class="px-4 py-2"><%= message.text %></td>
+                <td class="px-4 py-2">
+                  <%= link_to 'Editar', edit_lead_message_path(message), class: "px-2 py-1 bg-yellow-500 text-white rounded" %>
+                  <%= button_to 'Excluir', message, method: :delete, data: { confirm: 'Tem certeza que deseja excluir esta mensagem?' }, class: "px-2 py-1 bg-red-500 text-white rounded" %>
+                </td>
+              </tr>
+            <% end %>
+          <% end %>
+        </tbody>
+      </table>
+      <br><br>
+    <% end %>
+  <% end %>
+  
+  <% unassigned_messages = @messages.select { |m| m.service_type.nil? }.sort_by(&:created_at) %>
+  <% if unassigned_messages.any? %>
+    <h6 class="text-xl font-bold">Mensagens não atribuídas (<%=unassigned_messages.count %>)</h6>
+    <table class="w-full table-auto border-collapse border-2 border-gray-200 text-left">
+      <thead>
+        <tr>
+          <th class="px-4 py-2">Tipo da mensagem</th>          
+          <th class="px-4 py-2">Nome da mensagem</th>
+          <th class="px-4 py-2">Texto da mensagem</th>
+          <th class="px-4 py-2">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% ClinicManagement::LeadMessage.message_types.keys.each do |message_type| %>
+          <% type_unassigned_messages = unassigned_messages.select { |m| m.message_type == message_type } %>
+          <% type_unassigned_messages.each_with_index do |message, index| %>
             <tr class="border-b border-gray-200">
-              <td class="px-4 py-2"><%= message&.service_type&.name %></td>
+              <td class="px-4 py-2"><%= "#{message.message_type.humanize} ##{index + 1}" %></td>
               <td class="px-4 py-2"><%= message.name %></td>
               <td class="px-4 py-2"><%= message.text %></td>
               <td class="px-4 py-2">
@@ -28,13 +64,11 @@
               </td>
             </tr>
           <% end %>
-        </tbody>
-      </table>
-      <br><br>
-    <% end %>
+        <% end %>
+      </tbody>
+    </table>
   <% end %>
 </div>
-
 <div class="mt-8">
   <%= link_to 'Criar nova mensagem customizada', new_lead_message_path, class: "px-4 py-2 bg-blue-500 text-white rounded" %>
 </div>
