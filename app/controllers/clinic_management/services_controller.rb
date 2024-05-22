@@ -70,7 +70,7 @@ module ClinicManagement
     def create
       json_params = decode_json(params[:service][:time_slot_id])
       @time_slot = TimeSlot.find(json_params["time_slot_id"])
-      @service = Service.new
+      @service = Service.new(service_params)
       @service.weekday = @time_slot.weekday
       @service.start_time = @time_slot.start_time
       @service.end_time = @time_slot.end_time
@@ -228,8 +228,9 @@ module ClinicManagement
       services.map.with_index do |ser, index|
         total_appointments, scheduled, rescheduled, canceleds = appointment_counts(ser)
         link = action_name == 'index_by_referral' ? show_by_referral_services_path(referral_id: @referral.id, id: ser.id) : ser
-        [
-          { header: "#", content: index + 1 },
+        row = [
+          #{ header: "#", content: index + 1 },
+          { header: "Serviço", content: ser&.service_type&.name },
           { header: "Data", content: helpers.link_to(ser.date.strftime("%d/%m/%Y"), link, class: "text-blue-500 hover:text-blue-700") },
           { header: "Dia da semana", content: helpers.show_week_day(ser.weekday) },
           { header: "Início", content: ser.start_time.strftime("%H:%M") },
@@ -242,9 +243,16 @@ module ClinicManagement
           # percentage_content("Remarcados", rescheduled, total_appointments, "text-green-600", "bg-green-200"),
           # percentage_content("Cancelados", canceleds, total_appointments, "text-red-600", "bg-red-200")        
         ]
+        if helpers.is_manager_above?
+            row << { header: "Ação", content: should_edit_service?(ser) }
+        end
+        row
       end
     end
     
+    def should_edit_service?(service)
+      service.date >= Date.today ? helpers.link_to("Editar", edit_service_path(service), class: "text-blue-500 hover:text-blue-700") : "--"
+    end
 
     def set_appointment_button(ap)
       if ap.attendance.present? || ap.status == "remarcado" || ap.service.date > Date.today
@@ -295,7 +303,7 @@ module ClinicManagement
 
       # Only allow a list of trusted parameters through.
       def service_params
-        params.require(:service).permit(:weekday, :start_time, :end_time, :date)
+        params.require(:service).permit(:weekday, :start_time, :end_time, :date, :service_type_id)
       end
   end
 end

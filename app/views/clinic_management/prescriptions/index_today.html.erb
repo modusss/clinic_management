@@ -14,6 +14,7 @@
 <br>
 <% if @services.present? %>
       <h1 class="text-3xl font-bold text-gray-900 mb-2">Atendimento de <%= show_week_day @services.last.weekday %></h1>
+      <h2 class="text-2xl text-gray-700 mb-1"><%= @services.last.service_type&.name %></h2>
       <h2 class="text-2xl text-gray-700 mb-1"><%= @services.last.date.strftime("%d/%m/%Y") %></h2>
   <br>
   <br>

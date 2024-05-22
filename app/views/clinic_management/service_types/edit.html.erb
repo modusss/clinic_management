@@ -1,0 +1,11 @@
+<%= breadcrumb({title: "Todos os Tipos de Serviço", path: service_types_path}, {title: "Editar Tipo de Serviço", path: nil}) %>
+
+<div class="my-8 mx-auto max-w-md">
+  <h1 class="text-2xl font-bold mb-4">Edição de Tipo de Serviço</h1>
+
+  <%= render "form", service_type: @service_type %>
+
+  <div class="mt-4">
+    <%= link_to "Voltar para Tipos de Serviço", service_types_path, class: "text-blue-500 hover:underline" %>
+  </div>
+</div>

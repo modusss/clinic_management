@@ -106,7 +106,7 @@ module ClinicManagement
     end
   
     def message_params
-      params.require(:lead_message).permit(:name, :text, :message_type)
+      params.require(:lead_message).permit(:name, :text, :message_type, :service_type_id)
     end
   end
 end

@@ -37,7 +37,8 @@
         <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'prescriptions'}" %>
         <%= link_to "Pacientes", clinic_management.leads_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'leads'}" %>
         <% if is_manager_above? %>
-        <%= link_to "Convites", clinic_management.invitations_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'invitations'}" %>
+          <%= link_to "Convites", clinic_management.invitations_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'invitations'}" %>
+          <%= link_to "Tipos de serviço", clinic_management.service_types_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'service_types'}" %>
         <% end %>
         <%= link_to "Regiões", clinic_management.regions_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'regions'}" %>
         <%= link_to "Atendimentos", clinic_management.services_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'services'}" %>
