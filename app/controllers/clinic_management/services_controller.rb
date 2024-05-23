@@ -173,6 +173,8 @@ module ClinicManagement
             { header: "#", content: index },
             { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700") },
             { header: "Comparecimento", content: ap.attendance ? "SIM" : "NÃO", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
+            { header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "pt-2 pb-0" },          
+            { header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500" },
             { header: "Responsável", content: ((lead.name == invitation.patient_name) ? "" : lead.name) },
             { header: "Telefone", content:  "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone)}'>#{lead_phone}</a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
             { header: "Endereço", content: invitation.lead.address },
@@ -181,13 +183,11 @@ module ClinicManagement
             { header: "Indicação", content: invitation.referral.name.upcase },
             { header: "Status", content: ap.status&.upcase, id: "status-#{ap.id}", class: helpers.status_class(ap) },          
             { header: "Nº de Comparecimentos", content: lead.appointments.count },
-            { header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "pt-2 pb-0" },          
             { header: "Observações", content: invitation.notes },
             { header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id.to_s}" },
             { header: "Mensagens enviadas:", content: ap.messages_sent&.join(', '), id: "messages-sent-#{ap.id.to_s}" },
             { header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500" },
-            { header: "Cancelar?", content: set_cancel_button(ap), id: "cancel-attendance-button-#{ap.id}", class: "pt-2 pb-0" },
-            { header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500" }
+            { header: "Cancelar?", content: set_cancel_button(ap), id: "cancel-attendance-button-#{ap.id}", class: "pt-2 pb-0" }
           ]
         end                 
       end
