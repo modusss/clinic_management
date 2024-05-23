@@ -171,6 +171,7 @@ module ClinicManagement
             {header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
             {header: "Telefone", content: helpers.link_to(lead.phone, "https://wa.me/+55#{lead.phone}", class: "text-blue-500 hover:text-blue-700")},
             {header: "Receita", content: prescription_link(ap)},
+            {header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "pt-2 pb-0" },          
             {header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500"},
             {header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id.to_s}"},
             {header: "Mensagens enviadas:", content: ap&.messages_sent&.join(', '), id: "messages-sent-#{ap.id.to_s}"},            
@@ -178,6 +179,14 @@ module ClinicManagement
           ]
         end
       end.compact # remove any nil entries resulting from next unless
+    end
+
+    def set_appointment_button(ap)
+      if ap.attendance.present? || ap.status == "remarcado" || ap.service.date > Date.today
+        "--"
+      else
+        helpers.button_to('Marcar como presente', set_attendance_appointment_path(ap), method: :patch, remote: true, class: "py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-700")
+      end
     end
 
     def generate_message_content(lead, appointment)
