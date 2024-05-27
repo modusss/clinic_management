@@ -52,12 +52,12 @@ module ClinicManagement
       # Extrair graus, minutos e segundos da string de entrada
       degrees = coordinate[0..1].to_i
       minutes = coordinate[2..3].to_i
-      seconds = coordinate[4..8].to_f / 1000
+      seconds = coordinate[4..9].to_f / 100
 
       # Converter para decimal
-      decimal = degrees + minutes/60.0 + seconds/3600.0
+      decimal = degrees + minutes / 60.0 + seconds / 3600.0
 
-      # Adicionar sinal negativo se for latitude (S) ou longitude (O)
+      # Adicionar sinal negativo se for latitude (S) ou longitude (W)
       decimal *= -1 if type == :lat || type == :lon
 
       decimal
