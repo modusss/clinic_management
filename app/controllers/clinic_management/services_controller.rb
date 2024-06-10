@@ -120,14 +120,14 @@ module ClinicManagement
         new_appointment = ClinicManagement::Appointment.new
         invitation = ap&.invitation
         next unless (invitation.present?) && (lead.present?) && (ap.present?) && (lead.name.present?) 
-
+    
         if (invitation.present?) && (lead.present?)
           [
             { header: "#", content: index },
             { header: "Paciente", content: invitation&.patient_name },
             { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
             { header: "Responsável", content: ((lead.name == invitation&.patient_name) ? "" : lead.name) },
-            { header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, set_zap_message(ap.service, invitation))}'>#{lead_phone}</a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
+            { header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, set_zap_message(ap.service, invitation))}'>#{lead_phone}</a> <a href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
             { header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500" },
             { header: "Endereço", content: invitation&.lead&.address },
             { header: "Região", content: invitation&.region&.name },
@@ -138,6 +138,7 @@ module ClinicManagement
         end
       end
     end
+    
 
     def get_location_link(lead)
       if lead.latitude.present? && lead.longitude.present?
@@ -176,7 +177,7 @@ module ClinicManagement
             { header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "pt-2 pb-0" },          
             { header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500" },
             { header: "Responsável", content: ((lead.name == invitation.patient_name) ? "" : lead.name) },
-            { header: "Telefone", content:  "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone)}'>#{lead_phone}</a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
+            { header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, set_zap_message(ap.service, invitation))}'>#{lead_phone}</a> <a href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
             { header: "Endereço", content: invitation.lead.address },
             { header: "Região", content: invitation.region.name.upcase },
             { header: "Localização", content: get_location_link(lead) },
