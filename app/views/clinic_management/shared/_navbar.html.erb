@@ -25,16 +25,24 @@
         <%= link_to "Lipepay", main_app.root_path, class: "text-white hover:text-blue-300" %>
       </h1>
 
-      <div class="relative">
-        <%= form_with url: search_leads_path, method: :post, remote: true, class: "w-full sm:w-auto flex justify-center sm:justify-start mt-4 sm:mt-0" do |search| %>
-          <div class="input-field relative">
-            <input id="search_lead" type="search_lead" name="q" oninput="this.form.requestSubmit()" class="bg-white rounded p-2 w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent">
-            <label class="n absolute right-2 top-1/2 transform -translate-y-1/2" for="search_lead"><i class="fas fa-search text-gray-500"></i></label>
-          </div>
-        <% end %>
-        <div id="lead-results" class="absolute" style="z-index: 1000">
-        </div>
+  <div class="relative">
+    <%= form_with url: search_leads_path, method: :post, data: { remote: true, controller: "debounce" }, class: "w-full sm:w-auto flex justify-center sm:justify-start mt-4 sm:mt-0" do |search| %>
+      <div class="input-field relative">
+        <%= search.search_field :q,
+            data: { debounce_target: "input" },
+            id: "search_lead",
+            placeholder: "Busque pelo lead...",
+            autocomplete: "off",
+            spellcheck: false,
+            class: "bg-white rounded p-2 w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent",
+            style: "font-size: 16px; width: 300px; padding: 12px;" %>
+        <label class="absolute right-2 top-1/2 transform -translate-y-1/2" for="search_lead">
+          <i class="fas fa-search text-gray-500"></i>
+        </label>
       </div>
+    <% end %>
+    <div id="lead-results" class="absolute mt-1 w-full bg-white shadow-lg rounded-b" style="z-index: 1000"></div>
+  </div>
 
       <nav class="text-lg w-full sm:w-auto mt-4 sm:mt-0 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
         <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'prescriptions'}" %>

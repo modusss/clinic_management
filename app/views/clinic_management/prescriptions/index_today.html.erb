@@ -19,16 +19,25 @@
   <br>
   <br>
   <div class="relative">
-    <%= form_with url: search_index_today_path, method: :post, remote: true, class: "w-full sm:w-auto flex justify-center sm:justify-start mt-4 sm:mt-0" do |search| %>
+    <%= form_with url: search_index_today_path, method: :post, data: { remote: true, controller: "debounce" }, class: "w-full sm:w-auto flex justify-center sm:justify-start mt-4 sm:mt-0" do |search| %>
       <div class="input-field relative">
-        <input id="search-results" type="search-results" name="q" oninput="this.form.requestSubmit()" class="bg-white rounded p-2 w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent" placeholder="Busque pelo paciente..." style="font-size: 20px; width: 400px; padding: 15px;">
-        <label class="n absolute right-2 top-1/2 transform -translate-y-1/2" for="search-results"><i class="fas fa-search text-gray-500"></i></label>
+        <%= search.search_field :q,
+            data: { debounce_target: "input" },
+            id: "search-results",
+            placeholder: "Busque pelo paciente...",
+            autocomplete: "off",
+            spellcheck: false,
+            class: "bg-white rounded p-2 w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent",
+            style: "font-size: 20px; width: 400px; padding: 15px;" %>
+        <label class="absolute right-2 top-1/2 transform -translate-y-1/2" for="search-results">
+          <i class="fas fa-search text-gray-500"></i>
+        </label>
       </div>
     <% end %>
-    <br>
-    <div id="appointments-results"></div>
-    <div id="appointment-info"></div>
+    <div id="appointments-results" class="absolute mt-1 w-full bg-white shadow-lg rounded-b" style="z-index: 1000"></div>
   </div>
+  <div id="appointment-info" class="mt-4"></div>
+
 
     <br>
     <br>
