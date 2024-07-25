@@ -6,6 +6,9 @@
         <span class="font-semibold text-xl tracking-tight">Lipe.pro</span>
       </div>
       <% if user_signed_in? %>
+      <nav class="text-lg w-full sm:w-auto mt-4 sm:mt-0 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+        <%= link_to "Pacientes", clinic_management.absent_leads_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'leads'}" %>
+      </nav>
         <div class="flex items-center">
           <span class="mr-4 text-white lg:hidden">Olá, <%= current_user.name %></span>
           <span class="hidden mr-4 text-white lg:block">Olá, <%= current_user.name %></span>
@@ -35,7 +38,7 @@
 
       <nav class="text-lg w-full sm:w-auto mt-4 sm:mt-0 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
         <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'prescriptions'}" %>
-        <%= link_to "Pacientes", clinic_management.leads_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'leads'}" %>
+        <%= link_to "Pacientes", clinic_management.absent_leads_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'leads'}" %>
         <% if is_manager_above? %>
           <%= link_to "Convites", clinic_management.invitations_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'invitations'}" %>
           <%= link_to "Tipos de serviço", clinic_management.service_types_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'service_types'}" %>

@@ -2,13 +2,13 @@ module ClinicManagement
   class LeadsController < ApplicationController
     before_action :set_lead, only: %i[ show edit update destroy ]
     before_action :set_menu, only: %i[ index absent attended cancelled ]
-    skip_before_action :redirect_referral_users, only: [:destroy]
+    skip_before_action :redirect_referral_users
 
     include GeneralHelper
 
     # GET /leads
     def index
-      @leads = Lead.includes(:invitations, :appointments).page(params[:page]).per(50)  # 10 leads por página
+      @leads = Lead.includes(:invitations, :appointments).page(params[:page]).per(100)
       @rows = load_leads_data(@leads)
     end
     
@@ -79,19 +79,19 @@ module ClinicManagement
     end
 
     def absent
-      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, Date.today).page(params[:page]).per(50)
+      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, Date.today).page(params[:page]).per(100)
       @rows = load_leads_data(@leads)
       render :index
-    end
+    end    
     
     def attended
-      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ?', true).page(params[:page]).per(50)
+      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ?', true).page(params[:page]).per(100)
       @rows = load_leads_data(@leads)
       render :index
     end
     
     def cancelled
-      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.status = ?', 'cancelado').page(params[:page]).per(50)
+      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.status = ?', 'cancelado').page(params[:page]).per(100)
       @rows = load_leads_data(@leads)
       render :index
     end
@@ -132,7 +132,7 @@ module ClinicManagement
 
     def set_menu
       @menu = [
-        {url_name: 'Todos', url: 'leads', controller_name: 'leads', action_name: 'index'},
+        # {url_name: 'Todos', url: 'leads', controller_name: 'leads', action_name: 'index'},
         {url_name: 'Ausentes', url: 'absent_leads', controller_name: 'leads', action_name: 'absent'},
         {url_name: 'Compareceram', url: 'attended_leads', controller_name: 'leads', action_name: 'attended'},
         {url_name: 'Cancelados', url: 'cancelled_leads', controller_name: 'leads', action_name: 'cancelled'}
@@ -140,21 +140,39 @@ module ClinicManagement
     end
 
     def load_leads_data(leads)
+      if helpers.referral?(current_user)
+        leads = leads.joins(:invitations).where(invitations: { referral_id: current_user.id })
+      end
+    
       leads.map.with_index do |lead, index|
         last_invitation = lead.invitations.last
         last_appointment = lead.appointments.last
-        [
-          {header: "Ordem", content: index + 1},
-          {header: "Paciente", content: helpers.link_to(lead.name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
-          {header: "Responsável", content: responsible_content(last_invitation)},
-          {header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, set_zap_message(ap.service, invitation))}'>#{lead_phone}</a> <a href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
-          {header: "Último indicador", content: last_referral(last_invitation)},
-          {header: "Qtd. de convites", content: lead.invitations.count},
-          {header: "Qtd. de atendimentos", content: lead.appointments.count},
-          {header: "Último atendimento", content: last_appointment_link(last_appointment)},
-          {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}" }          ]
+        if helpers.referral?(current_user)
+          [
+            {header: "Ordem", content: index + 1},
+            {header: "Paciente", content: lead.name, class: "text-blue"},
+            {header: "Responsável", content: responsible_content(last_invitation)},
+            {header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, "")}'>#{lead.phone}</a> <a href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
+            {header: "Qtd. de convites", content: lead.invitations.count},
+            {header: "Qtd. de atendimentos", content: lead.appointments.count},
+            {header: "Último atendimento", content: "#{invite_day(last_appointment)}"}
+          ]
+        else
+          [
+            {header: "Ordem", content: index + 1},
+            {header: "Paciente", content: helpers.link_to(lead.name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
+            {header: "Responsável", content: responsible_content(last_invitation)},
+            {header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, "")}'>#{lead.phone}</a> <a href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
+            {header: "Último indicador", content: last_referral(last_invitation)},
+            {header: "Qtd. de convites", content: lead.invitations.count},
+            {header: "Qtd. de atendimentos", content: lead.appointments.count},
+            {header: "Último atendimento", content: last_appointment_link(last_appointment)},
+            {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}" }          
+          ]
+        end
       end
     end
+    
 
     def last_referral(last_invitation)
       last_invitation&.referral&.name || ""
@@ -174,18 +192,24 @@ module ClinicManagement
       end
 
       def fetch_leads_by_appointment_condition(query_condition, value, date = nil)
+        # Data de um ano atrás a partir de hoje
+        one_year_ago = Date.today - 1.year
+      
         if date
           ClinicManagement::Lead.joins(appointments: :service)
                                 .where(query_condition, value, date)
                                 .where('last_appointment_id IN (?)', ClinicManagement::Appointment.joins(:service).where(query_condition, value, date).pluck(:id))
+                                .where.not(id: ClinicManagement::Appointment.where('attendance = ? AND date >= ?', true, one_year_ago).select(:lead_id))
                                 .order('clinic_management_services.date DESC')
         else
           ClinicManagement::Lead.joins(appointments: :service)
                                 .where(id: ClinicManagement::Appointment.where(query_condition, value).select(:lead_id))
                                 .where('last_appointment_id IN (?)', ClinicManagement::Appointment.where(query_condition, value).pluck(:id))
+                                .where.not(id: ClinicManagement::Appointment.where('attendance = ? AND date >= ?', true, one_year_ago).select(:lead_id))
                                 .order('clinic_management_services.date DESC')
         end
       end
+      
       
       
       # Use callbacks to share common setup or constraints between actions.
