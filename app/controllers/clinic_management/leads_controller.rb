@@ -8,7 +8,7 @@ module ClinicManagement
 
     # GET /leads
     def index
-      @leads = Lead.includes(:invitations, :appointments).page(params[:page]).per(100)
+      @leads = Lead.includes(:invitations, :appointments).page(params[:page]).per(50)
       @rows = load_leads_data(@leads)
     end
     
@@ -79,19 +79,19 @@ module ClinicManagement
     end
 
     def absent
-      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, Date.today).page(params[:page]).per(100)
+      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, Date.today).page(params[:page]).per(50)
       @rows = load_leads_data(@leads)
       render :index
     end    
     
     def attended
-      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ?', true).page(params[:page]).per(100)
+      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ?', true).page(params[:page]).per(50)
       @rows = load_leads_data(@leads)
       render :index
     end
     
     def cancelled
-      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.status = ?', 'cancelado').page(params[:page]).per(100)
+      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.status = ?', 'cancelado').page(params[:page]).per(50)
       @rows = load_leads_data(@leads)
       render :index
     end
