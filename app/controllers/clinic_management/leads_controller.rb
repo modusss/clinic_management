@@ -195,20 +195,27 @@ module ClinicManagement
         # Data de um ano atrás a partir de hoje
         one_year_ago = Date.today - 1.year
       
+        # IDs dos leads que tiveram attendance como true dentro do último ano
+        excluded_lead_ids = ClinicManagement::Appointment.joins(:service)
+                                                         .where('clinic_management_appointments.attendance = ? AND clinic_management_services.date >= ?', true, one_year_ago)
+                                                         .pluck(:lead_id)
+      
         if date
           ClinicManagement::Lead.joins(appointments: :service)
                                 .where(query_condition, value, date)
                                 .where('last_appointment_id IN (?)', ClinicManagement::Appointment.joins(:service).where(query_condition, value, date).pluck(:id))
-                                .where.not(id: ClinicManagement::Appointment.where('attendance = ? AND date >= ?', true, one_year_ago).select(:lead_id))
+                                .where.not(id: excluded_lead_ids)
                                 .order('clinic_management_services.date DESC')
         else
           ClinicManagement::Lead.joins(appointments: :service)
                                 .where(id: ClinicManagement::Appointment.where(query_condition, value).select(:lead_id))
                                 .where('last_appointment_id IN (?)', ClinicManagement::Appointment.where(query_condition, value).pluck(:id))
-                                .where.not(id: ClinicManagement::Appointment.where('attendance = ? AND date >= ?', true, one_year_ago).select(:lead_id))
+                                .where.not(id: excluded_lead_ids)
                                 .order('clinic_management_services.date DESC')
         end
       end
+      
+      
       
       
       
