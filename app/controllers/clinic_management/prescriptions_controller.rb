@@ -144,13 +144,16 @@ module ClinicManagement
 
 
     def mapping_rows(services)
-      @services.map do |service|
-        # appointments = appointments.select { |ap| ap&.invitation&.patient_name.present? }
-                                   # .sort_by { |ap| ap.invitation.patient_name }
-        appointments = service.appointments.sort_by { |ap| ap&.invitation&.patient_name }
+      services.map do |service|
+        # Filtra as appointments para remover aquelas onde appointment.invitation é nil
+        appointments = service.appointments
+                              .select { |ap| ap.invitation.present? }
+                              .sort_by { |ap| ap.invitation.patient_name }
         process_appointments_data(appointments)
       end
     end
+    
+    
 
     def process_appointments_data(appointments)
       appointments.map.with_index(1) do |ap, index|
