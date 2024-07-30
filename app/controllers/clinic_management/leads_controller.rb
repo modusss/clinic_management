@@ -2,6 +2,7 @@ module ClinicManagement
   class LeadsController < ApplicationController
     before_action :set_lead, only: %i[ show edit update destroy ]
     before_action :set_menu, only: %i[ index absent attended cancelled ]
+    before_action :set_referral, only: %i[ index absent attended cancelled ]
     skip_before_action :redirect_referral_users
 
     include GeneralHelper
@@ -223,7 +224,10 @@ module ClinicManagement
       end
       
       
-      
+      def set_referral
+        @referral = Referral.find_by(code: current_user.memberships.last.code)
+      end
+        
       
       
       # Use callbacks to share common setup or constraints between actions.

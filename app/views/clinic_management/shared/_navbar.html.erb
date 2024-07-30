@@ -11,6 +11,10 @@
           <%= link_to "Pacientes", clinic_management.absent_leads_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'leads'}" %>
         </nav>
       <% end %>
+        <nav class="text-lg w-full sm:w-auto mt-4 sm:mt-0 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+          <%= link_to "Atendimentos", clinic_management.index_by_referral_services_path(@referral), class: "text-white hover:text-blue-300 #{'active' if controller_name == 'services'}" %>
+        </nav>
+
         <div class="flex items-center">
           <span class="mr-4 text-white lg:hidden">Olá, <%= current_user.name %></span>
           <span class="hidden mr-4 text-white lg:block">Olá, <%= current_user.name %></span>
