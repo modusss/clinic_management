@@ -69,6 +69,11 @@ module ClinicManagement
           code = current_membership.code
           Referral.find_by(code: code)
         end
+
+        def allowed_to_access_leads?(current_user)
+          referral = user_referral
+          referral&.can_access_leads
+        end
         
         def current_membership
           current_user&.memberships&.last
