@@ -140,8 +140,15 @@ module ClinicManagement
     end
 
     def load_leads_data(leads)
-      if helpers.referral?(current_user)
-        leads = leads.joins(:invitations).where(invitations: { referral_id: current_user.id })
+      # if helpers.referral?(current_user)
+      #   leads = leads.joins(:invitations).where(invitations: { referral_id: current_user.id })
+      # end
+    
+      cutoff_date = 120.days.ago
+    
+      leads = leads.select do |lead|
+        last_appointment = lead.appointments.last
+        last_appointment.nil? || last_appointment.service.date <= cutoff_date
       end
     
       leads.map.with_index do |lead, index|
@@ -160,14 +167,14 @@ module ClinicManagement
         else
           [
             {header: "Ordem", content: index + 1},
-            {header: "Paciente", content: helpers.link_to(lead.name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank" )},
+            {header: "Paciente", content: helpers.link_to(lead.name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
             {header: "Responsável", content: responsible_content(last_invitation)},
-            {header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, "")}'>#{lead.phone}</a> <a href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
+            {header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, "")}'>#{lead.phone}</a> <a href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700"},
             {header: "Último indicador", content: last_referral(last_invitation)},
             {header: "Qtd. de convites", content: lead.invitations.count},
             {header: "Qtd. de atendimentos", content: lead.appointments.count},
             {header: "Último atendimento", content: last_appointment_link(last_appointment)},
-            {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}" }          
+            {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}"}
           ]
         end
       end
@@ -179,7 +186,7 @@ module ClinicManagement
     end
 
     def last_appointment_link(last_appointment)
-      last_appointment.present? ? helpers.link_to("#{last_appointment.status} - #{invite_day(last_appointment)}", service_path(last_appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank") : ""
+      last_appointment.present? ? helpers.link_to("#{invite_day(last_appointment)}", service_path(last_appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank") : ""
     end
     
     
