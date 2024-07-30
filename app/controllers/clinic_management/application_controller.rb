@@ -8,7 +8,7 @@ module ClinicManagement
     private
 
     def set_referral
-      @referral = Referral.find_by(code: current_user.memberships.last.code)
+      @current_referral = Referral.find_by(code: current_user.memberships.last.code)
     end
 
     def authenticate_user!
