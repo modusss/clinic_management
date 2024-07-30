@@ -3,8 +3,13 @@ module ClinicManagement
     before_action :authenticate_user!
     before_action :redirect_referral_users
     before_action :redirect_doctor_users
+    before_action :set_referral
 
     private
+
+    def set_referral
+      @referral = Referral.find_by(code: current_user.memberships.last.code)
+    end
 
     def authenticate_user!
       unless user_signed_in?

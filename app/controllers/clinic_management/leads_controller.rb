@@ -222,14 +222,7 @@ module ClinicManagement
                                 .order('clinic_management_services.date DESC')
         end
       end
-      
-      
-      def set_referral
-        @referral = Referral.find_by(code: current_user.memberships.last.code)
-      end
         
-      
-      
       # Use callbacks to share common setup or constraints between actions.
       def set_lead
         @lead = Lead.find(params[:id])
