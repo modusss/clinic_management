@@ -3,9 +3,11 @@
   <%= f.label :service_id, "Escolha o dia:", class: "text-gray-700 text-sm font-bold" %>
   <%= f.select :service_id, options_from_collection_for_select(available_services, :id, -> (service) { display_service_name(service) }), include_blank: true, class: "shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
 
-  <% if controller_name == "leads" %>
+  <% if (controller_name == "leads") && (action_name == "show") %>
     <%= f.label :referral_id, "Indicação: ", class: "text-gray-700 text-sm font-bold" %>
     <%= f.collection_select :referral_id, Referral.all, :id, :name, {selected: old_appointment&.invitation&.referral&.id}, {class: "shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"} %>
+  <% elsif (controller_name == "leads") && (action_name == "absent") %> 
+    <%= f.hidden_field :referral_id, value: @current_referral.id %>
   <% end %>
 
   <% if old_appointment.blank? %>
