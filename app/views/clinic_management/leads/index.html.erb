@@ -1,5 +1,7 @@
-<%= render_menu(@menu) %>
+<%# render_menu(@menu) %>
 
+<h5>Lista dos pacientes ausentes mais antigos que 120 dias<h5>
+<br>
 <%= data_table(@rows, 2) %>
 
 <% if @leads.present? %>
