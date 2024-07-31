@@ -1,9 +1,24 @@
 
-<% if (referral? current_user) || (doctor? current_user) %>
+<% if (doctor? current_user) %>
   <header class="bg-blue-600 py-4">
     <nav class="container mx-auto flex items-center justify-between p-6">
       <div class="flex items-center text-white mr-6">
-        <span class="font-semibold text-xl tracking-tight">Lipe.pro</span>
+        <span class="font-semibold text-xl tracking-tight">Lipepay</span>
+      </div>
+      <% if user_signed_in? %>
+        <div class="flex items-center">
+          <span class="mr-4 text-white lg:hidden">Olá, <%= current_user.name %></span>
+          <span class="hidden mr-4 text-white lg:block">Olá, <%= current_user.name %></span>
+          <%= link_to "Sair", main_app.destroy_user_session_path, method: :delete, class: "inline-block text-sm px-4 py-2 leading-none border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white" %>
+        </div>
+      <% end %>
+    </nav>
+  </header>
+<% elsif (referral? current_user) %>
+  <header class="bg-blue-600 py-4">
+    <nav class="container mx-auto flex items-center justify-between p-6">
+      <div class="flex items-center text-white mr-6">
+        <span class="font-semibold text-xl tracking-tight">Lipepay</span>
       </div>
       <% if user_signed_in? %>
       <% if allowed_to_access_leads?(current_user) %>
