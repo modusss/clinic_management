@@ -71,8 +71,13 @@ module ClinicManagement
         end
 
         def allowed_to_access_leads?(current_user)
-          referral = user_referral
-          referral&.can_access_leads
+          return false if doctor?(current_user)
+          if referral?(current_user)
+            referral = user_referral
+            referral&.can_access_leads
+          else
+            true
+          end
         end
         
         def current_membership
