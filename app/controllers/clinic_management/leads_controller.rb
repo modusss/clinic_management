@@ -80,11 +80,11 @@ module ClinicManagement
     end
 
     def absent
-      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, Date.today).page(params[:page]).per(50)
+      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago).page(params[:page]).per(50)
       @rows = load_leads_data(@leads)
       render :index
     end    
-    
+=begin
     def attended
       @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ?', true).page(params[:page]).per(50)
       @rows = load_leads_data(@leads)
@@ -96,7 +96,7 @@ module ClinicManagement
       @rows = load_leads_data(@leads)
       render :index
     end
-    
+=end    
     
     private
 
@@ -144,13 +144,6 @@ module ClinicManagement
       # if helpers.referral?(current_user)
       #   leads = leads.joins(:invitations).where(invitations: { referral_id: current_user.id })
       # end
-    
-      cutoff_date = 120.days.ago
-    
-      leads = leads.select do |lead|
-        last_appointment = lead.appointments.last
-        last_appointment.nil? || last_appointment.service.date <= cutoff_date
-      end
     
       leads.map.with_index do |lead, index|
         last_invitation = lead.invitations.last
