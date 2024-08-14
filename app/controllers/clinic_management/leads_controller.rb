@@ -170,8 +170,8 @@ module ClinicManagement
             {header: "Último indicador", content: last_referral(last_invitation)},
             {header: "Qtd. de convites", content: lead.invitations.count},
             {header: "Qtd. de atendimentos", content: lead.appointments.count},
-            {header: "Último atendimento", content: last_appointment_link(last_appointment)},
-            {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}"}
+            {header: "Último atendimento", content: last_appointment_link(last_appointment)}# ,
+            # {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}"}
           ]
         end
       end
