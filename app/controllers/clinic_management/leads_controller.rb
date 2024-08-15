@@ -80,7 +80,8 @@ module ClinicManagement
     end
 
     def absent
-      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago).page(params[:page]).per(50)
+      @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
+      @leads = @all_leads.page(params[:page]).per(50)
       @rows = load_leads_data(@leads)
       render :index
     end    

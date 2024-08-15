@@ -13,13 +13,13 @@
     </tr>
   </thead>
   <tbody>
-    <% if @leads.any? %>
-      <% start_date = @leads.last.appointments.last.service.date %>
-      <% end_date = @leads.first.appointments.last.service.date %>
+    <% if @all_leads.any? %>
+      <% start_date = @all_leads.last.appointments.last.service.date %>
+      <% end_date = @all_leads.first.appointments.last.service.date %>
       <% (start_date.to_date..end_date.to_date).map(&:beginning_of_month).uniq.reverse.each do |date| %>
         <% year = date.year %>
         <% month = date.month %>
-        <% leads_for_month = @leads.select { |lead| lead.appointments.last.service.date.year == year && lead.appointments.last.service.date.month == month } %>
+        <% leads_for_month = @all_leads.select { |lead| lead.appointments.last.service.date.year == year && lead.appointments.last.service.date.month == month } %>
         <tr>
           <td class="py-2 px-4 border-b"><%= year %></td>
           <td class="py-2 px-4 border-b"><%= Date::MONTHNAMES[month] %></td>
