@@ -14,15 +14,18 @@
   </thead>
   <tbody>
     <% @leads.group_by { |lead| lead.appointments.last.service.date.year }.sort.reverse.each do |year, leads_by_year| %>
-      <% leads_by_year.group_by { |lead| lead.appointments.last.service.date.month }.sort.reverse.each do |month, _| %>
-        <tr>
-          <td class="py-2 px-4 border-b"><%= year %></td>
-          <td class="py-2 px-4 border-b"><%= Date::MONTHNAMES[month] %></td>
-          <td class="py-2 px-4 border-b">
-            <%= link_to 'Baixar CSV', download_leads_leads_path(format: :csv, year: year, month: month), 
-                        class: 'bg-blue-600 hover:bg-blue-800 text-white font-bold py-1 px-2 rounded text-sm' %>
-          </td>
-        </tr>
+      <% (1..12).to_a.reverse.each do |month| %>
+        <% leads_for_month = leads_by_year.select { |lead| lead.appointments.last.service.date.month == month } %>
+        <% if leads_for_month.any? %>
+          <tr>
+            <td class="py-2 px-4 border-b"><%= year %></td>
+            <td class="py-2 px-4 border-b"><%= Date::MONTHNAMES[month] %></td>
+            <td class="py-2 px-4 border-b">
+              <%= link_to 'Baixar CSV', download_leads_leads_path(format: :csv, year: year, month: month), 
+                          class: 'bg-blue-600 hover:bg-blue-800 text-white font-bold py-1 px-2 rounded text-sm' %>
+            </td>
+          </tr>
+        <% end %>
       <% end %>
     <% end %>
   </tbody>
