@@ -2,10 +2,36 @@
 
 <h5 class="text-xl font-semibold text-gray-800">Lista dos pacientes ausentes mais antigos que 120 dias</h5>
 <br>
-<br>
-<br>
-<%= link_to 'Baixar lista de pacientes', download_leads_leads_path(format: :csv), class: 'bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded' %> <!-- Botão para download -->
-<br>
+
+<!-- Nova tabela para download por ano/mês -->
+<table class="min-w-full bg-white border border-gray-300 mb-8">
+  <thead>
+    <tr>
+      <th class="py-2 px-4 border-b">Ano</th>
+      <th class="py-2 px-4 border-b">Mês</th>
+      <th class="py-2 px-4 border-b">Download</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @leads.group_by { |lead| lead.appointments.last.service.date.year }.sort.reverse.each do |year, leads_by_year| %>
+      <% leads_by_year.group_by { |lead| lead.appointments.last.service.date.month }.sort.reverse.each do |month, _| %>
+        <tr>
+          <td class="py-2 px-4 border-b"><%= year %></td>
+          <td class="py-2 px-4 border-b"><%= Date::MONTHNAMES[month] %></td>
+          <td class="py-2 px-4 border-b">
+            <%= link_to 'Baixar CSV', download_leads_leads_path(format: :csv, year: year, month: month), 
+                        class: 'bg-blue-600 hover:bg-blue-800 text-white font-bold py-1 px-2 rounded text-sm' %>
+          </td>
+        </tr>
+      <% end %>
+    <% end %>
+  </tbody>
+</table>
+
+<!-- Botão para download geral -->
+<%= link_to 'Baixar lista completa de pacientes', download_leads_leads_path(format: :csv), 
+            class: 'bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-4 rounded mb-8 inline-block' %>
+
 <br>
 <%= data_table(@rows, 2) %>
 

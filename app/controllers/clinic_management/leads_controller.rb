@@ -8,10 +8,10 @@ module ClinicManagement
     include GeneralHelper
 
     # GET /leads
-    def index
-      @leads = Lead.includes(:invitations, :appointments).page(params[:page]).per(50)
-      @rows = load_leads_data(@leads)
-    end
+    # def index
+      # @leads = Lead.includes(:invitations, :appointments).page(params[:page]).per(50)
+      # @rows = load_leads_data(@leads)
+    # end
     
     # GET /leads/1
     def show
@@ -99,11 +99,11 @@ module ClinicManagement
 =end    
 
     def download_leads
-      @leads = Lead.includes(:invitations, :appointments).page(params[:page]).per(50)
+      @leads = fetch_leads_for_download
       @rows = load_leads_data_for_csv(@leads)
 
       respond_to do |format|
-        format.csv { send_data generate_csv(@rows), filename: "leads-#{Date.today}.csv" }
+        format.csv { send_data generate_csv(@rows), filename: "leads-#{params[:year]}-#{params[:month]}.csv" }
       end
     end
 
@@ -290,6 +290,19 @@ module ClinicManagement
             ""
           ]
         end
+      end
+
+      def fetch_leads_for_download
+        leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
+        
+        if params[:year].present? && params[:month].present?
+          start_date = Date.new(params[:year].to_i, params[:month].to_i, 1)
+          end_date = start_date.end_of_month
+          leads = leads.joins(appointments: :service)
+                       .where('clinic_management_services.date BETWEEN ? AND ?', start_date, end_date)
+        end
+
+        leads
       end
   end
 end
