@@ -52,6 +52,7 @@ ClinicManagement::Engine.routes.draw do
       get 'attended'
       get 'cancelled'
       post 'search'
+      get 'download_leads'
     end
   end
   post 'build_message/:lead_id', to: 'lead_messages#build_message', as: 'build_message'

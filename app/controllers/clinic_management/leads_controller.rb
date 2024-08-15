@@ -97,8 +97,36 @@ module ClinicManagement
       render :index
     end
 =end    
+
+    def download_leads
+      @leads = Lead.includes(:invitations, :appointments).page(params[:page]).per(50)
+      @rows = load_leads_data_for_csv(@leads)
+
+      respond_to do |format|
+        format.csv { send_data generate_csv(@rows), filename: "leads-#{Date.today}.csv" }
+      end
+    end
+
     
     private
+
+    def generate_csv(rows)
+      CSV.generate(headers: true) do |csv|
+        csv << ["Paciente", "Responsável", "Telefone", "Último atendimento", "Atendeu?", "Remarcado?", "Observações do contato"] # Cabeçalhos
+
+        rows.each do |row|
+          csv << [
+            row[0],                          # Paciente
+            row[1],                          # Responsável
+            row[2],                          # Telefone
+            row[3],                          # Último atendimento
+            "",                               # Atendeu?
+            "",                               # Remarcado?
+            ""                                # Observações
+          ]
+        end
+      end
+    end
 
     def available_services(exception_service)
       exception_service_id = exception_service&.id # Get the ID of the exception_service object
@@ -171,7 +199,7 @@ module ClinicManagement
             {header: "Qtd. de convites", content: lead.invitations.count},
             {header: "Qtd. de atendimentos", content: lead.appointments.count},
             {header: "Último atendimento", content: last_appointment_link(last_appointment)}# ,
-            # {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}"}
+            # {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}" }
           ]
         end
       end
@@ -244,6 +272,23 @@ module ClinicManagement
           helpers.link_to("Ver receita", appointment_prescription_path(ap), class: "text-white bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded")
         else
           helpers.link_to("Lançar receita", new_appointment_prescription_path(ap), class: "bg-blue-600 hover:bg-blue-800 text-white py-2 px-4 rounded")
+        end
+      end
+
+      def load_leads_data_for_csv(leads)
+        leads.map.with_index do |lead, index|
+          last_invitation = lead.invitations.last
+          last_appointment = lead.appointments.last
+
+          [
+            lead.name,
+            responsible_content(last_invitation),
+            add_phone_mask(lead.phone),
+            last_appointment ? invite_day(last_appointment) : "",
+            lead.appointments.count,
+            "",
+            ""
+          ]
         end
       end
   end
