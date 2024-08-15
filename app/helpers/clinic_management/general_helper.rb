@@ -121,7 +121,7 @@ module ClinicManagement
         def invite_day(appointment)
             service = appointment&.service
             if service.present?
-              show_week_day(service.weekday) + " " + service.date.strftime("%d/%m") + ", " + service.start_time.strftime("%H:%M") + "h às " + service.end_time.strftime("%H:%M") + "h"
+              show_week_day(service.weekday) + " " + service.date.strftime("%d/%m/%Y") + ", " + service.start_time.strftime("%H:%M") + "h às " + service.end_time.strftime("%H:%M") + "h"
             else
               ""
             end
