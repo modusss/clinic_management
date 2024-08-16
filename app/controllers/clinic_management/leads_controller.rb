@@ -104,7 +104,7 @@ module ClinicManagement
       @rows = load_leads_data_for_csv(@leads)
 
       respond_to do |format|
-        format.csv { send_data generate_csv(@rows), filename: "leads-#{params[:year]}-#{params[:month]}.csv" }
+        format.csv { send_data generate_csv(@rows), filename: generate_filename }
       end
     end
 
@@ -304,6 +304,11 @@ module ClinicManagement
         end
 
         leads
+      end
+
+      def generate_filename
+        month_name = I18n.t("date.month_names")[params[:month].to_i]
+        "leads_#{month_name.downcase}_#{params[:year]}.csv"
       end
   end
 end
