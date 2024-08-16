@@ -81,7 +81,11 @@ module ClinicManagement
 
     def search_absents
       query = params[:q]&.strip
-      @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
+      if helpers.referral?(current_user)
+        @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
+      else
+        @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 1.days.ago)
+      end
       
       if query.present?
         @leads = @all_leads.where("name ILIKE ? OR phone ILIKE ?", "%#{query}%", "%#{query}%").limit(10)
@@ -103,7 +107,12 @@ module ClinicManagement
     end
 
     def absent
-      @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
+      if helpers.referral?(current_user)
+        @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
+      else
+        @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 1.days.ago)
+      end
+
       if params[:tab] == 'download'
         @date_range = (Date.today - 1.year)..Date.today
       else
@@ -118,8 +127,12 @@ module ClinicManagement
     end
 
     def absent_download
-      @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
-      
+      if helpers.referral?(current_user)
+        @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
+      else
+        @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 1.days.ago)
+      end
+
       if @all_leads.any?
         start_date = @all_leads.last.appointments.last.service.date
         end_date = @all_leads.first.appointments.last.service.date
@@ -340,7 +353,11 @@ module ClinicManagement
       end
 
       def fetch_leads_for_download
-        leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
+        if helpers.referral?(current_user)
+          leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
+        else
+          leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ?', false)
+        end
         
         if params[:year].present? && params[:month].present?
           start_date = Date.new(params[:year].to_i, params[:month].to_i, 1)

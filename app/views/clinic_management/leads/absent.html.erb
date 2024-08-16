@@ -1,7 +1,9 @@
 <%# render_menu(@menu) %>
 
+<% if referral?(current_user) %>
 <h5 class="text-xl font-semibold text-gray-800">Lista dos pacientes ausentes mais antigos que 120 dias</h5>
 <br>
+<% end %>
 
 <% if is_manager_above? %>
 <!-- Tabs -->
