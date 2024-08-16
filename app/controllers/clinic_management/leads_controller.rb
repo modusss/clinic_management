@@ -231,7 +231,7 @@ module ClinicManagement
             {header: "Ordem", content: index + 1},
             {header: "Paciente", content: last_invitation.patient_name, class: "text-blue"},
             {header: "Responsável", content: responsible_content(last_invitation)},
-            {header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, "")}'>#{lead.phone}</a> <a style='margin-left: 10px;' href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
+            {header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, "")}'>#{helpers.add_phone_mask(lead.phone)}</a> <a style='margin-left: 10px;' href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
             {header: "Vezes convidado", content: lead.invitations.count},
             {header: "Último atendimento", content: "#{invite_day(last_appointment)}"},
             {header: "Remarcação", content: reschedule_form(new_appointment, last_appointment), class: "text-orange-500" }
@@ -241,7 +241,7 @@ module ClinicManagement
             {header: "Ordem", content: index + 1},
             {header: "Paciente", content: helpers.link_to(last_invitation.patient_name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
             {header: "Responsável", content: responsible_content(last_invitation)},
-            {header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, "")}'>#{lead.phone}</a> <a style='margin-left: 10px;' href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700"},
+            {header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, "")}'>#{helpers.add_phone_mask(lead.phone)}</a> <a style='margin-left: 10px;' href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700"},
             {header: "Último indicador", content: last_referral(last_invitation)},
             {header: "Qtd. de convites", content: lead.invitations.count},
             {header: "Qtd. de atendimentos", content: lead.appointments.count},
