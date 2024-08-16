@@ -80,7 +80,7 @@ module ClinicManagement
     end
 
     def search_absents
-      query = params[:q]
+      query = params[:q]&.strip
       @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
       
       if query.present?
