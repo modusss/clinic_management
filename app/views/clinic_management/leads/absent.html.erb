@@ -3,6 +3,7 @@
 <h5 class="text-xl font-semibold text-gray-800">Lista dos pacientes ausentes mais antigos que 120 dias</h5>
 <br>
 
+<%= if is_manager_above? %>
 <!-- Tabs -->
 <div class="mb-4">
   <ul class="flex border-b">
@@ -14,6 +15,7 @@
     </li>
   </ul>
 </div>
+<% end %>
 
 <% if params[:tab] == 'download' %>
   <!-- Download CSV Tab Content -->
@@ -76,7 +78,7 @@
             autocomplete: "off",
             spellcheck: false,
             class: "bg-white rounded p-2 w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent",
-            style: "font-size: 16px; width: 300px; padding: 12px;" %>
+            style: "font-size: 16px; width: 500px; padding: 12px;" %>
         <label class="absolute right-2 top-1/2 transform -translate-y-1/2" for="search_lead">
           <i class="fas fa-search text-gray-500"></i>
         </label>
