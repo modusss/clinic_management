@@ -52,6 +52,7 @@ ClinicManagement::Engine.routes.draw do
       get 'attended'
       get 'cancelled'
       post 'search'
+      post 'search_absents'
       get 'download_leads'
       get 'absent_download'
     end

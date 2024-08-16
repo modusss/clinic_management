@@ -79,6 +79,29 @@ module ClinicManagement
       end
     end
 
+    def search_absents
+      query = params[:q]
+      @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
+      
+      if query.present?
+        @leads = @all_leads.where("name ILIKE ? OR phone ILIKE ?", "%#{query}%", "%#{query}%").page(params[:page]).per(50)
+      else
+        @leads = @all_leads.page(params[:page]).per(50)
+      end
+
+      @rows = load_leads_data(@leads)
+
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.update(
+            "table-tab",
+            partial: "absent_table",
+            locals: { rows: @rows, leads: @leads }
+          )
+        end
+      end
+    end
+
     def absent
       @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
       if params[:tab] == 'download'

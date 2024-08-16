@@ -63,13 +63,30 @@
 
   </div>
 <% else %>
-  <!-- Table Tab Content -->
-  <div id="table-tab" class="tab-content">
-    <%= data_table(@rows, 2) %>
 
-    <% if @leads.present? %>
-      <%= paginate @leads %>
+  <br>
+  <br>
+  <div class="relative">
+    <%= form_with url: search_absents_leads_path, method: :post, data: { turbo_stream: true, controller: "debounce" }, class: "w-full sm:w-auto flex justify-center sm:justify-start mt-4 sm:mt-0" do |search| %>
+      <div class="input-field relative">
+        <%= search.search_field :q,
+            data: { debounce_target: "input", action: "input->debounce#input" },
+            id: "search_absent",
+            placeholder: "Busque pelo nome ou telefone...",
+            autocomplete: "off",
+            spellcheck: false,
+            class: "bg-white rounded p-2 w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent",
+            style: "font-size: 16px; width: 300px; padding: 12px;" %>
+        <label class="absolute right-2 top-1/2 transform -translate-y-1/2" for="search_lead">
+          <i class="fas fa-search text-gray-500"></i>
+        </label>
+      </div>
     <% end %>
+  </div>
+  <br>
+  <br>
+  <div id="table-tab" class="tab-content">
+    <%= render partial: "absent_table", locals: { rows: @rows, leads: @leads } %>
   </div>
 <% end %>
 
