@@ -229,7 +229,7 @@ module ClinicManagement
 
           [
             {header: "Ordem", content: index + 1},
-            {header: "Paciente", content: lead.name, class: "text-blue"},
+            {header: "Paciente", content: last_invitation.patient_name, class: "text-blue"},
             {header: "Responsável", content: responsible_content(last_invitation)},
             {header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, "")}'>#{lead.phone}</a> <a href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
             {header: "Vezes convidado", content: lead.invitations.count},
@@ -239,7 +239,7 @@ module ClinicManagement
         else
           [
             {header: "Ordem", content: index + 1},
-            {header: "Paciente", content: helpers.link_to(lead.name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
+            {header: "Paciente", content: helpers.link_to(last_invitation.patient_name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
             {header: "Responsável", content: responsible_content(last_invitation)},
             {header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, "")}'>#{lead.phone}</a> <a href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700"},
             {header: "Último indicador", content: last_referral(last_invitation)},
@@ -328,7 +328,7 @@ module ClinicManagement
           last_appointment = lead.appointments.last
 
           [
-            lead.name,
+            last_invitation.name,
             responsible_content(last_invitation),
             add_phone_mask(lead.phone),
             last_appointment ? invite_day(last_appointment) : "",
