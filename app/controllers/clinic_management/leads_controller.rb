@@ -81,10 +81,33 @@ module ClinicManagement
 
     def absent
       @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
-      @leads = @all_leads.page(params[:page]).per(50)
-      @rows = load_leads_data(@leads)
-      render :index
-    end    
+      if params[:tab] == 'download'
+        @date_range = (Date.today - 1.year)..Date.today
+      else
+        @leads = @all_leads.page(params[:page]).per(50)
+        @rows = load_leads_data(@leads)
+      end
+
+      respond_to do |format|
+        format.html { render :absent }
+        format.html { render :absent_download if params[:view] == 'download' }
+      end
+    end
+
+    def absent_download
+      @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
+      
+      if @all_leads.any?
+        start_date = @all_leads.last.appointments.last.service.date
+        end_date = @all_leads.first.appointments.last.service.date
+        @date_range = (start_date.to_date..end_date.to_date).map(&:beginning_of_month).uniq.reverse
+      else
+        @date_range = []
+      end
+
+      render :absent_download
+    end
+    
 =begin
     def attended
       @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ?', true).page(params[:page]).per(50)

@@ -3,6 +3,22 @@
 <h5 class="text-xl font-semibold text-gray-800">Lista dos pacientes ausentes mais antigos que 120 dias</h5>
 <br>
 
+<!-- Tabs -->
+<div class="mb-4">
+  <ul class="flex border-b">
+    <li class="-mb-px mr-1">
+      <%= link_to 'Tabela', absent_leads_path, class: "bg-white inline-block py-2 px-4 text-blue-500 hover:text-blue-800 font-semibold #{params[:tab] != 'download' ? 'border-l border-t border-r rounded-t' : ''}" %>
+    </li>
+    <li class="mr-1">
+      <%= link_to 'Download CSV', absent_leads_path(tab: 'download'), class: "bg-white inline-block py-2 px-4 text-blue-500 hover:text-blue-800 font-semibold #{params[:tab] == 'download' ? 'border-l border-t border-r rounded-t' : ''}" %>
+    </li>
+  </ul>
+</div>
+
+<% if params[:tab] == 'download' %>
+  <!-- Download CSV Tab Content -->
+  <div id="download-tab" class="tab-content">
+    <!-- Nova tabela para download por ano/mês -->
 <!-- Nova tabela para download por ano/mês -->
 <table class="min-w-full bg-white border border-gray-300 mb-8">
   <thead>
@@ -41,16 +57,18 @@
   </tbody>
 </table>
 
-<!-- Botão para download geral -->
-<%= link_to 'Baixar lista completa de pacientes', download_leads_leads_path(format: :csv), 
-            class: 'bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-4 rounded mb-8 inline-block' %>
+    <!-- Botão para download geral -->
+    <%= link_to 'Baixar lista completa de pacientes', download_leads_leads_path(format: :csv), 
+                class: 'bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-4 rounded mb-8 inline-block' %>
 
-<br>
-<%= data_table(@rows, 2) %>
+  </div>
+<% else %>
+  <!-- Table Tab Content -->
+  <div id="table-tab" class="tab-content">
+    <%= data_table(@rows, 2) %>
 
-<% if @leads.present? %>
-<%= paginate @leads %>
+    <% if @leads.present? %>
+      <%= paginate @leads %>
+    <% end %>
+  </div>
 <% end %>
-
-
-
