@@ -84,7 +84,7 @@ module ClinicManagement
       @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
       
       if query.present?
-        @leads = @all_leads.where("name ILIKE ? OR phone ILIKE ?", "%#{query}%", "%#{query}%").page(params[:page]).per(50)
+        @leads = @all_leads.where("name ILIKE ? OR phone ILIKE ?", "%#{query}%", "%#{query}%").limit(10)
       else
         @leads = @all_leads.page(params[:page]).per(50)
       end
