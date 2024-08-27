@@ -172,11 +172,16 @@ module ClinicManagement
 
 
     def check_existing_leads(params)
-      first_name = params.dig(:lead_attributes, :name)&.split&.first || invitation_params[:patient_name]&.split&.first   
+      first_name = params.dig(:lead_attributes, :name)&.split&.first || params[:patient_name]&.split&.first
       phone = params.dig(:lead_attributes, :phone)
-      lead = Lead.find_by_phone(phone)
-      return Lead.create!(params[:lead_attributes]) unless lead   
-      lead.name.match?(/#{Regexp.escape(first_name)}/i) ? lead : Lead.create!(params[:lead_attributes])
+      
+      lead = Lead.find_by(phone: phone)
+      
+      if lead && lead.name.split.first.downcase == first_name.downcase
+        lead
+      else
+        Lead.create!(params[:lead_attributes])
+      end
     end
     
     def set_local_region
