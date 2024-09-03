@@ -1,10 +1,18 @@
-
 <div>
   <div class="row">
     <div class="col s12">
       <%= form_with(url: build_message_path(lead), method: :post, remote: true, id: "whatsapp_form") do %>
         <div class="input-field">
-          <%= select_tag :custom_message_id, options_from_collection_for_select(get_lead_messages(lead, appointment), 'id', 'name'), prompt: "Escolha uma mensagem", class: "browser-default", onchange: "this.form.requestSubmit()"  %>
+          <%= select_tag :custom_message_id, 
+            grouped_options_for_select(
+              get_lead_messages(lead, appointment).map { |category, messages|
+                [category, messages.map { |m| [m.name, m.id] }]
+              }
+            ),
+            prompt: "Escolha uma mensagem", 
+            class: "browser-default", 
+            onchange: "this.form.requestSubmit()" 
+          %>
           <%= hidden_field_tag :appointment_id, (appointment.present? ? appointment.id : "") %>
         </div>
       <% end %>
@@ -12,4 +20,3 @@
     </div>
   </div>
 </div>
-
