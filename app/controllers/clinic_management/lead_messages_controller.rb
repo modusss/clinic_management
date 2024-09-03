@@ -47,19 +47,25 @@ module ClinicManagement
         appointment = Appointment.find_by(id: params[:appointment_id])
         add_message_sent(appointment, message.name)
         lead = Lead.find_by(id: params[:lead_id])
-        message = get_message(message, lead, appointment.service) # add service here
+        message = get_message(message, lead, appointment.service)
+        
         render turbo_stream: [
           turbo_stream.append(
-            "whatsapp-link-" + lead.id.to_s, 
+            "whatsapp-link-#{lead.id}", 
             partial: "clinic_management/lead_messages/whatsapp_link", 
             locals: { phone_number: lead.phone, message: message }
           ),
           turbo_stream.update(
-            "messages-sent-" + appointment.id.to_s, 
+            "messages-sent-#{appointment.id}", 
             appointment.messages_sent.join(', ')
           )
         ]        
-      rescue
+      rescue => e
+        Rails.logger.error "Error in build_message: #{e.message}"
+        render turbo_stream: turbo_stream.replace(
+          "whatsapp-link-#{params[:lead_id]}", 
+          html: "<p>Erro ao gerar mensagem.</p>"
+        )
       end
     end
   
@@ -74,30 +80,41 @@ module ClinicManagement
     end
 
     def get_message(message, lead, service)
+      Rails.logger.debug "Entering get_message method"
+      Rails.logger.debug "Message: #{message.inspect}"
+      Rails.logger.debug "Lead: #{lead.inspect}"
+      Rails.logger.debug "Service: #{service.inspect}"
+
+      return "" if message.nil?
+      
       result = message.text
-    
+      Rails.logger.debug "Initial result: #{result.inspect}"
+
+      return "" if result.nil?
+
       # Escolha aleatória de segmentos de texto
-      result.gsub!(/\[.*?\]/) do |match|
+      result = result.gsub(/\[.*?\]/) do |match|
         options = match.tr('[]', '').split('|')
         options.sample
       end
-    
+
       # Substituições de texto padrão
-      result.gsub!("{PRIMEIRO_NOME_PACIENTE}", lead.name.split(" ").first)
-            .gsub!("{NOME_COMPLETO_PACIENTE}", lead.name)
-            .gsub!("\n", "%0A")
-            .gsub!("\r\n", "%0A")
-    
+      result = result.gsub("{PRIMEIRO_NOME_PACIENTE}", lead.name.split(" ").first)
+               .gsub("{NOME_COMPLETO_PACIENTE}", lead.name)
+               .gsub("\n", "%0A")
+               .gsub("\r\n", "%0A")
+
       if service.present?
         # Substituições relacionadas ao serviço
-        result.gsub!("{DIA_SEMANA_ATENDIMENTO}", service&.date&.strftime("%A"))
-              .gsub!("{MES_DO_ATENDIMENTO}", I18n.l(service.date, format: "%B"))
-              .gsub!("{DIA_ATENDIMENTO_NUMERO}", service&.date&.strftime("%d"))
-              .gsub!("{HORARIO_DE_INICIO}", service.start_time.strftime("%H:%M"))
-              .gsub!("{HORARIO_DE_TERMINO}", service.end_time.strftime("%H:%M"))
-              .gsub!("{DATA_DO_ATENDIMENTO}", service&.date&.strftime("%d/%m/%Y"))
+        result = result.gsub("{DIA_SEMANA_ATENDIMENTO}", service&.date&.strftime("%A").to_s)
+                       .gsub("{MES_DO_ATENDIMENTO}", I18n.l(service.date, format: "%B").to_s)
+                       .gsub("{DIA_ATENDIMENTO_NUMERO}", service&.date&.strftime("%d").to_s)
+                       .gsub("{HORARIO_DE_INICIO}", service.start_time.strftime("%H:%M").to_s)
+                       .gsub("{HORARIO_DE_TERMINO}", service.end_time.strftime("%H:%M").to_s)
+                       .gsub("{DATA_DO_ATENDIMENTO}", service&.date&.strftime("%d/%m/%Y").to_s)
       end
-    
+
+      Rails.logger.debug "Final result: #{result.inspect}"
       result
     end
   
