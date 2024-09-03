@@ -229,8 +229,18 @@ module ClinicManagement
       services.map.with_index do |ser, index|
         total_appointments, scheduled, rescheduled, canceleds = appointment_counts(ser)
         link = action_name == 'index_by_referral' ? show_by_referral_services_path(referral_id: @referral.id, id: ser.id) : ser
+        
+        # Determine the date status
+        date_status = case
+                      when ser.date < Date.today
+                        "past"
+                      when ser.date == Date.today
+                        "today"
+                      else
+                        "future"
+                      end
+
         row = [
-          #{ header: "#", content: index + 1 },
           { header: "Serviço", content: ser&.service_type&.name },
           { header: "Data", content: helpers.link_to(ser.date.strftime("%d/%m/%Y"), link, class: "text-blue-500 hover:text-blue-700") },
           { header: "Dia da semana", content: helpers.show_week_day(ser.weekday) },
@@ -238,15 +248,17 @@ module ClinicManagement
           { header: "Fim", content: ser.end_time.strftime("%H:%M") },
           { header: "Pacientes", content: total_appointments },
           { header: "Compareceram", content: scheduled, class: "text-blue-700" },
-          { header: "Remarcados", content:rescheduled, class: "text-green-700"  },
-          { header: "Cancelados", content: canceleds, class: "text-red-600"  }
-          # percentage_content("Presentes", scheduled, total_appointments, "text-blue-700", "bg-blue-200"),
-          # percentage_content("Remarcados", rescheduled, total_appointments, "text-green-600", "bg-green-200"),
-          # percentage_content("Cancelados", canceleds, total_appointments, "text-red-600", "bg-red-200")        
+          { header: "Remarcados", content: rescheduled, class: "text-green-700" },
+          { header: "Cancelados", content: canceleds, class: "text-red-600" }
         ]
         if helpers.is_manager_above?
-            row << { header: "Ação", content: should_edit_service?(ser) }
+          row << { header: "Ação", content: should_edit_service?(ser) }
         end
+
+        # Add row_class and row_id to the first cell of each row
+        row.first[:row_class] = "service-row service-#{date_status}"
+        row.first[:row_id] = "service-#{ser.id}"
+
         row
       end
     end

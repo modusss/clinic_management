@@ -66,7 +66,8 @@ module ClinicManagement
             end
           else
             row_class = cycle('bg-blue-50', 'bg-white')
-            content_tag(:tr, class: row_class) do
+            row_class += " #{row.first[:row_class]}" if row.first[:row_class]
+            content_tag(:tr, id: row.first[:row_id], class: row_class) do
               row.map.with_index do |cell, cell_index|
                 classes = "text-lg px-3 py-4 text-gray-900 #{cell[:class]} text-center align-middle"
                 styles = ''
