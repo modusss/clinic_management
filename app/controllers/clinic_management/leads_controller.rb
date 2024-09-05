@@ -209,6 +209,7 @@ module ClinicManagement
           {header: "Paciente", content: invitation&.patient_name },
           {header: "Data do atendimento", content: helpers.link_to(invite_day(ap), service_path(ap.service), class: "text-blue-500 hover:text-blue-700")},         
           {header: "Comparecimento", content: (ap.attendance == true ? "Sim" : "Não"), class: helpers.attendance_class(ap)},
+          {header: "Observações", content: ap.comments },
           {header: "Receita", content: prescription_link(ap)},
           {header: "Status", content: ap.status, class: helpers.status_class(ap)},
           {header: "Data do convite", content: invitation&.created_at&.strftime("%d/%m/%Y")},
