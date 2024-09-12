@@ -1,4 +1,4 @@
-<%= form_with(model: appointment, url: update_comments_appointment_path(appointment), method: :patch, data: { controller: "appointment-comments", action: "turbo:submit-end->appointment-comments#handleSubmit" }) do |f| %>
+<%= form_with(model: appointment, url: update_comments_appointment_path(appointment), method: :patch, data: { controller: "appointment-comments", action: "turbo:submit-end->clinic-management-appointment-comments#handleSubmit" }) do |f| %>
   <%= f.text_area :comments, class: 'form-textarea w-full', data: { appointment_comments_target: "textarea" } %>
   <%= f.submit 'Atualizar', class: 'btn btn-primary mt-2' %>
 <% end %>
