@@ -343,7 +343,7 @@ module ClinicManagement
           last_appointment = lead.appointments.last
 
           [
-            last_invitation.name,
+            last_invitation.patient_name,
             responsible_content(last_invitation),
             add_phone_mask(lead.phone),
             last_appointment ? invite_day(last_appointment) : "",
