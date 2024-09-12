@@ -16,10 +16,7 @@ ClinicManagement::Engine.routes.draw do
 
   resources :appointments do
     member do
-      patch :set_attendance
-      patch :cancel_attendance
-      post :reschedule
-      post :search
+      patch :update_comments
     end
     resources :prescriptions do
       collection do

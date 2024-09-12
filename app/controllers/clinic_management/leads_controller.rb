@@ -167,6 +167,7 @@ module ClinicManagement
       end
     end
 
+
     
     private
 
@@ -230,15 +231,10 @@ module ClinicManagement
     end
 
     def load_leads_data(leads)
-      # if helpers.referral?(current_user)
-      #   leads = leads.joins(:invitations).where(invitations: { referral_id: current_user.id })
-      # end
-    
       leads.map.with_index do |lead, index|
         last_invitation = lead.invitations.last
         last_appointment = lead.appointments.last
         if helpers.referral?(current_user)
-          
           new_appointment = ClinicManagement::Appointment.new
 
           [
@@ -248,7 +244,8 @@ module ClinicManagement
             {header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, "")}'>#{helpers.add_phone_mask(lead.phone)}</a> <a style='margin-left: 10px;' href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
             {header: "Vezes convidado", content: lead.invitations.count},
             {header: "Último atendimento", content: "#{invite_day(last_appointment)}"},
-            {header: "Remarcação", content: reschedule_form(new_appointment, last_appointment), class: "text-orange-500" }
+            {header: "Remarcação", content: reschedule_form(new_appointment, last_appointment), class: "text-orange-500" },
+            {header: "Observações", content: render_to_string(partial: "appointment_comments", locals: { appointment: last_appointment }), id: "appointment-comments-#{last_appointment.id}"}
           ]
         else
           [
@@ -259,8 +256,8 @@ module ClinicManagement
             {header: "Último indicador", content: last_referral(last_invitation)},
             {header: "Qtd. de convites", content: lead.invitations.count},
             {header: "Qtd. de atendimentos", content: lead.appointments.count},
-            {header: "Último atendimento", content: last_appointment_link(last_appointment)}# ,
-            # {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}" }
+            {header: "Último atendimento", content: last_appointment_link(last_appointment)},
+            {header: "Observações", content: render_to_string(partial: "appointment_comments", locals: { appointment: last_appointment }), id: "appointment-comments-#{last_appointment.id}"}
           ]
         end
       end
@@ -326,6 +323,10 @@ module ClinicManagement
       # Only allow a list of trusted parameters through.
       def lead_params
         params.require(:lead).permit(:name, :phone, :address, :converted, :latitude, :longitude)
+      end
+
+      def appointment_params
+        params.require(:clinic_management_appointment).permit(:comments)
       end
 
       def prescription_link(ap)
