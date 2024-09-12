@@ -1,6 +1,18 @@
 module ClinicManagement
     module GeneralHelper
 
+      def color_to_hex(color, shade)
+        {
+          'red' => { '100' => '#FEE2E2', '500' => '#EF4444', '700' => '#B91C1C' },
+          'blue' => { '100' => '#DBEAFE', '500' => '#3B82F6', '700' => '#1D4ED8' },
+          'green' => { '100' => '#D1FAE5', '500' => '#10B981', '700' => '#047857' },
+          'yellow' => { '100' => '#FEF3C7', '500' => '#F59E0B', '700' => '#B45309' },
+          'purple' => { '100' => '#EDE9FE', '500' => '#8B5CF6', '700' => '#6D28D9' },
+          'indigo' => { '100' => '#E0E7FF', '500' => '#6366F1', '700' => '#4338CA' },
+          'pink' => { '100' => '#FCE7F3', '500' => '#EC4899', '700' => '#BE185D' }
+        }[color][shade]
+      end
+
       def is_operator_above?
         if current_user.present?
             if ["operator", "manager", "owner"].include? current_user.memberships.first.role

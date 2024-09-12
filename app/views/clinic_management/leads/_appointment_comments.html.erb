@@ -12,7 +12,11 @@
 <% end %>
 
 <% if message.present? %>
-  <div class="mt-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700">
+  <% random_color = ['red', 'blue', 'green', 'yellow', 'purple', 'indigo', 'pink'].sample %>
+  <div class="mt-4 p-4 border-l-4 transition-colors duration-300 ease-in-out"
+       style="background-color: <%= color_to_hex(random_color, '100') %>;
+              border-color: <%= color_to_hex(random_color, '500') %>;
+              color: <%= color_to_hex(random_color, '700') %>;">
     <p class="font-medium"><%= message %></p>
   </div>
 <% end %>
