@@ -119,7 +119,7 @@ module ClinicManagement
             render turbo_stream: turbo_stream.update(
               "appointment-comments-#{@appointment.id}",
               partial: "clinic_management/leads/appointment_comments",
-              locals: { appointment: @appointment }
+              locals: { appointment: @appointment, message: "Atualizado!" }
             )
           end
         end

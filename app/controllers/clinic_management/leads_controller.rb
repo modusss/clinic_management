@@ -257,7 +257,7 @@ module ClinicManagement
             {header: "Qtd. de convites", content: lead.invitations.count},
             {header: "Qtd. de atendimentos", content: lead.appointments.count},
             {header: "Último atendimento", content: last_appointment_link(last_appointment)},
-            {header: "Observações", content: render_to_string(partial: "appointment_comments", locals: { appointment: last_appointment }), id: "appointment-comments-#{last_appointment.id}"}
+            {header: "Observações", content: render_to_string(partial: "appointment_comments", locals: { appointment: last_appointment, message: "" }), id: "appointment-comments-#{last_appointment.id}"}
           ]
         end
       end
