@@ -21,7 +21,7 @@ module ClinicManagement
       if @old_appointment.present?
         @available_services = available_services(@old_appointment&.service)
       else
-        @available_services = ClinicManagement::Service.where("date >= ?", Date.today)
+        @available_services = ClinicManagement::Service.where("date >= ?", Date.current)
       end
     end
 
@@ -114,7 +114,7 @@ module ClinicManagement
       end
 
       if params[:tab] == 'download'
-        @date_range = (Date.today - 1.year)..Date.today
+        @date_range = (Date.current - 1.year)..Date.current
       else
         @leads = @all_leads.page(params[:page]).per(50)
         @rows = load_leads_data(@leads)
@@ -191,7 +191,7 @@ module ClinicManagement
 
     def available_services(exception_service)
       exception_service_id = exception_service&.id # Get the ID of the exception_service object
-      ClinicManagement::Service.where("date >= ?", Date.today).where.not(id: exception_service_id)
+      ClinicManagement::Service.where("date >= ?", Date.current).where.not(id: exception_service_id)
     end
     
 
@@ -293,7 +293,7 @@ module ClinicManagement
 
       def fetch_leads_by_appointment_condition(query_condition, value, date = nil)
         # Data de um ano atrás a partir de hoje
-        one_year_ago = Date.today - 1.year
+        one_year_ago = Date.current - 1.year
       
         # IDs dos leads que tiveram attendance como true dentro do último ano
         excluded_lead_ids = ClinicManagement::Appointment.joins(:service)

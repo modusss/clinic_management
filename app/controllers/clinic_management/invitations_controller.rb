@@ -36,7 +36,7 @@ module ClinicManagement
       @lead = @invitation.build_lead
       @referrals = Referral.all    
       begin
-        @today_invitations = helpers.user_referral.invitations.where('created_at >= ?', Date.today.beginning_of_day).limit(100)
+        @today_invitations = helpers.user_referral.invitations.where('created_at >= ?', Date.current.beginning_of_day).limit(100)
         @today_invitations = @today_invitations.map do |invitation|
           service = invitation.appointments.last&.service
           [invitation, service] if service
@@ -103,7 +103,7 @@ module ClinicManagement
             @appointment.save!
           end
         end
-        if @appointment.service.date == Date.today
+        if @appointment.service.date == Date.current
           redirect_to index_today_path
         else
           redirect_to @appointment.service
@@ -328,7 +328,7 @@ module ClinicManagement
       end
 
       def next_services
-        Service.where("date >= ?", Date.today).order(date: :asc)
+        Service.where("date >= ?", Date.current).order(date: :asc)
       end
 
       # Only allow a list of trusted parameters through.

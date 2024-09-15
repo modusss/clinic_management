@@ -10,7 +10,7 @@ module ClinicManagement
 
     def index_today
       # get all services for today
-      @services = Service.where(date: Date.today)
+      @services = Service.where(date: Date.current)
       @rows = mapping_rows(@services)
     end
 
@@ -63,8 +63,8 @@ module ClinicManagement
 
     def search_index_today
       if params[:q].present?
-        # get all appointments from the services which has date = Date.today
-        appointments = Appointment.where(service_id: Service.where(date: Date.today).pluck(:id))
+        # get all appointments from the services which has date = Date.current
+        appointments = Appointment.where(service_id: Service.where(date: Date.current).pluck(:id))
         # find the appointments with the given patient_name on params[:q]
         @appointments = appointments.select { |appointment| appointment.invitation.patient_name.downcase.include?(params[:q].downcase) }
         # display via turbo_stream a tabel of results on div id #appointment-results
@@ -185,7 +185,7 @@ module ClinicManagement
     end
 
     def set_appointment_button(ap)
-      if ap.attendance.present? || ap.status == "remarcado" || ap.service.date > Date.today
+      if ap.attendance.present? || ap.status == "remarcado" || ap.service.date > Date.current
         "--"
       else
         helpers.button_to('Marcar como presente', set_attendance_appointment_path(ap), method: :patch, remote: true, class: "py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-700")

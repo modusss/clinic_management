@@ -215,7 +215,7 @@ module ClinicManagement
 
     def available_services(exception_service)
       exception_service_id = exception_service.id # Get the ID of the exception_service object
-      ClinicManagement::Service.where("date >= ? AND id != ?", Date.today, exception_service_id)
+      ClinicManagement::Service.where("date >= ? AND id != ?", Date.current, exception_service_id)
     end
 
     def generate_message_content(lead, appointment)
@@ -232,9 +232,9 @@ module ClinicManagement
         
         # Determine the date status
         date_status = case
-                      when ser.date < Date.today
+                      when ser.date < Date.current
                         "past"
-                      when ser.date == Date.today
+                      when ser.date == Date.current
                         "today"
                       else
                         "future"
@@ -264,11 +264,11 @@ module ClinicManagement
     end
     
     def should_edit_service?(service)
-      service.date >= Date.today ? helpers.link_to("Editar", edit_service_path(service), class: "text-blue-500 hover:text-blue-700") : "--"
+      service.date >= Date.current ? helpers.link_to("Editar", edit_service_path(service), class: "text-blue-500 hover:text-blue-700") : "--"
     end
 
     def set_appointment_button(ap)
-      if ap.attendance.present? || ap.status == "remarcado" || ap.service.date > Date.today
+      if ap.attendance.present? || ap.status == "remarcado" || ap.service.date > Date.current
         "--"
       else
         helpers.button_to('Marcar como presente', set_attendance_appointment_path(ap), method: :patch, remote: true, class: "py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-700")
