@@ -162,6 +162,7 @@ module ClinicManagement
         next unless (invitation.present?) && (lead.present?) && (ap.present?) && (lead.name.present?) 
   
         if helpers.doctor?(current_user)
+          next unless ap.attendance == true
           [
             {header: "#", content: index},
             {header: "Paciente", content: invitation.patient_name},
