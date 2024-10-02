@@ -168,7 +168,10 @@ module ClinicManagement
             html.html_safe
         end
           
-          
+
+        def clinical_assistant?(user)
+          current_membership.role == "clinical_assistant"
+        end
 
     end
   end
