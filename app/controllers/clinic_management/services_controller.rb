@@ -9,7 +9,14 @@ module ClinicManagement
     # GET /services
     def index
       @referrals = Referral.all
-      @services = ClinicManagement::Service.includes(:appointments).order(date: :desc).page(params[:page]).per(20)
+      @services = ClinicManagement::Service.includes(:appointments).order(date: :desc)
+      
+      # Filtrar serviços para auxiliares de clínica
+      if helpers.clinical_assistant?(current_user)
+        @services = @services.where("date >= ?", Date.current)
+      end
+      
+      @services = @services.page(params[:page]).per(20)
       @rows = process_services_data(@services)
     end
 
@@ -227,6 +234,9 @@ module ClinicManagement
 
     def process_services_data(services)
       services.map.with_index do |ser, index|
+        # Pular serviços passados para auxiliares de clínica
+        next if helpers.clinical_assistant?(current_user) && ser.date < Date.current
+
         total_appointments, scheduled, rescheduled, canceleds = appointment_counts(ser)
         link = action_name == 'index_by_referral' ? show_by_referral_services_path(referral_id: @referral.id, id: ser.id) : ser
         
@@ -260,7 +270,7 @@ module ClinicManagement
         row.first[:row_id] = "service-#{ser.id}"
 
         row
-      end
+      end.compact # Remove nil entries (skipped services)
     end
     
     def should_edit_service?(service)
