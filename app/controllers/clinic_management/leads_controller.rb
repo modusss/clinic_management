@@ -203,21 +203,39 @@ module ClinicManagement
     end
 
     def get_lead_data
-      @lead.appointments.map.with_index do |ap, index|
+      appointments = if helpers.referral?(current_user)
+                       current_referral = helpers.user_referral
+                       @lead.appointments.joins(:invitation).where(clinic_management_invitations: { referral_id: current_referral.id })
+                     else
+                       @lead.appointments
+                     end
+
+      appointments.map.with_index do |ap, index|
         invitation = ap.invitation
-        [
+        service_link = if helpers.referral?(current_user)
+                         helpers.link_to(invite_day(ap), clinic_management.show_by_referral_services_path(referral_id: current_referral.id, id: ap.service.id), class: "text-blue-500 hover:text-blue-700")
+                       else
+                         helpers.link_to(invite_day(ap), clinic_management.service_path(ap.service), class: "text-blue-500 hover:text-blue-700")
+                       end
+
+        row = [
           {header: "#", content: index + 1},
           {header: "Paciente", content: invitation&.patient_name },
-          {header: "Data do atendimento", content: helpers.link_to(invite_day(ap), service_path(ap.service), class: "text-blue-500 hover:text-blue-700")},         
+          {header: "Data do atendimento", content: service_link},         
           {header: "Comparecimento", content: (ap.attendance == true ? "Sim" : "Não"), class: helpers.attendance_class(ap)},
           {header: "Observações", content: ap.comments },
-          {header: "Receita", content: prescription_link(ap)},
           {header: "Status", content: ap.status, class: helpers.status_class(ap)},
           {header: "Data do convite", content: invitation&.created_at&.strftime("%d/%m/%Y")},
-          {header: "Convidado por", content: invitation&.referral&.name},
           {header: "Região", content: invitation&.region&.name},
-          {header: "Mensagem", content: generate_message_content(@lead, ap), id: "whatsapp-link-#{@lead.id}" }
         ]
+
+        unless helpers.referral?(current_user)
+          row.insert(5, {header: "Receita", content: prescription_link(ap)})
+          row << {header: "Convidado por", content: invitation&.referral&.name}
+          row << {header: "Mensagem", content: generate_message_content(@lead, ap), id: "whatsapp-link-#{@lead.id}"}
+        end
+
+        row
       end
     end
 
