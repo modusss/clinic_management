@@ -131,7 +131,7 @@ module ClinicManagement
         if (invitation.present?) && (lead.present?)
           [
             { header: "#", content: index },
-            { header: "Paciente", content: invitation&.patient_name },
+            { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700") },
             { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
             { header: "Observações", content: ap.comments },
             { header: "Responsável", content: ((lead.name == invitation&.patient_name) ? "" : lead.name) },
