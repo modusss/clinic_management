@@ -1,8 +1,9 @@
 <div class="text-lg font-medium text-green-700 mb-4">
   <%= notice %>
 </div>
-
+<% unless referral?(current_user) %>
 <%= breadcrumb({title: "Pacientes", path: leads_path}, {title: @lead.name, path: ""}) %>
+<% end %>
 
 <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
   <%= render @lead %>
