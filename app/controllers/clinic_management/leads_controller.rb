@@ -203,25 +203,28 @@ module ClinicManagement
     end
 
     def get_lead_data
-      appointments = if helpers.referral?(current_user)
-                       current_referral = helpers.user_referral
-                       @lead.appointments.joins(:invitation).where(clinic_management_invitations: { referral_id: current_referral.id })
-                     else
-                       @lead.appointments
-                     end
+      current_referral = helpers.user_referral if helpers.referral?(current_user)
+
+      appointments = @lead.appointments.includes(:invitation, :service).order('clinic_management_services.date DESC')
 
       appointments.map.with_index do |ap, index|
         invitation = ap.invitation
-        service_link = if helpers.referral?(current_user)
-                         helpers.link_to(invite_day(ap), clinic_management.show_by_referral_services_path(referral_id: current_referral.id, id: ap.service.id), class: "text-blue-500 hover:text-blue-700")
-                       else
-                         helpers.link_to(invite_day(ap), clinic_management.service_path(ap.service), class: "text-blue-500 hover:text-blue-700")
-                       end
+        is_current_referral_invitation = current_referral && invitation.referral_id == current_referral.id
+
+        service_content = if helpers.referral?(current_user)
+                            if is_current_referral_invitation
+                              helpers.link_to(invite_day(ap), clinic_management.show_by_referral_services_path(referral_id: current_referral.id, id: ap.service.id), class: "text-blue-500 hover:text-blue-700")
+                            else
+                              invite_day(ap)
+                            end
+                          else
+                            helpers.link_to(invite_day(ap), clinic_management.service_path(ap.service), class: "text-blue-500 hover:text-blue-700")
+                          end
 
         row = [
           {header: "#", content: index + 1},
           {header: "Paciente", content: invitation&.patient_name },
-          {header: "Data do atendimento", content: service_link},         
+          {header: "Data do atendimento", content: service_content},         
           {header: "Comparecimento", content: (ap.attendance == true ? "Sim" : "Não"), class: helpers.attendance_class(ap)},
           {header: "Observações", content: ap.comments },
           {header: "Status", content: ap.status, class: helpers.status_class(ap)},
