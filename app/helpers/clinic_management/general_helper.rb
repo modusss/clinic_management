@@ -50,8 +50,8 @@ module ClinicManagement
     end
 
         def whatsapp_link(phone, message = "")
-          decoded_message = CGI.unescape(message)
-          "whatsapp://send?phone=55#{phone}&text=#{decoded_message}"
+          formatted_message = message.gsub("\n", "%0A")
+          "whatsapp://send?phone=55#{phone}&text=#{formatted_message}"
         end
 
         def add_phone_mask(phone)
