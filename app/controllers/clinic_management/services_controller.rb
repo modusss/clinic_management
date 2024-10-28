@@ -106,6 +106,19 @@ module ClinicManagement
       end
     end
 
+    # PATCH /services/1/cancel
+    def cancel
+      @service = Service.find(params[:id])
+      if @service.update(canceled: true)
+        @service.appointments.each do |appointment|
+          appointment.update(status: "cancelado")
+        end
+        redirect_to @service, notice: "Service was successfully canceled."
+      else
+        redirect_to @service, alert: "Failed to cancel the service."
+      end
+    end
+
     private
 
     def decode_json(json_str)

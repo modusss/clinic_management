@@ -37,6 +37,9 @@ ClinicManagement::Engine.routes.draw do
   get 'generate_order_pdf', to: 'prescriptions#generate_order_pdf', as: :generate_order_pdf
 
   resources :services do
+    member do
+      patch :cancel
+    end
     collection do
       get 'index_by_referral/:referral_id', action: "index_by_referral", as: "index_by_referral"
     end
