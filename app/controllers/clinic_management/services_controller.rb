@@ -262,9 +262,12 @@ module ClinicManagement
                       else
                         "future"
                       end
-
+        service_name = ser&.service_type&.name
+        if ser.canceled
+          service_name = "#{service_name} <p style='color: red;'>(cancelado)</p>".html_safe
+        end
         row = [
-          { header: "Serviço", content: ser&.service_type&.name },
+          { header: "Serviço", content: service_name },
           { header: "Data", content: helpers.link_to(ser.date.strftime("%d/%m/%Y"), link, class: "text-blue-500 hover:text-blue-700") },
           { header: "Dia da semana", content: helpers.show_week_day(ser.weekday) },
           { header: "Início", content: ser.start_time.strftime("%H:%M") },
