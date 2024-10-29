@@ -65,7 +65,7 @@
   <br>
   <br>
   <br>
-  <% if is_manager_above? %>
+  <% if is_manager_above? && @service.date >= Date.current %>
     <% unless @service.canceled %>
       <%= button_to "Cancelar Atendimento", cancel_service_path(@service), method: :patch, class: "bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" %>
     <% end %>
