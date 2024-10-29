@@ -188,11 +188,6 @@ module ClinicManagement
         end
       end
     end
-
-    def available_services(exception_service)
-      exception_service_id = exception_service&.id # Get the ID of the exception_service object
-      ClinicManagement::Service.where("date >= ?", Date.current).where.not(id: exception_service_id)
-    end
     
 
     def generate_message_content(lead, appointment)
