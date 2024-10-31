@@ -40,7 +40,7 @@ module ClinicManagement
     end
 
     def collection_for_add
-      (0..3).step(0.25).map { |x| x.positive? ? "+#{x.round(2)}" : x.round(2).to_s }
+      (0..3.5).step(0.25).map { |x| x.positive? ? "+#{x.round(2)}" : x.round(2).to_s }
 
     end
 
