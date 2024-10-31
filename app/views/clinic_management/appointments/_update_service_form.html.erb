@@ -1,11 +1,20 @@
-<%= form_with model: new_appointment, url: old_appointment.present? ? reschedule_appointment_path(old_appointment) : appointments_path, method: :post, local: true, html: { class: "flex items-center space-x-2"} do |f| %>
+<%= form_with model: new_appointment, url: old_appointment.present? ? reschedule_appointment_path(old_appointment) : appointments_path, method: :post, local: true, html: { class: "flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full"} do |f| %>
   
-  <%= f.label :service_id, "Escolha o dia:", class: "text-gray-700 text-sm font-bold" %>
-  <%= f.select :service_id, options_from_collection_for_select(available_services, :id, -> (service) { display_service_name(service) }), include_blank: true, class: "shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+  <div class="w-full sm:w-auto">
+    <%= f.label :service_id, "Escolha o dia:", class: "block text-gray-700 text-sm font-bold mb-1" %>
+    <%= f.select :service_id, 
+                 options_from_collection_for_select(available_services, :id, -> (service) { display_service_name(service) }), 
+                 { include_blank: true }, 
+                 { class: "w-full sm:w-auto shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" } %>
+  </div>
 
   <% if (controller_name == "leads") && (action_name == "show") %>
-    <%= f.label :referral_id, "Indicação: ", class: "text-gray-700 text-sm font-bold" %>
-    <%= f.collection_select :referral_id, Referral.all, :id, :name, {selected: old_appointment&.invitation&.referral&.id}, {class: "shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"} %>
+    <% if referral?(current_user) %>
+      <%= f.hidden_field :referral_id, value: user_referral.id %>
+    <% else %>
+      <%= f.label :referral_id, "Indicação: ", class: "text-gray-700 text-sm font-bold" %>
+      <%= f.collection_select :referral_id, Referral.all, :id, :name, {selected: old_appointment&.invitation&.referral&.id}, {class: "shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"} %>
+    <% end %>
   <% elsif (controller_name == "leads") && (action_name == "absent") %> 
     <%= f.hidden_field :referral_id, value: @current_referral.id %>
   <% end %>
@@ -17,7 +26,7 @@
   <% if controller_name == "leads"%>
     <%= f.submit old_appointment.present? ? "Remarcar" : "Marcar", class: "bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded" %>
   <% else %>
-    <%= f.submit "Remarcação de " + old_appointment&.invitation&.referral&.name, class: "bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded" %>
+    <%= f.submit "Remarcação de " + (referral?(current_user) ? user_referral.name : old_appointment&.invitation&.referral&.name), class: "bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded" %>
   <% end %>
 
 <% end %>

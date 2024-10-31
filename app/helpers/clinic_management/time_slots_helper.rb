@@ -4,7 +4,7 @@ module ClinicManagement
     
     def next_30_days_time_slots(service = nil)
       # Verificar se o serviço existe e se a data já passou
-      if service && service.date && service.date < Date.today
+      if service && service.date && service.date < Date.current
         display_info = "#{service.date.strftime('%d/%m/%Y')} - #{I18n.t('date.day_names')[service.date.wday]} - #{service.start_time.strftime('%H:%M')} até #{service.end_time.strftime('%H:%M')}"
         {type: 'text', value: display_info, input: :time_slot_id, name: 'Dias e horários disponíveis', disabled: true}
       else
@@ -12,12 +12,12 @@ module ClinicManagement
         time_slots = ClinicManagement::TimeSlot.all.group_by(&:weekday)
     
         # Buscar serviços existentes nos próximos 30 dias, excluindo o serviço atual
-        existing_services = Service.where(date: Date.today..Date.today + 29.days)
+        existing_services = Service.where(date: Date.current..Date.current + 29.days)
           .where.not(id: service&.id)
           .pluck(:date, :start_time)
           .group_by { |date, _| date }
     
-        options = (Date.today..Date.today + 29.days).flat_map do |date|
+        options = (Date.current..Date.current + 29.days).flat_map do |date|
           weekday = date.wday == 6 ? 7 : date.wday + 1
           weekday_slots = time_slots[weekday] || []
     
@@ -34,7 +34,7 @@ module ClinicManagement
     
         # Verificar se a opção específica do dia atual do serviço já existe nas opções regulares
         service_slot_exists = false
-        if service && service.date && service.date >= Date.today
+        if service && service.date && service.date >= Date.current
           slot = ClinicManagement::TimeSlot.find_by(weekday: service.date.wday == 6 ? 7 : service.date.wday + 1, start_time: service.start_time)
           if slot
             service_slot_value = {time_slot_id: slot.id, date: service.date}.to_json
@@ -43,7 +43,7 @@ module ClinicManagement
         end
     
         # Adicionar a opção específica para o dia atual do serviço, se existir e não estiver presente nas opções regulares
-        if service && service.date && service.date >= Date.today && !service_slot_exists
+        if service && service.date && service.date >= Date.current && !service_slot_exists
           slot = ClinicManagement::TimeSlot.find_by(weekday: service.date.wday == 6 ? 7 : service.date.wday + 1, start_time: service.start_time)
           if slot
             display_info = "#{service.date.strftime('%d/%m/%Y')} - #{I18n.t('date.day_names')[service.date.wday]} - #{service.start_time.strftime('%H:%M')} até #{service.end_time.strftime('%H:%M')}"

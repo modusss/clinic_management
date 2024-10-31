@@ -11,7 +11,12 @@ module ClinicManagement
         else
             return false
         end
-    end
+      end
+
+      def available_services(exception_service)
+        exception_service_id = exception_service.id # Get the ID of the exception_service object
+        ClinicManagement::Service.where(canceled: [nil, false]).where("date >= ? AND id != ?", Date.current, exception_service_id)
+      end
 
     def is_basic_above?
         if current_user.present?
@@ -50,7 +55,8 @@ module ClinicManagement
     end
 
         def whatsapp_link(phone, message = "")
-          "https://api.whatsapp.com/send/?phone=55#{phone}&text=#{message}"
+          formatted_message = message.gsub("\n", "%0A")
+          "whatsapp://send?phone=55#{phone}&text=#{formatted_message}"
         end
 
         def add_phone_mask(phone)

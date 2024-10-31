@@ -1,0 +1,22 @@
+<%= form_with(model: appointment, url: update_comments_appointment_path(appointment), method: :patch, class: "flex items-start space-x-4", data: { controller: "appointment-comments", action: "turbo:submit-end->clinic-management-appointment-comments#handleSubmit" }) do |f| %>
+  <div class="flex-grow" style="width: 200px;">
+    <%= f.text_area :comments, 
+      class: 'w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500 resize-none', 
+      rows: 4,
+      placeholder: "Adicione seus comentários aqui...",
+      data: { appointment_comments_target: "textarea" } %>
+  </div>
+  
+  <%= f.submit 'Atualizar', 
+    class: 'px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out' %>
+<% end %>
+
+<% if message.present? %>
+  <% random_color = ['red', 'blue', 'green', 'yellow', 'purple', 'indigo', 'pink'].sample %>
+  <div class="mt-4 p-4 border-l-4 transition-colors duration-300 ease-in-out"
+       style="background-color: <%= color_to_hex(random_color, '100') %>;
+              border-color: <%= color_to_hex(random_color, '500') %>;
+              color: <%= color_to_hex(random_color, '700') %>;">
+    <p class="font-medium"><%= message %></p>
+  </div>
+<% end %>

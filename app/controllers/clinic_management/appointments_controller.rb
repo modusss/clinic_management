@@ -1,7 +1,7 @@
 module ClinicManagement
   class AppointmentsController < ApplicationController
     before_action :set_appointment, only: %i[ show edit update destroy ]
-    skip_before_action :redirect_referral_users, only: [:reschedule]
+    skip_before_action :redirect_referral_users, only: [:reschedule, :create, :update]
 
     # POST /appointments
     def create
@@ -111,6 +111,23 @@ module ClinicManagement
       end
     end
 
+    def update_comments
+      @appointment = ClinicManagement::Appointment.find(params[:id])
+      if @appointment.update(appointment_params)
+        respond_to do |format|
+          format.turbo_stream do
+            render turbo_stream: turbo_stream.update(
+              "appointment-comments-#{@appointment.id}",
+              partial: "clinic_management/leads/appointment_comments",
+              locals: { appointment: @appointment, message: "Atualizado!" }
+            )
+          end
+        end
+      else
+        head :unprocessable_entity
+      end
+    end
+
     private
 
       def reschedule_region(referral, lead)
@@ -128,7 +145,7 @@ module ClinicManagement
 
       # Only allow a list of trusted parameters through.
       def appointment_params
-        params.require(:appointment).permit(:attendance, :status, :lead_id, :service_id)
+        params.require(:appointment).permit(:attendance, :status, :lead_id, :service_id, :comments)
       end
   end
 end

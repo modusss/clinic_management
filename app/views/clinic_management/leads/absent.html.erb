@@ -1,0 +1,132 @@
+<%# render_menu(@menu) %>
+
+<% if referral?(current_user) %>
+<h5 class="text-xl font-semibold text-gray-800">Lista dos pacientes ausentes mais antigos que 120 dias</h5>
+<br>
+<% end %>
+
+<% if is_manager_above? %>
+<!-- Tabs -->
+<div class="mb-4">
+  <ul class="flex border-b">
+    <li class="-mb-px mr-1">
+      <%= link_to 'Tabela', absent_leads_path, class: "bg-white inline-block py-2 px-4 text-blue-500 hover:text-blue-800 font-semibold #{params[:tab] != 'download' ? 'border-l border-t border-r rounded-t' : ''}" %>
+    </li>
+    <li class="mr-1">
+      <%= link_to 'Download CSV', absent_leads_path(tab: 'download'), class: "bg-white inline-block py-2 px-4 text-blue-500 hover:text-blue-800 font-semibold #{params[:tab] == 'download' ? 'border-l border-t border-r rounded-t' : ''}" %>
+    </li>
+  </ul>
+</div>
+<% end %>
+
+<% if params[:tab] == 'download' %>
+  <!-- Download CSV Tab Content -->
+  <div id="download-tab" class="tab-content">
+    <!-- Nova tabela para download por ano/mês -->
+<!-- Nova tabela para download por ano/mês -->
+<table class="min-w-full bg-white border border-gray-300 mb-8">
+  <thead>
+    <tr>
+      <th class="py-2 px-4 border-b">Ano</th>
+      <th class="py-2 px-4 border-b">Mês</th>
+      <th class="py-2 px-4 border-b">Download</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% if @all_leads.any? %>
+      <% start_date = @all_leads.last.appointments.last.service.date %>
+      <% end_date = @all_leads.first.appointments.last.service.date %>
+      <% (start_date.to_date..end_date.to_date).map(&:beginning_of_month).uniq.reverse.each do |date| %>
+        <% year = date.year %>
+        <% month = date.month %>
+        <% leads_for_month = @all_leads.select { |lead| lead.appointments.last.service.date.year == year && lead.appointments.last.service.date.month == month } %>
+        <tr>
+          <td class="py-2 px-4 border-b"><%= year %></td>
+          <td class="py-2 px-4 border-b"><%= Date::MONTHNAMES[month] %></td>
+          <td class="py-2 px-4 border-b">
+            <% if leads_for_month.any? %>
+              <%= link_to 'Baixar CSV', download_leads_leads_path(format: :csv, year: year, month: month), 
+                          class: 'bg-blue-600 hover:bg-blue-800 text-white font-bold py-1 px-2 rounded text-sm' %>
+            <% else %>
+              <span class="text-gray-500">Sem leads</span>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    <% else %>
+      <tr>
+        <td colspan="3" class="py-2 px-4 border-b text-center">Nenhum lead encontrado</td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+    <!-- Botão para download geral -->
+    <%= link_to 'Baixar lista completa de pacientes', download_leads_leads_path(format: :csv), 
+                class: 'bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-4 rounded mb-8 inline-block' %>
+
+  </div>
+<% else %>
+
+  <br>
+  <br>
+  <div class="relative">
+    <%= form_with url: search_absents_leads_path, method: :post, data: { turbo_stream: true, controller: "debounce" }, class: "w-full sm:w-auto flex justify-center sm:justify-start mt-4 sm:mt-0" do |search| %>
+      <div class="input-field relative">
+        <%= search.search_field :q,
+            data: { debounce_target: "input", action: "input->debounce#input" },
+            id: "search_absent",
+            placeholder: "Busque pelo nome do responsável ou telefone...",
+            autocomplete: "off",
+            spellcheck: false,
+            class: "bg-white rounded p-2 w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent",
+            style: "font-size: 16px; width: 500px; padding: 12px;" %>
+        <label class="absolute right-2 top-1/2 transform -translate-y-1/2" for="search_lead">
+          <i class="fas fa-search text-gray-500"></i>
+        </label>
+      </div>
+    <% end %>
+  </div>
+  <br>
+  <br>
+  <div id="table-tab" class="tab-content">
+    <%= render partial: "absent_table", locals: { rows: @rows, leads: @leads } %>
+  </div>
+<% end %>
+
+<style>
+.pagination {
+  display: flex;
+  justify-content: center;
+  padding: 1em 0;
+}
+
+.pagination li {
+  list-style: none;
+}
+
+.pagination li a {
+  margin: 0 0.5em;
+  padding: 0.5em 1em;
+  border: 1px solid #e2e8f0; /* border-gray-300 */
+  color: #4a5568; /* text-gray-700 */
+}
+
+.pagination li.active a,
+.pagination li a:hover {
+  background-color: #edf2f7; /* bg-gray-200 */
+  color: #2d3748; /* text-gray-800 */
+}
+
+.pagination li.disabled a {
+  color: #a0aec0; /* text-gray-400 */
+  cursor: not-allowed;
+}
+
+/* If you are using SVG for the icons: */
+.pagination li a svg {
+  vertical-align: middle;
+}
+</style>
+
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">

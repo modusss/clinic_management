@@ -1,7 +1,7 @@
 module ClinicManagement
   class InvitationsController < ApplicationController
     before_action :set_invitation, only: %i[ show edit update destroy ]
-    skip_before_action :redirect_referral_users, only: [:new, :create, :update]
+    skip_before_action :redirect_referral_users, only: [:new, :create, :update, :index]
     include GeneralHelper
 
     # GET /invitations
@@ -36,7 +36,7 @@ module ClinicManagement
       @lead = @invitation.build_lead
       @referrals = Referral.all    
       begin
-        @today_invitations = helpers.user_referral.invitations.where('created_at >= ?', Date.today.beginning_of_day).limit(100)
+        @today_invitations = helpers.user_referral.invitations.where('created_at >= ?', Date.current.beginning_of_day).limit(100)
         @today_invitations = @today_invitations.map do |invitation|
           service = invitation.appointments.last&.service
           [invitation, service] if service
@@ -103,7 +103,7 @@ module ClinicManagement
             @appointment.save!
           end
         end
-        if @appointment.service.date == Date.today
+        if @appointment.service.date == Date.current
           redirect_to index_today_path
         else
           redirect_to @appointment.service
@@ -172,11 +172,16 @@ module ClinicManagement
 
 
     def check_existing_leads(params)
-      first_name = params.dig(:lead_attributes, :name)&.split&.first || invitation_params[:patient_name]&.split&.first   
+      first_name = params.dig(:lead_attributes, :name)&.split&.first || params[:patient_name]&.split&.first
       phone = params.dig(:lead_attributes, :phone)
-      lead = Lead.find_by_phone(phone)
-      return Lead.create!(params[:lead_attributes]) unless lead   
-      lead.name.match?(/#{Regexp.escape(first_name)}/i) ? lead : Lead.create!(params[:lead_attributes])
+      
+      lead = Lead.find_by(phone: phone)
+      
+      if lead && lead.name.split.first.downcase == first_name.downcase
+        lead
+      else
+        Lead.create!(params[:lead_attributes])
+      end
     end
     
     def set_local_region
@@ -323,7 +328,7 @@ module ClinicManagement
       end
 
       def next_services
-        Service.where("date >= ?", Date.today).order(date: :asc)
+        Service.where("date >= ?", Date.current).order(date: :asc)
       end
 
       # Only allow a list of trusted parameters through.

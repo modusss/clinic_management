@@ -9,7 +9,14 @@ module ClinicManagement
     # GET /services
     def index
       @referrals = Referral.all
-      @services = ClinicManagement::Service.includes(:appointments).order(date: :desc).page(params[:page]).per(20)
+      @services = ClinicManagement::Service.includes(:appointments).order(date: :desc)
+      
+      # Filtrar serviços para auxiliares de clínica
+      if helpers.clinical_assistant?(current_user)
+        @services = @services.where("date >= ?", Date.current)
+      end
+      
+      @services = @services.page(params[:page]).per(20)
       @rows = process_services_data(@services)
     end
 
@@ -99,6 +106,19 @@ module ClinicManagement
       end
     end
 
+    # PATCH /services/1/cancel
+    def cancel
+      @service = Service.find(params[:id])
+      if @service.update(canceled: true)
+        @service.appointments.each do |appointment|
+          appointment.update(status: "cancelado")
+        end
+        redirect_to @service, notice: "Service was successfully canceled."
+      else
+        redirect_to @service, alert: "Failed to cancel the service."
+      end
+    end
+
     private
 
     def decode_json(json_str)
@@ -124,16 +144,16 @@ module ClinicManagement
         if (invitation.present?) && (lead.present?)
           [
             { header: "#", content: index },
-            { header: "Paciente", content: invitation&.patient_name },
+            { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700") },
             { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
+            { header: "Observações", content: ap.comments },
             { header: "Responsável", content: ((lead.name == invitation&.patient_name) ? "" : lead.name) },
             { header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, set_zap_message(ap.service, invitation))}'>#{lead_phone}</a> <a href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
             { header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500" },
             { header: "Endereço", content: invitation&.lead&.address },
             { header: "Região", content: invitation&.region&.name },
             { header: "Localização", content: get_location_link(lead) },
-            { header: "Status", content: ap.status, id: "status-#{ap.id}", class: helpers.status_class(ap) },          
-            { header: "Observações", content: invitation&.notes }
+            { header: "Status", content: ap.status, id: "status-#{ap.id}", class: helpers.status_class(ap) }          
           ]
         end
       end
@@ -150,8 +170,8 @@ module ClinicManagement
 
     def set_zap_message(service, invitation)
       if service.present? && invitation.present?
-        message = "Oi #{invitation.patient_name.split.first}! Tudo bem?😊 Aqui é a #{invitation.referral.name}!\n\nLembra que tínhamos marcado aquele exame de vista para o dia de #{ I18n.l(service.date, format: "%A, %d/%m")}?\n\nVi que não deu para você comparecer... 😔\n\nQue tal a gente remarcar?\n\nAssim garantimos a saúde dos seus olhos e esclarecemos qualquer dúvida que você possa ter! 😊👓\n\nAguardo seu retorno, obrigado!"
-        CGI::escape(message)
+        message = "Oi #{invitation.patient_name.split.first}! Tudo bem?😊 Aqui é a #{invitation.referral.name}!\n\nLembra que tínhamos marcado aquele exame de vista para o dia de #{I18n.l(service.date, format: "%A, %d/%m")}?\n\nVi que não deu para você comparecer... 😔\n\nQue tal a gente remarcar?\n\nAssim garantimos a saúde dos seus olhos e esclarecemos qualquer dúvida que você possa ter! 😊👓\n\nAguardo seu retorno, obrigado!"
+        URI.encode_www_form_component(message)
       else
         ""
       end
@@ -174,6 +194,7 @@ module ClinicManagement
             { header: "#", content: index },
             { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700") },
             { header: "Comparecimento", content: ap.attendance ? "SIM" : "NÃO", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
+            { header: "Observações", content: ap.comments },
             { header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "pt-2 pb-0" },          
             { header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500" },
             { header: "Responsável", content: ((lead.name == invitation.patient_name) ? "" : lead.name) },
@@ -184,7 +205,6 @@ module ClinicManagement
             { header: "Indicação", content: invitation.referral.name.upcase },
             { header: "Status", content: ap.status&.upcase, id: "status-#{ap.id}", class: helpers.status_class(ap) },          
             { header: "Nº de Comparecimentos", content: lead.appointments.count },
-            { header: "Observações", content: invitation.notes },
             { header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id.to_s}" },
             { header: "Mensagens enviadas:", content: ap.messages_sent&.join(', '), id: "messages-sent-#{ap.id.to_s}" },
             { header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500" },
@@ -213,11 +233,6 @@ module ClinicManagement
       end
     end
 
-    def available_services(exception_service)
-      exception_service_id = exception_service.id # Get the ID of the exception_service object
-      ClinicManagement::Service.where("date >= ? AND id != ?", Date.today, exception_service_id)
-    end
-
     def generate_message_content(lead, appointment)
       render_to_string(
         partial: "clinic_management/lead_messages/lead_message_form",
@@ -227,36 +242,54 @@ module ClinicManagement
 
     def process_services_data(services)
       services.map.with_index do |ser, index|
+        # Pular serviços passados para auxiliares de clínica
+        next if helpers.clinical_assistant?(current_user) && ser.date < Date.current
+
         total_appointments, scheduled, rescheduled, canceleds = appointment_counts(ser)
         link = action_name == 'index_by_referral' ? show_by_referral_services_path(referral_id: @referral.id, id: ser.id) : ser
+        
+        # Determine the date status
+        date_status = case
+                      when ser.date < Date.current
+                        "past"
+                      when ser.date == Date.current
+                        "today"
+                      else
+                        "future"
+                      end
+        service_name = ser&.service_type&.name
+        if ser.canceled
+          service_name = "#{service_name} <p style='color: red;'>(cancelado)</p>".html_safe
+        end
         row = [
-          #{ header: "#", content: index + 1 },
-          { header: "Serviço", content: ser&.service_type&.name },
+          { header: "Serviço", content: service_name },
           { header: "Data", content: helpers.link_to(ser.date.strftime("%d/%m/%Y"), link, class: "text-blue-500 hover:text-blue-700") },
           { header: "Dia da semana", content: helpers.show_week_day(ser.weekday) },
           { header: "Início", content: ser.start_time.strftime("%H:%M") },
           { header: "Fim", content: ser.end_time.strftime("%H:%M") },
           { header: "Pacientes", content: total_appointments },
           { header: "Compareceram", content: scheduled, class: "text-blue-700" },
-          { header: "Remarcados", content:rescheduled, class: "text-green-700"  },
-          { header: "Cancelados", content: canceleds, class: "text-red-600"  }
-          # percentage_content("Presentes", scheduled, total_appointments, "text-blue-700", "bg-blue-200"),
-          # percentage_content("Remarcados", rescheduled, total_appointments, "text-green-600", "bg-green-200"),
-          # percentage_content("Cancelados", canceleds, total_appointments, "text-red-600", "bg-red-200")        
+          { header: "Remarcados", content: rescheduled, class: "text-green-700" },
+          { header: "Cancelados", content: canceleds, class: "text-red-600" }
         ]
         if helpers.is_manager_above?
-            row << { header: "Ação", content: should_edit_service?(ser) }
+          row << { header: "Ação", content: should_edit_service?(ser) }
         end
+
+        # Add row_class and row_id to the first cell of each row
+        row.first[:row_class] = "service-row service-#{date_status}"
+        row.first[:row_id] = "service-#{ser.id}"
+
         row
-      end
+      end.compact # Remove nil entries (skipped services)
     end
     
     def should_edit_service?(service)
-      service.date >= Date.today ? helpers.link_to("Editar", edit_service_path(service), class: "text-blue-500 hover:text-blue-700") : "--"
+      service.date >= Date.current ? helpers.link_to("Editar", edit_service_path(service), class: "text-blue-500 hover:text-blue-700") : "--"
     end
 
     def set_appointment_button(ap)
-      if ap.attendance.present? || ap.status == "remarcado" || ap.service.date > Date.today
+      if ap.attendance.present? || ap.status == "remarcado" || ap.service.date > Date.current
         "--"
       else
         helpers.button_to('Marcar como presente', set_attendance_appointment_path(ap), method: :patch, remote: true, class: "py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-700")
