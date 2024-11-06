@@ -170,7 +170,7 @@ module ClinicManagement
 
     def set_zap_message(service, invitation)
       if service.present? && invitation.present?
-        message = "Oi #{invitation.patient_name.split.first}! Tudo bem?😊 Aqui é a #{invitation.referral.name}!\n\nLembra que tínhamos marcado aquele exame de vista para o dia de #{I18n.l(service.date, format: "%A, %d/%m")}?\n\nVi que não deu para você comparecer... 😔\n\nQue tal a gente remarcar?\n\nAssim garantimos a saúde dos seus olhos e esclarecemos qualquer dúvida que você possa ter! 😊👓\n\nAguardo seu retorno, obrigado!"
+        message = "Oi #{invitation.patient_name.split.first}! Tudo bem? Eu me chamo #{invitation.referral.name} e fui eu que convidou você para o exame no dia #{service.date.strftime("%d/%m/%Y")} às #{service.start_time.strftime("%H:%M")}."
         URI.encode_www_form_component(message)
       else
         ""
