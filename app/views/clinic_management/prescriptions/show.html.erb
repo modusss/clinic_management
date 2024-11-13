@@ -1,12 +1,13 @@
 <%= breadcrumb({title: "Dados de " + @appointment.lead.name, path: lead_path(@appointment.lead)}, {title: @appointment.invitation.patient_name + " - " + @appointment.service.date.strftime("%d/%m/%Y")  , path: nil}) %>
 
 <div class="flex flex-col items-center justify-center py-2">
-  <div class="max-w-md w-full space-y-8">
+  <div class="max-w-md w-full space-y-12">
     <div>
-      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-        Receita para <%= @prescription.appointment.invitation.patient_name %>
-      </h2>
+      <h4 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        <%= @prescription.appointment.invitation.patient_name %>
+      </h4>
     </div>
+    <h5>Criada em: <%= @prescription.created_at.strftime("%d/%m/%Y às %Hh%Mmin") %></h5>
     <%= render "show_table", prescription: @prescription %>
     <br>
     <b>Doutor</b>: <%= @prescription.doctor_name || "--" %>
