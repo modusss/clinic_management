@@ -56,7 +56,7 @@
   <h1>Dados do Teste de Vista Optométrico</h1>
 
   <div class="description">
-    <p>Prezado(a) <%= @prescription.appointment.invitation.patient_name %>,</p>
+    <p>Prezado(a) <%= @prescription.appointment.invitation.patient_name.split.first.upcase %>,</p>
     <p>
       Seguem abaixo os resultados do seu teste de vista. Esses valores indicam 
       as correções necessárias para a confecção das suas lentes de óculos. 
