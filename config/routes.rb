@@ -30,6 +30,7 @@ ClinicManagement::Engine.routes.draw do
       member do 
         get 'show_today', action: "show_today", as: "show_today"
         get 'pdf', action: "pdf", as: "pdf"
+        post 'send_whatsapp', action: "send_whatsapp", as: "send_whatsapp"
       end
     end
   end

@@ -140,6 +140,28 @@ module ClinicManagement
       redirect_to @appointment, notice: 'Prescription was successfully destroyed.'
     end
 
+    def send_whatsapp
+      @prescription = @appointment.prescription
+      # pdf_url = pdf_appointment_prescription_url(@appointment, format: :pdf, host: Rails.application.config.action_mailer.default_url_options[:host])
+      pdf_url = "https://www.lipepay.com/clinic_management/appointments/44400/prescriptions/33831/pdf.pdf"
+      caption = "Olá! Aqui está sua receita do exame realizado em #{@prescription.appointment.created_at.strftime("%d/%m/%Y")}."
+      phone = @appointment.lead.phone
+      byebug
+      response = helpers.send_api_zap_pdf(pdf_url, caption, phone, false)
+
+      respond_to do |format|
+        format.js do
+          if response.success?
+            flash.now[:notice] = "Receita enviada com sucesso!"
+          else
+            flash.now[:alert] = "Falha ao enviar a receita."
+          end
+        end
+      end
+
+      # redirect_to appointment_prescription_path(@appointment)
+    end
+
     private
 
 

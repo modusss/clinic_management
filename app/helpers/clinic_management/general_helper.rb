@@ -1,6 +1,49 @@
 module ClinicManagement
     module GeneralHelper
 
+
+    def send_api_zap_pdf(pdf_url, caption, phone, delay)
+      instance_name = Account.first.evolution_instance_name
+
+      if delay.present?
+          custom_delay
+      end
+      base_url = Account.last.evolution_base_url
+      api_key = Account.last.evolution_api_key
+      # Codifica o nome da instância para ser usado na URL
+      encoded_instance_name = url_encode(instance_name)
+      # Preparando o cabeçalho com a chave da API
+      headers = {
+      "Content-Type" => "application/json",
+      "apikey" => api_key
+      }
+      # Montando o corpo da mensagem para envio de PDF
+      body = {
+      number: "55" + phone,
+      options: {
+          delay: 10,
+          presence: "composing",
+          linkPreview: false
+      },
+      mediaMessage: {
+          mediatype: "document",
+          caption: caption,
+          media: pdf_url
+      }
+      }.to_json
+      # Montando o endpoint com o nome da instância codificado corretamente
+      endpoint = "#{base_url}/message/sendMedia/#{encoded_instance_name}"
+      # Fazendo a solicitação POST
+      response = HTTParty.post(
+      endpoint,
+      body: body,
+      headers: headers
+      )
+      # Retorna a resposta da API
+      response
+    end
+
+
       def is_operator_above?
         if current_user.present?
             if ["operator", "manager", "owner"].include? current_user.memberships.first.role
