@@ -16,7 +16,7 @@
       <%= link_to 'Ver receita em PDF', pdf_appointment_prescription_path(@prescription.appointment, format: :pdf), class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
       <br>
       <br>
-      <% unless doctor? %>
+      <% unless doctor?(current_user) %>
       <%= button_to 'Enviar receita por WhatsApp', 
           send_whatsapp_appointment_prescription_path(@prescription.appointment), 
           method: :post, 
