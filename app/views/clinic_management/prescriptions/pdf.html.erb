@@ -53,14 +53,18 @@
 </head>
 
 <body>
-  <h1>Dados do Teste de Vista Optométrico</h1>
+      <br>
 
-  <div class="description">
+  <div class="header">
+    <h1>Dados do Teste de Vista Optométrico</h1>
+  </div>
+
+  <div class="description mt-4">
     <p>Prezado(a) <%= @prescription.appointment.invitation.patient_name.split.first.upcase %>,</p>
+    
     <p>
       Seguem abaixo os resultados do seu teste de vista. Esses valores indicam 
-      as correções necessárias para a confecção das suas lentes de óculos. 
-      
+      as correções necessárias para a confecção das suas lentes de óculos.
     </p>
   </div>
 
@@ -104,8 +108,13 @@
       estabelecimentos. Em caso de dúvidas, nossa equipe está à disposição para 
       ajudá-lo.
     </p>
+    <br>
+    <div class="date-info">
+      <strong>Data:</strong> <%= @prescription.appointment.created_at.strftime("%d/%m/%Y") %>
+    </div>
   </div>
-
+    <br>
+    <br>
   <div class="contact-info">
     <!-- Logo da Ótica -->
     <div style="text-align: center;">
@@ -117,30 +126,7 @@
       Telefone: (77) 9.9836-7332 | (77) 9.8804-3621
     </p>
 
-    <table style="border: none; margin: 0 auto;">
-      <tbody>
-        <tr>
-          <td style="border: none; text-align: center;">
-            <div class="qr_code">
-              <%= image_tag wicked_pdf_asset_base64("whatsapp_qrcode.png"), style: "width: 80px; height: 80px;" %>
-              <p class="rotate-text">Whatsapp 1</p>
-            </div>
-          </td>
-          <td style="border: none; text-align: center;">
-            <div class="qr_code">
-              <%= image_tag wicked_pdf_asset_base64("whatsapp2_qrcode.png"), style: "width: 80px; height: 80px;" %>
-              <p class="rotate-text">Whatsapp 2</p>
-            </div>
-          </td>
-          <td style="border: none; text-align: center;">
-            <div class="qr_code">
-              <%= image_tag wicked_pdf_asset_base64("instagram_qrcode.png"), style: "width: 80px; height: 70px;" %>
-              <p class="rotate-text">Instagram</p>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    
   </div>
 </body>
 </html>
