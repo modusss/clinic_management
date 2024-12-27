@@ -3,26 +3,67 @@
 <head>
   <title>Receita de Lentes</title>
   <style>
-    body { font-family: Arial, sans-serif; }
-    h1 { text-align: center; margin-bottom: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-    th { background-color: #f2f2f2; font-weight: bold; }
-    .doctor-info { margin-top: 20px; }
+    body {
+      font-family: Arial, sans-serif; 
+      margin: 0; 
+      padding: 0; 
+      line-height: 1.6;
+    }
+    h1 {
+      text-align: center; 
+      margin-top: 40px; 
+      margin-bottom: 20px;
+    }
+    .description, .note, .contact-info {
+      margin: 0 20px 20px 20px;
+    }
+    table {
+      width: 90%; 
+      margin: 0 auto 20px auto; 
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ddd; 
+      padding: 10px; 
+      text-align: center;
+    }
+    th {
+      background-color: #f2f2f2; 
+      font-weight: bold;
+    }
+    .logo {
+      display: block; 
+      margin: 20px auto; 
+      width: 200px; 
+      max-width: 100%; 
+      height: auto;
+    }
+    .qr_code {
+      text-align: center; 
+      margin: 0 auto;
+    }
+    .footer-text {
+      margin-bottom: 5px;
+    }
+    .rotate-text {
+      transform: rotate(-90deg); 
+      margin: 0;
+    }
   </style>
 </head>
+
 <body>
-  <br>
-  <br>
   <h1>Dados do Teste de Vista Optométrico</h1>
-  <br>
-  <br>
+
   <div class="description">
     <p>Prezado(a) <%= @prescription.appointment.invitation.patient_name %>,</p>
-    <p>Segue abaixo o resultado do seu teste de vista. Estes valores indicam as correções necessárias para a confecção das suas lentes de óculos. <p> Lembre-se de que a acuidade visual pode variar com o tempo, por isso é importante realizar exames regulares.</p>
+    <p>
+      Seguem abaixo os resultados do seu teste de vista. Esses valores indicam 
+      as correções necessárias para a confecção das suas lentes de óculos. 
+      
+    </p>
   </div>
-  <br>
-  <br>
+
   <table>
     <thead>
       <tr>
@@ -35,14 +76,14 @@
     </thead>
     <tbody>
       <tr>
-        <td>Direito</td>
+        <td>Direito (OD)</td>
         <td><%= @prescription.sphere_right || "--"  %></td>
         <td><%= @prescription.cylinder_right || "--"  %></td>
         <td><%= @prescription.axis_right || "--" %></td>
         <td><%= @prescription.add_right || "--" %></td>
       </tr>
       <tr>
-        <td>Esquerdo</td>
+        <td>Esquerdo (OE)</td>
         <td><%= @prescription.sphere_left || "--"  %></td>
         <td><%= @prescription.cylinder_left || "--" %></td>
         <td><%= @prescription.axis_left || "--" %></td>
@@ -50,42 +91,56 @@
       </tr>
     </tbody>
   </table>
-  <div class="footer">
-    <p>Confeccionando estas lentes conosco você tem a garantia dos resultados do seu teste de vista. Caso não se adapte às lentes, nós refaremos as lentes sem custo adicional.</p>
-    <p>Não nos responsabilizamos por revisões necessárias em lentes confeccionadas em outros estabelecimentos.</p>
-    <p>Se tiver qualquer dúvida, não hesite em nos contatar.</p>
-    <br>
-    <div style="text-align: center">
-<div style="text-align: center;">
-  <%= image_tag wicked_pdf_asset_base64("otica_logo.jpg"), class: "logo", style: "width: 200px; max-width: 100%; height: auto; margin: 0 auto;" %>
-</div>
 
-      <p>Rua Joaquim Nabuco, 99B - Vitória da Conquista - BA</p>
-      <p>Telefone: (77) 9.9836-7332 | (77) 9.8804-3621</p>
-      <table style="width: 100%; border: none">
-        <tbody>
-          <td style="border: none">
-              <div class="qr_code" style="text-align: center;">
-                  <%= image_tag wicked_pdf_asset_base64("whatsapp_qrcode.png"), class: "qrcode", style: "width: 80px; height: 80px;" %>
-                  <p style="transform: rotate(-90deg); margin: 0;">Whatsapp 1</p>
-              </div>
-          </td>
-          <td style="border: none">
-              <div class="qr_code" style="text-align: center;">
-                  <%= image_tag wicked_pdf_asset_base64("whatsapp2_qrcode.png"), class: "qrcode", style: "width: 80px; height: 80px;" %>
-                  <p style="transform: rotate(-90deg); margin: 0;">Whatsapp 2</p>
-              </div>
-          </td>
-          <td style="border: none">
-              <div class="qr_code" style="text-align: center;">
-                  <%= image_tag wicked_pdf_asset_base64("instagram_qrcode.png"), class: "qrcode", style: "width: 80px; height: 70px;" %>
-                  <p style="transform: rotate(-90deg); margin: 0;">Instagram</p>
-              </div>
-          </td>
-        </tbody>  
-      </table>
-    </div>
+  <div class="note">
+    <p class="footer-text">
+      Ao optar por confeccionar suas lentes conosco, você conta com a nossa 
+      garantia de resultados e assistência. <strong>Oferecemos garantia total de adaptação:</strong> 
+      caso não se adapte às novas lentes, nós as refaremos <u>quantas vezes forem necessárias</u>, 
+      sempre <strong>sem nenhum custo adicional</strong>, garantindo sua total satisfação.
+    </p>
+    <p class="footer-text">
+      <strong class="text-danger">ATENÇÃO:</strong> Não nos responsabilizamos por revisões desta prescrição por lentes produzidas em outros 
+      estabelecimentos. Em caso de dúvidas, nossa equipe está à disposição para 
+      ajudá-lo.
+    </p>
   </div>
-  
+
+  <div class="contact-info">
+    <!-- Logo da Ótica -->
+    <div style="text-align: center;">
+      <%= image_tag wicked_pdf_asset_base64("otica_logo.jpg"), class: "logo" %>
+    </div>
+
+    <p style="text-align: center;">
+      Rua Joaquim Nabuco, 99B - Vitória da Conquista - BA<br>
+      Telefone: (77) 9.9836-7332 | (77) 9.8804-3621
+    </p>
+
+    <table style="border: none; margin: 0 auto;">
+      <tbody>
+        <tr>
+          <td style="border: none; text-align: center;">
+            <div class="qr_code">
+              <%= image_tag wicked_pdf_asset_base64("whatsapp_qrcode.png"), style: "width: 80px; height: 80px;" %>
+              <p class="rotate-text">Whatsapp 1</p>
+            </div>
+          </td>
+          <td style="border: none; text-align: center;">
+            <div class="qr_code">
+              <%= image_tag wicked_pdf_asset_base64("whatsapp2_qrcode.png"), style: "width: 80px; height: 80px;" %>
+              <p class="rotate-text">Whatsapp 2</p>
+            </div>
+          </td>
+          <td style="border: none; text-align: center;">
+            <div class="qr_code">
+              <%= image_tag wicked_pdf_asset_base64("instagram_qrcode.png"), style: "width: 80px; height: 70px;" %>
+              <p class="rotate-text">Instagram</p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </body>
 </html>
