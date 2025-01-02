@@ -2,8 +2,50 @@ module ClinicManagement
     module GeneralHelper
 
 
-    def send_api_zap_pdf(pdf_url, caption, phone, delay)
-      instance_name = Account.first.evolution_instance_name
+      def color_to_hex(color_name, shade)
+        color_map = {
+          'red' => {
+            '100' => '#fee2e2',
+            '500' => '#ef4444',
+            '700' => '#b91c1c'
+          },
+          'blue' => {
+            '100' => '#dbeafe',
+            '500' => '#3b82f6',
+            '700' => '#1d4ed8'
+          },
+          'green' => {
+            '100' => '#dcfce7',
+            '500' => '#22c55e',
+            '700' => '#15803d'
+          },
+          'yellow' => {
+            '100' => '#fef9c3',
+            '500' => '#eab308',
+            '700' => '#a16207'
+          },
+          'purple' => {
+            '100' => '#f3e8ff',
+            '500' => '#a855f7',
+            '700' => '#7e22ce'
+          },
+          'indigo' => {
+            '100' => '#e0e7ff',
+            '500' => '#6366f1',
+            '700' => '#4338ca'
+          },
+          'pink' => {
+            '100' => '#fce7f3',
+            '500' => '#ec4899',
+            '700' => '#be185d'
+          }
+        }
+      
+        color_map.dig(color_name, shade) || '#000000'
+      end
+
+    def send_api_zap_pdf(pdf_url, caption, phone, delay, instance_name = nil)
+      instance_name = instance_name || Account.first.evolution_instance_name
 
       if delay.present?
           custom_delay
