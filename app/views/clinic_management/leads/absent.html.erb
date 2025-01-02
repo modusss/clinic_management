@@ -88,6 +88,46 @@
     <% end %>
   </div>
   <br>
+<!-- Formulário de seleção de ano/mês -->
+<div class="my-4 p-4 bg-gray-100 rounded">
+  <%= form_with url: absent_leads_path, method: :get,
+                local: true,
+                class: "flex flex-col sm:flex-row gap-4" do |f| %>
+
+    <!-- Campo Ano -->
+    <div>
+      <%= f.label :year, "Ano:", class: "block font-semibold mb-1" %>
+      <%= f.select :year, 
+          options_for_select(
+            (Date.current.year - 5..Date.current.year).to_a.reverse, 
+            params[:year]
+          ), 
+          { include_blank: "Selecione o ano" },
+          class: "border rounded p-2"
+      %>
+    </div>
+
+    <!-- Campo Mês -->
+    <div>
+      <%= f.label :month, "Mês:", class: "block font-semibold mb-1" %>
+      <%= f.select :month, 
+          options_for_select(
+            (1..12).map { |m| [I18n.t("date.month_names")[m], m] }, 
+            params[:month]
+          ), 
+          { include_blank: "Selecione o mês" },
+          class: "border rounded p-2"
+      %>
+    </div>
+
+    <!-- Botão de busca -->
+    <div class="flex items-end">
+      <%= f.submit "Buscar", 
+          class: "bg-blue-600 hover:bg-blue-800 text-white py-2 px-4 rounded" %>
+    </div>
+  <% end %>
+</div>
+
   <br>
   <div id="table-tab" class="tab-content">
     <%= render partial: "absent_table", locals: { rows: @rows, leads: @leads } %>

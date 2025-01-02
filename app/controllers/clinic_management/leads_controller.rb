@@ -107,24 +107,57 @@ module ClinicManagement
     end
 
     def absent
+      # 1) Carregar a coleção base (com base se é referral ou não)
       if helpers.referral?(current_user)
-        @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
+        @all_leads = fetch_leads_by_appointment_condition(
+          'clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', 
+          false, 
+          120.days.ago
+        )
       else
-        @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 1.days.ago)
+        @all_leads = fetch_leads_by_appointment_condition(
+          'clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', 
+          false, 
+          1.days.ago
+        )
       end
-
+    
+      # 2) Se tiver Ano e Mês nos parâmetros, filtrar por esse intervalo
+      if params[:year].present? && params[:month].present?
+        start_date = Date.new(params[:year].to_i, params[:month].to_i, 1)
+        end_date   = start_date.end_of_month
+        
+        # Corrigir a query para usar o mesmo join que já existe
+        @all_leads = @all_leads.where('clinic_management_services.date BETWEEN ? AND ?', start_date, end_date)
+      end
+    
+      # 3) Se tiver busca por nome/telefone, filtra adicionalmente
+      query = params[:q]&.strip
+      if query.present?
+        @leads = @all_leads.where(
+          "name ILIKE ? OR phone ILIKE ?", 
+          "%#{query}%", 
+          "%#{query}%"
+        )
+      else
+        @leads = @all_leads
+      end
+    
+      # 4) Paginação e montagem das linhas (caso não seja aba de download)
       if params[:tab] == 'download'
         @date_range = (Date.current - 1.year)..Date.current
       else
-        @leads = @all_leads.page(params[:page]).per(50)
-        @rows = load_leads_data(@leads)
+        @leads = @leads.page(params[:page]).per(50)
+        @rows  = load_leads_data(@leads)
       end
-
+    
+      # 5) Responde renderizando :absent ou :absent_download conforme a aba
       respond_to do |format|
-        format.html { render :absent }
+        format.html { render :absent }  # exibe a view normal
         format.html { render :absent_download if params[:view] == 'download' }
       end
     end
+    
 
     def absent_download
       if helpers.referral?(current_user)
