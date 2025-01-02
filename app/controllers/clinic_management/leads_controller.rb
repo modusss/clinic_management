@@ -306,17 +306,24 @@ module ClinicManagement
             {header: "Último indicador", content: last_referral(last_invitation)},
             {header: "Qtd. de convites", content: lead.invitations.count},
             {header: "Qtd. de atendimentos", content: lead.appointments.count},
-            {header: "Último atendimento", content: last_appointment_link(last_appointment)}
+            {header: "Último atendimento", content: last_appointment_link(last_appointment)},
+            {header: "Remarcação", content: reschedule_form(new_appointment, last_appointment), class: "text-orange-500" }
           ]
         end
       end
     end
     
     def reschedule_form(new_appointment, old_appointment)
+      if helpers.referral?(current_user) && old_appointment.date <= 180.days.ago
+        current_referral = helpers.user_referral
+      else
+        current_referral = Referral.find_by(name: "Local")
+      end
+
       if old_appointment.status != "remarcado"
         render_to_string(
           partial: "clinic_management/appointments/update_service_form",
-          locals: { new_appointment: new_appointment, old_appointment: old_appointment, available_services: available_services(old_appointment.service) }
+          locals: { current_referral: current_referral, new_appointment: new_appointment, old_appointment: old_appointment, available_services: available_services(old_appointment.service) }
         )
       else
         ""
