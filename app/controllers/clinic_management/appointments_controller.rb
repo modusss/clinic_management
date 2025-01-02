@@ -37,7 +37,7 @@ module ClinicManagement
       rescue StandardError => e
         referral = nil
       ensure
-        referral ||= Referral.find_or_create_by(name: "Local")
+        referral = before_appointment.invitation.referral
       end
       if referral.present?
         invitation = Invitation.create(
