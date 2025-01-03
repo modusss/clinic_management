@@ -22,9 +22,9 @@
 
   <div class="mt-6">
     <h3 class="font-medium mb-2">Selecione os dias de atendimento:</h3>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
       <% available_time_slots_for_next_30_days.each do |slot| %>
-        <div class="border rounded p-4">
+        <div class="border rounded p-2">
           <div class="flex items-center">
             <%= check_box_tag "time_slots_dates[]",
                 { time_slot_id: slot[:time_slot].id, date: slot[:date] }.to_json,
@@ -32,7 +32,7 @@
                 id: "time_slot_#{slot[:time_slot].id}_#{slot[:date].to_s.gsub('-', '_')}",
                 class: "h-4 w-4 text-blue-600 border-gray-300 rounded" %>
             
-            <label for="time_slot_<%= slot[:time_slot].id %>_<%= slot[:date].to_s.gsub('-', '_') %>" class="ml-3">
+            <label for="time_slot_<%= slot[:time_slot].id %>_<%= slot[:date].to_s.gsub('-', '_') %>" class="ml-3" style="width: 100%">
               <span class="block font-medium text-gray-700">
                 <%= slot[:formatted_date] %>
               </span>
