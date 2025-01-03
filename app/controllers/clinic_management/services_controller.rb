@@ -75,16 +75,25 @@ module ClinicManagement
 
     # POST /services
     def create
-      json_params = decode_json(params[:service][:time_slot_id])
-      @time_slot = TimeSlot.find(json_params["time_slot_id"])
-      @service = Service.new(service_params)
-      @service.weekday = @time_slot.weekday
-      @service.start_time = @time_slot.start_time
-      @service.end_time = @time_slot.end_time
-      @service.date = json_params["date"]
-      if @service.save
-        redirect_to @service, notice: "Atendimento criado com sucesso!"
+      @services = []
+      
+      (params[:time_slots_dates] || []).each do |time_slot_date|
+        data = JSON.parse(time_slot_date)
+        time_slot = ClinicManagement::TimeSlot.find(data["time_slot_id"])
+        date = Date.parse(data["date"])
+        
+        service = ClinicManagement::Service.new(service_params)
+        service.weekday = time_slot.weekday
+        service.start_time = time_slot.start_time
+        service.end_time = time_slot.end_time
+        service.date = date
+        @services << service
+      end
+
+      if @services.any? && @services.all?(&:valid?) && @services.each(&:save)
+        redirect_to services_path, notice: "Atendimentos criados com sucesso!"
       else
+        @service = ClinicManagement::Service.new # for form rendering
         render :new, status: :unprocessable_entity
       end
     end
@@ -337,7 +346,7 @@ module ClinicManagement
 
       # Only allow a list of trusted parameters through.
       def service_params
-        params.require(:service).permit(:weekday, :start_time, :end_time, :date, :service_type_id)
+        params.require(:service).permit(:service_type_id)
       end
   end
 end

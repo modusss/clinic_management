@@ -1,12 +1,52 @@
-<% form_fields = [
-  next_30_days_time_slots(service),
-  {name: 'Tipo de Serviço', 
-  input: :service_type_id, 
-  type: 'select', 
-  value: service.service_type_id, 
-  options: ClinicManagement::ServiceType.all.map { |st| [st.name, st.id] },
-  selected: service.service_type_id || ClinicManagement::ServiceType.first.id
-  },
-] %>
+<%= form_with(model: service, class: "space-y-4") do |form| %>
+  <% if service.errors.any? %>
+    <div class="bg-red-100 p-4 rounded">
+      <h2 class="text-red-700"><%= pluralize(service.errors.count, "erro") %> impediram que este atendimento fosse salvo:</h2>
+      <ul class="list-disc list-inside">
+        <% service.errors.each do |error| %>
+          <li class="text-red-600"><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
 
-<%= standardized_form_for(service, form_fields) %>
+  <div>
+    <%= form.label :service_type_id, "Tipo de atendimento", class: "block font-medium mb-2" %>
+    <%= form.collection_select :service_type_id, 
+        ClinicManagement::ServiceType.all, 
+        :id, 
+        :name, 
+        {}, 
+        class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm" %>
+  </div>
+
+  <div class="mt-6">
+    <h3 class="font-medium mb-2">Selecione os dias de atendimento:</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <% available_time_slots_for_next_30_days.each do |slot| %>
+        <div class="border rounded p-4">
+          <div class="flex items-center">
+            <%= check_box_tag "time_slots_dates[]",
+                { time_slot_id: slot[:time_slot].id, date: slot[:date] }.to_json,
+                false,
+                id: "time_slot_#{slot[:time_slot].id}_#{slot[:date].to_s.gsub('-', '_')}",
+                class: "h-4 w-4 text-blue-600 border-gray-300 rounded" %>
+            
+            <label for="time_slot_<%= slot[:time_slot].id %>_<%= slot[:date].to_s.gsub('-', '_') %>" class="ml-3">
+              <span class="block font-medium text-gray-700">
+                <%= slot[:formatted_date] %>
+              </span>
+              <span class="text-sm text-gray-500">
+                <%= slot[:formatted_time] %>
+              </span>
+            </label>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="flex justify-end mt-6">
+    <%= form.submit "Criar atendimentos", class: "bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" %>
+  </div>
+<% end %>

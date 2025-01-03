@@ -1,0 +1,17 @@
+<div class="mt-4">
+  <h3 class="font-semibold mb-2">Selecione as datas:</h3>
+  <div class="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+    <% dates.each do |date| %>
+      <div class="flex items-center">
+        <input type="checkbox" 
+               name="dates[]" 
+               value="<%= date.to_s %>" 
+               id="date_<%= date.to_s %>"
+               class="mr-2">
+        <label for="date_<%= date.to_s %>">
+          <%= l(date, format: '%A, %d/%m/%Y') %>
+        </label>
+      </div>
+    <% end %>
+  </div>
+</div> 

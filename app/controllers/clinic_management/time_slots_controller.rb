@@ -49,6 +49,12 @@ module ClinicManagement
       redirect_to time_slots_url, notice: "Time slot was successfully destroyed."
     end
 
+    def available_dates
+      @time_slot = TimeSlot.find(params[:id])
+      render partial: "clinic_management/services/date_selector", 
+             locals: { dates: helpers.next_available_dates(@time_slot) }
+    end
+
     private
       def get_day_field(day)
         case day.downcase
