@@ -1,8 +1,12 @@
 <label class="inline-flex items-center cursor-pointer">
-  <%= form_with url: toggle_confirmation_appointment_path(appointment), method: :patch, remote: true do %>
-    <%= check_box_tag :confirmed, "1", appointment.confirmed, 
+  <%= form_with url: toggle_confirmation_appointment_path(appointment), 
+                method: :patch, 
+                remote: true,
+                data: { turbo: false } do |f| %>
+    <%= f.check_box :confirmed, 
+        checked: appointment.confirmed,
         class: "sr-only peer",
-        data: { action: "change->form#submit" } %>
+        onchange: "this.form.submit();" %>
     <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 
                 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer 
                 dark:bg-gray-700 peer-checked:after:translate-x-full 
