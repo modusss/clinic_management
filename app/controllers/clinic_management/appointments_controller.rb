@@ -138,6 +138,12 @@ module ClinicManagement
       end
     end
 
+    def toggle_confirmation
+      @appointment = Appointment.find(params[:id])
+      @appointment.update(confirmed: !@appointment.confirmed)
+      # redirect_back(fallback_location: service_path(@appointment.service))
+    end
+
     private
 
       def reschedule_region(referral, lead)
@@ -155,7 +161,7 @@ module ClinicManagement
 
       # Only allow a list of trusted parameters through.
       def appointment_params
-        params.require(:appointment).permit(:attendance, :status, :lead_id, :service_id, :comments)
+        params.require(:appointment).permit(:attendance, :status, :lead_id, :service_id, :comments, :confirmed)
       end
   end
 end

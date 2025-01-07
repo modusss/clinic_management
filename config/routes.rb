@@ -21,6 +21,7 @@ ClinicManagement::Engine.routes.draw do
       patch :cancel_attendance
       post :reschedule
       post :search
+      patch :toggle_confirmation
     end
     resources :prescriptions do
       collection do

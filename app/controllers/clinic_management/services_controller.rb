@@ -187,10 +187,8 @@ module ClinicManagement
     end
 
     def process_appointments_data(appointments)
-      # Selecionar e ordenar appointments que possuem invitation e patient_name presentes
       sorted_appointments = appointments.select { |ap| ap&.invitation&.patient_name.present? }
-                                        .sort_by { |ap| ap.invitation.patient_name }
-      # sorted_appointments = appointments.sort_by { |ap| ap&.invitation&.patient_name || "" }
+                                      .sort_by { |ap| ap.invitation.patient_name }
       sorted_appointments.map.with_index(1) do |ap, index|
         new_appointment = ClinicManagement::Appointment.new
         lead = ap&.lead
@@ -203,6 +201,10 @@ module ClinicManagement
             { header: "#", content: index },
             { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700") },
             { header: "Comparecimento", content: ap.attendance ? "SIM" : "NÃO", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
+            { header: "Confirmado", content: render_to_string(
+              partial: 'confirmation_toggle',
+              locals: { appointment: ap }
+            )},
             { header: "Observações", content: ap.comments },
             { header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "pt-2 pb-0" },          
             { header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500" },
