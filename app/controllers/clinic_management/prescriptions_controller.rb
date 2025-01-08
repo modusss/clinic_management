@@ -193,6 +193,7 @@ module ClinicManagement
           [
             {header: "#", content: index},
             {header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
+            {header: "Status", content: ap.status&.upcase, id: "status-#{ap.id}", class: helpers.status_class(ap) },          
             {header: "Confirmado", content: render_to_string(
               partial: 'clinic_management/services/confirmation_toggle',
               locals: { appointment: ap }
