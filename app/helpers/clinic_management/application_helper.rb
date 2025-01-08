@@ -30,7 +30,13 @@ module ClinicManagement
   # - fix_to (Integer): quantas colunas devem ficar fixas à esquerda
   #
   def data_table(rows, fix_to = 0)
-    content_tag :div, class: "table-container shadow-md rounded-lg", style: "max-height: 70vh" do
+    content_tag :div, 
+                class: "table-container shadow-md rounded-lg", 
+                style: "max-height: 70vh",
+                data: { 
+                  controller: "table",
+                  table_fix_columns_value: fix_to 
+                } do
       table_wrapper("scrollable", rows, "min-w-full table-auto border-collapse", fix_to)
     end
   end
@@ -60,7 +66,7 @@ module ClinicManagement
           header_class = "px-6 py-3 text-[16px] font-medium text-gray-700 uppercase tracking-wider text-center bg-white"
           # Se for para fixar a coluna
           if index < fix_to
-            header_class += " sticky left-0 z-20"
+            header_class += " sticky-column sticky left-0 z-20"
           end
           
           content_tag(:th, header, class: header_class)
@@ -84,7 +90,7 @@ module ClinicManagement
             
             # Se a coluna é fixa
             if index < fix_to
-              cell_class += " sticky left-0 bg-white z-10"
+              cell_class += " sticky-column sticky left-0 bg-white z-10"
             end
             
             # Adiciona classes personalizadas caso existam

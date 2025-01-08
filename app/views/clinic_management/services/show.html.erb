@@ -48,7 +48,7 @@
 <% end %>
 
   <% if @rows.present? %>
-    <div class="overflow-hidden border-gray-200 sm:rounded-lg">
+    <div data-controller="table" class="overflow-hidden border-gray-200 sm:rounded-lg">
         <%= data_table(@rows, 3) %>
     </div>
   <% else %>
