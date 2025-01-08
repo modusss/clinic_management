@@ -201,6 +201,7 @@ module ClinicManagement
             { header: "#", content: index },
             { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700") },
             { header: "Comparecimento", content: ap.attendance ? "SIM" : "NÃO", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
+            { header: "Status", content: ap.status&.upcase, id: "status-#{ap.id}", class: helpers.status_class(ap) },          
             { header: "Confirmado", content: render_to_string(
               partial: 'confirmation_toggle',
               locals: { appointment: ap }
@@ -214,7 +215,6 @@ module ClinicManagement
             { header: "Região", content: invitation.region.name.upcase },
             { header: "Localização", content: get_location_link(lead) },
             { header: "Indicação", content: invitation.referral.name.upcase },
-            { header: "Status", content: ap.status&.upcase, id: "status-#{ap.id}", class: helpers.status_class(ap) },          
             { header: "Nº de Comparecimentos", content: lead.appointments.count },
             { header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id.to_s}" },
             { header: "Mensagens enviadas:", content: ap.messages_sent&.join(', '), id: "messages-sent-#{ap.id.to_s}" },
