@@ -22,71 +22,81 @@ module ClinicManagement
     end
 
 
-    # table with calculation of width
 
+  #
+  # TABELA DE DADOS COM ESTILOS REFINADOS (data_table)
+  # - rows (Array<Hash>): linhas de dados, onde cada linha é um Array de hashes 
+  #   com chaves como :header, :content, :class, etc.
+  # - fix_to (Integer): quantas colunas devem ficar fixas à esquerda
+  #
+  def data_table(rows, fix_to = 0)
+    content_tag :div, class: "table-container shadow-md rounded-lg", style: "max-height: 70vh" do
+      table_wrapper("scrollable", rows, "min-w-full table-auto border-collapse", fix_to)
+    end
+  end
 
-    def data_table(rows, fix_to = 3)
-      content_tag(:div, class: "flex overflow-x-scroll", style: "max-height: 70vh; overflow-y: auto;", data: { controller: "table" }) do 
-        table_wrapper("scrollable", rows, "min-w-full divide-y divide-gray-200", fix_to)
-      end      
-    end    
-    
-    def table_wrapper(id, rows, inner_classes, fix_to)
-      if rows.empty?
-        return content_tag(:p, 'Não houve resultados.', class: 'text-red-600')
-      end
-      
-      content_tag(:table, class: inner_classes) do
-        table_header(rows.first.map { |cell| cell[:header] }, fix_to) + table_body(rows, fix_to)
-      end
+  #
+  # ENVOLVE A TABELA, VERIFICANDO SE HÁ DADOS
+  #
+  def table_wrapper(id, rows, inner_classes, fix_to)
+    return content_tag(:p, 'Não houve resultados.', class: 'text-gray-500 italic') if rows.empty?
+
+    content_tag(:table, class: inner_classes, id: id) do
+      # Cabeçalho
+      table_header(rows.first.map { |cell| cell[:header] }, fix_to) +
+      # Corpo
+      table_body(rows, fix_to)
     end
-  
-    def table_header(headers, fix_to)
-      content_tag(:thead, class: "bg-gray-50") do
-        content_tag(:tr) do
-          headers.map.with_index do |header, header_index|
-            classes = "text-lg px-3 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-center whitespace-nowrap"
-            styles = ''
-            if header_index < fix_to
-              classes += ' sticky'
-            end
-            content_tag(:th, header, scope: "col", class: classes, style: styles)
-          end.join.html_safe
-        end
-      end
-    end
-    
-    def table_body(rows, fix_to)
-      content_tag(:tbody, class: "bg-white divide-y divide-gray-200") do
-        rows.map do |row|
-          next if row.nil?
-          if row.size == 1 && row.first[:colspan]
-            content_tag(:tr, class: "bg-gray-100") do
-              content_tag(:td, row.first[:content], class: "text-lg px-3 py-4 font-bold text-center whitespace-nowrap", colspan: row.first[:colspan])
-            end
-          else
-            row_class = cycle('bg-blue-50', 'bg-white')
-            row_class += " #{row.first[:row_class]}" if row.first[:row_class]
-            content_tag(:tr, id: row.first[:row_id], class: row_class) do
-              row.map.with_index do |cell, cell_index|
-                classes = "text-lg px-3 py-4 text-gray-900 #{cell[:class]} text-center align-middle"
-                styles = ''
-                if cell_index < fix_to
-                  classes += ' sticky'
-                end
-                if cell[:header] == 'Convites' && cell[:content].to_s.length > 50
-                  classes += ' whitespace-normal'
-                else
-                  classes += ' whitespace-nowrap'
-                end
-                content_tag(:td, cell[:content], id: cell[:id], class: classes, style: styles)
-              end.join.html_safe
-            end
+  end
+
+  #
+  # MONTA O CABEÇALHO DA TABELA
+  #
+  def table_header(headers, fix_to)
+    content_tag(:thead, class: "bg-white border-b sticky top-0") do
+      content_tag(:tr) do
+        headers.map.with_index do |header, index|
+          # Classes base do TH
+          header_class = "px-6 py-3 text-[16px] font-medium text-gray-700 uppercase tracking-wider text-center bg-white"
+          # Se for para fixar a coluna
+          if index < fix_to
+            header_class += " sticky left-0 z-20"
           end
+          
+          content_tag(:th, header, class: header_class)
         end.join.html_safe
       end
     end
-    
+  end
+
+  #
+  # MONTA O CORPO DA TABELA
+  #
+  def table_body(rows, fix_to)
+    content_tag(:tbody) do
+      rows.map do |row|
+        next if row.nil?
+        
+        content_tag(:tr, class: "border-b hover:bg-gray-50 nowrap") do
+          row.map.with_index do |cell, index|
+            # Classe base para TD
+            cell_class = "px-6 py-4 text-gray-900 text-center text-[16px]"
+            
+            # Se a coluna é fixa
+            if index < fix_to
+              cell_class += " sticky left-0 bg-white z-10"
+            end
+            
+            # Adiciona classes personalizadas caso existam
+            cell_class += " #{cell[:class]}" if cell[:class].present?
+
+            # Cria a célula final
+            content_tag(:td, cell[:content], id: cell[:id], class: cell_class)
+          end.join.html_safe
+        end
+      end.compact.join.html_safe
+    end
+  end
     
     
   end

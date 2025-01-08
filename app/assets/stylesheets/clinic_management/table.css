@@ -1,0 +1,47 @@
+/* Estilo base para a tabela */
+.table-container {
+  overflow-x: auto;
+  overflow-y: auto;
+  position: relative;
+  max-height: 70vh;
+  font-size: 16px !important;
+}
+
+/* Estilo para os cabeçalhos fixos */
+@media screen and (min-width: 768px) {
+  .table-container table th.sticky-column {
+    position: sticky;
+    background-color: #fff;
+    z-index: 100;
+    top: 0;
+  }
+
+  /* Estilo para as células fixas */
+  .table-container table td.sticky-column {
+    position: sticky;
+    background-color: #fff;
+    z-index: 10;
+    border-right: none;
+  }
+
+  /* Sombra suave para última coluna fixa */
+  .table-container table td.sticky-column:nth-last-child(n+2),
+  .table-container table th.sticky-column:nth-last-child(n+2) {
+    box-shadow: 4px 0 8px -6px rgba(0,0,0,0.2);
+  }
+}
+
+.table-container thead {
+  z-index: 20;
+}
+
+/* Reset para dispositivos móveis */
+@media screen and (max-width: 767px) {
+  .table-container table th.sticky-column,
+  .table-container table td.sticky-column {
+    position: static;
+    left: auto;
+    box-shadow: none;
+    border-right: none;
+  }
+}
