@@ -194,7 +194,7 @@ module ClinicManagement
             {header: "#", content: index},
             {header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
             {header: "Confirmado", content: render_to_string(
-              partial: 'confirmation_toggle',
+              partial: 'clinic_management/services/confirmation_toggle',
               locals: { appointment: ap }
             )},
             {header: "Telefone", content: helpers.link_to(lead.phone, "https://wa.me/+55#{lead.phone}", class: "text-blue-500 hover:text-blue-700")},            
