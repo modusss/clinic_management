@@ -198,6 +198,7 @@ module ClinicManagement
               partial: 'clinic_management/services/confirmation_toggle',
               locals: { appointment: ap }
             )},
+            {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: ap, message: "" }), id: "appointment-comments-#{ap.id}"},
             {header: "Telefone", content: helpers.link_to(lead.phone, "https://wa.me/+55#{lead.phone}", class: "text-blue-500 hover:text-blue-700")},            
             {header: "Receita", content: prescription_link(ap)},
             {header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "pt-2 pb-0" },          
