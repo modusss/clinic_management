@@ -83,14 +83,24 @@ def table_body(rows, fix_to)
     rows.map do |row|
       next if row.nil?
       
-      # Incluímos as classes do Tailwind para alternar fundo (odd:bg-white / even:bg-gray-50)
-      row_class = "border-b hover:bg-gray-50 nowrap odd:bg-white even:bg-gray-50"
+      row_class = "border-b hover:bg-gray-50 odd:bg-white even:bg-gray-50"
       row_class += " #{row.first[:row_class]}" if row.first && row.first[:row_class].present?
       
       content_tag(:tr, class: row_class, id: row.first[:row_id]) do
         row.map.with_index do |cell, index|
+          # Verifica o número de palavras no conteúdo
+          content = cell[:content].to_s
+          word_count = content.split.size
+          
           # Classe base para TD
           cell_class = "px-6 py-4 text-gray-900 text-center text-[16px]"
+          
+          # Adiciona estilo específico se ultrapassar 6 palavras
+          if word_count > 6
+            cell_class += " !min-w-[300px] whitespace-normal"
+          else
+            cell_class += " whitespace-nowrap"
+          end
           
           # Se a coluna é fixa
           if index < fix_to
