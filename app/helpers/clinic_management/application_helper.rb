@@ -75,39 +75,39 @@ module ClinicManagement
     end
   end
 
-  #
-  # MONTA O CORPO DA TABELA
-  #
-  def table_body(rows, fix_to)
-    content_tag(:tbody) do
-      rows.map do |row|
-        next if row.nil?
-        
-        # Pega a row_class do primeiro elemento se existir
-        row_class = "border-b hover:bg-gray-50 nowrap"
-        row_class += " #{row.first[:row_class]}" if row.first && row.first[:row_class].present?
-        
-        content_tag(:tr, class: row_class, id: row.first[:row_id]) do
-          row.map.with_index do |cell, index|
-            # Classe base para TD
-            cell_class = "px-6 py-4 text-gray-900 text-center text-[16px]"
-            
-            # Se a coluna é fixa
-            if index < fix_to
-              cell_class += " sticky-column sticky left-0 bg-white z-10"
-            end
-            
-            # Adiciona classes personalizadas caso existam
-            cell_class += " #{cell[:class]}" if cell[:class].present?
+#
+# MONTA O CORPO DA TABELA
+#
+def table_body(rows, fix_to)
+  content_tag(:tbody, class: "divide-y divide-gray-200") do
+    rows.map do |row|
+      next if row.nil?
+      
+      # Incluímos as classes do Tailwind para alternar fundo (odd:bg-white / even:bg-gray-50)
+      row_class = "border-b hover:bg-gray-50 nowrap odd:bg-white even:bg-gray-50"
+      row_class += " #{row.first[:row_class]}" if row.first && row.first[:row_class].present?
+      
+      content_tag(:tr, class: row_class, id: row.first[:row_id]) do
+        row.map.with_index do |cell, index|
+          # Classe base para TD
+          cell_class = "px-6 py-4 text-gray-900 text-center text-[16px]"
+          
+          # Se a coluna é fixa
+          if index < fix_to
+            cell_class += " sticky-column sticky left-0 z-10"
+          end
+          
+          # Adiciona classes personalizadas caso existam
+          cell_class += " #{cell[:class]}" if cell[:class].present?
 
-            # Cria a célula final
-            content_tag(:td, cell[:content], id: cell[:id], class: cell_class)
-          end.join.html_safe
-        end
-      end.compact.join.html_safe
-    end
+          # Cria a célula final
+          content_tag(:td, cell[:content], id: cell[:id], class: cell_class)
+        end.join.html_safe
+      end
+    end.compact.join.html_safe
   end
-    
+end
+
     
   end
 end
