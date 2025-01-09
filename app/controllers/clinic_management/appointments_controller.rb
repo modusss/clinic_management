@@ -43,7 +43,7 @@ module ClinicManagement
         invitation = Invitation.create(
           referral_id: referral.id,
           region_id: reschedule_region(referral, @lead).id,
-          patient_name: @lead.name,
+          patient_name: before_appointment.invitation.patient_name,
           lead_id: @lead.id
         )      
       else

@@ -238,6 +238,7 @@ module ClinicManagement
       appointments.map.with_index do |ap, index|
         invitation = ap.invitation
         is_current_referral_invitation = current_referral && invitation.referral_id == current_referral.id
+        new_appointment = ClinicManagement::Appointment.new
 
         service_content = if helpers.referral?(current_user)
                             if is_current_referral_invitation
@@ -253,11 +254,12 @@ module ClinicManagement
           {header: "#", content: index + 1},
           {header: "Paciente", content: invitation&.patient_name },
           {header: "Data do atendimento", content: service_content},         
+          {header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500"},
           {header: "Comparecimento", content: (ap.attendance == true ? "Sim" : "Não"), class: helpers.attendance_class(ap)},
           {header: "Observações", content: ap.comments },
           {header: "Status", content: ap.status, class: helpers.status_class(ap)},
           {header: "Data do convite", content: invitation&.created_at&.strftime("%d/%m/%Y")},
-          {header: "Região", content: invitation&.region&.name},
+          {header: "Região", content: invitation&.region&.name}
         ]
 
         unless helpers.referral?(current_user)
@@ -314,16 +316,14 @@ module ClinicManagement
     end
     
     def reschedule_form(new_appointment, old_appointment)
-      if helpers.referral?(current_user) && old_appointment.date <= 180.days.ago
-        current_referral = helpers.user_referral
-      else
-        current_referral = Referral.find_by(name: "Local")
-      end
-
       if old_appointment.status != "remarcado"
         render_to_string(
           partial: "clinic_management/appointments/update_service_form",
-          locals: { current_referral: current_referral, new_appointment: new_appointment, old_appointment: old_appointment, available_services: available_services(old_appointment.service) }
+          locals: { 
+            new_appointment: new_appointment, 
+            old_appointment: old_appointment, 
+            available_services: available_services(old_appointment.service) 
+          }
         )
       else
         ""
@@ -430,6 +430,12 @@ module ClinicManagement
       def generate_filename
         month_name = I18n.t("date.month_names")[params[:month].to_i]
         "leads_#{month_name.downcase}_#{params[:year]}.csv"
+      end
+
+      def available_services(service)
+        # Implemente a lógica para obter os serviços disponíveis
+        # Similar à implementação que você já tem no ServicesController
+        Service.where("date >= ?", Date.current).order(date: :asc)
       end
   end
 end
