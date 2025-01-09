@@ -83,7 +83,11 @@ module ClinicManagement
       rows.map do |row|
         next if row.nil?
         
-        content_tag(:tr, class: "border-b hover:bg-gray-50 nowrap") do
+        # Pega a row_class do primeiro elemento se existir
+        row_class = "border-b hover:bg-gray-50 nowrap"
+        row_class += " #{row.first[:row_class]}" if row.first && row.first[:row_class].present?
+        
+        content_tag(:tr, class: row_class, id: row.first[:row_id]) do
           row.map.with_index do |cell, index|
             # Classe base para TD
             cell_class = "px-6 py-4 text-gray-900 text-center text-[16px]"
