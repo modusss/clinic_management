@@ -252,7 +252,7 @@ module ClinicManagement
 
         row = [
           {header: "#", content: index + 1},
-          {header: "Paciente", content: invitation&.patient_name },
+          {header: "Paciente", content: invitation&.patient_name, class: "nowrap size_20" },
           {header: "Data do atendimento", content: service_content},         
           {header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500"},
           {header: "Comparecimento", content: (ap.attendance == true ? "Sim" : "Não"), class: helpers.attendance_class(ap)},
@@ -290,9 +290,9 @@ module ClinicManagement
 
           [
             {header: "Ordem", content: index + 1},
-            {header: "Paciente", content: last_invitation.patient_name, class: "text-blue"},
-            {header: "Responsável", content: responsible_content(last_invitation)},
-            {header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, "")}'>#{helpers.add_phone_mask(lead.phone)}</a> <a style='margin-left: 10px;' href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
+            {header: "Paciente", content: last_invitation.patient_name, class: "text-blue nowrap size_20"},
+            {header: "Responsável", content: responsible_content(last_invitation), class: "nowrap"},
+            {header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, "")}'>#{helpers.add_phone_mask(lead.phone)}</a> <a style='margin-left: 10px;' href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700 nowrap" },
             {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: last_appointment, message: "" }), id: "appointment-comments-#{last_appointment.id}"},
             {header: "Vezes convidado", content: lead.invitations.count},
             {header: "Último atendimento", content: "#{invite_day(last_appointment)}"},
@@ -301,9 +301,9 @@ module ClinicManagement
         else
           [
             {header: "Ordem", content: index + 1},
-            {header: "Paciente", content: helpers.link_to(last_invitation.patient_name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
-            {header: "Responsável", content: responsible_content(last_invitation)},
-            {header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, "")}'>#{helpers.add_phone_mask(lead.phone)}</a> <a style='margin-left: 10px;' href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700"},
+            {header: "Paciente", content: helpers.link_to(last_invitation.patient_name, lead_path(lead), class: "text-blue-500 hover:text-blue-700 nowrap size_20", target: "_blank")},
+            {header: "Responsável", content: responsible_content(last_invitation), class: "nowrap"},
+            {header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, "")}'>#{helpers.add_phone_mask(lead.phone)}</a> <a style='margin-left: 10px;' href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700 nowrap"},
             {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: last_appointment, message: "" }), id: "appointment-comments-#{last_appointment.id}"},
             {header: "Último indicador", content: last_referral(last_invitation)},
             {header: "Qtd. de convites", content: lead.invitations.count},
