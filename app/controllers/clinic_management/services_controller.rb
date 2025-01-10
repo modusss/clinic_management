@@ -199,7 +199,7 @@ module ClinicManagement
         if (invitation.present?) && (lead.present?)
           [
             { header: "#", content: index },
-            { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700") },
+            { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700 size_20") },
             { header: "Status", content: helpers.format_status_and_attendance(ap), id: "status-#{ap.id}", class: helpers.status_class(ap) },          
             { header: "Confirmado", content: render_to_string(
               partial: 'confirmation_toggle',

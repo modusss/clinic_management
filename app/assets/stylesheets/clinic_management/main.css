@@ -1,3 +1,7 @@
 .nowrap {
     white-space: nowrap;
 }
+
+.size_20 {
+    font-size: 20px !important;
+}

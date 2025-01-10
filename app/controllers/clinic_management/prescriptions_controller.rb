@@ -185,14 +185,14 @@ module ClinicManagement
           next unless ap.attendance == true
           [
             {header: "#", content: index},
-            {header: "Paciente", content: invitation.patient_name},
+            {header: "Paciente", content: invitation.patient_name, class: "size_20"},
             {header: "Comparecimento", content: ap.attendance == true ? "sim" : "--"},
             {header: "Receita", content: prescription_link(ap)}
           ]
         else
           [
             {header: "#", content: index},
-            {header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
+            {header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(lead), class: "text-blue-500 hover:text-blue-700 size_20", target: "_blank")},
             {header: "Status", content: helpers.format_status_and_attendance(ap), id: "status-#{ap.id}", class: helpers.status_class(ap) },          
             {header: "Confirmado", content: render_to_string(
               partial: 'clinic_management/services/confirmation_toggle',
