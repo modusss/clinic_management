@@ -97,7 +97,7 @@ def table_body(rows, fix_to)
           
           # Adiciona estilo específico se ultrapassar 6 palavras
           if word_count > 6
-            cell_class += " !min-w-[300px] whitespace-normal"
+            cell_class += " !min-w-[100px] whitespace-normal"
           else
             cell_class += " whitespace-nowrap"
           end

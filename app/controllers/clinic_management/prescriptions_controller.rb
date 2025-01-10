@@ -185,24 +185,24 @@ module ClinicManagement
           next unless ap.attendance == true
           [
             {header: "#", content: index},
-            {header: "Paciente", content: invitation.patient_name, class: "size_20"},
+            {header: "Paciente", content: invitation.patient_name, class: "size_20 nowrap"},
             {header: "Comparecimento", content: ap.attendance == true ? "sim" : "--"},
-            {header: "Receita", content: prescription_link(ap)}
+            {header: "Receita", content: prescription_link(ap), class: "nowrap"}
           ]
         else
           [
             {header: "#", content: index},
-            {header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(lead), class: "text-blue-500 hover:text-blue-700 size_20", target: "_blank")},
+            {header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(lead), class: "text-blue-500 hover:text-blue-700 size_20 nowrap", target: "_blank")},
             {header: "Status", content: helpers.format_status_and_attendance(ap), id: "status-#{ap.id}", class: helpers.status_class(ap) },          
             {header: "Confirmado", content: render_to_string(
               partial: 'clinic_management/services/confirmation_toggle',
               locals: { appointment: ap }
             )},
             {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: ap, message: "" }), id: "appointment-comments-#{ap.id}"},
-            {header: "Telefone", content: helpers.link_to(lead.phone, "https://wa.me/+55#{lead.phone}", class: "text-blue-500 hover:text-blue-700")},            
-            {header: "Receita", content: prescription_link(ap)},
-            {header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "pt-2 pb-0" },          
-            {header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500"},
+            {header: "Telefone", content: helpers.link_to(lead.phone, "https://wa.me/+55#{lead.phone}", class: "text-blue-500 hover:text-blue-700 nowrap")},            
+            {header: "Receita", content: prescription_link(ap), class: "nowrap"},
+            {header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "pt-2 pb-0 nowrap" },          
+            {header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500 nowrap"},
             {header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id.to_s}"},
             {header: "Mensagens enviadas:", content: ap&.messages_sent&.join(', '), id: "messages-sent-#{ap.id.to_s}"}            
           ]

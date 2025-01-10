@@ -153,7 +153,7 @@ module ClinicManagement
         if (invitation.present?) && (lead.present?)
           [
             { header: "#", content: index },
-            { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700") },
+            { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700 nowrap") },
             { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
             { header: "Observações", content: ap.comments },
             { header: "Responsável", content: ((lead.name == invitation&.patient_name) ? "" : lead.name) },
@@ -199,7 +199,7 @@ module ClinicManagement
         if (invitation.present?) && (lead.present?)
           [
             { header: "#", content: index },
-            { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700 size_20") },
+            { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700 nowrap size_20") },
             { header: "Status", content: helpers.format_status_and_attendance(ap), id: "status-#{ap.id}", class: helpers.status_class(ap) },          
             { header: "Confirmado", content: render_to_string(
               partial: 'confirmation_toggle',
@@ -207,9 +207,9 @@ module ClinicManagement
             )},
             {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: ap, message: "" }), id: "appointment-comments-#{ap.id}"},
             { header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "pt-2 pb-0" },          
-            { header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500" },
-            { header: "Responsável", content: ((lead.name == invitation.patient_name) ? "" : lead.name) },
-            { header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, set_zap_message(ap.service, invitation))}'>#{lead_phone}</a> <a href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700" },
+            { header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500 nowrap" },
+            { header: "Responsável", content: ((lead.name == invitation.patient_name) ? "" : lead.name), class: "nowrap" },
+            { header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, set_zap_message(ap.service, invitation))}'>#{lead_phone}</a> <a href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700 nowrap" },
             { header: "Endereço", content: invitation.lead.address },
             { header: "Região", content: invitation.region.name.upcase },
             { header: "Localização", content: get_location_link(lead) },

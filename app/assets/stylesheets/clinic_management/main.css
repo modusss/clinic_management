@@ -1,5 +1,5 @@
 .nowrap {
-    white-space: nowrap;
+    white-space: nowrap !important;
 }
 
 .size_20 {
