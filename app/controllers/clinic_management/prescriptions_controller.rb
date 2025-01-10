@@ -204,8 +204,7 @@ module ClinicManagement
             {header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "pt-2 pb-0" },          
             {header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500"},
             {header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id.to_s}"},
-            {header: "Mensagens enviadas:", content: ap&.messages_sent&.join(', '), id: "messages-sent-#{ap.id.to_s}"},            
-            {header: "Comparecimento", content: ap.attendance == true ? "sim" : "--"}
+            {header: "Mensagens enviadas:", content: ap&.messages_sent&.join(', '), id: "messages-sent-#{ap.id.to_s}"}            
           ]
         end
       end.compact # remove any nil entries resulting from next unless
