@@ -59,11 +59,11 @@ module ClinicManagement
   # MONTA O CABEÇALHO DA TABELA
   #
   def table_header(headers, fix_to)
-    content_tag(:thead, class: "bg-white border-b sticky top-0") do
+    content_tag(:thead, class: "bg-white border-b border-gray-200 sticky top-0") do
       content_tag(:tr) do
         headers.map.with_index do |header, index|
           # Classes base do TH
-          header_class = "px-6 py-3 text-[16px] font-medium text-gray-700 uppercase tracking-wider text-center bg-white"
+          header_class = "px-6 py-3 text-[16px] font-medium text-gray-700 uppercase tracking-wider text-center bg-white border-b border-gray-200"
           # Se for para fixar a coluna
           if index < fix_to
             header_class += " sticky-column sticky left-0 z-20"

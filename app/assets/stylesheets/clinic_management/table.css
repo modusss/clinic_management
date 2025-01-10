@@ -9,6 +9,16 @@
 
 /* Estilo para os cabeçalhos fixos */
 @media screen and (min-width: 768px) {
+  .table-container table thead {
+    border-bottom: 1px solid #e5e7eb;
+    background-color: #fff;
+    z-index: 20;
+  }
+
+  .table-container table th {
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+
   .table-container table th.sticky-column {
     position: sticky;
     background-color: #fff;
@@ -33,6 +43,7 @@
 
 .table-container thead {
   z-index: 20;
+  border-bottom: 1px solid #e5e7eb !important;
 }
 
 /* Reset para dispositivos móveis */
