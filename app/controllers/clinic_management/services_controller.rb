@@ -2,7 +2,7 @@ module ClinicManagement
   class ServicesController < ApplicationController
     before_action :set_service, only: %i[ show edit update destroy ]
     skip_before_action :redirect_referral_users, only: [:index_by_referral, :show_by_referral]
-    include TimeSlotsHelper, GeneralHelper
+    include TimeSlotsHelper, GeneralHelper, PrescriptionsHelper
 
     require 'cgi'
 
@@ -200,8 +200,7 @@ module ClinicManagement
           [
             { header: "#", content: index },
             { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700") },
-            { header: "Comparecimento", content: ap.attendance ? "SIM" : "NÃO", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
-            { header: "Status", content: ap.status&.upcase, id: "status-#{ap.id}", class: helpers.status_class(ap) },          
+            { header: "Status", content: helpers.format_status_and_attendance(ap), id: "status-#{ap.id}", class: helpers.status_class(ap) },          
             { header: "Confirmado", content: render_to_string(
               partial: 'confirmation_toggle',
               locals: { appointment: ap }

@@ -2,7 +2,7 @@ module ClinicManagement
   class PrescriptionsController < ApplicationController
     before_action :set_appointment, except: [:index_today, :generate_order_pdf, :search_index_today]
     skip_before_action :redirect_doctor_users, only: [:index_today, :show_today, :new_today, :edit_today, :update, :create, :search_index_today]
-    include GeneralHelper
+    include GeneralHelper, PrescriptionsHelper
 
     def index
 
@@ -193,7 +193,7 @@ module ClinicManagement
           [
             {header: "#", content: index},
             {header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")},
-            {header: "Status", content: ap.status&.upcase, id: "status-#{ap.id}", class: helpers.status_class(ap) },          
+            {header: "Status", content: helpers.format_status_and_attendance(ap), id: "status-#{ap.id}", class: helpers.status_class(ap) },          
             {header: "Confirmado", content: render_to_string(
               partial: 'clinic_management/services/confirmation_toggle',
               locals: { appointment: ap }
