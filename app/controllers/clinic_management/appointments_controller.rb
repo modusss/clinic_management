@@ -30,25 +30,20 @@ module ClinicManagement
     def reschedule
       before_appointment = Appointment.find_by(id: params[:id])
       @lead = before_appointment.lead
-      begin
-        if params[:appointment][:referral_id].present?
-          referral = Referral.find_by(id: params[:appointment][:referral_id])
-        end
-      rescue StandardError => e
-        referral = nil
-      ensure
-        referral = before_appointment.invitation.referral
-      end
-      if referral.present?
-        invitation = Invitation.create(
-          referral_id: referral.id,
-          region_id: reschedule_region(referral, @lead).id,
-          patient_name: before_appointment.invitation.patient_name,
-          lead_id: @lead.id
-        )      
+      
+      # Simplificar a lógica de encontrar o referral
+      referral = if params[:appointment][:referral_id].present?
+        Referral.find_by(id: params[:appointment][:referral_id])
       else
-        invitation = before_appointment.invitation
+        before_appointment.invitation.referral
       end
+
+      invitation = Invitation.create(
+        referral_id: referral.id,
+        region_id: reschedule_region(referral, @lead).id,
+        patient_name: before_appointment.invitation.patient_name,
+        lead_id: @lead.id
+      )
 
       service_id = params.dig(:appointment, :service_id) || params[:service_id]
       @next_service = Service.find_by(id: service_id)
