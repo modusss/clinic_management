@@ -32,8 +32,8 @@ module ClinicManagement
       @lead = before_appointment.lead
       
       # Simplificar a lógica de encontrar o referral
-      referral = if params[:appointment][:referral_id].present?
-        Referral.find_by(id: params[:appointment][:referral_id])
+      referral = if params[:referral_id].present?
+        Referral.find_by(id: params[:referral_id])
       else
         before_appointment.invitation.referral
       end

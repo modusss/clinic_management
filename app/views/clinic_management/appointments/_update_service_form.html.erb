@@ -18,6 +18,8 @@
   <% elsif (controller_name == "leads") && (action_name == "absent") %> 
     <% if referral?(current_user) %>
       <%= f.hidden_field :referral_id, value: user_referral.id %>
+    <% elsif old_appointment.created_at > 4.month.ago %>
+      <%= f.hidden_field :referral_id, value: old_appointment.invitation.referral.id %>
     <% end %>
   <% end %>
 
