@@ -30,12 +30,15 @@ module ClinicManagement
     def reschedule
       before_appointment = Appointment.find_by(id: params[:id])
       @lead = before_appointment.lead
-      
       # Simplificar a lógica de encontrar o referral
       referral = if params[:referral_id].present?
         Referral.find_by(id: params[:referral_id])
       else
-        before_appointment.invitation.referral
+        if before_appointment.created_at < 12.month.ago
+          Referral.find_by(name: "Local")
+        else
+          before_appointment.invitation.referral
+        end
       end
 
       invitation = Invitation.create(
