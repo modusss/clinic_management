@@ -1,7 +1,7 @@
 module ClinicManagement
   class InvitationsController < ApplicationController
     before_action :set_invitation, only: %i[ show edit update destroy ]
-    skip_before_action :redirect_referral_users, only: [:new, :create, :update, :index]
+    skip_before_action :redirect_referral_users, only: [:new, :create, :update, :index, :edit_patient_name, :update_patient_name]
     include GeneralHelper
 
     # GET /invitations
@@ -164,20 +164,6 @@ module ClinicManagement
               locals: { invitation: @invitation, error: "Nome não pode ficar em branco" }
             )
           end
-        end
-      end
-    end
-
-    def cancel_edit_patient_name
-      @invitation = Invitation.find(params[:id])
-      
-      respond_to do |format|
-        format.turbo_stream do
-          render turbo_stream: turbo_stream.replace(
-            "patient-name-#{@invitation.id}", 
-            partial: "patient_name_display", 
-            locals: { invitation: @invitation, count: params[:count] }
-          )
         end
       end
     end
