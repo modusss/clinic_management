@@ -1,7 +1,7 @@
 module ClinicManagement
   class AppointmentsController < ApplicationController
     before_action :set_appointment, only: %i[ show edit update destroy ]
-    skip_before_action :redirect_referral_users, only: [:reschedule, :create, :update]
+    skip_before_action :redirect_referral_users, only: [:reschedule, :create, :update, :update_comments]
 
     # POST /appointments
     def create
