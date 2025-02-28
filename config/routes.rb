@@ -1,6 +1,11 @@
 ClinicManagement::Engine.routes.draw do
   root 'invitations#new'
   resources :invitations do
+    member do
+      get :edit_patient_name
+      patch :update_patient_name
+      get :cancel_edit_patient_name
+    end
     collection do
       get 'new_patient_fitted/:service_id', action: "new_patient_fitted", as: "new_patient_fitted"
       post 'create_patient_fitted', action: "create_patient_fitted", as: "create_patient_fitted"

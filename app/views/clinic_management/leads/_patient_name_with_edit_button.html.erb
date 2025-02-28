@@ -1,0 +1,10 @@
+<div id="patient-name-<%= invitation.id %>" class="flex items-center">
+  <span style="font-size: 20px;"><%= invitation&.patient_name %></span>
+  <%= button_to edit_patient_name_invitation_path(invitation), 
+      method: :get,
+      class: "ml-2 text-gray-500 hover:text-blue-500 border-0 bg-transparent", 
+      remote: true, 
+      form: { data: { turbo_stream: true } } do %>
+    <i class="fas fa-edit text-sm"></i>
+  <% end %>
+</div> 

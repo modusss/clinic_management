@@ -129,6 +129,59 @@ module ClinicManagement
       redirect_to new_invitation_url, notice: "Invitation was successfully destroyed."
     end
 
+    def edit_patient_name
+      @invitation = Invitation.find(params[:id])
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.replace(
+            "patient-name-#{@invitation.id}", 
+            partial: "patient_name_form", 
+            locals: { invitation: @invitation }
+          )
+        end
+      end
+    end
+
+    def update_patient_name
+      @invitation = Invitation.find(params[:id])
+      
+      if @invitation.update(patient_name: params[:patient_name])
+        respond_to do |format|
+          format.turbo_stream do
+            render turbo_stream: turbo_stream.replace(
+              "patient-name-#{@invitation.id}", 
+              partial: "clinic_management/leads/patient_name_with_edit_button", 
+              locals: { invitation: @invitation, count: params[:count] }
+            )
+          end
+        end
+      else
+        respond_to do |format|
+          format.turbo_stream do
+            render turbo_stream: turbo_stream.replace(
+              "patient-name-#{@invitation.id}", 
+              partial: "patient_name_form", 
+              locals: { invitation: @invitation, error: "Nome não pode ficar em branco" }
+            )
+          end
+        end
+      end
+    end
+
+    def cancel_edit_patient_name
+      @invitation = Invitation.find(params[:id])
+      
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.replace(
+            "patient-name-#{@invitation.id}", 
+            partial: "patient_name_display", 
+            locals: { invitation: @invitation, count: params[:count] }
+          )
+        end
+      end
+    end
+
     private
 
     def generate_performance_report
@@ -286,12 +339,10 @@ module ClinicManagement
       end
 
       def patient_link(invite, count = 1)
-        patient_name = invite.patient_name.split(" ").first
-        if count > 1
-          "#{helpers.link_to(patient_name, lead_path(invite.lead), class: 'text-blue-500 hover:text-blue-700', target: '_blank')} (#{count})"
-        else
-          helpers.link_to(patient_name, lead_path(invite.lead), class: "text-blue-500 hover:text-blue-700", target: "_blank")
-        end
+        render_to_string(
+          partial: "patient_name_display",
+          locals: { invitation: invite, count: count }
+        ).html_safe
       end
 
       def last_appointment_link(last_appointment)

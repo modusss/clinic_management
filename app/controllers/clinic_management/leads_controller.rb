@@ -252,7 +252,14 @@ module ClinicManagement
 
         row = [
           {header: "#", content: index + 1},
-          {header: "Paciente", content: invitation&.patient_name, class: "nowrap size_20" },
+          {
+            header: "Paciente", 
+            content: render_to_string(
+              partial: "patient_name_with_edit_button", 
+              locals: { invitation: invitation }
+            ).html_safe, 
+            class: "nowrap size_20"
+          },          
           {header: "Data do atendimento", content: service_content},
           {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: ap, message: "" }), id: "appointment-comments-#{ap.id}"},                   
           {header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500"},
