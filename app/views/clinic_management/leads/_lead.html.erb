@@ -1,71 +1,71 @@
 <div id="<%= dom_id lead %>" class="bg-white shadow overflow-hidden sm:rounded-lg p-6 mb-4">
   <div class="px-4 py-5 sm:px-6">
-    <h3 class="text-lg leading-6 font-medium text-gray-900">
+    <h3 class="text-lg leading-6 font-medium text-gray-900 text-[18px]">
       Informações do Lead
     </h3>
   </div>
   <div class="border-t border-gray-200">
     <dl>
       <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-        <dt class="text-sm font-medium text-gray-500">
+        <dt class="text-sm font-medium text-gray-500 text-[18px]">
           Nome
         </dt>
-        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 text-[18px]">
           <%= lead.name %>
         </dd>
       </div>
       <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-        <dt class="text-sm font-medium text-gray-500">
+        <dt class="text-sm font-medium text-gray-500 text-[18px]">
           Telefone
         </dt>
-        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 text-[18px]">
           <%= lead.phone %>
         </dd>
       </div>
       <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-        <dt class="text-sm font-medium text-gray-500">
+        <dt class="text-sm font-medium text-gray-500 text-[18px]">
           Endereço
         </dt>
-        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 text-[18px]">
           <%= lead.address %>
         </dd>
       </div>
       <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-        <dt class="text-sm font-medium text-gray-500">
+        <dt class="text-sm font-medium text-gray-500 text-[18px]">
           Latitude
         </dt>
-        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 text-[18px]">
           <%= lead.latitude %>
         </dd>
       </div>
       <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-        <dt class="text-sm font-medium text-gray-500">
+        <dt class="text-sm font-medium text-gray-500 text-[18px]">
           Longitude
         </dt>
-        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 text-[18px]">
           <%= lead.longitude %>
         </dd>
       </div>
       <% if lead.latitude.present? && lead.longitude.present? %>
       <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-        <dt class="text-sm font-medium text-gray-500">
+        <dt class="text-sm font-medium text-gray-500 text-[18px]">
           Localização
         </dt>
-        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-          <a target='_blank' href='https://www.google.com/maps/search/?api=1&query=<%= lead.latitude %>,<%= lead.longitude %>'>Ver localização</a>
+        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 text-[18px]">
+          <a target='_blank' href='https://www.google.com/maps/search/?api=1&query=<%= lead.latitude %>,<%= lead.longitude %>' class="text-[18px]">Ver localização</a>
         </dd>
       </div>
       <% end %>
       <% unless referral?(current_user) %>
       <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-        <dt class="text-sm font-medium text-gray-500">
+        <dt class="text-sm font-medium text-gray-500 text-[18px]">
           Cliente convertido?
         </dt>
-        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 text-[18px]">
           <% if lead.leads_conversion.present? %>
-            <%= link_to "Página do cliente", main_app.customer_orders_path(lead.customer), class: "text-blue-500 hover:text-blue-800 underline" %>
+            <%= link_to "Página do cliente", main_app.customer_orders_path(lead.customer), class: "text-blue-500 hover:text-blue-800 underline text-[18px]" %>
           <% else %>
-            <%= link_to "Converter para cliente", main_app.new_conversion_path(lead_id: lead.id), class: "text-red-500 hover:text-red-800 underline" %>
+            <%= link_to "Converter para cliente", main_app.new_conversion_path(lead_id: lead.id), class: "text-red-500 hover:text-red-800 underline text-[18px]" %>
           <% end %>
         </dd>
       </div>
@@ -74,7 +74,7 @@
   </div>
 </div>
 <div class="my-8 mx-4">
-  <h2 class="text-xl leading-6 font-medium text-gray-900 mb-4">
+  <h2 class="text-xl leading-6 font-medium text-gray-900 mb-4 text-[18px]">
     <b>Dados dos últimos atendimentos</b>
   </h2>
   <div class="bg-white shadow overflow-hidden sm:rounded-lg p-6">
