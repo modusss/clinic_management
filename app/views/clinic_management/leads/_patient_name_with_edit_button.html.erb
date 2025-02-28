@@ -1,5 +1,5 @@
 <div id="patient-name-<%= invitation.id %>" class="flex items-center">
-  <span style="font-size: 20px;"><%= invitation&.patient_name %></span>
+  <span style="font-size: 20px;"><%= link_to invitation&.patient_name, lead_path(invitation.lead), class: "text-blue-500 hover:text-blue-700 nowrap size_20" %></span>
   <%= button_to edit_patient_name_invitation_path(invitation), 
       method: :get,
       class: "ml-2 text-gray-500 hover:text-blue-500 border-0 bg-transparent", 

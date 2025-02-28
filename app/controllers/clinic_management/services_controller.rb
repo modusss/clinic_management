@@ -153,7 +153,14 @@ module ClinicManagement
         if (invitation.present?) && (lead.present?)
           [
             { header: "#", content: index },
-            { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700 nowrap") },
+            {
+              header: "Paciente", 
+              content: render_to_string(
+                partial: "clinic_management/leads/patient_name_with_edit_button", 
+                locals: { invitation: ap.invitation }
+              ).html_safe, 
+              class: "nowrap size_20"
+            },   
             { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
             { header: "Observações", content: ap.comments },
             { header: "Responsável", content: ((lead.name == invitation&.patient_name) ? "" : lead.name) },
@@ -199,7 +206,14 @@ module ClinicManagement
         if (invitation.present?) && (lead.present?)
           [
             { header: "#", content: index },
-            { header: "Paciente", content: helpers.link_to(invitation.patient_name, lead_path(ap.lead), class: "text-blue-500 hover:text-blue-700 nowrap size_20") },
+            {
+              header: "Paciente", 
+              content: render_to_string(
+                partial: "clinic_management/leads/patient_name_with_edit_button", 
+                locals: { invitation: ap.invitation }
+              ).html_safe, 
+              class: "nowrap size_20"
+            },   
             { header: "Status", content: helpers.format_status_and_attendance(ap), id: "status-#{ap.id}", class: helpers.status_class(ap) },          
             { header: "Confirmado", content: render_to_string(
               partial: 'confirmation_toggle',
