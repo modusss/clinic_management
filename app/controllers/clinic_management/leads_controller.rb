@@ -270,7 +270,7 @@ module ClinicManagement
         ]
 
         unless helpers.referral?(current_user)
-          row.insert(5, {header: "Receita", content: prescription_link(ap)})
+          row.insert(5, {header: "Receita", content: prescription_link(ap), class: "nowrap"})
           row << {header: "Convidado por", content: invitation&.referral&.name}
           row << {header: "Mensagem", content: generate_message_content(@lead, ap), id: "whatsapp-link-#{@lead.id}"}
         end
