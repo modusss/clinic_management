@@ -100,7 +100,8 @@ module ClinicManagement
 
       def available_services(exception_service)
         exception_service_id = exception_service.id # Get the ID of the exception_service object
-        ClinicManagement::Service.where(canceled: [nil, false]).where("date >= ? AND id != ?", Date.current, exception_service_id)
+        today = Time.zone.today # Use Time.zone.today instead of Date.current
+        ClinicManagement::Service.where(canceled: [nil, false]).where("date >= ? AND id != ?", today, exception_service_id)
       end
 
     def is_basic_above?
