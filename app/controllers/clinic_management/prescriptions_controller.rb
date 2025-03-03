@@ -2,6 +2,7 @@ module ClinicManagement
   class PrescriptionsController < ApplicationController
     before_action :set_appointment, except: [:index_today, :generate_order_pdf, :search_index_today]
     skip_before_action :redirect_doctor_users, only: [:index_today, :show_today, :new_today, :edit_today, :update, :create, :search_index_today]
+    skip_before_action :authenticate_user!, only: [:pdf]
     include GeneralHelper, PrescriptionsHelper
 
     def index
@@ -142,10 +143,9 @@ module ClinicManagement
 
     def send_whatsapp
       @prescription = @appointment.prescription
-      # pdf_url = pdf_appointment_prescription_url(@appointment, format: :pdf, host: Rails.application.config.action_mailer.default_url_options[:host])
-      pdf_url = "https://www.lipepay.com/clinic_management/appointments/44400/prescriptions/33831/pdf.pdf"
+      pdf_url = pdf_appointment_prescription_url(@appointment, format: :pdf, host: Rails.application.config.action_mailer.default_url_options[:host])
       phone = @appointment.lead.phone
-      response = helpers.send_api_zap_pdf(pdf_url, "", phone, false)
+      response = helpers.send_api_zap_pdf(pdf_url, "Dados do teste de vista optométrico", phone, false)
 
       respond_to do |format|
         format.js do
