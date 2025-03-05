@@ -146,7 +146,7 @@ module ClinicManagement
         end
 
         def add_phone_mask(phone)
-          phone&.gsub(/[^0-9]/, '')&.gsub(/(\d{2})(\d{5})(\d{4})/, '\1 \2-\3')
+          phone&.gsub(/[^0-9]/, '')&.gsub(/(\d{2})(\d{5})(\d{4})/, '(\1) \2-\3')
         end
 
         def referral?(user)
