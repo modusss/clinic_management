@@ -23,7 +23,20 @@ module ClinicManagement
     private
 
     def self.search_by_name_or_phone(query)
-      where("name ILIKE :query OR phone ILIKE :query", query: "%#{query}%")
+      if query.present?
+        normalized_query = query.gsub(/[^0-9A-Za-z]/, '')
+        normalized_phone = query.gsub(/\D/, '')
+        
+        # Remove o prefixo +55 se existir
+        normalized_phone = normalized_phone.sub(/^55/, '') if normalized_phone.start_with?('55')
+        
+        where("name ILIKE :query OR phone ILIKE :phone_query OR REGEXP_REPLACE(phone, '[^0-9]', '', 'g') ILIKE :normalized_phone", 
+              query: "%#{normalized_query}%", 
+              phone_query: "%#{query}%",
+              normalized_phone: "%#{normalized_phone}%")
+      else
+        all
+      end
     end
 
     def format_latitude
