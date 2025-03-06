@@ -24,16 +24,23 @@ module ClinicManagement
 
     def self.search_by_name_or_phone(query)
       if query.present?
-        normalized_query = query.gsub(/[^0-9A-Za-z]/, '')
-        normalized_phone = query.gsub(/\D/, '')
+        # Check if the query contains any digits
+        contains_digits = query.match?(/\d/)
         
-        # Remove o prefixo +55 se existir
-        normalized_phone = normalized_phone.sub(/^55/, '') if normalized_phone.start_with?('55')
-        
-        where("name ILIKE :query OR phone ILIKE :phone_query OR REGEXP_REPLACE(phone, '[^0-9]', '', 'g') ILIKE :normalized_phone", 
-              query: "%#{normalized_query}%", 
-              phone_query: "%#{query}%",
-              normalized_phone: "%#{normalized_phone}%")
+        if contains_digits
+          # If query contains digits, prioritize phone search
+          normalized_phone = query.gsub(/\D/, '')
+          
+          # Remove o prefixo +55 se existir
+          normalized_phone = normalized_phone.sub(/^55/, '') if normalized_phone.start_with?('55')
+          
+          where("phone ILIKE :phone_query OR REGEXP_REPLACE(phone, '[^0-9]', '', 'g') ILIKE :normalized_phone", 
+                phone_query: "%#{query}%",
+                normalized_phone: "%#{normalized_phone}%")
+        else
+          # If query doesn't contain digits, search by name only
+          where("name ILIKE :query", query: "%#{query}%")
+        end
       else
         all
       end
