@@ -1,5 +1,7 @@
- <%= data_table(rows, 2) %>
+<%= data_table(rows, 2) %>
 
-  <% if leads.count > 10 %>
-    <%= paginate leads %>
-  <% end %>
+<% if leads.count > 10 %>
+  <%= paginate leads %>
+<% end %>
+
+<%= turbo_frame_tag "message_sent_notification" %>

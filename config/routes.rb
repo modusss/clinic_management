@@ -58,6 +58,9 @@ ClinicManagement::Engine.routes.draw do
   resources :regions
   resources :service_types
   resources :leads do
+    member do
+      post :record_message_sent
+    end
     collection do
       get 'absent'
       get 'attended'

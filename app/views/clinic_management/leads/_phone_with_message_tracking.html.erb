@@ -1,0 +1,25 @@
+<div id="phone-container-<%= lead.id %>" 
+     data-controller="message-tracking"
+     data-message-tracking-lead-id-value="<%= lead.id %>"
+     data-message-tracking-appointment-id-value="<%= appointment.id %>">
+  <div class="flex items-center">
+    <%= link_to add_phone_mask(lead.phone), 
+                whatsapp_link(lead.phone, ""), 
+                target: '_blank',
+                data: { 
+                  action: "click->message-tracking#recordMessageSent"
+                },
+                class: "whatsapp-link" %>
+    
+    <a style="margin-left: 10px;" href="tel:<%= lead.phone %>">
+      <i class="fas fa-phone"></i>
+    </a>
+  </div>
+  
+  <% if appointment.last_message_sent_at.present? %>
+    <div class="text-xs text-gray-500 mt-1">
+      Última mensagem: <%= time_ago_in_words(appointment.last_message_sent_at) %> atrás 
+      por <%= appointment.last_message_sent_by %>
+    </div>
+  <% end %>
+</div> 

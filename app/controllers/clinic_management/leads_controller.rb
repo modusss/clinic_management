@@ -200,6 +200,31 @@ module ClinicManagement
       end
     end
 
+    def record_message_sent
+      @lead = Lead.find(params[:id])
+      @appointment = Appointment.find(params[:appointment_id])
+      # Update the appointment with the message tracking info
+      @appointment.update(
+        last_message_sent_at: Time.current,
+        last_message_sent_by: current_user.name
+      )
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: [
+            turbo_stream.replace(
+              "phone-container-#{@lead.id}", 
+              partial: "phone_with_message_tracking", 
+              locals: { lead: @lead, appointment: @appointment }
+            ),
+            turbo_stream.replace(
+              "message_sent_notification",
+              partial: "message_sent_notification",
+              locals: { lead: @lead }
+            )
+          ]
+        end
+      end
+    end
 
     
     private
@@ -306,7 +331,14 @@ module ClinicManagement
               class: "nowrap size_20"
             },   
             {header: "Responsável", content: responsible_content(last_invitation), class: "nowrap"},
-            {header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, "")}'>#{helpers.add_phone_mask(lead.phone)}</a> <a style='margin-left: 10px;' href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700 nowrap" },
+            {
+              header: "Telefone", 
+              content: render_to_string(
+                partial: "clinic_management/leads/phone_with_message_tracking", 
+                locals: { lead: lead, appointment: last_appointment }
+              ).html_safe, 
+              class: "text-blue-500 hover:text-blue-700 nowrap"
+            },
             {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: last_appointment, message: "" }), id: "appointment-comments-#{last_appointment.id}"},
             {header: "Vezes convidado", content: lead.invitations.count},
             {header: "Último atendimento", content: "#{invite_day(last_appointment)}"},
@@ -324,7 +356,14 @@ module ClinicManagement
               class: "nowrap size_20"
             },   
             {header: "Responsável", content: responsible_content(last_invitation), class: "nowrap"},
-            {header: "Telefone", content: "<a target='_blank' href='#{helpers.whatsapp_link(lead.phone, "")}'>#{helpers.add_phone_mask(lead.phone)}</a> <a style='margin-left: 10px;' href='tel:#{lead.phone}'><i class='fas fa-phone'></i></a>".html_safe, class: "text-blue-500 hover:text-blue-700 nowrap"},
+            {
+              header: "Telefone", 
+              content: render_to_string(
+                partial: "clinic_management/leads/phone_with_message_tracking", 
+                locals: { lead: lead, appointment: last_appointment }
+              ).html_safe, 
+              class: "text-blue-500 hover:text-blue-700 nowrap"
+            },
             {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: last_appointment, message: "" }), id: "appointment-comments-#{last_appointment.id}"},
             {header: "Último indicador", content: last_referral(last_invitation)},
             {header: "Qtd. de convites", content: lead.invitations.count},
