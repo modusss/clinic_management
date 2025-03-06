@@ -34,9 +34,29 @@ module ClinicManagement
           # Remove o prefixo +55 se existir
           normalized_phone = normalized_phone.sub(/^55/, '') if normalized_phone.start_with?('55')
           
-          where("phone ILIKE :phone_query OR REGEXP_REPLACE(phone, '[^0-9]', '', 'g') ILIKE :normalized_phone", 
-                phone_query: "%#{query}%",
-                normalized_phone: "%#{normalized_phone}%")
+          # Create two versions of the phone number - with and without the 9 prefix
+          # First, identify if there's likely a DDD code (first 2 digits)
+          if normalized_phone.length >= 10
+            # Assume first 2 digits are DDD
+            ddd = normalized_phone[0..1]
+            rest_of_number = normalized_phone[2..-1]
+            
+            # Create version with 9 prefix (if not already there)
+            with_9 = rest_of_number.start_with?('9') ? rest_of_number : "9#{rest_of_number}"
+            
+            # Create version without 9 prefix (if it's there)
+            without_9 = rest_of_number.start_with?('9') ? rest_of_number[1..-1] : rest_of_number
+            
+            # Search for both versions
+            where("REGEXP_REPLACE(phone, '[^0-9]', '', 'g') LIKE :with_9_pattern OR REGEXP_REPLACE(phone, '[^0-9]', '', 'g') LIKE :without_9_pattern", 
+                  with_9_pattern: "%#{ddd}#{with_9}%", 
+                  without_9_pattern: "%#{ddd}#{without_9}%")
+          else
+            # If the number is too short to have DDD, just do a simple search
+            where("phone ILIKE :phone_query OR REGEXP_REPLACE(phone, '[^0-9]', '', 'g') ILIKE :normalized_phone", 
+                  phone_query: "%#{query}%",
+                  normalized_phone: "%#{normalized_phone}%")
+          end
         else
           # If query doesn't contain digits, search by name only
           where("name ILIKE :query", query: "%#{query}%")
