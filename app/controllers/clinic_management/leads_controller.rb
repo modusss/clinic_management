@@ -223,21 +223,11 @@ module ClinicManagement
         locals: { lead: @lead, appointment: @appointment }
       )
       
-      notification_html = render_to_string(
-        partial: "clinic_management/leads/message_sent_notification", 
-        locals: { lead: @lead }
-      )
-      
       # Construir a resposta Turbo Stream manualmente
       turbo_stream_response = <<~HTML
         <turbo-stream action="replace" target="phone-container-#{@lead.id}">
           <template>
             #{phone_html}
-          </template>
-        </turbo-stream>
-        <turbo-stream action="replace" target="message_sent_notification">
-          <template>
-            #{notification_html}
           </template>
         </turbo-stream>
       HTML
