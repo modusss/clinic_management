@@ -203,27 +203,48 @@ module ClinicManagement
     def record_message_sent
       @lead = Lead.find(params[:id])
       @appointment = Appointment.find(params[:appointment_id])
+      
+      # Log para depuração
+      Rails.logger.info "Processing record_message_sent for lead #{@lead.id}"
+      Rails.logger.info "Accept header: #{request.headers['Accept']}"
+      
       # Update the appointment with the message tracking info
       @appointment.update(
         last_message_sent_at: Time.current,
         last_message_sent_by: current_user.name
       )
-      respond_to do |format|
-        format.turbo_stream do
-          render turbo_stream: [
-            turbo_stream.replace(
-              "phone-container-#{@lead.id}", 
-              partial: "phone_with_message_tracking", 
-              locals: { lead: @lead, appointment: @appointment }
-            ),
-            turbo_stream.replace(
-              "message_sent_notification",
-              partial: "message_sent_notification",
-              locals: { lead: @lead }
-            )
-          ]
-        end
-      end
+      
+      # Renderizar a resposta Turbo Stream
+      response.headers["Content-Type"] = "text/vnd.turbo-stream.html"
+      
+      # Renderizar os templates Turbo Stream
+      phone_html = render_to_string(
+        partial: "clinic_management/leads/phone_with_message_tracking", 
+        locals: { lead: @lead, appointment: @appointment }
+      )
+      
+      notification_html = render_to_string(
+        partial: "clinic_management/leads/message_sent_notification", 
+        locals: { lead: @lead }
+      )
+      
+      # Construir a resposta Turbo Stream manualmente
+      turbo_stream_response = <<~HTML
+        <turbo-stream action="replace" target="phone-container-#{@lead.id}">
+          <template>
+            #{phone_html}
+          </template>
+        </turbo-stream>
+        <turbo-stream action="replace" target="message_sent_notification">
+          <template>
+            #{notification_html}
+          </template>
+        </turbo-stream>
+      HTML
+      
+      Rails.logger.info "Sending Turbo Stream response: #{turbo_stream_response.inspect}"
+      
+      render html: turbo_stream_response.html_safe
     end
 
     
