@@ -15,6 +15,109 @@
               </span>
             </div>
           <% end %>
+          
+          <!-- Shortcut para agendamento -->
+          <div class="mt-2 pt-2 border-t border-gray-100">
+            <div class="text-gray-600 text-xs font-medium mb-1">Agendar para:</div>
+            
+            <% 
+              # Verificar o último appointment do lead
+              last_appointment = lead.appointments.includes(:service, invitation: :referral).order('clinic_management_services.date DESC').first
+              
+              # Determinar o referral_id padrão para pré-seleção
+              default_referral_id = nil
+              local_referral = Referral.find_by(name: 'Local')
+              
+              if last_appointment && 
+                 last_appointment.service && 
+                 last_appointment.service.date > 1.year.ago &&
+                 last_appointment.invitation && 
+                 last_appointment.invitation.referral
+                # Se o último appointment foi há menos de um ano, use o referral dele
+                default_referral_id = last_appointment.invitation.referral_id
+              else
+                # Caso contrário, use 'Local'
+                default_referral_id = local_referral&.id
+              end
+            %>
+            
+            <% if last_appointment.present? %>
+              <%= form_with url: reschedule_appointment_path(last_appointment), 
+                           method: :post, 
+                           local: true, 
+                           html: { class: "flex flex-col space-y-2" } do |f| %>
+                
+                <div class="w-full">
+                  <%= f.select :service_id, 
+                             options_from_collection_for_select(
+                               ClinicManagement::Service.where("date >= ?", Date.today)
+                                                      .where(canceled: [false, nil])
+                                                      .order(date: :asc)
+                                                      .limit(10), 
+                               :id, 
+                               lambda { |service| service.date.strftime('%d/%m/%Y') }
+                             ), 
+                             { include_blank: "Selecione uma data" }, 
+                             { class: "text-sm w-full py-1 px-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" } %>
+                </div>
+                
+                <% if defined?(current_user) && respond_to?(:referral?) && referral?(current_user) %>
+                  <%= f.hidden_field :referral_id, value: user_referral.id %>
+                <% else %>
+                  <div class="w-full">
+                    <%= f.label :referral_id, "Indicação:", class: "block text-gray-600 text-xs font-medium mb-1" %>
+                    <%= f.collection_select :referral_id, 
+                                          Referral.all, 
+                                          :id, 
+                                          :name, 
+                                          { selected: default_referral_id }, 
+                                          { class: "text-sm w-full py-1 px-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" } %>
+                  </div>
+                <% end %>
+                
+                <%= f.submit "Remarcar", class: "w-full bg-blue-500 hover:bg-blue-600 text-white text-sm py-1 px-3 rounded" %>
+              <% end %>
+            <% else %>
+              <%= form_with model: ClinicManagement::Appointment.new, 
+                           url: clinic_management.appointments_path, 
+                           method: :post, 
+                           local: true, 
+                           html: { class: "flex flex-col space-y-2" } do |f| %>
+                
+                <%= f.hidden_field :lead_id, value: lead.id %>
+                
+                <div class="w-full">
+                  <%= f.select :service_id, 
+                             options_from_collection_for_select(
+                               ClinicManagement::Service.where("date >= ?", Date.today)
+                                                      .where(canceled: [false, nil])
+                                                      .order(date: :asc)
+                                                      .limit(10), 
+                               :id, 
+                               lambda { |service| service.date.strftime('%d/%m/%Y') }
+                             ), 
+                             { include_blank: "Selecione uma data" }, 
+                             { class: "text-sm w-full py-1 px-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" } %>
+                </div>
+                
+                <% if defined?(current_user) && respond_to?(:referral?) && referral?(current_user) %>
+                  <%= f.hidden_field :referral_id, value: user_referral.id %>
+                <% else %>
+                  <div class="w-full">
+                    <%= f.label :referral_id, "Indicação:", class: "block text-gray-600 text-xs font-medium mb-1" %>
+                    <%= f.collection_select :referral_id, 
+                                          Referral.all, 
+                                          :id, 
+                                          :name, 
+                                          { selected: default_referral_id }, 
+                                          { class: "text-sm w-full py-1 px-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" } %>
+                  </div>
+                <% end %>
+                
+                <%= f.submit "Agendar", class: "w-full bg-blue-500 hover:bg-blue-600 text-white text-sm py-1 px-3 rounded" %>
+              <% end %>
+            <% end %>
+          </div>
         </li>
       <% end %>
     </ul>
