@@ -59,7 +59,7 @@ module ClinicManagement
           end
         else
           # If query doesn't contain digits, search by name only
-          where("name ILIKE :query", query: "%#{query}%")
+          where("unaccent(name) ILIKE unaccent(?) ", "%#{query}%") 
         end
       else
         all
