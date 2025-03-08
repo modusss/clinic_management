@@ -69,12 +69,16 @@ module ClinicManagement
       params = request.params[:q]
       @leads = params.blank? ? [] : Lead.search_by_name_or_phone(params)   
       @leads = @leads.limit(10) unless @leads.blank?
+      
+      # Adicionar available_services para uso no partial
+      @available_services = ClinicManagement::Service.where("date >= ?", Date.current).order(date: :asc)
+      
       respond_to do |format|
         format.turbo_stream do
             render turbo_stream: 
                   turbo_stream.update("lead-results", 
                                       partial: "lead_results", 
-                                      locals: { leads: @leads })
+                                      locals: { leads: @leads, available_services: @available_services })
         end
       end
     end

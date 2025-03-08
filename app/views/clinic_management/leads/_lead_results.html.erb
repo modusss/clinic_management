@@ -1,5 +1,5 @@
 <% if leads.present? %>
-  <div class="top-full mt-2 w-80 bg-white rounded-lg shadow-lg p-4 z-10">
+  <div class="top-full mt-2 w-auto min-w-[400px] bg-white rounded-lg shadow-lg p-4 z-10">
     <h3 class="text-gray-700 font-semibold text-lg mb-3 border-b pb-2">Resultados da Busca</h3>
     <ul class="space-y-3">
       <% leads.each do |lead| %>
@@ -48,17 +48,15 @@
                            html: { class: "flex flex-col space-y-2" } do |f| %>
                 
                 <div class="w-full">
+                  <%= f.label :service_id, "Escolha o dia:", class: "block text-gray-700 text-sm font-bold mb-1" %>
                   <%= f.select :service_id, 
                              options_from_collection_for_select(
-                               ClinicManagement::Service.where("date >= ?", Date.today)
-                                                      .where(canceled: [false, nil])
-                                                      .order(date: :asc)
-                                                      .limit(10), 
+                               available_services, 
                                :id, 
-                               lambda { |service| service.date.strftime('%d/%m/%Y') }
+                               -> (service) { display_service_name(service) }
                              ), 
-                             { include_blank: "Selecione uma data" }, 
-                             { class: "text-sm w-full py-1 px-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" } %>
+                             { include_blank: true }, 
+                             { class: "w-full shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" } %>
                 </div>
                 
                 <% if defined?(current_user) && respond_to?(:referral?) && referral?(current_user) %>
@@ -87,17 +85,15 @@
                 <%= f.hidden_field :lead_id, value: lead.id %>
                 
                 <div class="w-full">
+                  <%= f.label :service_id, "Escolha o dia:", class: "block text-gray-700 text-sm font-bold mb-1" %>
                   <%= f.select :service_id, 
                              options_from_collection_for_select(
-                               ClinicManagement::Service.where("date >= ?", Date.today)
-                                                      .where(canceled: [false, nil])
-                                                      .order(date: :asc)
-                                                      .limit(10), 
+                               available_services, 
                                :id, 
-                               lambda { |service| service.date.strftime('%d/%m/%Y') }
+                               -> (service) { display_service_name(service) }
                              ), 
-                             { include_blank: "Selecione uma data" }, 
-                             { class: "text-sm w-full py-1 px-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" } %>
+                             { include_blank: true }, 
+                             { class: "w-full shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" } %>
                 </div>
                 
                 <% if defined?(current_user) && respond_to?(:referral?) && referral?(current_user) %>
