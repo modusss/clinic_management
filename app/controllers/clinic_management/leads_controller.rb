@@ -68,7 +68,7 @@ module ClinicManagement
     def search
       params = request.params[:q]
       @leads = params.blank? ? [] : Lead.search_by_name_or_phone(params)   
-      @leads = @leads.limit(10) unless @leads.blank?
+      @leads = @leads.limit(30) unless @leads.blank?
       
       # Adicionar available_services para uso no partial
       @available_services = ClinicManagement::Service.where("date >= ?", Date.current).order(date: :asc)
