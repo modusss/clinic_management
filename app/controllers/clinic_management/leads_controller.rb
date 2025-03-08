@@ -111,6 +111,11 @@ module ClinicManagement
     end
 
     def absent
+      
+      # Se chegamos aqui, ou não temos estado salvo ou já estamos com parâmetros
+      # Salvar o estado atual na sessão (URL completa com parâmetros)
+      session[:absent_leads_state] = request.original_url if request.get?
+      
       # 1) Carregar a coleção base (com base se é referral ou não)
       if helpers.referral?(current_user)
         @all_leads = fetch_leads_by_appointment_condition(
