@@ -21,24 +21,9 @@
             <div class="text-gray-600 text-xs font-medium mb-1">Agendar para:</div>
             
             <% 
-              # Verificar o último appointment do lead
-              last_appointment = lead.appointments.includes(:service, invitation: :referral).order('clinic_management_services.date DESC').first
-              
-              # Determinar o referral_id padrão para pré-seleção
-              default_referral_id = nil
-              local_referral = Referral.find_by(name: 'Local')
-              
-              if last_appointment && 
-                 last_appointment.service && 
-                 last_appointment.service.date > 1.year.ago &&
-                 last_appointment.invitation && 
-                 last_appointment.invitation.referral
-                # Se o último appointment foi há menos de um ano, use o referral dele
-                default_referral_id = last_appointment.invitation.referral_id
-              else
-                # Caso contrário, use 'Local'
-                default_referral_id = local_referral&.id
-              end
+              # Usando os dados pré-carregados do controller
+              last_appointment = lead.last_appointment
+              default_referral_id = lead.default_referral_id
             %>
             
             <% if last_appointment.present? %>

@@ -68,10 +68,46 @@ module ClinicManagement
     def search
       params = request.params[:q]
       @leads = params.blank? ? [] : Lead.search_by_name_or_phone(params)   
-      @leads = @leads.limit(30) unless @leads.blank?
+      @leads = @leads.limit(10) unless @leads.blank?
       
       # Adicionar available_services para uso no partial
       @available_services = ClinicManagement::Service.where("date >= ?", Date.current).order(date: :asc)
+      
+      # Pré-carregar os dados necessários para cada lead
+      unless @leads.blank?
+        local_referral = Referral.find_by(name: 'Local')
+        
+        @leads = @leads.map do |lead|
+          # Buscar o último appointment do lead
+          last_appointment = lead.appointments.includes(:service, invitation: :referral).order('clinic_management_services.date DESC').first
+          
+          # Determinar o referral_id padrão para pré-seleção
+          default_referral_id = nil
+          
+          if last_appointment && 
+             last_appointment.service && 
+             last_appointment.service.date > 1.year.ago &&
+             last_appointment.invitation && 
+             last_appointment.invitation.referral
+            # Se o último appointment foi há menos de um ano, use o referral dele
+            default_referral_id = last_appointment.invitation.referral_id
+          else
+            # Caso contrário, use 'Local'
+            default_referral_id = local_referral&.id
+          end
+          
+          # Adicionar os atributos ao lead
+          lead.instance_variable_set(:@last_appointment, last_appointment)
+          lead.instance_variable_set(:@default_referral_id, default_referral_id)
+          
+          # Definir métodos de acesso para esses atributos
+          lead.singleton_class.class_eval do
+            attr_reader :last_appointment, :default_referral_id
+          end
+          
+          lead
+        end
+      end
       
       respond_to do |format|
         format.turbo_stream do
