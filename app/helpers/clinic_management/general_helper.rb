@@ -211,12 +211,52 @@ module ClinicManagement
         end
 
         def invite_day(appointment)
-            service = appointment&.service
-            if service.present?
-              show_week_day(service.weekday) + " " + service.date.strftime("%d/%m/%Y") + ", " + service.start_time.strftime("%H:%M") + "h às " + service.end_time.strftime("%H:%M") + "h"
-            else
-              ""
-            end
+          service = appointment&.service
+          return "" unless service.present?
+          
+          date_info = "#{show_week_day(service.weekday)}, #{service.date.strftime('%d/%m/%Y')}"
+          time_info = "#{service.start_time.strftime('%H:%M')}h às #{service.end_time.strftime('%H:%M')}h"
+          
+          # Create a card with better organized elements
+          html = "<div class=\"appointment-card\">
+            <div class=\"appointment-date\">
+              <i class=\"far fa-calendar-alt\"></i>
+              <span>#{date_info}</span>
+            </div>
+            <div class=\"appointment-time\">
+              <i class=\"far fa-clock\"></i>
+              <span>#{time_info}</span>
+            </div>
+          </div>"
+          
+          # Add inline styles for the card
+          style = "<style>
+            .appointment-card {
+              background-color: #f8f9ff;
+              border-radius: 8px;
+              padding: 12px 16px;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+              max-width: 300px;
+              margin: 10px 0;
+              border-left: 4px solid #4285f4;
+            }
+            .appointment-date, .appointment-time {
+              display: flex;
+              align-items: center;
+              color: #4285f4;
+              margin: 6px 0;
+            }
+            .appointment-date i, .appointment-time i {
+              margin-right: 10px;
+              font-size: 18px;
+            }
+            .appointment-date span, .appointment-time span {
+              font-size: 16px;
+              font-weight: 500;
+            }
+          </style>"
+          
+          (style + html).html_safe
         end
 
 

@@ -341,7 +341,7 @@ module ClinicManagement
             ).html_safe, 
             class: "nowrap size_20"
           },          
-          {header: "Data do atendimento", content: service_content},
+          {header: "Data do atendimento", content: service_content, class: "nowrap"},
           {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: ap, message: "" }), id: "appointment-comments-#{ap.id}"},                   
           {header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500"},
           {header: "Comparecimento", content: (ap.attendance == true ? "Sim" : "Não"), class: helpers.attendance_class(ap)},
@@ -397,7 +397,7 @@ module ClinicManagement
             },
             {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: last_appointment, message: "" }), id: "appointment-comments-#{last_appointment.id}"},
             {header: "Vezes convidado", content: lead.invitations.count},
-            {header: "Último atendimento", content: "#{invite_day(last_appointment)}"},
+            {header: "Último atendimento", content: invite_day(last_appointment).html_safe, class: "nowrap"},
             {header: "Remarcação", content: reschedule_form(new_appointment, last_appointment), class: "text-orange-500" },
           ]
         else
@@ -424,7 +424,7 @@ module ClinicManagement
             {header: "Último indicador", content: last_referral(last_invitation)},
             {header: "Qtd. de convites", content: lead.invitations.count},
             {header: "Qtd. de atendimentos", content: lead.appointments.count},
-            {header: "Último atendimento", content: last_appointment_link(last_appointment)},
+            {header: "Último atendimento", content: invite_day(last_appointment).html_safe, class: "nowrap"},
             {header: "Remarcação", content: reschedule_form(new_appointment, last_appointment), class: "text-orange-500" }
           ]
         end
@@ -451,7 +451,7 @@ module ClinicManagement
     end
 
     def last_appointment_link(last_appointment)
-      last_appointment.present? ? helpers.link_to("#{invite_day(last_appointment)}", service_path(last_appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank") : ""
+      last_appointment.present? ? helpers.link_to("#{invite_day(last_appointment).html_safe}", service_path(last_appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank").html_safe : ""
     end
     
     
