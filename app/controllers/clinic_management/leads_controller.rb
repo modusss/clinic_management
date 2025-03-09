@@ -321,16 +321,6 @@ module ClinicManagement
         is_current_referral_invitation = current_referral && invitation.referral_id == current_referral.id
         new_appointment = ClinicManagement::Appointment.new
 
-        service_content = if helpers.referral?(current_user)
-                            if is_current_referral_invitation
-                              helpers.link_to(invite_day(ap), clinic_management.show_by_referral_services_path(referral_id: current_referral.id, id: ap.service.id), class: "text-blue-500 hover:text-blue-700")
-                            else
-                              invite_day(ap)
-                            end
-                          else
-                            helpers.link_to(invite_day(ap), clinic_management.service_path(ap.service), class: "text-blue-500 hover:text-blue-700")
-                          end
-
         row = [
           {header: "#", content: index + 1},
           {
@@ -341,7 +331,7 @@ module ClinicManagement
             ).html_safe, 
             class: "nowrap size_20"
           },          
-          {header: "Data do atendimento", content: service_content, class: "nowrap"},
+          {header: "Data do atendimento", content: service_content_link(ap), class: "nowrap"},
           {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: ap, message: "" }), id: "appointment-comments-#{ap.id}"},                   
           {header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500"},
           {header: "Comparecimento", content: (ap.attendance == true ? "Sim" : "Não"), class: helpers.attendance_class(ap)},
@@ -357,6 +347,18 @@ module ClinicManagement
         end
 
         row
+      end
+    end
+
+    def service_content_link(ap)
+      service_content = if helpers.referral?(current_user)
+        if is_current_referral_invitation
+          helpers.link_to(invite_day(ap), clinic_management.show_by_referral_services_path(referral_id: current_referral.id, id: ap.service.id), class: "text-blue-500 hover:text-blue-700")
+        else
+          invite_day(ap)
+        end
+      else
+        helpers.link_to(invite_day(ap), clinic_management.service_path(ap.service), class: "text-blue-500 hover:text-blue-700")
       end
     end
 
@@ -397,7 +399,7 @@ module ClinicManagement
             },
             {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: last_appointment, message: "" }), id: "appointment-comments-#{last_appointment.id}"},
             {header: "Vezes convidado", content: lead.invitations.count},
-            {header: "Último atendimento", content: invite_day(last_appointment).html_safe, class: "nowrap"},
+            {header: "Último atendimento", content: service_content_link(last_appointment), class: "nowrap"},
             {header: "Remarcação", content: reschedule_form(new_appointment, last_appointment), class: "text-orange-500" },
           ]
         else
@@ -424,7 +426,7 @@ module ClinicManagement
             {header: "Último indicador", content: last_referral(last_invitation)},
             {header: "Qtd. de convites", content: lead.invitations.count},
             {header: "Qtd. de atendimentos", content: lead.appointments.count},
-            {header: "Último atendimento", content: invite_day(last_appointment).html_safe, class: "nowrap"},
+            {header: "Último atendimento", content: service_content_link(last_appointment), class: "nowrap"},
             {header: "Remarcação", content: reschedule_form(new_appointment, last_appointment), class: "text-orange-500" }
           ]
         end
