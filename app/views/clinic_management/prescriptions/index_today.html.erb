@@ -1,11 +1,35 @@
 
 <% unless doctor?(current_user)%>
 
-      <p>Ordem da fila para impressão:</p>
-      <% 40.times do |i| %>
-        <span style="padding: 5px"><%= link_to "#{i+1}", generate_order_pdf_path(order_number: i+1, format: :pdf), class: "text-blue-500 hover:text-blue-700", target: "_blank" %></span>
-      <% end %>
-      <br>
+      <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3">
+          <h3 class="text-lg font-medium text-gray-800">Ordem da fila para impressão</h3>
+          
+          <div class="mt-2 sm:mt-0">
+            <button id="toggleOrderNumbers" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors duration-200">
+              Mostrar/Ocultar números
+            </button>
+            
+            <select id="quickJump" class="ml-2 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Ir para...</option>
+              <% (1..40).each do |i| %>
+                <option value="<%= i %>"><%= i %></option>
+              <% end %>
+            </select>
+          </div>
+        </div>
+        
+        <div id="orderNumbersContainer" class="hidden">
+          <div class="grid grid-cols-10 gap-2">
+            <% 40.times do |i| %>
+              <%= link_to "#{i+1}", 
+                  generate_order_pdf_path(order_number: i+1, format: :pdf), 
+                  class: "text-center py-2 rounded bg-gray-100 hover:bg-blue-100 text-blue-600 hover:text-blue-800 transition-colors duration-200", 
+                  target: "_blank" %>
+            <% end %>
+          </div>
+        </div>
+      </div>
 
 <% end %>
 
@@ -63,3 +87,23 @@
     <br>
     <p>Nenhum atendimento para hoje encontrado.</p>
 <% end %>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const toggleButton = document.getElementById('toggleOrderNumbers');
+    const container = document.getElementById('orderNumbersContainer');
+    const quickJump = document.getElementById('quickJump');
+    
+    toggleButton.addEventListener('click', function() {
+      container.classList.toggle('hidden');
+    });
+    
+    quickJump.addEventListener('change', function() {
+      const value = this.value;
+      if (value) {
+        window.open('<%= generate_order_pdf_path(order_number: 0, format: :pdf) %>'.replace('order_number=0', 'order_number=' + value), '_blank');
+        this.value = '';
+      }
+    });
+  });
+</script>
