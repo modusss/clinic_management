@@ -67,7 +67,7 @@
         <%= link_to "Lipepay", main_app.root_path, class: "text-white hover:text-blue-300" %>
       </h1>
 
-  <div class="relative">
+  <div class="relative" id="search_lead_container">
     <%= form_with url: search_leads_path, method: :post, data: { remote: true, controller: "debounce" }, class: "w-full sm:w-auto flex justify-center sm:justify-start mt-4 sm:mt-0" do |search| %>
       <div class="input-field relative">
         <%= search.search_field :q,
@@ -118,4 +118,18 @@
 a.active {
   border-bottom: 2px solid white;
 }
+
+
+@media (min-width: 768px) {
+  #search_lead {
+    width: 500px !important;
+  }
+
+  #search_lead_container {
+    margin: 0 auto;
+    margin-bottom: 24px;
+    width: 500px;
+  }
+}
+
 </style>
