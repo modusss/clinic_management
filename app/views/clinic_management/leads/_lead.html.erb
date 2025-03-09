@@ -1,7 +1,7 @@
 <div id="<%= dom_id lead %>" class="bg-white shadow overflow-hidden sm:rounded-lg p-6 mb-4">
   <div class="px-4 py-5 sm:px-6">
     <h3 class="text-lg leading-6 text-gray-900 text-[18px]">
-      Informações do Lead
+      Informações do responsável desta ficha
     </h3>
   </div>
   <div class="border-t border-gray-200">
@@ -19,7 +19,37 @@
           Telefone
         </dt>
         <dd class="mt-1 text-gray-900 sm:mt-0 sm:col-span-2 text-[18px]">
-          <%= lead.phone %>
+          <div id="phone-container-<%= lead.id %>" 
+               data-controller="message-tracking"
+               data-message-tracking-lead-id-value="<%= lead.id %>"
+               data-message-tracking-appointment-id-value="<%= @old_appointment&.id %>">
+            <div class="flex items-center">
+              <% if lead.phone.present? %>
+                <%= link_to add_phone_mask(lead.phone), 
+                            "whatsapp://send?phone=55#{lead.phone.to_s.gsub(/\D/, '')}&text=", 
+                            target: '_blank',
+                            data: { 
+                              action: "click->message-tracking#recordMessageSent"
+                            },
+                            class: "whatsapp-link text-green-600 hover:text-green-800" %>
+                
+                <a style="margin-left: 10px;" href="tel:<%= lead.phone.to_s.gsub(/\D/, '') %>">
+                  <i class="fas fa-phone text-gray-500 hover:text-gray-700"></i>
+                </a>
+              <% else %>
+                <span class="text-red-500 text-sm italic">
+                  Telefone não cadastrado
+                </span>
+              <% end %>
+            </div>
+            
+            <% if @old_appointment&.last_message_sent_at.present? %>
+              <div class="text-xs text-gray-500 mt-1">
+                Última mensagem: <%= time_ago_in_words(@old_appointment.last_message_sent_at) %> atrás 
+                por <%= @old_appointment.last_message_sent_by %>
+              </div>
+            <% end %>
+          </div>
         </dd>
       </div>
       <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
