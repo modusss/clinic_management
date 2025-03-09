@@ -2,7 +2,7 @@
   <header class="bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 py-4 shadow-md">
     <nav class="container mx-auto flex items-center justify-between p-6">
       <div class="flex items-center text-white mr-6">
-        <span class="font-semibold text-xl tracking-tight">Lipepay</span>
+        <span class="font-semibold text-xl tracking-tight">Lipepay <span class="ml-1 text-xs bg-white text-blue-700 rounded px-2 py-0.5 font-medium shadow-sm">atendimentos</span></span>
       </div>
       <% if user_signed_in? %>
         <div class="flex items-center">
@@ -18,7 +18,7 @@
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
         <h1 class="text-white text-xl font-bold mb-4 sm:mb-0">
-          <%= link_to "Lipepay", main_app.root_path, class: "text-white hover:text-blue-300" %>
+          <%= link_to raw("Lipepay <span class='ml-1 text-xs bg-white text-blue-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-blue-300" %>
         </h1>
 
         <% if user_signed_in? %>
@@ -28,7 +28,7 @@
                   session[:absent_leads_state] || clinic_management.absent_leads_path, 
                   class: "text-white hover:text-blue-300 #{'active' if controller_name == 'leads'}" %>
             <% end %>
-            <%= link_to "Atendimentos", clinic_management.index_by_referral_services_path(user_referral), class: "text-white hover:text-blue-300 #{'active' if controller_name == 'services'}" %>
+            <%= link_to "Atendimentoss", clinic_management.index_by_referral_services_path(user_referral), class: "text-white hover:text-blue-300 #{'active' if controller_name == 'services'}" %>
             <%= link_to "Convites", clinic_management.invitations_path(referral_id: user_referral.id), class: "text-white hover:text-blue-300 #{'active' if controller_name == 'invitations'}" %>
           </nav>
 
@@ -64,7 +64,7 @@
   <div class="container mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex flex-wrap justify-between items-center">
       <h1 class="text-white text-2xl font-bold mb-4 sm:mb-0 w-full sm:w-auto text-center sm:text-left">
-        <%= link_to "Lipepay", main_app.root_path, class: "text-white hover:text-blue-300" %>
+        <%= link_to raw("Lipepay <span class='ml-1 text-xs bg-white text-blue-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-blue-300" %>
       </h1>
 
       <div class="relative order-3 sm:order-2 w-full sm:w-auto mb-4 sm:mb-0" id="search_lead_container">
@@ -97,7 +97,7 @@
           <%= link_to "Convites", clinic_management.invitations_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'invitations'}" %>
           <%= link_to "Tipos de serviço", clinic_management.service_types_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'service_types'}" %>
         <% end %>
-        <%= link_to "Atendimentos", clinic_management.services_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'services'}" %>
+        <%= link_to "Atendimentoss", clinic_management.services_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'services'}" %>
         <% unless clinical_assistant?(current_user) %>
         <%= link_to "Regiões", clinic_management.regions_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'regions'}" %>
         <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'time_slots'}" %>
