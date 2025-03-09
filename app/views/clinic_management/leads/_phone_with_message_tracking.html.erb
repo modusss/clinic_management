@@ -3,6 +3,7 @@
      data-message-tracking-lead-id-value="<%= lead.id %>"
      data-message-tracking-appointment-id-value="<%= appointment.id %>">
   <div class="flex items-center">
+    <% if lead.phone.present? %>
     <%= link_to add_phone_mask(lead.phone), 
                 whatsapp_link(lead.phone, ""), 
                 target: '_blank',
@@ -11,9 +12,10 @@
                 },
                 class: "whatsapp-link" %>
     
-    <a style="margin-left: 10px;" href="tel:<%= lead.phone %>">
-      <i class="fas fa-phone"></i>
-    </a>
+      <a style="margin-left: 10px;" href="tel:<%= lead.phone %>">
+        <i class="fas fa-phone"></i>
+      </a>
+    <% end %>
   </div>
   
   <% if appointment.last_message_sent_at.present? %>
