@@ -351,6 +351,9 @@ module ClinicManagement
     end
 
     def service_content_link(ap)
+      current_referral = helpers.user_referral if helpers.referral?(current_user)
+      is_current_referral_invitation = current_referral && ap.invitation&.referral_id == current_referral.id
+      
       service_content = if helpers.referral?(current_user)
         if is_current_referral_invitation
           helpers.link_to(invite_day(ap), clinic_management.show_by_referral_services_path(referral_id: current_referral.id, id: ap.service.id), class: "text-blue-500 hover:text-blue-700")
