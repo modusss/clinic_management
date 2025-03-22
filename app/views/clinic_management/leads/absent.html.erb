@@ -92,7 +92,7 @@
 <div class="my-4 p-4 bg-gray-100 rounded">
   <%= form_with url: absent_leads_path, method: :get,
                 local: true,
-                class: "flex flex-col sm:flex-row gap-4" do |f| %>
+                class: "flex flex-col sm:flex-row gap-4 flex-wrap" do |f| %>
 
     <!-- Campo Ano -->
     <div>
@@ -116,6 +116,40 @@
             params[:month]
           ), 
           { include_blank: "Selecione o mês" },
+          class: "border rounded p-2"
+      %>
+    </div>
+    
+    <!-- Filtro de Contato -->
+    <div>
+      <%= f.label :contact_status, "Status de Contato:", class: "block font-semibold mb-1" %>
+      <%= f.select :contact_status, 
+          options_for_select(
+            [
+              ["Todos", "all"],
+              ["Não contatados", "not_contacted"],
+              ["Contatados", "contacted"],
+              ["Contatados por mim", "contacted_by_me"]
+            ], 
+            params[:contact_status]
+          ), 
+          { include_blank: false },
+          class: "border rounded p-2"
+      %>
+    </div>
+    
+    <!-- Ordenação -->
+    <div>
+      <%= f.label :sort_order, "Ordenar por:", class: "block font-semibold mb-1" %>
+      <%= f.select :sort_order, 
+          options_for_select(
+            [
+              ["Mais antigo primeiro", "oldest_first"],
+              ["Mais recente primeiro", "newest_first"]
+            ], 
+            params[:sort_order]
+          ), 
+          { include_blank: false },
           class: "border rounded p-2"
       %>
     </div>

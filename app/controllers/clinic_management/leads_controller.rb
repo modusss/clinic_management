@@ -147,8 +147,6 @@ module ClinicManagement
     end
 
     def absent
-      
-      # Se chegamos aqui, ou não temos estado salvo ou já estamos com parâmetros
       # Salvar o estado atual na sessão (URL completa com parâmetros)
       session[:absent_leads_state] = request.original_url if request.get?
       
@@ -166,7 +164,7 @@ module ClinicManagement
           1.days.ago
         )
       end
-    
+
       # 2) Se tiver Ano e Mês nos parâmetros, filtrar por esse intervalo
       if params[:year].present? && params[:month].present?
         start_date = Date.new(params[:year].to_i, params[:month].to_i, 1)
@@ -175,8 +173,53 @@ module ClinicManagement
         # Corrigir a query para usar o mesmo join que já existe
         @all_leads = @all_leads.where('clinic_management_services.date BETWEEN ? AND ?', start_date, end_date)
       end
-    
-      # 3) Se tiver busca por nome/telefone, filtra adicionalmente
+
+      # 3) Aplicar filtro de status de contato
+      if params[:contact_status].present?
+        case params[:contact_status]
+        when "not_contacted"
+          # Filtrar apenas leads onde TODOS os appointments não têm mensagens
+          contacted_lead_ids = ClinicManagement::Appointment
+                                .where('last_message_sent_at IS NOT NULL')
+                                .distinct
+                                .pluck(:lead_id)
+          @all_leads = @all_leads.where.not(id: contacted_lead_ids)
+        when "contacted"
+          # Filtrar apenas leads com pelo menos um appointment com mensagem
+          contacted_lead_ids = ClinicManagement::Appointment
+                                .where('last_message_sent_at IS NOT NULL')
+                                .distinct
+                                .pluck(:lead_id)
+          @all_leads = @all_leads.where(id: contacted_lead_ids)
+        when "contacted_by_me"
+          # Filtrar apenas leads com mensagens enviadas pelo usuário atual
+          contacted_by_me_lead_ids = ClinicManagement::Appointment
+                                        .where('last_message_sent_at IS NOT NULL')
+                                        .where('last_message_sent_by = ?', current_user.name)
+                                        .distinct
+                                        .pluck(:lead_id)
+          @all_leads = @all_leads.where(id: contacted_by_me_lead_ids)
+        end
+      end
+
+      # 4) Aplicar ordenação
+      if params[:sort_order].present?
+        case params[:sort_order]
+        when "newest_first"
+          # Ordenar pelo contato mais recente
+          @all_leads = @all_leads.joins(:appointments)
+                                 .order('clinic_management_appointments.last_message_sent_at DESC NULLS LAST')
+        when "oldest_first"
+          # Ordenar pelo contato mais antigo
+          @all_leads = @all_leads.joins(:appointments)
+                                 .order('clinic_management_appointments.last_message_sent_at ASC NULLS FIRST')
+        end
+      else
+        # Ordenação padrão (como estava antes, pela data do serviço)
+        @all_leads = @all_leads.order('clinic_management_services.date DESC')
+      end
+
+      # 5) Se tiver busca por nome/telefone, filtra adicionalmente
       query = params[:q]&.strip
       if query.present?
         @leads = @all_leads.where(
@@ -187,16 +230,16 @@ module ClinicManagement
       else
         @leads = @all_leads
       end
-    
-      # 4) Paginação e montagem das linhas (caso não seja aba de download)
+
+      # 6) Paginação e montagem das linhas (caso não seja aba de download)
       if params[:tab] == 'download'
         @date_range = (Date.current - 1.year)..Date.current
       else
         @leads = @leads.page(params[:page]).per(50)
         @rows  = load_leads_data(@leads)
       end
-    
-      # 5) Responde renderizando :absent ou :absent_download conforme a aba
+
+      # 7) Responde renderizando :absent ou :absent_download conforme a aba
       respond_to do |format|
         format.html { render :absent }  # exibe a view normal
         format.html { render :absent_download if params[:view] == 'download' }
