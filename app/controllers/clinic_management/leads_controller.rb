@@ -206,16 +206,41 @@ module ClinicManagement
       if params[:sort_order].present?
         case params[:sort_order]
         when "newest_first"
-          # Ordenar pelo contato mais recente
-          @all_leads = @all_leads.joins(:appointments)
-                                 .order('clinic_management_appointments.last_message_sent_at DESC NULLS LAST')
+          if params[:contact_status] == "contacted" || params[:contact_status] == "contacted_by_me"
+            # Usar subquery com DISTINCT ON para obter apenas o appointment mais recente para cada lead
+            @all_leads = ClinicManagement::Lead
+              .joins("INNER JOIN (
+                       SELECT DISTINCT ON (lead_id) lead_id, last_message_sent_at
+                       FROM clinic_management_appointments
+                       WHERE last_message_sent_at IS NOT NULL
+                       ORDER BY lead_id, last_message_sent_at DESC
+                     ) latest_msgs ON latest_msgs.lead_id = clinic_management_leads.id")
+              .where(id: @all_leads.select(:id))
+              .order("latest_msgs.last_message_sent_at DESC")
+          else
+            # Para não contatados ou todos, manter a ordenação original
+            @all_leads = @all_leads.order('clinic_management_services.date DESC')
+          end
+
         when "oldest_first"
-          # Ordenar pelo contato mais antigo
-          @all_leads = @all_leads.joins(:appointments)
-                                 .order('clinic_management_appointments.last_message_sent_at ASC NULLS FIRST')
+          if params[:contact_status] == "contacted" || params[:contact_status] == "contacted_by_me"
+            # Usar subquery com DISTINCT ON para obter apenas o appointment mais antigo para cada lead
+            @all_leads = ClinicManagement::Lead
+              .joins("INNER JOIN (
+                       SELECT DISTINCT ON (lead_id) lead_id, last_message_sent_at
+                       FROM clinic_management_appointments
+                       WHERE last_message_sent_at IS NOT NULL
+                       ORDER BY lead_id, last_message_sent_at ASC
+                     ) earliest_msgs ON earliest_msgs.lead_id = clinic_management_leads.id")
+              .where(id: @all_leads.select(:id))
+              .order("earliest_msgs.last_message_sent_at ASC")
+          else
+            # Para não contatados ou todos, manter a ordenação original
+            @all_leads = @all_leads.order('clinic_management_services.date ASC')
+          end
         end
       else
-        # Ordenação padrão (como estava antes, pela data do serviço)
+        # Ordenação padrão
         @all_leads = @all_leads.order('clinic_management_services.date DESC')
       end
 
