@@ -163,6 +163,16 @@
 </div>
 
   <br>
+  
+  <!-- Add result count display -->
+  <div class="my-4 text-gray-700">
+    <!-- Format the count -->
+    <%= number_with_delimiter(@leads.total_count, delimiter: ".") %> 
+    <!-- Determine singular or plural word based on count -->
+    <%= @leads.total_count == 1 ? 'resultado' : 'resultados' %> 
+    encontrado(s).
+  </div>
+  
   <div id="table-tab" class="tab-content">
   </div>
   
