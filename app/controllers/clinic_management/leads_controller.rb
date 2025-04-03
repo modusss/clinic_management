@@ -234,15 +234,24 @@ module ClinicManagement
       @all_leads = @all_leads.joins("INNER JOIN clinic_management_appointments ON clinic_management_appointments.id = clinic_management_leads.last_appointment_id")
                              .joins("INNER JOIN clinic_management_services ON clinic_management_services.id = clinic_management_appointments.service_id")
       
-      if params[:sort_order].present?
-        case params[:sort_order]
-        when "newest_first"
-          @all_leads = @all_leads.order('clinic_management_services.date DESC')
-        when "oldest_first"
-          @all_leads = @all_leads.order('clinic_management_services.date ASC')
-        end
+      # Determine the sort order, defaulting to newest appointment first
+      sort_order = params[:sort_order] || 'appointment_newest_first' 
+      
+      case sort_order
+      when "appointment_newest_first"
+        # Sort by the service date of the last appointment (most recent first)
+        @all_leads = @all_leads.order('clinic_management_services.date DESC')
+      when "appointment_oldest_first"
+         # Sort by the service date of the last appointment (oldest first)
+        @all_leads = @all_leads.order('clinic_management_services.date ASC')
+      when "contact_newest_first"
+        # Sort by the last contact time (most recent first), putting never contacted leads last
+        @all_leads = @all_leads.order(Arel.sql('clinic_management_appointments.last_message_sent_at DESC NULLS LAST'))
+      when "contact_oldest_first"
+        # Sort by the last contact time (oldest first), putting never contacted leads last
+        @all_leads = @all_leads.order(Arel.sql('clinic_management_appointments.last_message_sent_at ASC NULLS LAST'))
       else
-        # Ordenação padrão
+        # Default fallback sort order
         @all_leads = @all_leads.order('clinic_management_services.date DESC')
       end
 
