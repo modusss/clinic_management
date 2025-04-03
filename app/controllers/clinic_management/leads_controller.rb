@@ -147,8 +147,26 @@ module ClinicManagement
     end
 
     def absent
-      # Salvar o estado atual na sessão (URL completa com parâmetros)
-      session[:absent_leads_state] = request.original_url if request.get?
+      # Store the URL, potentially modified, in the session on GET requests
+      if request.get?
+        # Parse the original URL
+        uri = URI.parse(request.original_url)
+        # Parse the query string into a hash (handle cases with no query)
+        params_hash = Rack::Utils.parse_nested_query(uri.query || "")
+
+        # Check if the specific condition is met (viewing 'not_contacted' leads)
+        if params_hash['contact_status'] == 'not_contacted'
+          # Remove the 'page' parameter if it exists
+          params_hash.delete('page')
+          # Rebuild the query string from the modified hash. Use .presence to make it nil if empty.
+          uri.query = Rack::Utils.build_query(params_hash).presence
+          # Store the modified URL string
+          session[:absent_leads_state] = uri.to_s
+        else
+          # Otherwise, store the original URL
+          session[:absent_leads_state] = request.original_url
+        end
+      end
       
       # 1) Carregar a coleção base (com base se é referral ou não)
       if helpers.referral?(current_user)
