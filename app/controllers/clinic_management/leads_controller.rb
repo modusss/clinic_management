@@ -551,24 +551,32 @@ module ClinicManagement
         # Data de um ano atrás a partir de hoje
         one_year_ago = Date.current - 1.year
       
-        # IDs dos leads que tiveram attendance como true dentro do último ano
+        # IDs dos leads que tiveram attendance como true DENTRO do último ano
+        # (Estes serão excluídos dos resultados)
         excluded_lead_ids = ClinicManagement::Appointment.joins(:service)
-                                                         .where('clinic_management_appointments.attendance = ? AND clinic_management_services.date >= ?', true, one_year_ago)
-                                                         .pluck(:lead_id)
+                                                        .where('clinic_management_appointments.attendance = ? AND clinic_management_services.date >= ?', true, one_year_ago)
+                                                        .pluck(:lead_id)
       
         # Build the base query joining leads, appointments, and services
         base_query = ClinicManagement::Lead.joins(appointments: :service)
-                                            .where('last_appointment_id = clinic_management_appointments.id') # Ensure we join based on the last appointment
-                                            .where.not(id: excluded_lead_ids) # Exclude leads with recent attended appointments
+                                            .where('last_appointment_id = clinic_management_appointments.id')
+                                            .where.not(id: excluded_lead_ids)
 
-        # Apply the specific condition (e.g., attendance = false and date < ?)
+        # Apply the specific condition (for absent leads OR for attended > 1 year)
         if date
-          base_query = base_query.where(query_condition, value, date)
-                                 .where('clinic_management_appointments.service_id = clinic_management_services.id') # Redundant join condition, but ensures context
+          # Condition can be either:
+          # 1. The standard absent condition (passed in as a parameter)
+          # 2. OR a condition where the last appointment was attended but more than a year ago
+          base_query = base_query.where(
+            "#{query_condition} OR (clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?)",
+            value, date,  # Parameters for original condition
+            true, one_year_ago  # Parameters for "attended > 1 year ago"
+          )
+          .where('clinic_management_appointments.service_id = clinic_management_services.id')
         else
-          # This branch seems less used for 'absent' but kept for generality
+          # This is for cases not using the date parameter - keep original logic
           base_query = base_query.where(query_condition, value)
-                                 .where('clinic_management_appointments.service_id = clinic_management_services.id') # Redundant join condition
+                                 .where('clinic_management_appointments.service_id = clinic_management_services.id')
         end
         
         # Return the query object without ordering
