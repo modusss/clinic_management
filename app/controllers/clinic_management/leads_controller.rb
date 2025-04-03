@@ -165,17 +165,24 @@ module ClinicManagement
         )
       end
 
-      # 2) Se tiver Ano e Mês nos parâmetros, filtrar por esse intervalo
+      # 2) Aplicar filtro de data apenas se ano E mês estiverem presentes
       if params[:year].present? && params[:month].present?
         start_date = Date.new(params[:year].to_i, params[:month].to_i, 1)
-        end_date   = start_date.end_of_month
+        end_date = start_date.end_of_month
         
-        # Corrigir a query para usar o mesmo join que já existe
+        # Filtrar por período de data
+        @all_leads = @all_leads.where('clinic_management_services.date BETWEEN ? AND ?', start_date, end_date)
+      elsif params[:year].present? # Se só o ano estiver presente
+        start_date = Date.new(params[:year].to_i, 1, 1)
+        end_date = Date.new(params[:year].to_i, 12, 31)
+        
+        # Filtrar apenas pelo ano
         @all_leads = @all_leads.where('clinic_management_services.date BETWEEN ? AND ?', start_date, end_date)
       end
+      # Se só o mês estiver presente ou nenhum dos dois, não aplicamos filtro de data
 
       # 3) Aplicar filtro de status de contato
-      if params[:contact_status].present?
+      if params[:contact_status].present? && params[:contact_status] != "all"
         case params[:contact_status]
         when "not_contacted"
           # Filtrar apenas leads onde TODOS os appointments não têm mensagens
@@ -202,42 +209,16 @@ module ClinicManagement
         end
       end
 
-      # 4) Aplicar ordenação
+      # 4) Aplicar ordenação independentemente dos outros filtros
+      @all_leads = @all_leads.joins("INNER JOIN clinic_management_appointments ON clinic_management_appointments.id = clinic_management_leads.last_appointment_id")
+                             .joins("INNER JOIN clinic_management_services ON clinic_management_services.id = clinic_management_appointments.service_id")
+      
       if params[:sort_order].present?
         case params[:sort_order]
         when "newest_first"
-          if params[:contact_status] == "contacted" || params[:contact_status] == "contacted_by_me"
-            # Usar subquery com DISTINCT ON para obter apenas o appointment mais recente para cada lead
-            @all_leads = ClinicManagement::Lead
-              .joins("INNER JOIN (
-                       SELECT DISTINCT ON (lead_id) lead_id, last_message_sent_at
-                       FROM clinic_management_appointments
-                       WHERE last_message_sent_at IS NOT NULL
-                       ORDER BY lead_id, last_message_sent_at DESC
-                     ) latest_msgs ON latest_msgs.lead_id = clinic_management_leads.id")
-              .where(id: @all_leads.select(:id))
-              .order("latest_msgs.last_message_sent_at DESC")
-          else
-            # Para não contatados ou todos, manter a ordenação original
-            @all_leads = @all_leads.order('clinic_management_services.date DESC')
-          end
-
+          @all_leads = @all_leads.order('clinic_management_services.date DESC')
         when "oldest_first"
-          if params[:contact_status] == "contacted" || params[:contact_status] == "contacted_by_me"
-            # Usar subquery com DISTINCT ON para obter apenas o appointment mais antigo para cada lead
-            @all_leads = ClinicManagement::Lead
-              .joins("INNER JOIN (
-                       SELECT DISTINCT ON (lead_id) lead_id, last_message_sent_at
-                       FROM clinic_management_appointments
-                       WHERE last_message_sent_at IS NOT NULL
-                       ORDER BY lead_id, last_message_sent_at ASC
-                     ) earliest_msgs ON earliest_msgs.lead_id = clinic_management_leads.id")
-              .where(id: @all_leads.select(:id))
-              .order("earliest_msgs.last_message_sent_at ASC")
-          else
-            # Para não contatados ou todos, manter a ordenação original
-            @all_leads = @all_leads.order('clinic_management_services.date ASC')
-          end
+          @all_leads = @all_leads.order('clinic_management_services.date ASC')
         end
       else
         # Ordenação padrão
@@ -248,7 +229,7 @@ module ClinicManagement
       query = params[:q]&.strip
       if query.present?
         @leads = @all_leads.where(
-          "name ILIKE ? OR phone ILIKE ?", 
+          "clinic_management_leads.name ILIKE ? OR clinic_management_leads.phone ILIKE ?", 
           "%#{query}%", 
           "%#{query}%"
         )
@@ -256,12 +237,12 @@ module ClinicManagement
         @leads = @all_leads
       end
 
-      # 6) Paginação e montagem das linhas (caso não seja aba de download)
+      # 6) Paginação e montagem das linhas
       if params[:tab] == 'download'
         @date_range = (Date.current - 1.year)..Date.current
       else
         @leads = @leads.page(params[:page]).per(50)
-        @rows  = load_leads_data(@leads)
+        @rows = load_leads_data(@leads)
       end
 
       # 7) Responde renderizando :absent ou :absent_download conforme a aba
@@ -545,19 +526,23 @@ module ClinicManagement
                                                          .where('clinic_management_appointments.attendance = ? AND clinic_management_services.date >= ?', true, one_year_ago)
                                                          .pluck(:lead_id)
       
+        # Build the base query joining leads, appointments, and services
+        base_query = ClinicManagement::Lead.joins(appointments: :service)
+                                            .where('last_appointment_id = clinic_management_appointments.id') # Ensure we join based on the last appointment
+                                            .where.not(id: excluded_lead_ids) # Exclude leads with recent attended appointments
+
+        # Apply the specific condition (e.g., attendance = false and date < ?)
         if date
-          ClinicManagement::Lead.joins(appointments: :service)
-                                .where(query_condition, value, date)
-                                .where('last_appointment_id IN (?)', ClinicManagement::Appointment.joins(:service).where(query_condition, value, date).pluck(:id))
-                                .where.not(id: excluded_lead_ids)
-                                .order('clinic_management_services.date DESC')
+          base_query = base_query.where(query_condition, value, date)
+                                 .where('clinic_management_appointments.service_id = clinic_management_services.id') # Redundant join condition, but ensures context
         else
-          ClinicManagement::Lead.joins(appointments: :service)
-                                .where(id: ClinicManagement::Appointment.where(query_condition, value).select(:lead_id))
-                                .where('last_appointment_id IN (?)', ClinicManagement::Appointment.where(query_condition, value).pluck(:id))
-                                .where.not(id: excluded_lead_ids)
-                                .order('clinic_management_services.date DESC')
+          # This branch seems less used for 'absent' but kept for generality
+          base_query = base_query.where(query_condition, value)
+                                 .where('clinic_management_appointments.service_id = clinic_management_services.id') # Redundant join condition
         end
+        
+        # Return the query object without ordering
+        base_query
       end
         
       # Use callbacks to share common setup or constraints between actions.
