@@ -473,13 +473,22 @@ module ClinicManagement
         last_invitation = lead.invitations.last
         last_appointment = lead.appointments.last
         
-        # Determine the patient's status
-        patient_status = if last_appointment.attendance == false
-          # Patient was absent
-          {content: "Ausente", class: "text-red-500 font-semibold"}
+        # Get order count information
+        order_count = lead&.customer&.orders&.count || 0
+        
+        # Determine the patient's status with order info on a separate line
+        status_content = if last_appointment.attendance == false
+          # First line: Patient was absent
+          "<div class='text-red-500 font-semibold'>Ausente</div>"
         else
-          # Patient attended but more than a year ago
-          {content: "Atendeu há mais de 1 ano", class: "text-orange-500 font-semibold"}
+          # First line: Patient attended but more than a year ago
+          "<div class='text-orange-500 font-semibold'>Atendeu há mais de 1 ano</div>"
+        end
+        
+        # Add order information as a second line with icon if there are orders
+        if order_count > 0
+          order_text = "#{order_count} #{order_count == 1 ? 'compra' : 'compras'} na ótica"
+          status_content += "<div class='text-blue-600 mt-1'><i class='fas fa-shopping-bag mr-1'></i> #{order_text}</div>"
         end
         
         if helpers.referral?(current_user)
@@ -495,8 +504,8 @@ module ClinicManagement
               ).html_safe, 
               class: "nowrap size_20"
             },
-            # Add the status column right after patient name
-            {header: "Status", content: patient_status[:content], class: patient_status[:class]},   
+            # Status column with separated order information
+            {header: "Status", content: status_content.html_safe, class: "!min-w-[300px]"},   
             {header: "Responsável", content: responsible_content(last_invitation), class: "nowrap"},
             {
               header: "Telefone", 
@@ -522,8 +531,8 @@ module ClinicManagement
               ).html_safe, 
               class: "nowrap size_20"
             },
-            # Add the status column right after patient name
-            {header: "Status", content: patient_status[:content], class: patient_status[:class]},
+            # Status column with separated order information
+            {header: "Status", content: status_content.html_safe, class: "!min-w-[300px]"},
             {header: "Responsável", content: responsible_content(last_invitation), class: "nowrap"},
             {
               header: "Telefone", 
