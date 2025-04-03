@@ -144,10 +144,12 @@
       <%= f.select :sort_order, 
           options_for_select(
             [
-              ["Mais antigo primeiro", "oldest_first"],
-              ["Mais recente primeiro", "newest_first"]
+              ["Atendimento mais recente", "appointment_newest_first"],
+              ["Atendimento mais antigo", "appointment_oldest_first"],
+              ["Contato mais recente", "contact_newest_first"],
+              ["Contato mais antigo", "contact_oldest_first"]
             ], 
-            params[:sort_order]
+            params[:sort_order] || 'appointment_newest_first' # Set default selection
           ), 
           { include_blank: false },
           class: "border rounded p-2"
