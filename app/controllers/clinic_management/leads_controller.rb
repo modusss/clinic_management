@@ -169,22 +169,37 @@ module ClinicManagement
       end
       
       # 1) Carregar a coleção base (com base se é referral ou não)
+      one_year_ago = 1.year.ago.to_date
+      absent_threshold_date = helpers.referral?(current_user) ? 120.days.ago.to_date : 1.day.ago.to_date
+      
       if helpers.referral?(current_user)
         @all_leads = fetch_leads_by_appointment_condition(
           'clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', 
           false, 
-          120.days.ago
+          absent_threshold_date
         )
       else
         @all_leads = fetch_leads_by_appointment_condition(
           'clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', 
           false, 
-          1.days.ago
+          absent_threshold_date
         )
       end
 
       # Filter out leads without a phone number
       @all_leads = @all_leads.where.not(phone: [nil, ''])
+
+      # 1.5) Apply patient type filter if specified
+      if params[:patient_type].present? && params[:patient_type] != "all"
+        case params[:patient_type]
+        when "absent"
+          # Only include leads whose last appointment was missed (attendance = false)
+          @all_leads = @all_leads.where('clinic_management_appointments.attendance = ?', false)
+        when "attended_year_ago"
+          # Only include leads whose last appointment was attended but more than a year ago
+          @all_leads = @all_leads.where('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', true, one_year_ago)
+        end
+      end
 
       # 2) Aplicar filtro de data apenas se ano E mês estiverem presentes
       if params[:year].present? && params[:month].present?
@@ -457,6 +472,16 @@ module ClinicManagement
       leads.map.with_index do |lead, index|
         last_invitation = lead.invitations.last
         last_appointment = lead.appointments.last
+        
+        # Determine the patient's status
+        patient_status = if last_appointment.attendance == false
+          # Patient was absent
+          {content: "Ausente", class: "text-red-500 font-semibold"}
+        else
+          # Patient attended but more than a year ago
+          {content: "Atendeu há mais de 1 ano", class: "text-orange-500 font-semibold"}
+        end
+        
         if helpers.referral?(current_user)
           new_appointment = ClinicManagement::Appointment.new
 
@@ -469,7 +494,9 @@ module ClinicManagement
                 locals: { invitation: last_invitation }
               ).html_safe, 
               class: "nowrap size_20"
-            },   
+            },
+            # Add the status column right after patient name
+            {header: "Status", content: patient_status[:content], class: patient_status[:class]},   
             {header: "Responsável", content: responsible_content(last_invitation), class: "nowrap"},
             {
               header: "Telefone", 
@@ -494,7 +521,9 @@ module ClinicManagement
                 locals: { invitation: last_invitation }
               ).html_safe, 
               class: "nowrap size_20"
-            },   
+            },
+            # Add the status column right after patient name
+            {header: "Status", content: patient_status[:content], class: patient_status[:class]},
             {header: "Responsável", content: responsible_content(last_invitation), class: "nowrap"},
             {
               header: "Telefone", 
