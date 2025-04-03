@@ -183,6 +183,9 @@ module ClinicManagement
         )
       end
 
+      # Filter out leads without a phone number
+      @all_leads = @all_leads.where.not(phone: [nil, ''])
+
       # 2) Aplicar filtro de data apenas se ano E mês estiverem presentes
       if params[:year].present? && params[:month].present?
         start_date = Date.new(params[:year].to_i, params[:month].to_i, 1)
