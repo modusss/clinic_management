@@ -1,4 +1,3 @@
-
 <%= breadcrumb({title: "Lista de hoje", path: index_today_path(@today_service&.appointments)}, {title: @appointment.invitation.patient_name  , path: nil}) %>
 
 <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -7,6 +6,39 @@
       <h1 class="text-2xl font-bold mb-4">Lançar receita para <%= @appointment.invitation.patient_name %></h1>
 
       <%= render "form", prescription: @prescription, appointment: @appointment %>
+
+      <%# Prescription history table for this patient %>
+      <% if @previous_prescriptions.present? %>
+        <!-- Prescription history section -->
+        <div class="mt-10">
+          <!-- Title -->
+          <h2 class="text-xl font-semibold mb-4 text-gray-700">Histórico de receitas anteriores</h2>
+          <div class="overflow-x-auto">
+            <table class="min-w-full bg-white border border-gray-200 rounded">
+              <thead>
+                <tr>
+                  <th class="px-4 py-2 border-b text-left">Data</th>
+                  <th class="px-4 py-2 border-b text-left">Paciente</th>
+                  <th class="px-4 py-2 border-b text-left">Doutor</th>
+                  <th class="px-4 py-2 border-b text-left">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @previous_prescriptions.each do |prescription| %>
+                  <tr>
+                    <td class="px-4 py-2 border-b"><%= prescription.created_at.strftime("%d/%m/%Y") %></td>
+                    <td class="px-4 py-2 border-b"><%= prescription.appointment.invitation.patient_name %></td>
+                    <td class="px-4 py-2 border-b"><%= prescription.doctor_name || "--" %></td>
+                    <td class="px-4 py-2 border-b">
+                      <%= link_to "Ver detalhes", show_today_appointment_prescription_path(prescription.appointment, prescription), class: "text-blue-600 hover:underline" %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% end %>
     </div>
   </div>
 </div>

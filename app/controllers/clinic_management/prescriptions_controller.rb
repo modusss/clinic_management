@@ -95,6 +95,17 @@ module ClinicManagement
 
     def new_today
       new_settings
+      @lead = @appointment.lead
+      # Busca todas as receitas anteriores do lead, ordenadas da mais recente para a mais antiga
+      @previous_prescriptions = ClinicManagement::Prescription
+        .joins(:appointment)
+        .where(clinic_management_appointments: { lead_id: @lead.id })
+        .order(created_at: :desc)
+      # Buscar exames anteriores (appointments), exceto o atual
+      @previous_appointments = @lead.appointments
+        .where.not(id: @appointment.id)
+        .includes(:service, :invitation)
+        .order('clinic_management_services.date DESC')
     end
 
     def create
