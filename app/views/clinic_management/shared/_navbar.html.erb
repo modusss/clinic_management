@@ -7,22 +7,22 @@
       <% if user_signed_in? %>
         <div class="flex items-center">
           <span class="mr-4 text-white lg:hidden">Olá, <%= current_user.name %></span>
-          <span class="hidden mr-4 text-white lg:block">Olá, <%= current_user.name %></span>
+          <span class="mr-4 text-white lg:block">Olá, <%= current_user.name %></span>
           <%= link_to "Sair", main_app.destroy_user_session_path, method: :delete, class: "inline-block text-sm px-4 py-2 leading-none border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white" %>
         </div>
       <% end %>
     </nav>
   </header>
 <% elsif (referral? current_user) %>
-  <header class="relative bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 py-4 shadow-md">
+  <header class="relative bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 py-4 shadow-md md:pl-64 z-50">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+      <div class="flex flex-wrap justify-between items-center">
         <h1 class="text-white text-xl font-bold mb-4 sm:mb-0">
           <%= link_to raw("Lipepay <span class='ml-1 text-xs bg-white text-blue-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-blue-300" %>
         </h1>
 
         <% if user_signed_in? %>
-          <nav class="text-lg w-full sm:w-auto mt-4 sm:mt-0 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+          <nav class="text-lg w-full order-3 sm:order-2 sm:w-auto mt-4 sm:mt-0 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 md:hidden">
             <% if allowed_to_access_leads?(current_user) %>
               <%= link_to "Pacientes ausentes", 
                   session[:absent_leads_state] || clinic_management.absent_leads_path, 
@@ -31,27 +31,29 @@
             <%= link_to "Atendimentos", clinic_management.index_by_referral_services_path(user_referral), class: "text-white hover:text-blue-300 #{'active' if controller_name == 'services'}" %>
             <%= link_to "Convites", clinic_management.invitations_path(referral_id: user_referral.id), class: "text-white hover:text-blue-300 #{'active' if controller_name == 'invitations'}" %>
           </nav>
+        <% end %>
 
-          <div class="relative mt-4 sm:mt-0 w-full sm:w-auto">
-            <%= form_with url: search_leads_path, method: :post, data: { remote: true, controller: "debounce" }, class: "flex justify-center" do |search| %>
-              <div class="input-field relative w-full">
-                <%= search.search_field :q,
-                    data: { debounce_target: "input" },
-                    id: "search_lead",
-                    placeholder: "Busque pelo nome ou telefone...",
-                    autocomplete: "off",
-                    spellcheck: false,
-                    class: "bg-white rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent",
-                    style: "font-size: 16px; padding: 12px;" %>
-                <label class="absolute right-2 top-1/2 transform -translate-y-1/2" for="search_lead">
-                  <i class="fas fa-search text-gray-500"></i>
-                </label>
-              </div>
-            <% end %>
-            <div id="lead-results" class="absolute mt-1 w-full bg-white shadow-lg rounded-b" style="z-index: 1000"></div>
-          </div>
+        <div class="relative order-2 sm:order-3 w-full sm:w-auto flex-grow sm:flex-grow-0 mx-auto sm:mx-4 mb-4 sm:mb-0" style="max-width: 500px;">
+          <%= form_with url: search_leads_path, method: :post, data: { remote: true, controller: "debounce" }, class: "flex justify-center" do |search| %>
+            <div class="input-field relative w-full">
+              <%= search.search_field :q,
+                  data: { debounce_target: "input" },
+                  id: "search_lead",
+                  placeholder: "Busque pelo nome ou telefone...",
+                  autocomplete: "off",
+                  spellcheck: false,
+                  class: "bg-white rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent",
+                  style: "font-size: 16px; padding: 12px;" %>
+              <label class="absolute right-2 top-1/2 transform -translate-y-1/2" for="search_lead">
+                <i class="fas fa-search text-gray-500"></i>
+              </label>
+            </div>
+          <% end %>
+          <div id="lead-results" class="absolute mt-1 w-full bg-white shadow-lg rounded-b" style="z-index: 1000"></div>
+        </div>
 
-          <div class="flex items-center mt-4 sm:mt-0">
+        <% if user_signed_in? %>
+          <div class="flex items-center order-1 sm:order-4 mt-4 sm:mt-0">
             <span class="text-white mr-4">Olá, <%= current_user.name %></span>
             <%= link_to "Sair", main_app.destroy_user_session_path, method: :delete, class: "text-sm px-4 py-2 border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white" %>
           </div>
@@ -59,16 +61,52 @@
       </div>
     </div>
   </header>
+
+  <aside class="hidden md:block w-64 bg-gray-800 text-white fixed top-0 left-0 h-screen pt-6 p-4 z-40 overflow-y-auto">
+    <h1 class="text-white text-xl font-bold mb-6">
+       <%= link_to raw("Lipepay <span class='block mt-1 text-xs bg-white text-blue-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-blue-300" %>
+    </h1>
+    <nav class="flex flex-col space-y-3 text-lg">
+        <% if allowed_to_access_leads?(current_user) %>
+          <%= link_to "Pacientes ausentes",
+              session[:absent_leads_state] || clinic_management.absent_leads_path,
+              class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if controller_name == 'leads'}" %>
+        <% end %>
+        <%= link_to "Atendimentos", clinic_management.index_by_referral_services_path(user_referral), class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if controller_name == 'services'}" %>
+        <%= link_to "Convites", clinic_management.invitations_path(referral_id: user_referral.id), class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if controller_name == 'invitations'}" %>
+    </nav>
+  </aside>
+
 <% else %>
-<header class="relative bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 py-4 shadow-md">
+<header class="relative bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 py-4 shadow-md md:pl-64 z-50">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex flex-wrap justify-between items-center">
       <h1 class="text-white text-2xl font-bold mb-4 sm:mb-0 w-full sm:w-auto text-center sm:text-left">
-        <%= link_to raw("Lipepay <span class='ml-1 text-xs bg-white text-blue-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-blue-300" %>
+         <%= link_to raw("Lipepay <span class='ml-1 text-xs bg-white text-blue-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-blue-300" %>
       </h1>
 
-      <div class="relative order-3 sm:order-2 w-full sm:w-auto mb-4 sm:mb-0" id="search_lead_container">
-        <%= form_with url: search_leads_path, method: :post, data: { remote: true, controller: "debounce" }, class: "w-full sm:w-auto flex justify-center sm:justify-start" do |search| %>
+      <nav class="text-xl order-3 sm:order-2 w-full sm:w-auto mt-4 sm:mt-0 flex flex-col sm:flex-row sm:flex-wrap justify-center space-y-4 sm:space-y-0 sm:space-x-4 md:hidden">
+         <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'prescriptions'}", data: { turbo: false } %>
+         <%= link_to "Próximo atendimento", clinic_management.index_next_path, class: "text-white hover:text-blue-300 #{'active' if request.path == clinic_management.index_next_path }", data: { turbo: false } %>
+         <% unless clinical_assistant?(current_user) %>
+         <%= link_to "Pacientes ausentes",
+             session[:absent_leads_state] || clinic_management.absent_leads_path,
+             class: "text-white hover:text-blue-300 #{'active' if controller_name == 'leads'}" %>
+         <% end %>
+         <% if is_manager_above? %>
+           <%= link_to "Convites", clinic_management.invitations_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'invitations'}" %>
+           <%= link_to "Tipos de serviço", clinic_management.service_types_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'service_types'}" %>
+         <% end %>
+         <%= link_to "Atendimentos", clinic_management.services_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'services'}" %>
+         <% unless clinical_assistant?(current_user) %>
+         <%= link_to "Regiões", clinic_management.regions_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'regions'}" %>
+         <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'time_slots'}" %>
+         <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'lead_messages'}"  %>
+         <% end %>
+      </nav>
+
+      <div class="relative order-2 sm:order-3 w-full sm:w-auto flex-grow sm:flex-grow-0 mx-auto sm:mx-4 mb-4 sm:mb-0" id="search_lead_container" style="max-width: 500px;">
+        <%= form_with url: search_leads_path, method: :post, data: { remote: true, controller: "debounce" }, class: "w-full flex justify-center sm:justify-start" do |search| %>
           <div class="input-field relative w-full">
             <%= search.search_field :q,
                 data: { debounce_target: "input" },
@@ -86,96 +124,78 @@
         <div id="lead-results" class="absolute mt-1 w-full bg-white shadow-lg rounded-b" style="z-index: 1000"></div>
       </div>
 
-      <nav class="text-xl order-2 sm:order-3 w-full sm:w-auto mt-4 sm:mt-0 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-        <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'prescriptions'}", data: { turbo: false } %>
-        <%= link_to "Próximo atendimento", clinic_management.index_next_path, class: "text-white hover:text-blue-300 #{'active' if request.path == clinic_management.index_next_path }", data: { turbo: false } %>
-        <% unless clinical_assistant?(current_user) %>
-        <%= link_to "Pacientes ausentes", 
-            session[:absent_leads_state] || clinic_management.absent_leads_path, 
-            class: "text-white hover:text-blue-300 #{'active' if controller_name == 'leads'}" %>
-        <% end %>
-        <% if is_manager_above? %>
-          <%= link_to "Convites", clinic_management.invitations_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'invitations'}" %>
-          <%= link_to "Tipos de serviço", clinic_management.service_types_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'service_types'}" %>
-        <% end %>
-        <%= link_to "Atendimentos", clinic_management.services_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'services'}" %>
-        <% unless clinical_assistant?(current_user) %>
-        <%= link_to "Regiões", clinic_management.regions_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'regions'}" %>
-        <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'time_slots'}" %>
-        <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'lead_messages'}"  %>
-        <% end %>
-        <% if user_signed_in? %>
-          <%= link_to "Sair", main_app.destroy_user_session_path, method: :delete, class: "text-white hover:text-blue-300" %>
-        <% end %>
-      </nav>
+      <% if user_signed_in? %>
+        <div class="flex items-center text-white order-1 sm:order-4">
+           <span class="md:inline mr-4">Olá, <%= current_user.name %></span>
+           <%= link_to "Sair", main_app.destroy_user_session_path, data: { turbo_method: :delete }, class: "text-sm px-4 py-2 border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white" %>
+        </div>
+      <% end %>
     </div>
   </div>
 </header>
 
+<aside class="hidden md:block w-64 bg-gray-800 text-white fixed top-0 left-0 h-screen pt-6 p-4 z-40 overflow-y-auto">
+  <h1 class="text-white text-2xl font-bold mb-6">
+     <%= link_to raw("Lipepay <span class='block mt-1 text-xs bg-white text-blue-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-blue-300" %>
+  </h1>
+  <nav class="flex flex-col space-y-3 text-lg">
+    <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if controller_name == 'prescriptions'}", data: { turbo: false } %>
+    <%= link_to "Próximo atendimento", clinic_management.index_next_path, class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if request.path == clinic_management.index_next_path }", data: { turbo: false } %>
+    <% unless clinical_assistant?(current_user) %>
+    <%= link_to "Pacientes ausentes",
+        session[:absent_leads_state] || clinic_management.absent_leads_path,
+        class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if controller_name == 'leads'}" %>
+    <% end %>
+    <% if is_manager_above? %>
+      <%= link_to "Convites", clinic_management.invitations_path, class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if controller_name == 'invitations'}" %>
+      <%= link_to "Tipos de serviço", clinic_management.service_types_path, class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if controller_name == 'service_types'}" %>
+    <% end %>
+    <%= link_to "Atendimentos", clinic_management.services_path, class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if controller_name == 'services'}" %>
+    <% unless clinical_assistant?(current_user) %>
+    <%= link_to "Regiões", clinic_management.regions_path, class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if controller_name == 'regions'}" %>
+    <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if controller_name == 'time_slots'}" %>
+    <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if controller_name == 'lead_messages'}"  %>
+    <% end %>
+  </nav>
+</aside>
 
 <% end %>
 
 <style>
-a.active {
-  border-bottom: 2px solid white;
-  position: relative;
-}
-
-a.active:after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
-}
-
-@media (max-width: 640px) {
-  #search_lead_container {
-    width: 100%;
-    margin-bottom: 16px;
-    order: 2;
-  }
-  
-  #search_lead {
-    width: 100% !important;
-  }
-}
-
-@media (min-width: 768px) {
-  #search_lead {
-    width: 500px !important;
+  @media (max-width: 640px) {
+    #search_lead_container {
+      width: 100%;
+      margin-bottom: 16px;
+      order: 2;
+    }
+    
+    #search_lead {
+      width: 100% !important;
+    }
   }
 
-  #search_lead_container {
-    margin: 0 auto;
-    margin-bottom: 24px;
-    width: 500px;
-  }
+  @media (max-width: 767px) {
 
-  nav.flex-row, nav.flex {
-    flex-wrap: nowrap !important;
-    gap: 18px !important;
-  }
-  nav a {
-    font-size: 1.05rem !important;
-    white-space: nowrap;
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-  }
-}
+    a.active {
+      border-bottom: 2px solid white;
+      position: relative;
+    }
 
-@media (max-width: 767px) {
-  nav.flex-row, nav.flex {
-    flex-wrap: wrap !important;
-    gap: 8px !important;
+    a.active:after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.8);
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+    }
+
+    header nav a {
+      font-size: 1rem !important;
+      padding-left: 0.25rem;
+      padding-right: 0.25rem;
+    }
   }
-  nav a {
-    font-size: 1rem !important;
-    padding-left: 0.25rem;
-    padding-right: 0.25rem;
-  }
-}
 </style>
