@@ -509,10 +509,7 @@ module ClinicManagement
             {header: "Responsável", content: responsible_content(last_invitation), class: "nowrap"},
             {
               header: "Telefone", 
-              content: render_to_string(
-                partial: "clinic_management/leads/phone_with_message_tracking", 
-                locals: { lead: lead, appointment: last_appointment }
-              ).html_safe, 
+              content: helpers.masked_whatsapp_link(lead.phone),
               class: "text-blue-500 hover:text-blue-700 nowrap"
             },
             {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: last_appointment, message: "" }), id: "appointment-comments-#{last_appointment.id}"},
@@ -536,10 +533,7 @@ module ClinicManagement
             {header: "Responsável", content: responsible_content(last_invitation), class: "nowrap"},
             {
               header: "Telefone", 
-              content: render_to_string(
-                partial: "clinic_management/leads/phone_with_message_tracking", 
-                locals: { lead: lead, appointment: last_appointment }
-              ).html_safe, 
+              content: helpers.masked_whatsapp_link(lead.phone),
               class: "text-blue-500 hover:text-blue-700 nowrap"
             },
             {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: last_appointment, message: "" }), id: "appointment-comments-#{last_appointment.id}"},

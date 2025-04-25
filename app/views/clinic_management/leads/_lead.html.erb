@@ -25,17 +25,7 @@
                data-message-tracking-appointment-id-value="<%= @old_appointment&.id %>">
             <div class="flex items-center">
               <% if lead.phone.present? %>
-                <%= link_to add_phone_mask(lead.phone), 
-                            "whatsapp://send?phone=55#{lead.phone.to_s.gsub(/\D/, '')}&text=", 
-                            target: '_blank',
-                            data: { 
-                              action: "click->message-tracking#recordMessageSent"
-                            },
-                            class: "whatsapp-link text-green-600 hover:text-green-800" %>
-                
-                <a style="margin-left: 10px;" href="tel:<%= lead.phone.to_s.gsub(/\D/, '') %>">
-                  <i class="fas fa-phone text-gray-500 hover:text-gray-700"></i>
-                </a>
+                <%= masked_whatsapp_link(lead.phone) %>
               <% else %>
                 <span class="text-red-500 text-sm italic">
                   Telefone não cadastrado
