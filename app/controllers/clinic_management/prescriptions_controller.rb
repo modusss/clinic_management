@@ -1,6 +1,6 @@
 module ClinicManagement
   class PrescriptionsController < ApplicationController
-    before_action :set_appointment, except: [:index_today, :generate_order_pdf, :search_index_today]
+    before_action :set_appointment, except: [:index_today, :generate_order_pdf, :search_index_today, :index_next]
     skip_before_action :redirect_doctor_users, only: [:index_today, :show_today, :new_today, :edit_today, :update, :create, :search_index_today]
     skip_before_action :authenticate_user!, only: [:pdf]
     include GeneralHelper, PrescriptionsHelper
@@ -169,6 +169,14 @@ module ClinicManagement
       end
 
       # redirect_to appointment_prescription_path(@appointment)
+    end
+
+    # GET /prescriptions/index_next
+    # Shows the next available service (not necessarily tomorrow)
+    def index_next
+      # Find the next available service (not canceled, date >= today, by soonest date)
+      @service = Service.upcoming.order(:date).first
+      @rows = @service.present? ? mapping_rows([@service]).first : []
     end
 
     private
