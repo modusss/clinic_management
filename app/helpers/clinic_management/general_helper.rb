@@ -149,6 +149,16 @@ module ClinicManagement
           phone&.gsub(/[^0-9]/, '')&.gsub(/(\d{2})(\d{5})(\d{4})/, '(\1) \2-\3')
         end
 
+        # Returns an HTML link with the masked phone number that opens WhatsApp chat when clicked
+        def masked_whatsapp_link(phone, message = "")
+          masked_phone = add_phone_mask(phone)
+          link = whatsapp_link(phone, message)
+          # WhatsApp icon + masked phone, premium UX, opens in new tab
+          "<a href=\"#{link}\" target=\"_blank\" rel=\"noopener\" style=\"text-decoration:none;font-weight:500;\" class=\"nowrap text-blue-500 hover:text-blue-700\">
+            <i class=\"fab fa-whatsapp\" style=\"margin-right:6px;\"></i>#{masked_phone}
+          </a>".html_safe
+        end
+
         def referral?(user)
           current_membership.role == "referral"
         end
