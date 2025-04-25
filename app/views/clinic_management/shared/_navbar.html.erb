@@ -35,7 +35,7 @@
 
         <div class="relative order-2 sm:order-3 w-full sm:w-auto flex-grow sm:flex-grow-0 mx-auto sm:mx-4 mb-4 sm:mb-0" style="max-width: 500px;">
           <%= form_with url: search_leads_path, method: :post, data: { remote: true, controller: "debounce" }, class: "flex justify-center" do |search| %>
-            <div class="input-field relative w-full">
+            <div class="input-field relative w-full navbar-search" >
               <%= search.search_field :q,
                   data: { debounce_target: "input" },
                   id: "search_lead",
@@ -86,7 +86,7 @@
       </h1>
 
       <nav class="text-xl order-3 sm:order-2 w-full sm:w-auto mt-4 sm:mt-0 flex flex-col sm:flex-row sm:flex-wrap justify-center space-y-4 sm:space-y-0 sm:space-x-4 md:hidden">
-         <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'prescriptions'}", data: { turbo: false } %>
+         <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-white hover:text-blue-300 #{'active' if request.path == clinic_management.index_today_path}", data: { turbo: false } %>
          <%= link_to "Próximo atendimento", clinic_management.index_next_path, class: "text-white hover:text-blue-300 #{'active' if request.path == clinic_management.index_next_path }", data: { turbo: false } %>
          <% unless clinical_assistant?(current_user) %>
          <%= link_to "Pacientes ausentes",
@@ -107,7 +107,7 @@
 
       <div class="relative order-2 sm:order-3 w-full sm:w-auto flex-grow sm:flex-grow-0 mx-auto sm:mx-4 mb-4 sm:mb-0" id="search_lead_container" style="max-width: 500px;">
         <%= form_with url: search_leads_path, method: :post, data: { remote: true, controller: "debounce" }, class: "w-full flex justify-center sm:justify-start" do |search| %>
-          <div class="input-field relative w-full">
+          <div class="input-field relative w-full navbar-search">
             <%= search.search_field :q,
                 data: { debounce_target: "input" },
                 id: "search_lead",
@@ -139,7 +139,7 @@
      <%= link_to raw("Lipepay <span class='block mt-1 text-xs bg-white text-blue-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-blue-300" %>
   </h1>
   <nav class="flex flex-col space-y-3 text-lg">
-    <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if controller_name == 'prescriptions'}", data: { turbo: false } %>
+    <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if request.path == clinic_management.index_today_path}", data: { turbo: false } %>
     <%= link_to "Próximo atendimento", clinic_management.index_next_path, class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if request.path == clinic_management.index_next_path }", data: { turbo: false } %>
     <% unless clinical_assistant?(current_user) %>
     <%= link_to "Pacientes ausentes",
@@ -174,7 +174,17 @@
     }
   }
 
+  @media (min-width: 960px) {
+    #search_lead {
+      width: 500px;
+    }
+  }
+
   @media (max-width: 767px) {
+
+    .navbar-search {
+      margin-top: 20px;
+    }
 
     a.active {
       border-bottom: 2px solid white;
@@ -193,7 +203,7 @@
     }
 
     header nav a {
-      font-size: 1rem !important;
+      font-size: 20px;
       padding-left: 0.25rem;
       padding-right: 0.25rem;
     }
