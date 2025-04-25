@@ -150,18 +150,20 @@ module ClinicManagement
         end
 
         # Returns an HTML link with the masked phone number that opens WhatsApp chat when clicked,
-        # and a phone icon next to it that allows direct calling from mobile devices.
+        # and a phone icon with "Ligar" text next to it that allows direct calling from mobile devices,
+        # making it explicit that clicking will dial the number.
         def masked_whatsapp_link(phone, message = "")
           masked_phone = add_phone_mask(phone)
           whatsapp = whatsapp_link(phone, message)
           tel_link = "tel:+55#{phone&.gsub(/[^0-9]/, '')}"
 
-          # WhatsApp icon, masked phone, and phone icon (call) with clear spacing and premium UX
+          # WhatsApp icon, masked phone, and explicit call link with icon and "Ligar" text
           "<a href=\"#{whatsapp}\" target=\"_blank\" rel=\"noopener\" style=\"text-decoration:none;font-weight:500;\" class=\"nowrap text-blue-500 hover:text-blue-700\">
             <i class=\"fab fa-whatsapp\" style=\"margin-right:6px;\"></i>#{masked_phone}
           </a>
-          <a href=\"#{tel_link}\" style=\"margin-left:10px;color:#4B5563;text-decoration:none;\" title=\"Call\">
-            <i class=\"fas fa-phone-alt\"></i>
+          <a href=\"#{tel_link}\" style=\"margin-left:12px;color:#4B5563;text-decoration:none;display:inline-flex;align-items:center;\" title=\"Ligar para #{masked_phone}\">
+            <i class=\"fas fa-phone-alt\" style=\"margin-right:4px;\"></i>
+            <span style=\"font-size:15px;\">Ligar</span>
           </a>".html_safe
         end
 
