@@ -1,7 +1,22 @@
 <%= breadcrumb({title: "Todos os atendimentos", path: services_path}, {title: "Atendimento de " + @service.date.strftime("%d/%m"), path: nil}) %>
 
-<!-- Restante do código da view -->
+<%# Toggle for table/cards view. Stores preference in a cookie. %>
+<div class="view-toggle-container right-align mb-4">
+  <div class="btn-group">
+    <a href="<%= url_for(params.permit!.merge(view_type: 'table')) %>"
+       onclick="document.cookie = 'preferred_service_view=table; path=/; max-age=31536000';"
+       class="btn btn-small <%= @view_type != 'cards' ? 'active' : '' %>">
+      <i class="material-icons left">view_list</i>Tabela
+    </a>
+    <a href="<%= url_for(params.permit!.merge(view_type: 'cards')) %>"
+       onclick="document.cookie = 'preferred_service_view=cards; path=/; max-age=31536000';"
+       class="btn btn-small <%= @view_type == 'cards' ? 'active' : '' %>">
+      <i class="material-icons left">view_module</i>Cartão
+    </a>
+  </div>
+</div>
 
+<!-- Restante do código da view -->
 
 <div class="container mx-auto px-4 py-8">
   <div class="mb-8">
@@ -13,7 +28,6 @@
   </div>
 
   <% unless @service.canceled %>
-
       <%= link_to "Encaixar novo paciente", clinic_management.new_patient_fitted_invitations_path(@service), class: "inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-6" %>
   <% else %>
     <p class="text-red-500 font-bold">Este atendimento foi cancelado.</p>
@@ -47,10 +61,15 @@
   </div>
 <% end %>
 
+  <%# Render table or cards view based on @view_type %>
   <% if @rows.present? %>
-    <div data-controller="table" class="overflow-hidden border-gray-200 sm:rounded-lg">
-        <%= data_table(@rows, 4) %>
-    </div>
+    <% if @view_type == 'cards' %>
+      <%= render partial: "service_cards", locals: { rows: @rows } %>
+    <% else %>
+      <div data-controller="table" class="overflow-hidden border-gray-200 sm:rounded-lg">
+          <%= data_table(@rows, 4) %>
+      </div>
+    <% end %>
   <% else %>
     <div class="bg-white shadow sm:rounded-lg">
       <div class="px-4 py-5 sm:p-6">

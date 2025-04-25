@@ -4,8 +4,23 @@
   <%= breadcrumb({title: "Todos os atendimentos", path: services_path}, {title: "Atendimentos de " + @referral.name, path: index_by_referral_services_path(@referral)}, {title: @service.date.strftime("%d/%m/%Y"), path: nil}) %>
 <% end %>
 
-<!-- Restante do código da view -->
+<%# Toggle for table/cards view. Stores preference in a cookie. %>
+<div class="view-toggle-container right-align mb-4">
+  <div class="btn-group">
+    <a href="<%= url_for(params.permit!.merge(view_type: 'table')) %>"
+       onclick="document.cookie = 'preferred_service_view=table; path=/; max-age=31536000';"
+       class="btn btn-small <%= @view_type != 'cards' ? 'active' : '' %>">
+      <i class="material-icons left">view_list</i>Tabela
+    </a>
+    <a href="<%= url_for(params.permit!.merge(view_type: 'cards')) %>"
+       onclick="document.cookie = 'preferred_service_view=cards; path=/; max-age=31536000';"
+       class="btn btn-small <%= @view_type == 'cards' ? 'active' : '' %>">
+      <i class="material-icons left">view_module</i>Cartão
+    </a>
+  </div>
+</div>
 
+<!-- Restante do código da view -->
 
 <div class="container mx-auto px-4 py-8">
   <div class="mb-8">
@@ -18,10 +33,15 @@
 
   <p class="text-lg text-gray-700 mb-4">Número de pacientes: <%= @rows.count %></p>
 
+  <%# Render table or cards view based on @view_type %>
   <% if @rows.present? %>
-    <div class="overflow-hidden border-gray-200 sm:rounded-lg">
-      <%= data_table(@rows) %>
-    </div>
+    <% if @view_type == 'cards' %>
+      <%= render partial: "service_cards", locals: { rows: @rows } %>
+    <% else %>
+      <div class="overflow-hidden border-gray-200 sm:rounded-lg">
+        <%= data_table(@rows) %>
+      </div>
+    <% end %>
   <% else %>
     <div class="bg-white shadow sm:rounded-lg">
       <div class="px-4 py-5 sm:p-6">

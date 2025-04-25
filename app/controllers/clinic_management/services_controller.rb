@@ -32,6 +32,8 @@ module ClinicManagement
     
     # GET /services/1
     def show
+      # Set the view type for table/cards toggle based on params or cookie
+      @view_type = params[:view_type] || cookies[:preferred_service_view] || 'table'
       @rows = process_appointments_data(@service.appointments) 
     end
 
@@ -56,6 +58,7 @@ module ClinicManagement
     end
 
     def show_by_referral
+      @view_type = params[:view_type] || cookies[:preferred_service_view] || 'table'
       @referral = Referral.find(params[:referral_id])
       all_appointments = Appointment.where(referral_code: @referral.code)
       all_services = all_appointments.map(&:service).uniq
