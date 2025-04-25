@@ -149,13 +149,19 @@ module ClinicManagement
           phone&.gsub(/[^0-9]/, '')&.gsub(/(\d{2})(\d{5})(\d{4})/, '(\1) \2-\3')
         end
 
-        # Returns an HTML link with the masked phone number that opens WhatsApp chat when clicked
+        # Returns an HTML link with the masked phone number that opens WhatsApp chat when clicked,
+        # and a phone icon next to it that allows direct calling from mobile devices.
         def masked_whatsapp_link(phone, message = "")
           masked_phone = add_phone_mask(phone)
-          link = whatsapp_link(phone, message)
-          # WhatsApp icon + masked phone, premium UX, opens in new tab
-          "<a href=\"#{link}\" target=\"_blank\" rel=\"noopener\" style=\"text-decoration:none;font-weight:500;\" class=\"nowrap text-blue-500 hover:text-blue-700\">
+          whatsapp = whatsapp_link(phone, message)
+          tel_link = "tel:+55#{phone&.gsub(/[^0-9]/, '')}"
+
+          # WhatsApp icon, masked phone, and phone icon (call) with clear spacing and premium UX
+          "<a href=\"#{whatsapp}\" target=\"_blank\" rel=\"noopener\" style=\"text-decoration:none;font-weight:500;\" class=\"nowrap text-blue-500 hover:text-blue-700\">
             <i class=\"fab fa-whatsapp\" style=\"margin-right:6px;\"></i>#{masked_phone}
+          </a>
+          <a href=\"#{tel_link}\" style=\"margin-left:10px;color:#4B5563;text-decoration:none;\" title=\"Call\">
+            <i class=\"fas fa-phone-alt\"></i>
           </a>".html_safe
         end
 
