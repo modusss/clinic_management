@@ -147,6 +147,10 @@ module ClinicManagement
     end
 
     def absent
+      # Set the view type for table/cards toggle based on params or cookie
+      # This allows the view to know which layout to render
+      @view_type = params[:view_type] || cookies[:preferred_absent_view] || 'table'
+
       # Store the URL, potentially modified, in the session on GET requests
       if request.get?
         # Parse the original URL

@@ -1,5 +1,25 @@
 <%# render_menu(@menu) %>
 
+<%# Toggle for table/cards view. Stores preference in a cookie. %>
+<div class="view-toggle-container right-align mb-4">
+  <div class="btn-group">
+    <a href="<%= absent_leads_path(
+                params.permit(:year, :month, :patient_type, :contact_status, :sort_order, :tab).merge(view_type: 'table')
+              ) %>"
+       onclick="document.cookie = 'preferred_absent_view=table; path=/; max-age=31536000';"
+       class="btn btn-small <%= @view_type != 'cards' ? 'active' : '' %>">
+      <i class="material-icons left">view_list</i>Tabela
+    </a>
+    <a href="<%= absent_leads_path(
+                params.permit(:year, :month, :patient_type, :contact_status, :sort_order, :tab).merge(view_type: 'cards')
+              ) %>"
+       onclick="document.cookie = 'preferred_absent_view=cards; path=/; max-age=31536000';"
+       class="btn btn-small <%= @view_type == 'cards' ? 'active' : '' %>">
+      <i class="material-icons left">view_module</i>Cartão
+    </a>
+  </div>
+</div>
+
 <% if referral?(current_user) %>
 <h5 class="text-xl font-semibold text-gray-800">Lista dos pacientes ausentes mais antigos que 120 dias</h5>
 <br>
@@ -197,7 +217,12 @@
   
   <br>
   <br>
-  <%= render partial: "absent_table", locals: { rows: @rows, leads: @leads } %>
+  <%# Render table or cards view based on @view_type %>
+  <% if @view_type == 'cards' %>
+    <%= render partial: "absent_cards", locals: { rows: @rows, leads: @leads } %>
+  <% else %>
+    <%= render partial: "absent_table", locals: { rows: @rows, leads: @leads } %>
+  <% end %>
 
 <% end %>
 
