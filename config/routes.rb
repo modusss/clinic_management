@@ -43,6 +43,7 @@ ClinicManagement::Engine.routes.draw do
   get 'prescriptions/index_today', to: "prescriptions#index_today", as: "index_today"
   get 'generate_order_pdf', to: 'prescriptions#generate_order_pdf', as: :generate_order_pdf
   get 'prescriptions/index_next', to: "prescriptions#index_next", as: "index_next"
+  get 'prescriptions/index_before', to: "prescriptions#index_before", as: "index_before"
 
   resources :services do
     member do
