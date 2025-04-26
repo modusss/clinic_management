@@ -1,24 +1,11 @@
 <%# render_menu(@menu) %>
 
 <%# Toggle for table/cards view. Stores preference in a cookie. %>
-<div class="view-toggle-container right-align mb-4">
-  <div class="btn-group">
-    <a href="<%= absent_leads_path(
-                params.permit(:year, :month, :patient_type, :contact_status, :sort_order, :tab).merge(view_type: 'table')
-              ) %>"
-       onclick="document.cookie = 'preferred_absent_view=table; path=/; max-age=31536000';"
-       class="btn btn-small <%= @view_type != 'cards' ? 'active' : '' %>">
-      <i class="material-icons left">view_list</i>Tabela
-    </a>
-    <a href="<%= absent_leads_path(
-                params.permit(:year, :month, :patient_type, :contact_status, :sort_order, :tab).merge(view_type: 'cards')
-              ) %>"
-       onclick="document.cookie = 'preferred_absent_view=cards; path=/; max-age=31536000';"
-       class="btn btn-small <%= @view_type == 'cards' ? 'active' : '' %>">
-      <i class="material-icons left">view_module</i>Cartão
-    </a>
-  </div>
-</div>
+<%= render partial: "clinic_management/shared/toggle_cards_table", locals: { 
+      path: ->(args = {}) { absent_leads_path(params.permit(:year, :month, :patient_type, :contact_status, :sort_order, :tab).merge(args)) }, 
+      cookie_name: "preferred_absent_view", 
+      view_type: @view_type 
+    } %>
 
 <% if referral?(current_user) %>
 <h5 class="text-xl font-semibold text-gray-800">Lista dos pacientes ausentes mais antigos que 120 dias</h5>

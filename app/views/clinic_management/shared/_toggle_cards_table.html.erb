@@ -1,0 +1,31 @@
+<%# 
+  Reusable toggle for table/cards view.
+  Usage:
+    <%= render partial: "clinic_management/shared/toggle_cards_table", locals: { 
+          path: path_helper, 
+          cookie_name: "preferred_view_cookie", 
+          view_type: @view_type 
+        } %#>
+%>
+<div class="view-toggle-container right-align mb-4">
+  <div class="btn-group">
+    <a href="<%= path.call(view_type: 'table') %>"
+       onclick="document.cookie = '<%= cookie_name %>=table; path=/; max-age=31536000';"
+       class="btn btn-small <%= view_type != 'cards' ? 'active' : '' %>">
+      <% if local_assigns[:icon_type] == "material" %>
+        <i class="material-icons left">view_list</i>Tabela
+      <% else %>
+        <i class="fa fa-list-ul" style="margin-right: 4px;"></i>Tabela
+      <% end %>
+    </a>
+    <a href="<%= path.call(view_type: 'cards') %>"
+       onclick="document.cookie = '<%= cookie_name %>=cards; path=/; max-age=31536000';"
+       class="btn btn-small <%= view_type == 'cards' ? 'active' : '' %>">
+      <% if local_assigns[:icon_type] == "material" %>
+        <i class="material-icons left">view_module</i>Cartão
+      <% else %>
+        <i class="fa fa-th-large" style="margin-right: 4px;"></i>Cartão
+      <% end %>
+    </a>
+  </div>
+</div> 

@@ -1,18 +1,9 @@
 <%# Toggle for table/cards view. Stores preference in a cookie. %>
-<div class="view-toggle-container right-align mb-4">
-  <div class="btn-group">
-    <a href="<%= clinic_management.index_before_path(view_type: 'table') %>"
-       onclick="document.cookie = 'preferred_prescriptions_before_view=table; path=/; max-age=31536000';"
-       class="btn btn-small <%= @view_type != 'cards' ? 'active' : '' %>">
-      <i class="fa fa-list-ul" style="margin-right: 4px;"></i>Tabela
-    </a>
-    <a href="<%= clinic_management.index_before_path(view_type: 'cards') %>"
-       onclick="document.cookie = 'preferred_prescriptions_before_view=cards; path=/; max-age=31536000';"
-       class="btn btn-small <%= @view_type == 'cards' ? 'active' : '' %>">
-      <i class="fa fa-th-large" style="margin-right: 4px;"></i>Cartão
-    </a>
-  </div>
-</div>
+<%= render partial: "clinic_management/shared/toggle_cards_table", locals: { 
+      path: ->(args = {}) { clinic_management.index_before_path(args) }, 
+      cookie_name: "preferred_prescriptions_before_view", 
+      view_type: @view_type 
+    } %>
 
 <% if @services.present? %>
   <% @rows.each_with_index do |rows, index| %>
