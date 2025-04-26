@@ -14,7 +14,7 @@
     </nav>
   </header>
 <% elsif (referral? current_user) %>
-  <header class="relative bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 py-4 shadow-md md:pl-64 z-50">
+  <header class="navbar-fixed relative bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 py-4 shadow-md md:pl-64 z-50" style="position:fixed; width:100%;">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex flex-wrap justify-between items-center">
         <h1 class="text-white text-xl font-bold mb-4 sm:mb-0">
@@ -78,7 +78,7 @@
   </aside>
 
 <% else %>
-<header class="relative bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 py-4 shadow-md md:pl-64 z-50">
+<header class="navbar-fixed relative bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 py-4 shadow-md md:pl-64 z-50">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex flex-wrap justify-between items-center">
       <h1 class="text-white text-2xl font-bold mb-4 sm:mb-0 w-full sm:w-auto text-center sm:text-left">
@@ -177,6 +177,11 @@
   @media (min-width: 960px) {
     #search_lead {
       width: 500px;
+    }
+
+    .navbar-fixed {
+      position: fixed;
+      width: 100%;
     }
   }
 
