@@ -125,8 +125,23 @@
         <div id="lead-results" class="absolute mt-1 w-full bg-white shadow-lg rounded-b" style="z-index: 1000"></div>
       </div>
 
+      <!-- Dropdown de serviços disponíveis -->
+      <div class="flex items-center order-4 ml-4 mt-4 sm:mt-0">
+        <div class="w-full sm:w-auto">
+          <select id="service_select" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  onchange="if(this.value != '') window.location.href=this.value">
+            <option value="" selected>Ir para atendimento...</option>
+            <% ClinicManagement::Service.where("date >= ?", Date.current).order(date: :asc).limit(20).each do |service| %>
+              <option value="<%= clinic_management.service_path(service) %>">
+                <%= display_service_name(service) %>
+              </option>
+            <% end %>
+          </select>
+        </div>
+      </div>
+
       <% if user_signed_in? %>
-        <div class="flex items-center text-white order-1 sm:order-4">
+        <div class="flex items-center text-white order-1 sm:order-5">
            <span class="md:inline mr-4">Olá, <%= current_user.name %></span>
            <%= link_to "Sair", main_app.destroy_user_session_path, data: { turbo_method: :delete }, class: "text-sm px-4 py-2 border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white" %>
         </div>
