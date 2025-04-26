@@ -19,12 +19,9 @@
           # GET /prescriptions/index_next
       # Shows all services scheduled for the next available day after today (not including today)
       def index_next
-        # Find the next date (> today) that has at least one service scheduled
+        @view_type = params[:view_type] || cookies[:preferred_prescriptions_next_view] || 'table'
         next_date = Service.where('date > ?', Date.current).order(:date).pluck(:date).first
-
-        # Fetch all services for that next date, if any
         @services = Service.where(date: next_date)
-        # Map all services for the next available day
         @rows = mapping_rows(@services)
       end
 
