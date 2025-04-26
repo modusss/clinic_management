@@ -10,7 +10,8 @@
       end
 
       def index_today
-        # get all services for today
+        # Set the view type for table/cards toggle based on params or cookie
+        @view_type = params[:view_type] || cookies[:preferred_prescriptions_today_view] || 'table'
         @services = Service.where(date: Date.current)
         @rows = mapping_rows(@services)
       end

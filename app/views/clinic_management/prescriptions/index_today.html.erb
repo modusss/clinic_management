@@ -1,3 +1,18 @@
+<%# Toggle for table/cards view. Stores preference in a cookie. %>
+<div class="view-toggle-container right-align mb-4">
+  <div class="btn-group">
+    <a href="<%= clinic_management.index_today_path(view_type: 'table') %>"
+       onclick="document.cookie = 'preferred_prescriptions_today_view=table; path=/; max-age=31536000';"
+       class="btn btn-small <%= @view_type != 'cards' ? 'active' : '' %>">
+      <i class="fa fa-list-ul" style="margin-right: 4px;"></i>Tabela
+    </a>
+    <a href="<%= clinic_management.index_today_path(view_type: 'cards') %>"
+       onclick="document.cookie = 'preferred_prescriptions_today_view=cards; path=/; max-age=31536000';"
+       class="btn btn-small <%= @view_type == 'cards' ? 'active' : '' %>">
+      <i class="fa fa-th-large" style="margin-right: 4px;"></i>Cartão
+    </a>
+  </div>
+</div>
 
 <% unless doctor?(current_user)%>
 
@@ -66,22 +81,26 @@
     <br>
     <br>
     <br>
-    <% @rows.each_with_index do |rows, index| %>
-
-      <% unless doctor?(current_user)%>
-        <% if @services.present? %>
-          <%= link_to "Encaixar novo paciente", new_patient_fitted_invitations_path(@services[index]), class: "inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-6" %>
-          <%= link_to "Página do atendimento", service_path(@services[index]), class: "text-blue-500 hover:text-blue-700" %>
-          <br>
-          <br>
+    <%# Render table or cards view based on @view_type %>
+    <% if @view_type == 'cards' %>
+      <%= render partial: "today_cards", locals: { rows: @rows, services: @services } %>
+    <% else %>
+      <% @rows.each_with_index do |rows, index| %>
+        <% unless doctor?(current_user)%>
+          <% if @services.present? %>
+            <%= link_to "Encaixar novo paciente", new_patient_fitted_invitations_path(@services[index]), class: "inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-6" %>
+            <%= link_to "Página do atendimento", service_path(@services[index]), class: "text-blue-500 hover:text-blue-700" %>
+            <br>
+            <br>
+          <% end %>
         <% end %>
+        <h3 class="text-xl text-gray-700 mb-3"><%= @services[index].start_time.strftime('%H:%M') %>h às <%= @services[index].end_time.strftime('%H:%M') %>h</h3>      
+        <div data-controller="table">
+          <%= data_table(rows, 3) %>
+        </div>
+        <br>
+        <br>
       <% end %>
-      <h3 class="text-xl text-gray-700 mb-3"><%= @services[index].start_time.strftime('%H:%M') %>h às <%= @services[index].end_time.strftime('%H:%M') %>h</h3>      
-      <div data-controller="table">
-        <%= data_table(rows, 3) %>
-      </div>
-      <br>
-      <br>
     <% end %>
 <% else %>
     <br>
