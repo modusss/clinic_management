@@ -52,6 +52,24 @@
           <div id="lead-results" class="absolute mt-1 w-full bg-white shadow-lg rounded-b" style="z-index: 1000"></div>
         </div>
 
+        <!-- Dropdown de serviços disponíveis para referral -->
+        <div class="flex items-center order-4 ml-4 mt-4 sm:mt-0">
+          <div class="w-full sm:w-auto">
+            <select id="service_select" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    onchange="if(this.value != '') window.location.href=this.value">
+              <option value="" selected>Ir para atendimento...</option>
+              <% ClinicManagement::Service.joins(:appointments)
+                                          .where(appointments: { referral_code: user_referral.code })
+                                          .where("date >= ?", Date.current)
+                                          .distinct.order(date: :asc).limit(20).each do |service| %>
+                <option value="<%= clinic_management.show_by_referral_services_path(referral_id: user_referral.id, id: service.id) %>">
+                  <%= display_service_name(service) %>
+                </option>
+              <% end %>
+            </select>
+          </div>
+        </div>
+
         <% if user_signed_in? %>
           <div class="flex items-center order-1 sm:order-4 mt-4 sm:mt-0">
             <span class="text-white mr-4">Olá, <%= current_user.name %></span>
@@ -66,6 +84,7 @@
     <h1 class="text-white text-xl font-bold mb-6">
        <%= link_to raw("Lipepay <span class='block mt-1 text-xs bg-white text-blue-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-blue-300" %>
     </h1>
+    
     <nav class="flex flex-col space-y-3 text-lg">
         <% if allowed_to_access_leads?(current_user) %>
           <%= link_to "Pacientes ausentes",
