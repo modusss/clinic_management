@@ -105,6 +105,8 @@ module ClinicManagement
         end
         if @appointment.service.date == Date.current
           redirect_to index_today_path
+        elsif @appointment.service.date == Service.where('date > ?', Date.current).order(:date).pluck(:date).first
+          redirect_to index_next_path
         else
           redirect_to @appointment.service
         end
