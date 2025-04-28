@@ -415,7 +415,7 @@ module ClinicManagement
               partial: "clinic_management/leads/patient_name_with_edit_button", 
               locals: { invitation: ap.invitation }
             ).html_safe, 
-            class: "nowrap size_20"
+            class: "nowrap size_20 patient-name"
           },          
           {header: "Data do atendimento", content: service_content_link(ap), class: "nowrap"},
           {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: ap, message: "" }), id: "appointment-comments-#{ap.id}"},                   
@@ -494,7 +494,7 @@ module ClinicManagement
                 partial: "clinic_management/leads/patient_name_with_edit_button", 
                 locals: { invitation: last_invitation }
               ).html_safe, 
-              class: "nowrap size_20"
+              class: "nowrap size_20 patient-name"
             },
             # Status column with separated order information
             {header: "Status", content: status_content.html_safe, class: "!min-w-[300px]"},   
@@ -521,7 +521,7 @@ module ClinicManagement
                 partial: "clinic_management/leads/patient_name_with_edit_button", 
                 locals: { invitation: last_invitation }
               ).html_safe, 
-              class: "nowrap size_20"
+              class: "nowrap size_20 patient-name" 
             },
             # Status column with separated order information
             {header: "Status", content: status_content.html_safe, class: "!min-w-[300px]"},

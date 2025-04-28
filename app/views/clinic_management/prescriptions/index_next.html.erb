@@ -9,17 +9,20 @@
   <% @rows.each_with_index do |rows, index| %>
     <% service = @services[index] %>
     <%# Service header %>
-    <h1 class="text-3xl font-bold text-gray-900 mb-2">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2 px-4">
       Próximo atendimento: <%= show_week_day service.weekday %>
     </h1>
-    <h2 class="text-2xl text-gray-700 mb-1"><%= service.service_type&.name %></h2>
-    <h2 class="text-2xl text-gray-700 mb-1"><%= service.date.strftime("%d/%m/%Y") %></h2>
-    <h3 class="text-xl text-gray-700 mb-3">
+    <h2 class="text-2xl text-gray-700 mb-1 px-4"><%= service.service_type&.name %></h2>
+    <h2 class="text-2xl text-gray-700 mb-1 px-4"><%= service.date.strftime("%d/%m/%Y") %></h2>
+    <h3 class="text-xl text-gray-700 mb-3 px-4">
       <%= service.start_time.strftime('%H:%M') %>h às <%= service.end_time.strftime('%H:%M') %>h
     </h3>
     <%# Always show action buttons for each service %>
-    <%= link_to "Encaixar novo paciente", new_patient_fitted_invitations_path(service), class: "inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-6" %>
-    <%= link_to "Página do atendimento", service_path(service), class: "text-blue-500 hover:text-blue-700" %>
+    <%# Substituindo os links diretos pela partial %>
+    <%= render partial: "clinic_management/shared/action_links", locals: { 
+      service: service,
+      show_fit_patient: true
+    } %>
     <br>
     <br>
     <%# Renderiza tabela ou cartões conforme a escolha %>

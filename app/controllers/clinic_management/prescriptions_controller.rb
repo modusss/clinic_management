@@ -214,7 +214,7 @@
             next unless ap.attendance == true
             [
               {header: "#", content: index},
-              {header: "Paciente", content: invitation.patient_name, class: "size_20 nowrap"},
+              {header: "Paciente", content: invitation.patient_name, class: "size_20 nowrap patient-name"},
               {header: "Comparecimento", content: ap.attendance == true ? "sim" : "--"},
               {header: "Receita", content: prescription_link(ap), class: "nowrap"}
             ]
@@ -227,7 +227,7 @@
                   partial: "clinic_management/leads/patient_name_with_edit_button", 
                   locals: { invitation: ap.invitation }
                 ).html_safe, 
-                class: "nowrap size_20"
+                class: "nowrap size_20 patient-name"
               },   
               {header: "Status", content: helpers.format_status_and_attendance(ap), id: "status-#{ap.id}", class: helpers.status_class(ap) },          
               {header: "Confirmado", content: render_to_string(

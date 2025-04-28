@@ -79,7 +79,7 @@
   <br>
   <div class="relative">
     <%= form_with url: search_absents_leads_path, method: :post, data: { turbo_stream: true, controller: "debounce" }, class: "w-full sm:w-auto flex justify-center sm:justify-start mt-4 sm:mt-0" do |search| %>
-      <div class="input-field relative">
+      <div class="input-field relative" id="search-results-container">
         <%= search.search_field :q,
             data: { debounce_target: "input", action: "input->debounce#input" },
             id: "search_absent",
@@ -87,7 +87,7 @@
             autocomplete: "off",
             spellcheck: false,
             class: "bg-white rounded p-2 w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent",
-            style: "font-size: 16px; width: 500px; padding: 12px;" %>
+            style: "font-size: 16px; padding: 12px;" %>
         <label class="absolute right-2 top-1/2 transform -translate-y-1/2" for="search_lead">
           <i class="fas fa-search text-gray-500"></i>
         </label>
@@ -191,7 +191,7 @@
   <br>
   
   <!-- Add result count display -->
-  <div class="my-4 text-gray-700">
+  <div class="my-4 text-gray-700 px-4">
     <!-- Format the count -->
     <%= number_with_delimiter(@leads.total_count, delimiter: ".") %> 
     <!-- Determine singular or plural word based on count -->
@@ -246,6 +246,25 @@
 .pagination li a svg {
   vertical-align: middle;
 }
+
+@media (max-width: 768px) {
+
+  #search_absent{
+    width: 100%;
+  }
+
+  #search-results-container {
+    width: 100%;
+    margin: 10px;
+  }
+}
+
+@media (min-width: 768px) {
+  #search_absent{
+    width: 500px;
+  }
+}
+
 </style>
 
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">

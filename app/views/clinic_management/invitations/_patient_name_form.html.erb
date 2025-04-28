@@ -2,10 +2,24 @@
   <%= form_with url: update_patient_name_invitation_path(invitation), method: :patch, data: { turbo: true } do |f| %>
     <%= f.hidden_field :count, value: params[:count] %>
     <div class="flex items-center">
-      <%= f.text_field :patient_name, value: invitation.patient_name, class: "border border-gray-300 rounded px-2 py-1 mr-2 text-sm", autofocus: true, style: "width: 350px; height: 50px; font-size: 20px;" %>
+      <%= f.text_field :patient_name, value: invitation.patient_name, class: "border border-gray-300 rounded px-2 py-1 mr-2 text-sm", autofocus: true, style: " height: 50px; font-size: 20px;" %>
       <button type="submit" class="text-green-500 hover:text-green-700 mr-1 text-xs" style="margin-top: 10px; font-size: 20px;">
         <i class="fas fa-check"></i>
       </button>
     </div>
   <% end %>
 </div> 
+
+<style>
+  @media (max-width: 768px) {
+    input#patient_name{
+      width: 100%;
+    }
+  }
+
+  @media (min-width: 768px) {
+    input#patient_name{
+      width: 350px;
+    }
+  }
+</style>

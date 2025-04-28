@@ -164,7 +164,7 @@ module ClinicManagement
                 partial: "clinic_management/leads/patient_name_with_edit_button", 
                 locals: { invitation: ap.invitation }
               ).html_safe, 
-              class: "nowrap size_20"
+              class: "nowrap size_20 patient-name"
             },   
             { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
             { header: "Observações", content: ap.comments },
@@ -217,7 +217,7 @@ module ClinicManagement
                 partial: "clinic_management/leads/patient_name_with_edit_button", 
                 locals: { invitation: ap.invitation }
               ).html_safe, 
-              class: "nowrap size_20"
+              class: "nowrap size_20 patient-name"
             },   
             { header: "Status", content: helpers.format_status_and_attendance(ap), id: "status-#{ap.id}", class: helpers.status_class(ap) },          
             { header: "Confirmado", content: render_to_string(

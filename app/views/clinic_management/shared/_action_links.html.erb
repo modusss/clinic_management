@@ -1,0 +1,37 @@
+<%# 
+  Partial para links de ação padronizados
+  
+  Parâmetros:
+  - service: objeto Service necessário para os links
+  - show_fit_patient: boolean que controla se o botão de "Encaixar novo paciente" deve ser exibido (default: true)
+  - additional_links: array de hashes contendo :text, :path e :class para links adicionais (opcional)
+  - container_class: classes adicionais para o container ul (opcional)
+  - primary_btn_class: classes personalizadas para o botão principal (opcional)
+  - secondary_btn_class: classes personalizadas para botões secundários (opcional)
+%>
+
+<% 
+  show_fit_patient = local_assigns.fetch(:show_fit_patient, true)
+  additional_links = local_assigns.fetch(:additional_links, [])
+  container_class = local_assigns.fetch(:container_class, "flex flex-wrap justify-center")
+  primary_btn_class = local_assigns.fetch(:primary_btn_class, "inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-6 m-2.5")
+  secondary_btn_class = local_assigns.fetch(:secondary_btn_class, "text-blue-500 hover:text-blue-700 m-2.5")
+%>
+
+<ul class="<%= container_class %>">
+  <% if show_fit_patient %>
+    <li>
+      <%= link_to "Encaixar novo paciente", new_patient_fitted_invitations_path(service), class: primary_btn_class %>
+    </li>
+  <% end %>
+  
+  <li style="padding: 15px 0px;">
+    <%= link_to "Página do atendimento", service_path(service), class: secondary_btn_class %>
+  </li>
+  
+  <% additional_links.each do |link| %>
+    <li>
+      <%= link_to link[:text], link[:path], class: link[:class] || secondary_btn_class %>
+    </li>
+  <% end %>
+</ul> 

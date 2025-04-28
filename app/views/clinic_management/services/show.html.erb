@@ -9,15 +9,16 @@
 
 <!-- Restante do código da view -->
 
-<div class="container mx-auto px-4 py-8">
+<div class="container py-8">
   <div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 mb-2">Atendimento de <%= show_week_day @service.weekday %></h1>
-    <h2 class="text-2xl text-gray-700 mb-1"><%= @service.service_type&.name %></h2>
-    <h2 class="text-2xl text-gray-700 mb-1"><%= @service.date.strftime("%d/%m/%Y") %></h2>
-    <h3 class="text-xl text-gray-700 mb-3"><%= @service.start_time.strftime('%H:%M') %>h às <%= @service.end_time.strftime('%H:%M') %>h</h3>
-    <p class="text-gray-600">Lista de convidados do atendimento e informações relacionadas.</p>
+    <h1 class="text-3xl font-bold text-gray-900 mb-2 px-4">Atendimento de <%= show_week_day @service.weekday %></h1>
+    <h2 class="text-2xl text-gray-700 mb-1 px-4"><%= @service.service_type&.name %></h2>
+    <h2 class="text-2xl text-gray-700 mb-1 px-4"><%= @service.date.strftime("%d/%m/%Y") %></h2>
+    <h3 class="text-xl text-gray-700 mb-3 px-4"><%= @service.start_time.strftime('%H:%M') %>h às <%= @service.end_time.strftime('%H:%M') %>h</h3>
+    <p class="text-gray-600 px-4">Lista de convidados do atendimento e informações relacionadas.</p>
   </div>
 
+  <div class="px-4">
   <% unless @service.canceled %>
       <%= link_to "Encaixar novo paciente", clinic_management.new_patient_fitted_invitations_path(@service), class: "inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-6" %>
   <% else %>
@@ -30,7 +31,7 @@
   <br>
   <% end %>
   <p class="text-lg text-gray-700 mb-4">Número de pacientes: <%= @rows.count %></p>
-
+  </div>
 <% unless (referral? current_user) %>
   <div class="relative">
     <%= form_with url: search_appointment_path(@service), method: :post, data: { remote: true, controller: "debounce" }, class: "w-full sm:w-auto flex justify-center sm:justify-start mt-4 sm:mt-0" do |search| %>
@@ -77,7 +78,9 @@
   <br>
   <% if is_manager_above? && @service.date >= Date.current %>
     <% unless @service.canceled %>
-      <%= button_to "Cancelar Atendimento", cancel_service_path(@service), method: :patch, class: "bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" %>
+      <div class="px-4">
+        <%= button_to "Cancelar Atendimento", cancel_service_path(@service), method: :patch, class: "bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" %>
+      </div>
     <% end %>
   <% end %>
     <br>
@@ -96,6 +99,13 @@
   #search-results-container input {
     width: 400px;
   }
+}
+
+@media screen and (max-width: 767px) {
+
+    .patient-name.nowrap{
+        white-space: normal;
+    }
 }
 
 </style>
