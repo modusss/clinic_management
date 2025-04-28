@@ -429,7 +429,7 @@ module ClinicManagement
         unless helpers.referral?(current_user)
           row.insert(5, {header: "Receita", content: prescription_link(ap), class: "nowrap"})
           row << {header: "Convidado por", content: invitation&.referral&.name}
-          row << {header: "Mensagem", content: generate_message_content(@lead, ap), id: "whatsapp-link-#{@lead.id}"}
+          #row << {header: "Mensagem", content: generate_message_content(@lead, ap), id: "whatsapp-link-#{@lead.id}"}
         end
 
         row
@@ -511,6 +511,7 @@ module ClinicManagement
             {header: "Vezes convidado", content: lead.invitations.count},
             {header: "Último atendimento", content: service_content_link(last_appointment), class: "nowrap"},
             {header: "Remarcação", content: reschedule_form(new_appointment, last_appointment), class: "text-orange-500" },
+            {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}"}
           ]
         else
           [
@@ -539,7 +540,8 @@ module ClinicManagement
             {header: "Qtd. de convites", content: lead.invitations.count},
             {header: "Qtd. de atendimentos", content: lead.appointments.count},
             {header: "Último atendimento", content: service_content_link(last_appointment), class: "nowrap"},
-            {header: "Remarcação", content: reschedule_form(new_appointment, last_appointment), class: "text-orange-500" }
+            {header: "Remarcação", content: reschedule_form(new_appointment, last_appointment), class: "text-orange-500" },
+            {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}"}
           ]
         end
       end

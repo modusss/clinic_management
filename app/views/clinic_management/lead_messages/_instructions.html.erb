@@ -10,15 +10,18 @@
         <li><strong>{HORARIO_DE_INICIO}</strong> : Substituirá pelo horário de início do atendimento (por exemplo, "13:00");</li>
         <li><strong>{HORARIO_DE_TERMINO}</strong> : Substituirá pelo horário de término do atendimento (por exemplo, "16:30");</li>
     </ul>
-    <h5 class="text-lg font-semibold mt-4 mb-2">Funcionalidade de Múltiplas Mensagens Sorteadas:</h5>
-    <p>Para incluir múltiplas opções de frases na mensagem, que serão escolhidas aleatoriamente, use colchetes `[]` com opções separadas pelo símbolo `|`. Por exemplo, `[Opção 1|Opção 2|Opção 3]` escolherá aleatoriamente uma das opções.</p>
-    <h5 class="text-lg font-semibold mt-4 mb-2">Incorporar URL, Legenda e Tipo para Vídeos, Imagens ou PDFs:</h5>
-    <p>Você pode adicionar anexos como vídeos, imagens ou PDFs utilizando o formato a seguir:</p>
-    <p><strong>[url="URL_DO_ARQUIVO" legenda="LEGENDA_DO_ARQUIVO" tipo="TIPO_DO_ARQUIVO"]</strong></p>
-    <ul class="list-disc list-inside text-gray-700">
-        <li><strong>URL_DO_ARQUIVO</strong>: O link direto para o arquivo (vídeo, imagem ou PDF);</li>
-        <li><strong>LEGENDA_DO_ARQUIVO</strong>: A legenda opcional que será exibida com o anexo;</li>
-        <li><strong>TIPO_DO_ARQUIVO</strong>: O tipo de mídia (por exemplo, "vídeo", "imagem", "pdf").</li>
-    </ul>
-    <p>Por exemplo: <code>[url="https://example.com/video.mp4" legenda="Vídeo explicativo" tipo="vídeo"]</code>.</p>
+    <% unless referral?(current_user) %>
+        <h5 class="text-lg font-semibold mt-4 mb-2">Funcionalidade de Múltiplas Mensagens Sorteadas:</h5>
+        <p>Para incluir múltiplas opções de frases na mensagem, que serão escolhidas aleatoriamente, use colchetes `[]` com opções separadas pelo símbolo `|`. Por exemplo, `[Opção 1|Opção 2|Opção 3]` escolherá aleatoriamente uma das opções.</p>
+    
+        <h5 class="text-lg font-semibold mt-4 mb-2">Incorporar URL, Legenda e Tipo para Vídeos, Imagens ou PDFs:</h5>
+        <p>Você pode adicionar anexos como vídeos, imagens ou PDFs utilizando o formato a seguir:</p>
+        <p><strong>[url="URL_DO_ARQUIVO" legenda="LEGENDA_DO_ARQUIVO" tipo="TIPO_DO_ARQUIVO"]</strong></p>
+        <ul class="list-disc list-inside text-gray-700">
+            <li><strong>URL_DO_ARQUIVO</strong>: O link direto para o arquivo (vídeo, imagem ou PDF);</li>
+            <li><strong>LEGENDA_DO_ARQUIVO</strong>: A legenda opcional que será exibida com o anexo;</li>
+            <li><strong>TIPO_DO_ARQUIVO</strong>: O tipo de mídia (por exemplo, "vídeo", "imagem", "pdf").</li>
+        </ul>
+        <p>Por exemplo: <code>[url="https://example.com/video.mp4" legenda="Vídeo explicativo" tipo="vídeo"]</code>.</p>
+    <% end %>
 </div>

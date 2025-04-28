@@ -171,6 +171,7 @@ module ClinicManagement
             { header: "Responsável", content: ((lead.name == invitation&.patient_name) ? "" : lead.name) },
             { header: "Telefone", content: helpers.masked_whatsapp_link(lead.phone), class: "text-blue-500 hover:text-blue-700 nowrap" },
             { header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500" },
+            { header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id.to_s}" },
             { header: "Endereço", content: invitation&.lead&.address },
             { header: "Região", content: invitation&.region&.name },
             { header: "Localização", content: get_location_link(lead) },
