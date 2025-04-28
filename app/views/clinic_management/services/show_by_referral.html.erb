@@ -4,6 +4,12 @@
   <%= breadcrumb({title: "Todos os atendimentos", path: services_path}, {title: "Atendimentos de " + @referral.name, path: index_by_referral_services_path(@referral)}, {title: @service.date.strftime("%d/%m/%Y"), path: nil}) %>
 <% end %>
 
+<%= render partial: "clinic_management/shared/toggle_cards_table", locals: { 
+      path: ->(args = {}) { url_for(params.permit!.merge(args)) }, 
+      cookie_name: "preferred_service_view", 
+      view_type: @view_type 
+    } %>
+
 <%# Toggle for table/cards view. Stores preference in a cookie. %>
 <div class="flex justify-end mb-4 px-4">
   <button id="toggle-view" class="px-4 py-2 border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white">

@@ -17,10 +17,12 @@
         <%= form.text_field :name, class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
       </div>
 
-      <div class="field mb-4">
-        <%= form.label :message_type, "Tipo da mensagem", class: "block text-gray-700 text-sm font-bold mb-2" %>
-        <%= form.select :message_type, ClinicManagement::LeadMessage.message_types.map { |key, value| [key.humanize, key] }, {}, { class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" } %>
-      </div>
+      <% unless referral?(current_user) %>
+        <div class="field mb-4">
+          <%= form.label :message_type, "Tipo da mensagem", class: "block text-gray-700 text-sm font-bold mb-2" %>
+          <%= form.select :message_type, ClinicManagement::LeadMessage.message_types.map { |key, value| [key.humanize, key] }, {}, { class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" } %>
+        </div>
+      <% end %>
 
       <div class="field mb-4">
         <%= form.label :service_type_id, "Tipo de serviço", class: "block text-gray-700 text-sm font-bold mb-2" %>

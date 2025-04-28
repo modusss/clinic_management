@@ -23,6 +23,9 @@ module ClinicManagement
       @message = LeadMessage.new(message_params)
       # If the user is a referral, associate the message with their referral_id
       @message.referral_id = user_referral.id if referral?(current_user)
+      if referral?(current_user)
+        @message.message_type = 3
+      end
       if @message.save
         redirect_to lead_messages_path, notice: 'Mensagem customizada criada com sucesso.'
       else
@@ -38,6 +41,9 @@ module ClinicManagement
   
     def update
       if @message.update(message_params)
+        if referral?(current_user)
+          @message.message_type = 3
+        end
         redirect_to lead_messages_path
       else
         render :edit

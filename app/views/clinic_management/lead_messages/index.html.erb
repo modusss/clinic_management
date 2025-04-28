@@ -23,7 +23,9 @@
       <table class="w-full table-auto border-collapse border border-gray-300 text-left">
         <thead>
           <tr class="bg-gray-100">
-            <th class="px-4 py-2">Tipo da Mensagem</th>
+            <% unless referral?(current_user) %>
+              <th class="px-4 py-2">Tipo da Mensagem</th>
+            <% end %>
             <th class="px-4 py-2">Nome da Mensagem</th>
             <th class="px-4 py-2">Texto da Mensagem</th>
             <th class="px-4 py-2">Ações</th>
@@ -38,7 +40,9 @@
             <% type_filtered_messages.each_with_index do |message, index| %>
               <tr class="border-b border-gray-200 hover:bg-gray-50">
                 <%# Display humanized message type and index %>
-                <td class="px-4 py-2"><%= "#{message.message_type.humanize} ##{index + 1}" %></td>
+                <% unless referral?(current_user) %>
+                  <td class="px-4 py-2"><%= "#{message.message_type.humanize} ##{index + 1}" %></td>
+                <% end %>
                 <%# Display message name %>
                 <td class="px-4 py-2"><%= message.name %></td>
                 <%# Display message text, converting newlines to <br> %>
