@@ -120,7 +120,7 @@ module ClinicManagement
 
       if service.present?
         # Substituições relacionadas ao serviço
-        result = result.gsub("{DIA_SEMANA_ATENDIMENTO}", service&.date&.strftime("%A").to_s)
+        result = result.gsub("{DIA_SEMANA_ATENDIMENTO}", I18n.l(service&.date, format: "%A").to_s)
                        .gsub("{MES_DO_ATENDIMENTO}", I18n.l(service.date, format: "%B").to_s)
                        .gsub("{DIA_ATENDIMENTO_NUMERO}", service&.date&.strftime("%d").to_s)
                        .gsub("{HORARIO_DE_INICIO}", service.start_time.strftime("%H:%M").to_s)
