@@ -423,7 +423,8 @@ module ClinicManagement
           {header: "Comparecimento", content: (ap.attendance == true ? "Sim" : "Não"), class: helpers.attendance_class(ap)},
           {header: "Status", content: ap.status, class: helpers.status_class(ap)},
           {header: "Data do convite", content: invitation&.created_at&.strftime("%d/%m/%Y")},
-          {header: "Região", content: invitation&.region&.name}
+          {header: "Região", content: invitation&.region&.name},
+          {header: "Mensagem", content: generate_message_content(@lead, ap), id: "whatsapp-link-#{@lead.id}"}
         ]
 
         unless helpers.referral?(current_user)
