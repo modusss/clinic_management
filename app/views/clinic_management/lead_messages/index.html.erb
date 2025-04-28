@@ -1,11 +1,23 @@
 <div class="my-8">
-  <h5 class="text-2xl font-bold">Mensagens Customizadas</h5>
+  <%# Add a conditional title based on whether the user is a referral %>
+  <% if @current_referral %>
+    <h5 class="text-2xl font-bold">Minhas Mensagens Customizadas</h5>
+    <p class="text-sm text-gray-600">Estas são as mensagens customizadas criadas por você.</p>
+  <% else %>
+    <h5 class="text-2xl font-bold">Mensagens Customizadas Globais</h5>
+    <p class="text-sm text-gray-600">Estas são as mensagens globais disponíveis para uso.</p>
+  <% end %>
 </div>
 
 <div class="w-full">
+  <%# Fetch all service types once %>
   <% service_types = ClinicManagement::ServiceType.all.order(:name) %>
+
+  <%# Iterate through each service type %>
   <% service_types.each do |service_type| %>
+    <%# Filter the pre-filtered @messages (which are either global or referral-specific) by service type %>
     <% filtered_messages = @messages.select { |m| m.service_type == service_type }.sort_by(&:created_at) %>
+    <%# Display table only if there are messages for this service type %>
     <% if filtered_messages.any? %>
       <h6 class="text-xl font-bold mt-6 mb-4"><%= "#{service_type.name} (#{filtered_messages.count})" %></h6>
       <table class="w-full table-auto border-collapse border border-gray-300 text-left">
@@ -18,16 +30,23 @@
           </tr>
         </thead>
         <tbody>
+          <%# Iterate through defined message types %>
           <% ClinicManagement::LeadMessage.message_types.keys.each do |message_type| %>
+            <%# Filter messages further by the current message type %>
             <% type_filtered_messages = filtered_messages.select { |m| m.message_type == message_type } %>
+            <%# Display each message %>
             <% type_filtered_messages.each_with_index do |message, index| %>
               <tr class="border-b border-gray-200 hover:bg-gray-50">
+                <%# Display humanized message type and index %>
                 <td class="px-4 py-2"><%= "#{message.message_type.humanize} ##{index + 1}" %></td>
+                <%# Display message name %>
                 <td class="px-4 py-2"><%= message.name %></td>
+                <%# Display message text, converting newlines to <br> %>
                 <td class="px-4 py-2"><%= message.text.gsub(/\n/, '<br>').html_safe %></td>
+                <%# Actions column (Edit/Delete) %>
                 <td class="px-4 py-2 space-x-2" style="display: flex;">
                   <%= link_to 'Editar', edit_lead_message_path(message), class: "px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600" %>
-                  <%= button_to 'Excluir', message, method: :delete, data: { confirm: 'Tem certeza que deseja excluir esta mensagem?' }, class: "px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600" %>
+                  <%= button_to 'Excluir', message, method: :delete, data: { turbo_confirm: 'Tem certeza que deseja excluir esta mensagem?' }, class: "px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600" %> <%# Use turbo_confirm %>
                 </td>
               </tr>
             <% end %>
@@ -36,7 +55,8 @@
       </table>
     <% end %>
   <% end %>
-  
+
+  <%# Section for messages not assigned to any ServiceType %>
   <% unassigned_messages = @messages.select { |m| m.service_type.nil? }.sort_by(&:created_at) %>
   <% if unassigned_messages.any? %>
     <h6 class="text-xl font-bold mt-6 mb-4">Mensagens Não Atribuídas (<%= unassigned_messages.count %>)</h6>
@@ -50,16 +70,23 @@
         </tr>
       </thead>
       <tbody>
+        <%# Iterate through defined message types %>
         <% ClinicManagement::LeadMessage.message_types.keys.each do |message_type| %>
+          <%# Filter unassigned messages by the current message type %>
           <% type_unassigned_messages = unassigned_messages.select { |m| m.message_type == message_type } %>
+          <%# Display each unassigned message %>
           <% type_unassigned_messages.each_with_index do |message, index| %>
             <tr class="border-b border-gray-200 hover:bg-gray-50">
+              <%# Display humanized message type and index %>
               <td class="px-4 py-2"><%= "#{message.message_type.humanize} ##{index + 1}" %></td>
+              <%# Display message name %>
               <td class="px-4 py-2"><%= message.name %></td>
+              <%# Display message text, converting newlines to <br> %>
               <td class="px-4 py-2"><%= message.text.gsub(/\n/, '<br>').html_safe %></td>
-              <td class="px-4 py-2 space-x-2" style="display: ruby;">
+               <%# Actions column (Edit/Delete) - Corrected display style %>
+               <td class="px-4 py-2 space-x-2" style="display: flex;"> <%# Corrected from 'display: ruby;' %>
                 <%= link_to 'Editar', edit_lead_message_path(message), class: "px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600" %>
-                <%= button_to 'Excluir', message, method: :delete, data: { confirm: 'Tem certeza que deseja excluir esta mensagem?' }, class: "px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600" %>
+                <%= button_to 'Excluir', message, method: :delete, data: { turbo_confirm: 'Tem certeza que deseja excluir esta mensagem?' }, class: "px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600" %> <%# Use turbo_confirm %>
               </td>
             </tr>
           <% end %>
@@ -69,6 +96,7 @@
   <% end %>
 </div>
 
+<%# Button to create a new message - text remains the same %>
 <div class="mt-8">
   <%= link_to 'Criar Nova Mensagem Customizada', new_lead_message_path, class: "px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" %>
 </div>

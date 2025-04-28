@@ -2,11 +2,17 @@ module ClinicManagement
   class LeadMessagesController < ApplicationController
     before_action :authenticate_user!
     before_action :set_message, only: [:show, :edit, :update, :destroy]
+    skip_before_action :redirect_referral_users
     include GeneralHelper
 
     def index
-      @messages = LeadMessage.all
-      @messages_by_type = LeadMessage.all.order(created_at: :asc).group_by(&:message_type)
+      # Show only messages for the current referral, or global messages if not referral
+      if referral?(current_user)
+        @messages = LeadMessage.where(referral_id: user_referral.id)
+      else
+        @messages = LeadMessage.where(referral_id: nil)
+      end
+      @messages_by_type = @messages.order(created_at: :asc).group_by(&:message_type)
     end
   
     def new
@@ -15,6 +21,8 @@ module ClinicManagement
   
     def create
       @message = LeadMessage.new(message_params)
+      # If the user is a referral, associate the message with their referral_id
+      @message.referral_id = user_referral.id if referral?(current_user)
       if @message.save
         redirect_to lead_messages_path, notice: 'Mensagem customizada criada com sucesso.'
       else

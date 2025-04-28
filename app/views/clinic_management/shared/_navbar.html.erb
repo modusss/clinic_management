@@ -29,6 +29,7 @@
                   class: "text-white hover:text-blue-300 #{'active' if controller_name == 'leads'}" %>
             <% end %>
             <%= link_to "Atendimentos", clinic_management.index_by_referral_services_path(user_referral), class: "text-white hover:text-blue-300 #{'active' if controller_name == 'services'}" %>
+            <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'lead_messages'}" %>
             <%= link_to "Convites", clinic_management.invitations_path(referral_id: user_referral.id), class: "text-white hover:text-blue-300 #{'active' if controller_name == 'invitations'}" %>
           </nav>
         <% end %>
@@ -93,6 +94,7 @@
         <% end %>
         <%= link_to "Atendimentos", clinic_management.index_by_referral_services_path(user_referral), class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if controller_name == 'services'}" %>
         <%= link_to "Convites", clinic_management.invitations_path(referral_id: user_referral.id), class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if controller_name == 'invitations'}" %>
+        <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if controller_name == 'lead_messages'}" %>
     </nav>
   </aside>
 
