@@ -25,7 +25,7 @@
   <br>
   <br>
   <br>
-  <main class="my-8">
+  <main class="my-8" id="main-container">
     <div class="container mx-auto">
       <%= yield %>
     </div>
@@ -40,3 +40,21 @@
   </footer>
 </body>
 </html>
+
+<style>
+
+@media (min-width: 768px) {
+  #main-container {
+    margin-left: 280px;
+
+  }
+}
+
+@media (max-width: 768px) {
+  #main-container {
+    margin-top: 200px;
+    display: flex;
+  }
+}
+
+</style>
