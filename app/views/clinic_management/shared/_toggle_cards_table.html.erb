@@ -7,6 +7,7 @@
           view_type: @view_type 
         } %#>
 %>
+<% unless mobile_device? %>
 <div class="view-toggle-container right-align mb-4">
   <div class="btn-group">
     <a href="<%= path.call(view_type: 'table') %>"
@@ -29,3 +30,4 @@
     </a>
   </div>
 </div> 
+<% end %>

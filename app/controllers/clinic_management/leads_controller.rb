@@ -4,6 +4,7 @@ module ClinicManagement
     before_action :set_menu, only: %i[ index absent attended cancelled ]
     before_action :set_referral, only: %i[ index absent attended cancelled ]
     skip_before_action :redirect_referral_users
+    before_action :set_view_type, only: [:absent]
 
     include GeneralHelper
 
@@ -147,9 +148,6 @@ module ClinicManagement
     end
 
     def absent
-      # Set the view type for table/cards toggle based on params or cookie
-      # This allows the view to know which layout to render
-      @view_type = params[:view_type] || cookies[:preferred_absent_view] || 'table'
 
       # Store the URL, potentially modified, in the session on GET requests
       if request.get?
@@ -320,20 +318,6 @@ module ClinicManagement
       render :absent_download
     end
     
-=begin
-    def attended
-      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ?', true).page(params[:page]).per(50)
-      @rows = load_leads_data(@leads)
-      render :index
-    end
-    
-    def cancelled
-      @leads = fetch_leads_by_appointment_condition('clinic_management_appointments.status = ?', 'cancelado').page(params[:page]).per(50)
-      @rows = load_leads_data(@leads)
-      render :index
-    end
-=end    
-
     def download_leads
       @leads = fetch_leads_for_download
       @rows = load_leads_data_for_csv(@leads)
@@ -382,6 +366,10 @@ module ClinicManagement
 
     
     private
+
+    def set_view_type
+      @view_type = mobile_device? ? 'cards' : (params[:view_type] || cookies[:preferred_absent_view] || 'table')
+    end
 
     def generate_csv(rows)
       CSV.generate(headers: true) do |csv|

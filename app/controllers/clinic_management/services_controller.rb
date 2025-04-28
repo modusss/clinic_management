@@ -2,6 +2,7 @@ module ClinicManagement
   class ServicesController < ApplicationController
     before_action :set_service, only: %i[ show edit update destroy ]
     skip_before_action :redirect_referral_users, only: [:index_by_referral, :show_by_referral]
+    before_action :set_view_type, only: [:index_by_referral, :show_by_referral, :index, :show]
     include TimeSlotsHelper, GeneralHelper, PrescriptionsHelper
 
     require 'cgi'
@@ -32,8 +33,6 @@ module ClinicManagement
     
     # GET /services/1
     def show
-      # Set the view type for table/cards toggle based on params or cookie
-      @view_type = params[:view_type] || cookies[:preferred_service_view] || 'table'
       @rows = process_appointments_data(@service.appointments) 
     end
 
@@ -58,7 +57,6 @@ module ClinicManagement
     end
 
     def show_by_referral
-      @view_type = params[:view_type] || cookies[:preferred_service_view] || 'table'
       @referral = Referral.find(params[:referral_id])
       all_appointments = Appointment.where(referral_code: @referral.code)
       all_services = all_appointments.map(&:service).uniq
@@ -132,6 +130,10 @@ module ClinicManagement
     end
 
     private
+
+    def set_view_type
+      @view_type = mobile_device? ? 'cards' : (params[:view_type] || cookies[:preferred_service_view] || 'table')
+    end
 
     def decode_json(json_str)
       while json_str.is_a?(String)

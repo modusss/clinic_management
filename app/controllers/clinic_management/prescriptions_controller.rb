@@ -3,6 +3,7 @@
       before_action :set_appointment, except: [:index_today, :generate_order_pdf, :search_index_today, :index_next, :index_before]
       skip_before_action :redirect_doctor_users, only: [:index_today, :show_today, :new_today, :edit_today, :update, :create, :search_index_today]
       skip_before_action :authenticate_user!, only: [:pdf]
+      before_action :set_view_type, only: [:index_today, :index_next, :index_before]
       include GeneralHelper, PrescriptionsHelper
 
       def index
@@ -10,8 +11,6 @@
       end
 
       def index_today
-        # Set the view type for table/cards toggle based on params or cookie
-        @view_type = params[:view_type] || cookies[:preferred_prescriptions_today_view] || 'table'
         @services = Service.where(date: Date.current)
         @rows = mapping_rows(@services)
       end
@@ -19,15 +18,12 @@
           # GET /prescriptions/index_next
       # Shows all services scheduled for the next available day after today (not including today)
       def index_next
-        @view_type = params[:view_type] || cookies[:preferred_prescriptions_next_view] || 'table'
         next_date = Service.where('date > ?', Date.current).order(:date).pluck(:date).first
         @services = Service.where(date: next_date)
         @rows = mapping_rows(@services)
       end
 
       def index_before
-        # Set the view type for table/cards toggle based on params or cookie
-        @view_type = params[:view_type] || cookies[:preferred_prescriptions_before_view] || 'table'
         # Busca o dia anterior ao dia atual que tenha pelo menos um service
         before_date = Service.where('date < ?', Date.current).order(date: :desc).pluck(:date).first
         @services = Service.where(date: before_date)
@@ -192,6 +188,9 @@
 
       private
 
+      def set_view_type
+        @view_type = mobile_device? ? 'cards' : (params[:view_type] || cookies[:preferred_prescriptions_today_view] || 'table')
+      end
 
       def mapping_rows(services)
         services.map do |service|

@@ -1,6 +1,10 @@
 module ClinicManagement
     module GeneralHelper
 
+      def mobile_device?
+        request.user_agent =~ /Mobile|webOS|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i
+      end
+
 
       def color_to_hex(color_name, shade)
         color_map = {
