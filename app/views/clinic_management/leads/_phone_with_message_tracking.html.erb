@@ -12,8 +12,10 @@
                 },
                 class: "whatsapp-link" %>
     
-      <a style="margin-left: 10px; display: inline-flex; align-items: center; color: #4B5563; text-decoration: none;" href="tel:<%= lead.phone %>" title="Ligar para <%= lead.phone %>">
-        <i class="fas fa-phone" style="margin-right: 4px;"></i>
+      <a style="margin-left: 10px; display: inline-flex; align-items: center; color: #4B5563; text-decoration: none;" 
+         href="tel:<%= current_user&.phone_prefix.present? ? current_user.phone_prefix : '' %><%= lead.phone %>" 
+         title="Ligar para <%= current_user&.phone_prefix.present? ? current_user.phone_prefix : '' %><%= lead.phone %>">
+                 <i class="fas fa-phone" style="margin-right: 4px;"></i>
         <span style="font-size: 15px;">Ligar</span>
       </a>
     <% end %>
