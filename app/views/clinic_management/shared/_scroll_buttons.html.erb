@@ -1,0 +1,21 @@
+<!-- app/views/clinic_management/shared/_scroll_buttons.html.erb -->
+<!-- Scroll buttons for mobile only - visible at the top right corner -->
+<div data-controller="scroll" class="md:hidden">
+  <button 
+    data-scroll-target="topButton"
+    data-action="click->scroll#scrollToTop" 
+    class="fixed top-4 right-4 z-50 bg-gray-800 bg-opacity-60 text-white rounded-full p-2 shadow-md hidden"
+    aria-label="Ir para o topo"
+    style="z-index: 10000; width: 33px; height: 33px; padding: 4px">
+    <i class="material-icons text-sm">arrow_upward</i>
+  </button>
+  
+  <button 
+    data-scroll-target="bottomButton"
+    data-action="click->scroll#scrollToBottom" 
+    class="fixed bottom-4 right-4 z-50 bg-gray-800 bg-opacity-60 text-white rounded-full p-2 shadow-md"
+    aria-label="Ir para o final"
+    style="z-index: 10000; width: 33px; height: 33px; padding: 4px">
+    <i class="material-icons text-sm">arrow_downward</i>
+  </button>
+</div>

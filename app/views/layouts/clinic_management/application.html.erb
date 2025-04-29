@@ -17,7 +17,7 @@
   <%= stylesheet_link_tag "clinic_management/table", "data-turbo-track": "reload" %>
   <%= stylesheet_link_tag "clinic_management/main", "data-turbo-track": "reload" %>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <!-- Move custom styles here to ensure they are loaded before the body renders -->
   <style>
     @media (min-width: 768px) {
@@ -36,6 +36,7 @@
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal" style="margin-bottom: 200px">
   <%= render "clinic_management/shared/navbar" %>
+  <%= render "clinic_management/shared/scroll_buttons" %>
   <%= content_for?(:breadcrumb) ? yield(:breadcrumb) : '' %>
   <br>
   <br>
