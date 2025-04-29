@@ -18,6 +18,21 @@
   <%= stylesheet_link_tag "clinic_management/main", "data-turbo-track": "reload" %>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <!-- Move custom styles here to ensure they are loaded before the body renders -->
+  <style>
+    @media (min-width: 768px) {
+      #main-container {
+        margin-left: 280px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      #main-container {
+        margin-top: 200px;
+        display: flex;
+      }
+    }
+  </style>
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal" style="margin-bottom: 200px">
   <%= render "clinic_management/shared/navbar" %>
@@ -40,21 +55,3 @@
   </footer>
 </body>
 </html>
-
-<style>
-
-@media (min-width: 768px) {
-  #main-container {
-    margin-left: 280px;
-
-  }
-}
-
-@media (max-width: 768px) {
-  #main-container {
-    margin-top: 200px;
-    display: flex;
-  }
-}
-
-</style>
