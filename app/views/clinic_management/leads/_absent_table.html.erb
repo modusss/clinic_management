@@ -5,3 +5,16 @@
 <% end %>
 
 <%= turbo_frame_tag "message_sent_notification" %>
+
+<style>
+@media (max-width: 768px) {
+
+  .pagination {
+    flex-direction: column;
+  }
+
+  .pagination li {
+    margin: 10px;
+  }
+}
+</style>

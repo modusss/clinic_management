@@ -17,3 +17,16 @@
 <% if defined?(leads) && leads.count > 10 %>
   <%= paginate leads %>
 <% end %> 
+
+<style>
+@media (max-width: 768px) {
+
+  .pagination {
+    flex-direction: column;
+  }
+
+  .pagination li {
+    margin: 10px;
+  }
+}
+</style>
