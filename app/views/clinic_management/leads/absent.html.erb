@@ -167,10 +167,10 @@
       <%= f.select :sort_order, 
           options_for_select(
             [
-              ["Atendimento mais recente", "appointment_newest_first"],
-              ["Atendimento mais antigo", "appointment_oldest_first"],
-              ["Contato mais recente", "contact_newest_first"],
-              ["Contato mais antigo", "contact_oldest_first"]
+              ["Último atendimento mais recente", "appointment_newest_first"],
+              ["Último atendimento mais antigo", "appointment_oldest_first"],
+              ["Contatado mais recente", "contact_newest_first"],
+              ["Contatado há mais tempo", "contact_oldest_first"]
             ], 
             params[:sort_order] || 'appointment_newest_first' # Set default selection
           ), 
