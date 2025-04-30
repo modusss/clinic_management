@@ -1,2 +1,16 @@
+
 <br>
-<%= link_to "Enviar mensagem", "https://api.whatsapp.com/send/?phone=55#{phone_number}&text=#{message}", id: "whatsapp_link", target: "_blank", class: "nowrap bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded" %>
+<%# Add Stimulus controller, action, and data attributes for tracking message sent %>
+<%= link_to "Enviar mensagem", 
+      "https://api.whatsapp.com/send/?phone=55#{phone_number}&text=#{message}", 
+      id: "whatsapp_link", 
+      target: "_blank", 
+      class: "nowrap bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded",
+      data: {
+        controller: "message-tracking",
+        action: "click->message-tracking#recordMessageSent",
+        "message-tracking-lead-id-value": lead_id,
+        "message-tracking-appointment-id-value": appointment_id
+      } %>
+
+<%# = link_to "Enviar mensagem", "https://api.whatsapp.com/send/?phone=55#{phone_number}&text=#{message}", id: "whatsapp_link", target: "_blank", class: "nowrap bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded" %>

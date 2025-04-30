@@ -67,7 +67,12 @@ module ClinicManagement
           turbo_stream.append(
             "whatsapp-link-#{lead.id}", 
             partial: "clinic_management/lead_messages/whatsapp_link", 
-            locals: { phone_number: lead.phone, message: message }
+            locals: { 
+              phone_number: lead.phone, 
+              message: message,
+              lead_id: lead.id,
+              appointment_id: appointment.id
+            }
           ),
           turbo_stream.update(
             "messages-sent-#{appointment.id}", 
