@@ -4,7 +4,7 @@
     <div class="bg-white rounded shadow p-4 mb-4">
       <%# Exibe cada campo do row, com header e content, igual à tabela, mas em formato de cartão %>
       <% row.each do |cell| %>
-        <div class="mb-2">
+        <div class="mb-2" id="<%= cell[:id] %>">
           <span class="block text-xs text-gray-500 font-semibold"><%= cell[:header] %></span>
           <span class="block text-base text-gray-800" style="margin-top: 10px;"><%= cell[:content] %></span>
         </div>
