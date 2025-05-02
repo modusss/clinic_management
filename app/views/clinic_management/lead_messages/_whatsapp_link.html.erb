@@ -2,8 +2,7 @@
 <br>
 <%# Add Stimulus controller, action, and data attributes for tracking message sent %>
 <%= link_to "Enviar mensagem", 
-      "https://wa.me/55#{phone_number}?text=#{message}", 
-      # "https://api.whatsapp.com/send/?phone=55#{phone_number}&text=#{message}", 
+      "https://api.whatsapp.com/send/?phone=55#{phone_number}&text=#{message}", 
       id: "whatsapp_link", 
       target: "_blank", 
       class: "nowrap bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded",
