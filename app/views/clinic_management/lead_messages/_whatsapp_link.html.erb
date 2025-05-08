@@ -1,16 +1,30 @@
+<%# Generate a unique suffix for element IDs to prevent collisions %>
+<% unique_id_suffix = "#{lead_id}_#{appointment_id}" %>
 
-<br>
-<%# Add Stimulus controller, action, and data attributes for tracking message sent %>
-<%= link_to "Enviar mensagem", 
-      "https://api.whatsapp.com/send/?phone=55#{phone_number}&text=#{message}", 
-      id: "whatsapp_link", 
-      target: "_blank", 
-      class: "nowrap bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded",
-      data: {
-        controller: "message-tracking",
-        action: "click->message-tracking#recordMessageSent",
-        "message-tracking-lead-id-value": lead_id,
-        "message-tracking-appointment-id-value": appointment_id
-      } %>
+<%# 
+  Wrap the link in a div. This div will be the root for the Stimulus controller.
+  The necessary data values (lead_id, appointment_id) are set on this controller div.
+%>
+<div id="whatsapp-message-container-<%= unique_id_suffix %>" 
+     data-controller="message-tracking"
+     data-message-tracking-lead-id-value="<%= lead_id %>"
+     data-message-tracking-appointment-id-value="<%= appointment_id %>">
+  
+  <br> <%# This <br> tag was in the original file. Consider styling with margins/padding instead if appropriate. %>
+
+  <%# 
+    The link itself now only needs the data-action.
+    The action will trigger 'recordMessageSent' on the parent 'message-tracking' controller.
+    The link's ID is also made dynamic.
+  %>
+  <%= link_to "Enviar mensagem", 
+        "https://api.whatsapp.com/send/?phone=55#{phone_number}&text=#{message}", 
+        id: "whatsapp_action_link_#{unique_id_suffix}", 
+        target: "_blank", 
+        class: "nowrap bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded",
+        data: {
+          action: "click->message-tracking#recordMessageSent"
+        } %>
+</div>
 
 <%# = link_to "Enviar mensagem", "https://api.whatsapp.com/send/?phone=55#{phone_number}&text=#{message}", id: "whatsapp_link", target: "_blank", class: "nowrap bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded" %>

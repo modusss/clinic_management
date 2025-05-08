@@ -75,7 +75,7 @@ ClinicManagement::Engine.routes.draw do
   end
   post 'build_message/:lead_id', to: 'lead_messages#build_message', as: 'build_message'
 
-
+  mount ActionCable.server => '/cable'
 end
 
 

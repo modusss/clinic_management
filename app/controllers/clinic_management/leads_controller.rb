@@ -326,31 +326,28 @@ module ClinicManagement
         format.csv { send_data generate_csv(@rows), filename: generate_filename }
       end
     end
-
     def record_message_sent
       @lead = Lead.find(params[:id])
       @appointment = Appointment.find(params[:appointment_id])
       
-      # Log para depuração
       Rails.logger.info "Processing record_message_sent for lead #{@lead.id}"
-      Rails.logger.info "Accept header: #{request.headers['Accept']}"
-      
-      # Update the appointment with the message tracking info
+      # ... (database update is correct)
       @appointment.update(
         last_message_sent_at: Time.current,
         last_message_sent_by: current_user.name
       )
       
-      # Renderizar a resposta Turbo Stream
+      # This correctly prepares the Content-Type for the direct response
       response.headers["Content-Type"] = "text/vnd.turbo-stream.html"
       
-      # Renderizar os templates Turbo Stream
+      # This renders the partial that contains the updated HTML
       phone_html = render_to_string(
         partial: "clinic_management/leads/phone_with_message_tracking", 
         locals: { lead: @lead, appointment: @appointment }
       )
       
-      # Construir a resposta Turbo Stream manualmente
+      # This creates the Turbo Stream payload
+      # The target "phone-container-#{@lead.id}" should match the ID in your partial
       turbo_stream_response = <<~HTML
         <turbo-stream action="replace" target="phone-container-#{@lead.id}">
           <template>
@@ -358,12 +355,19 @@ module ClinicManagement
           </template>
         </turbo-stream>
       HTML
+    
+      # This broadcasts the exact same Turbo Stream payload over ActionCable
+      # The channel "message_tracking_lead_#{@lead.id}" matches your <turbo-stream-source>
+      ActionCable.server.broadcast(
+        "message_tracking_lead_#{@lead.id}",
+        turbo_stream_response
+      )
       
-      Rails.logger.info "Sending Turbo Stream response: #{turbo_stream_response.inspect}"
+      Rails.logger.info "Sending Turbo Stream response: #{turbo_stream_response.inspect}" # For the direct response
       
+      # This renders the Turbo Stream for the fetch request that initiated the action
       render html: turbo_stream_response.html_safe
     end
-
     
     private
 

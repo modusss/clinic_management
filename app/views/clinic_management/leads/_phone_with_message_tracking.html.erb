@@ -1,3 +1,6 @@
+<!-- Subscribe to Turbo Stream updates for this lead -->
+<turbo-stream-source channel="message_tracking_lead_<%= lead.id %>"></turbo-stream-source>
+
 <div id="phone-container-<%= lead.id %>" 
      data-controller="message-tracking"
      data-message-tracking-lead-id-value="<%= lead.id %>"
