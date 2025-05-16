@@ -18,7 +18,7 @@
     The link's ID is also made dynamic.
   %>
   <%= link_to "Enviar mensagem", 
-        "https://api.whatsapp.com/send/?phone=55#{phone_number}&text=#{message}", 
+        whatsapp_link(phone_number, message), 
         id: "whatsapp_action_link_#{unique_id_suffix}", 
         target: "_blank", 
         class: "nowrap bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded",
