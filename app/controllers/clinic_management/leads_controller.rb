@@ -248,9 +248,20 @@ module ClinicManagement
       end
 
       # 4) Aplicar ordenação independentemente dos outros filtros
-      @all_leads = @all_leads.joins("INNER JOIN clinic_management_appointments ON clinic_management_appointments.id = clinic_management_leads.last_appointment_id")
-                             .joins("INNER JOIN clinic_management_services ON clinic_management_services.id = clinic_management_appointments.service_id")
-      
+      # chave de cache que inclui usuário e thresholds para invalidar corretamente
+      cache_key = [
+        "clinic_management/absent_leads",
+        current_user.id,
+        one_year_ago.to_s,
+        absent_threshold_date.to_s
+      ].join("/")
+
+      @all_leads = Rails.cache.fetch(cache_key, expires_in: 8.hours) do
+        @all_leads
+          .joins("INNER JOIN clinic_management_appointments ON clinic_management_appointments.id = clinic_management_leads.last_appointment_id")
+          .joins("INNER JOIN clinic_management_services ON clinic_management_services.id = clinic_management_appointments.service_id")
+      end
+
       # Determine the sort order, defaulting to newest appointment first
       sort_order = params[:sort_order] || 'appointment_newest_first' 
       
