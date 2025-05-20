@@ -14,7 +14,7 @@
 </div>
 
 <%# Add pagination for cards view, just like the table view %>
-<% if defined?(leads) && leads.count > 10 %>
+<% if defined?(leads) && leads.size > 10 %>
   <%= paginate leads %>
 <% end %> 
 
