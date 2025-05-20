@@ -603,29 +603,28 @@ module ClinicManagement
       def fetch_leads_by_appointment_condition(base_condition_sql, *condition_values)
         one_year_ago = Date.current - 1.year
 
-        # IDs dos leads que tiveram attendance como true DENTRO do último ano (serão excluídos)
         excluded_lead_ids = ClinicManagement::Appointment.joins(:service)
           .where('clinic_management_appointments.attendance = ? AND clinic_management_services.date >= ?', true, one_year_ago)
           .pluck(:lead_id)
 
-        # Base da query com joins e filtros essenciais
-        # Seleciona as colunas necessárias para o distinct e order by
         query = ClinicManagement::Lead
-          .select('DISTINCT clinic_management_leads.*, clinic_management_services.date AS service_date_for_ordering')
-          .joins(appointments: :service) # Usar appointments para ter acesso a service.date
-          .where('clinic_management_leads.last_appointment_id = clinic_management_appointments.id') # Garante que estamos olhando o last_appointment
-          .where('clinic_management_appointments.service_id = clinic_management_services.id') # Garante join correto
-          .where.not(id: excluded_lead_ids) # Exclui leads com atendimento recente
-          .where.not(phone: [nil, '']) # Garante que há telefone
+          .select(
+            'DISTINCT clinic_management_leads.*, ' +
+            'clinic_management_services.date AS service_date_for_ordering, ' +
+            'clinic_management_appointments.last_message_sent_at AS contact_date_for_ordering'
+          )
+          .joins(appointments: :service) 
+          .where('clinic_management_leads.last_appointment_id = clinic_management_appointments.id') 
+          .where('clinic_management_appointments.service_id = clinic_management_services.id') 
+          .where.not(id: excluded_lead_ids) 
+          .where.not(phone: [nil, '']) 
 
-        # Aplica a condição específica (ausentes ou atendidos há mais de 1 ano)
-        # A condição base_condition_sql deve referenciar clinic_management_appointments.attendance e clinic_management_services.date
         query = query.where(
           "#{base_condition_sql} OR (clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?)",
           *condition_values, true, one_year_ago
         )
         
-        query # Retorna a ActiveRecord::Relation
+        query
       end
         
       # Use callbacks to share common setup or constraints between actions.
