@@ -172,29 +172,13 @@ module ClinicManagement
       one_year_ago = 1.year.ago.to_date
       absent_threshold_date = helpers.referral?(current_user) ? 120.days.ago.to_date : 1.day.ago.to_date
 
-      # Determine referral status for cache segmentation
-      referral_status = helpers.referral?(current_user) ? "referral" : "non_referral"
-
-      # Build a cache key for the base @all_leads query, segmented by referral status
-      base_cache_key = [
-        "clinic_management/absent_leads/base",
-        referral_status,
-        one_year_ago.to_s,
-        absent_threshold_date.to_s
-      ].join("/")
-
-      # Cache the base @all_leads query as an array of model objects to avoid repeated heavy DB queries.
-      # The cache is segmented by referral status to ensure correct data for each user type.
-      @all_leads = Rails.cache.fetch(base_cache_key, expires_in: 8.hours) do
-        fetch_leads_by_appointment_condition(
-          'clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', 
-          false, 
-          absent_threshold_date
-        ).where.not(phone: [nil, '']).to_a
-      end
-
-      # Convert @all_leads to an ActiveRecord::Relation for further filtering (if needed)
-      @all_leads = ClinicManagement::Lead.where(id: @all_leads.map(&:id))
+      # Fetch the base ActiveRecord::Relation.
+      # The .where.not(phone: [nil, '']) is now handled within fetch_leads_by_appointment_condition.
+      @all_leads = fetch_leads_by_appointment_condition(
+        'clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', 
+        false, 
+        absent_threshold_date
+      )
 
       # 1.5) Apply patient type filter if specified
       if params[:patient_type].present? && params[:patient_type] != "all"
@@ -252,49 +236,27 @@ module ClinicManagement
         end
       end
 
-      # 4) Aplicar ordenação independentemente dos outros filtros
-      # chave de cache que inclui usuário e thresholds para invalidar corretamente
-      cache_key = [
-        "clinic_management/absent_leads",
-        referral_status,
-        one_year_ago.to_s,
-        absent_threshold_date.to_s
-      ].join("/")
-
-      @all_leads = Rails.cache.fetch(cache_key, expires_in: 8.hours) do
-        @all_leads
-          .joins("INNER JOIN clinic_management_appointments ON clinic_management_appointments.id = clinic_management_leads.last_appointment_id")
-          .joins("INNER JOIN clinic_management_services ON clinic_management_services.id = clinic_management_appointments.service_id")
-      end
-
-      # Determine the sort order, defaulting to newest appointment first
+      # 4) Ordenação - usando os aliases definidos em fetch_leads_by_appointment_condition
       sort_order = params[:sort_order] || 'appointment_newest_first' 
-      
       case sort_order
       when "appointment_newest_first"
-        # Sort by the service date of the last appointment (most recent first)
-        @all_leads = @all_leads.order('clinic_management_services.date DESC')
+        @all_leads = @all_leads.order('service_date_for_ordering DESC')
       when "appointment_oldest_first"
-         # Sort by the service date of the last appointment (oldest first)
-        @all_leads = @all_leads.order('clinic_management_services.date ASC')
+        @all_leads = @all_leads.order('service_date_for_ordering ASC')
       when "contact_newest_first"
-        # Sort by the last contact time (most recent first), putting never contacted leads last
-        @all_leads = @all_leads.order(Arel.sql('clinic_management_appointments.last_message_sent_at DESC NULLS LAST'))
+        @all_leads = @all_leads.order(Arel.sql('contact_date_for_ordering DESC NULLS LAST'))
       when "contact_oldest_first"
-        # Sort by the last contact time (oldest first), putting never contacted leads last
-        @all_leads = @all_leads.order(Arel.sql('clinic_management_appointments.last_message_sent_at ASC NULLS LAST'))
+        @all_leads = @all_leads.order(Arel.sql('contact_date_for_ordering ASC NULLS LAST'))
       else
-        # Default fallback sort order
-        @all_leads = @all_leads.order('clinic_management_services.date DESC')
+        @all_leads = @all_leads.order('service_date_for_ordering DESC')
       end
 
       # 5) Se tiver busca por nome/telefone, filtra adicionalmente
-      query = params[:q]&.strip
-      if query.present?
+      query_param = params[:q]&.strip # Renamed from query to avoid conflict
+      if query_param.present?
         @leads = @all_leads.where(
-          "clinic_management_leads.name ILIKE ? OR clinic_management_leads.phone ILIKE ?", 
-          "%#{query}%", 
-          "%#{query}%"
+          "clinic_management_leads.name ILIKE :query OR clinic_management_leads.phone ILIKE :query", 
+          query: "%#{query_param}%"
         )
       else
         @leads = @all_leads
@@ -303,7 +265,12 @@ module ClinicManagement
       # 6) Paginação e montagem das linhas
       if params[:tab] == 'download'
         @date_range = (Date.current - 1.year)..Date.current
+        # For download, you might want to load all leads without pagination
+        # but ensure @leads is assigned the full set if load_leads_data_for_csv expects it.
+        # For now, @leads for download is the complete filtered set.
       else
+        # Eager load associations to prevent N+1 queries in load_leads_data
+        @leads = @leads.includes(:invitations, :appointments, customer: :orders)
         @leads = @leads.page(params[:page]).per(50)
         @rows = load_leads_data(@leads)
       end
