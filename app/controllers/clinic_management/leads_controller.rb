@@ -148,143 +148,23 @@ module ClinicManagement
     end
 
     def absent
-
       # Store the URL, potentially modified, in the session on GET requests
-      if request.get?
-        # Parse the original URL
-        uri = URI.parse(request.original_url)
-        # Parse the query string into a hash (handle cases with no query)
-        params_hash = Rack::Utils.parse_nested_query(uri.query || "")
+      store_absent_leads_state_in_session
 
-        # Check if the specific condition is met (viewing 'not_contacted' leads)
-        if params_hash['contact_status'] == 'not_contacted'
-          # Remove the 'page' parameter if it exists
-          params_hash.delete('page')
-          # Rebuild the query string from the modified hash. Use .presence to make it nil if empty.
-          uri.query = Rack::Utils.build_query(params_hash).presence
-          # Store the modified URL string
-          session[:absent_leads_state] = uri.to_s
-        else
-          # Otherwise, store the original URL
-          session[:absent_leads_state] = request.original_url
-        end
-      end
-      
       # 1) Carregar a coleção base (com base se é referral ou não)
-      one_year_ago = 1.year.ago.to_date
-      absent_threshold_date = helpers.referral?(current_user) ? 120.days.ago.to_date : 1.day.ago.to_date
-      
-      if helpers.referral?(current_user)
-        @all_leads = fetch_leads_by_appointment_condition(
-          'clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', 
-          false, 
-          absent_threshold_date
-        )
-      else
-        @all_leads = fetch_leads_by_appointment_condition(
-          'clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', 
-          false, 
-          absent_threshold_date
-        )
-      end
+      @all_leads = base_absent_leads_scope
 
-      # Filter out leads without a phone number
-      @all_leads = @all_leads.where.not(phone: [nil, ''])
+      # 2) Aplicar filtros sequenciais encapsulados
+      @all_leads = filter_leads_with_phone(@all_leads)
+      @all_leads = filter_by_patient_type(@all_leads)
+      @all_leads = filter_by_date(@all_leads)
+      @all_leads = filter_by_contact_status(@all_leads)
+      @all_leads = apply_absent_leads_order(@all_leads)
 
-      # 1.5) Apply patient type filter if specified
-      if params[:patient_type].present? && params[:patient_type] != "all"
-        case params[:patient_type]
-        when "absent"
-          # Only include leads whose last appointment was missed (attendance = false)
-          @all_leads = @all_leads.where('clinic_management_appointments.attendance = ?', false)
-        when "attended_year_ago"
-          # Only include leads whose last appointment was attended but more than a year ago
-          @all_leads = @all_leads.where('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', true, one_year_ago)
-        end
-      end
+      # 3) Filtro de busca por nome/telefone
+      @leads = filter_by_query(@all_leads)
 
-      # 2) Aplicar filtro de data apenas se ano E mês estiverem presentes
-      if params[:year].present? && params[:month].present?
-        start_date = Date.new(params[:year].to_i, params[:month].to_i, 1)
-        end_date = start_date.end_of_month
-        
-        # Filtrar por período de data
-        @all_leads = @all_leads.where('clinic_management_services.date BETWEEN ? AND ?', start_date, end_date)
-      elsif params[:year].present? # Se só o ano estiver presente
-        start_date = Date.new(params[:year].to_i, 1, 1)
-        end_date = Date.new(params[:year].to_i, 12, 31)
-        
-        # Filtrar apenas pelo ano
-        @all_leads = @all_leads.where('clinic_management_services.date BETWEEN ? AND ?', start_date, end_date)
-      end
-      # Se só o mês estiver presente ou nenhum dos dois, não aplicamos filtro de data
-
-      # 3) Aplicar filtro de status de contato
-      if params[:contact_status].present? && params[:contact_status] != "all"
-        case params[:contact_status]
-        when "not_contacted"
-          # Filtrar apenas leads onde TODOS os appointments não têm mensagens
-          contacted_lead_ids = ClinicManagement::Appointment
-                                .where('last_message_sent_at IS NOT NULL')
-                                .distinct
-                                .pluck(:lead_id)
-          @all_leads = @all_leads.where.not(id: contacted_lead_ids)
-        when "contacted"
-          # Filtrar apenas leads com pelo menos um appointment com mensagem
-          contacted_lead_ids = ClinicManagement::Appointment
-                                .where('last_message_sent_at IS NOT NULL')
-                                .distinct
-                                .pluck(:lead_id)
-          @all_leads = @all_leads.where(id: contacted_lead_ids)
-        when "contacted_by_me"
-          # Filtrar apenas leads com mensagens enviadas pelo usuário atual
-          contacted_by_me_lead_ids = ClinicManagement::Appointment
-                                        .where('last_message_sent_at IS NOT NULL')
-                                        .where('last_message_sent_by = ?', current_user.name)
-                                        .distinct
-                                        .pluck(:lead_id)
-          @all_leads = @all_leads.where(id: contacted_by_me_lead_ids)
-        end
-      end
-
-      # 4) Aplicar ordenação independentemente dos outros filtros
-      @all_leads = @all_leads.joins("INNER JOIN clinic_management_appointments ON clinic_management_appointments.id = clinic_management_leads.last_appointment_id")
-                             .joins("INNER JOIN clinic_management_services ON clinic_management_services.id = clinic_management_appointments.service_id")
-      
-      # Determine the sort order, defaulting to newest appointment first
-      sort_order = params[:sort_order] || 'appointment_newest_first' 
-      
-      case sort_order
-      when "appointment_newest_first"
-        # Sort by the service date of the last appointment (most recent first)
-        @all_leads = @all_leads.order('clinic_management_services.date DESC')
-      when "appointment_oldest_first"
-         # Sort by the service date of the last appointment (oldest first)
-        @all_leads = @all_leads.order('clinic_management_services.date ASC')
-      when "contact_newest_first"
-        # Sort by the last contact time (most recent first), putting never contacted leads last
-        @all_leads = @all_leads.order(Arel.sql('clinic_management_appointments.last_message_sent_at DESC NULLS LAST'))
-      when "contact_oldest_first"
-        # Sort by the last contact time (oldest first), putting never contacted leads last
-        @all_leads = @all_leads.order(Arel.sql('clinic_management_appointments.last_message_sent_at ASC NULLS LAST'))
-      else
-        # Default fallback sort order
-        @all_leads = @all_leads.order('clinic_management_services.date DESC')
-      end
-
-      # 5) Se tiver busca por nome/telefone, filtra adicionalmente
-      query = params[:q]&.strip
-      if query.present?
-        @leads = @all_leads.where(
-          "clinic_management_leads.name ILIKE ? OR clinic_management_leads.phone ILIKE ?", 
-          "%#{query}%", 
-          "%#{query}%"
-        )
-      else
-        @leads = @all_leads
-      end
-
-      # 6) Paginação e montagem das linhas
+      # 4) Paginação e montagem das linhas
       if params[:tab] == 'download'
         @date_range = (Date.current - 1.year)..Date.current
       else
@@ -292,84 +172,127 @@ module ClinicManagement
         @rows = load_leads_data(@leads)
       end
 
-      # 7) Responde renderizando :absent ou :absent_download conforme a aba
+      # 5) Renderização
       respond_to do |format|
-        format.html { render :absent }  # exibe a view normal
+        format.html { render :absent }
         format.html { render :absent_download if params[:view] == 'download' }
       end
     end
-    
 
-    def absent_download
-      if helpers.referral?(current_user)
-        @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
-      else
-        @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 1.days.ago)
-      end
-
-      if @all_leads.any?
-        start_date = @all_leads.last.appointments.last.service.date
-        end_date = @all_leads.first.appointments.last.service.date
-        @date_range = (start_date.to_date..end_date.to_date).map(&:beginning_of_month).uniq.reverse
-      else
-        @date_range = []
-      end
-
-      render :absent_download
-    end
-    
-    def download_leads
-      @leads = fetch_leads_for_download
-      @rows = load_leads_data_for_csv(@leads)
-
-      respond_to do |format|
-        format.csv { send_data generate_csv(@rows), filename: generate_filename }
-      end
-    end
-    def record_message_sent
-      @lead = Lead.find(params[:id])
-      @appointment = Appointment.find(params[:appointment_id])
-      
-      Rails.logger.info "Processing record_message_sent for lead #{@lead.id}"
-      # ... (database update is correct)
-      @appointment.update(
-        last_message_sent_at: Time.current,
-        last_message_sent_by: current_user.name
-      )
-      
-      # This correctly prepares the Content-Type for the direct response
-      response.headers["Content-Type"] = "text/vnd.turbo-stream.html"
-      
-      # This renders the partial that contains the updated HTML
-      phone_html = render_to_string(
-        partial: "clinic_management/leads/phone_with_message_tracking", 
-        locals: { lead: @lead, appointment: @appointment }
-      )
-      
-      # This creates the Turbo Stream payload
-      # The target "phone-container-#{@lead.id}" should match the ID in your partial
-      turbo_stream_response = <<~HTML
-        <turbo-stream action="replace" target="phone-container-#{@lead.id}">
-          <template>
-            #{phone_html}
-          </template>
-        </turbo-stream>
-      HTML
-    
-      # This broadcasts the exact same Turbo Stream payload over ActionCable
-      # The channel "message_tracking_lead_#{@lead.id}" matches your <turbo-stream-source>
-      ActionCable.server.broadcast(
-        "message_tracking_lead_#{@lead.id}",
-        turbo_stream_response
-      )
-      
-      Rails.logger.info "Sending Turbo Stream response: #{turbo_stream_response.inspect}" # For the direct response
-      
-      # This renders the Turbo Stream for the fetch request that initiated the action
-      render html: turbo_stream_response.html_safe
-    end
-    
     private
+
+    # Armazena o estado da URL de ausentes na sessão, considerando o filtro 'not_contacted'
+    def store_absent_leads_state_in_session
+      return unless request.get?
+      uri = URI.parse(request.original_url)
+      params_hash = Rack::Utils.parse_nested_query(uri.query || "")
+      if params_hash['contact_status'] == 'not_contacted'
+        params_hash.delete('page')
+        uri.query = Rack::Utils.build_query(params_hash).presence
+        session[:absent_leads_state] = uri.to_s
+      else
+        session[:absent_leads_state] = request.original_url
+      end
+    end
+
+    # Retorna o escopo base de leads ausentes, considerando o tipo de usuário
+    def base_absent_leads_scope
+      absent_threshold_date = helpers.referral?(current_user) ? 120.days.ago.to_date : 1.day.ago.to_date
+      fetch_leads_by_appointment_condition(
+        'clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?',
+        false,
+        absent_threshold_date
+      )
+    end
+
+    # Filtra leads que possuem telefone válido
+    def filter_leads_with_phone(scope)
+      scope.where.not(phone: [nil, ''])
+    end
+
+    # Filtra por tipo de paciente, se especificado
+    def filter_by_patient_type(scope)
+      return scope unless params[:patient_type].present? && params[:patient_type] != "all"
+      one_year_ago = 1.year.ago.to_date
+      case params[:patient_type]
+      when "absent"
+        scope.where('clinic_management_appointments.attendance = ?', false)
+      when "attended_year_ago"
+        scope.where('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', true, one_year_ago)
+      else
+        scope
+      end
+    end
+
+    # Filtra por data (ano/mês), se especificado
+    def filter_by_date(scope)
+      if params[:year].present? && params[:month].present?
+        start_date = Date.new(params[:year].to_i, params[:month].to_i, 1)
+        end_date = start_date.end_of_month
+        scope.where('clinic_management_services.date BETWEEN ? AND ?', start_date, end_date)
+      elsif params[:year].present?
+        start_date = Date.new(params[:year].to_i, 1, 1)
+        end_date = Date.new(params[:year].to_i, 12, 31)
+        scope.where('clinic_management_services.date BETWEEN ? AND ?', start_date, end_date)
+      else
+        scope
+      end
+    end
+
+    # Filtra por status de contato, se especificado
+    def filter_by_contact_status(scope)
+      return scope unless params[:contact_status].present? && params[:contact_status] != "all"
+      case params[:contact_status]
+      when "not_contacted"
+        contacted_lead_ids = ClinicManagement::Appointment.where('last_message_sent_at IS NOT NULL').distinct.pluck(:lead_id)
+        scope.where.not(id: contacted_lead_ids)
+      when "contacted"
+        contacted_lead_ids = ClinicManagement::Appointment.where('last_message_sent_at IS NOT NULL').distinct.pluck(:lead_id)
+        scope.where(id: contacted_lead_ids)
+      when "contacted_by_me"
+        contacted_by_me_lead_ids = ClinicManagement::Appointment
+          .where('last_message_sent_at IS NOT NULL')
+          .where('last_message_sent_by = ?', current_user.name)
+          .distinct
+          .pluck(:lead_id)
+        scope.where(id: contacted_by_me_lead_ids)
+      else
+        scope
+      end
+    end
+
+    # Aplica ordenação conforme o parâmetro de sort
+    def apply_absent_leads_order(scope)
+      scope = scope.joins("INNER JOIN clinic_management_appointments ON clinic_management_appointments.id = clinic_management_leads.last_appointment_id")
+                   .joins("INNER JOIN clinic_management_services ON clinic_management_services.id = clinic_management_appointments.service_id")
+      sort_order = params[:sort_order] || 'appointment_newest_first'
+      case sort_order
+      when "appointment_newest_first"
+        scope.order('clinic_management_services.date DESC')
+      when "appointment_oldest_first"
+        scope.order('clinic_management_services.date ASC')
+      when "contact_newest_first"
+        scope.order(Arel.sql('clinic_management_appointments.last_message_sent_at DESC NULLS LAST'))
+      when "contact_oldest_first"
+        scope.order(Arel.sql('clinic_management_appointments.last_message_sent_at ASC NULLS LAST'))
+      else
+        scope.order('clinic_management_services.date DESC')
+      end
+    end
+
+    # Filtra por busca de nome/telefone, se houver query
+    def filter_by_query(scope)
+      query = params[:q]&.strip
+      if query.present?
+        scope.where(
+          "clinic_management_leads.name ILIKE ? OR clinic_management_leads.phone ILIKE ?",
+          "%#{query}%",
+          "%#{query}%"
+        )
+      else
+        scope
+      end
+    end
 
     def set_view_type
       @view_type = mobile_device? ? 'cards' : (params[:view_type] || cookies[:preferred_absent_view] || 'table')
