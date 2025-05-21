@@ -567,31 +567,26 @@ module ClinicManagement
         end
       end
 
-      def fetch_leads_by_appointment_condition(base_condition_sql, *condition_values)
-        one_year_ago = Date.current - 1.year
-
-        excluded_lead_ids = ClinicManagement::Appointment.joins(:service)
-          .where('clinic_management_appointments.attendance = ? AND clinic_management_services.date >= ?', true, one_year_ago)
-          .pluck(:lead_id)
-
-        query = ClinicManagement::Lead
-          .select(
-            'DISTINCT clinic_management_leads.*, ' +
-            'clinic_management_services.date AS service_date_for_ordering, ' +
-            'clinic_management_appointments.last_message_sent_at AS contact_date_for_ordering'
-          )
-          .joins(appointments: :service) 
-          .where('clinic_management_leads.last_appointment_id = clinic_management_appointments.id') 
-          .where('clinic_management_appointments.service_id = clinic_management_services.id') 
-          .where.not(id: excluded_lead_ids) 
-          .where.not(phone: [nil, '']) 
-
-        query = query.where(
-          "#{base_condition_sql} OR (clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?)",
-          *condition_values, true, one_year_ago
-        )
-        
-        query
+      def fetch_leads_by_appointment_condition(base_sql, *vals)
+        one_year_ago = 1.year.ago.to_date
+      
+        recently_attended = ClinicManagement::Appointment
+                              .joins(:service)
+                              .where('clinic_management_appointments.attendance = true
+                                      AND clinic_management_services.date >= ?', one_year_ago)
+                              .select('1')
+                              .where('clinic_management_appointments.lead_id = clinic_management_leads.id')
+      
+        ClinicManagement::Lead
+          .joins('JOIN clinic_management_appointments ON clinic_management_appointments.id = clinic_management_leads.last_appointment_id')
+          .joins('JOIN clinic_management_services ON clinic_management_services.id = clinic_management_appointments.service_id')
+          .where("#{base_sql} OR (clinic_management_appointments.attendance = true AND clinic_management_services.date < ?)",
+                 *vals, one_year_ago)
+          .where.not(phone: [nil, ''])
+          .where.not(Arel.sql("EXISTS (#{recently_attended.to_sql})"))   # ← fica tudo no PG
+          .select('clinic_management_leads.*,
+                   clinic_management_services.date   AS service_date_for_ordering,
+                   clinic_management_appointments.last_message_sent_at AS contact_date_for_ordering')
       end
         
       # Use callbacks to share common setup or constraints between actions.
