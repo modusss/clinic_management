@@ -13,6 +13,13 @@ module ClinicManagement
       # @leads = Lead.includes(:invitations, :appointments).page(params[:page]).per(50)
       # @rows = load_leads_data(@leads)
     # end
+
+    def record_message_sent
+      @lead = Lead.find(params[:id])
+      @appointment = @lead.appointments.find(params[:appointment_id])
+      @appointment.update(last_message_sent_at: Time.current, last_message_sent_by: current_user.name)
+      head :no_content # or head :ok
+    end
     
     # GET /leads/1
     def show
