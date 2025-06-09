@@ -293,20 +293,19 @@ module ClinicManagement
 
     # Aplica ordenação conforme o parâmetro de sort
     def apply_absent_leads_order(scope)
-      scope = scope.joins("INNER JOIN clinic_management_appointments ON clinic_management_appointments.id = clinic_management_leads.last_appointment_id")
-                   .joins("INNER JOIN clinic_management_services ON clinic_management_services.id = clinic_management_appointments.service_id")
+      # Agora podemos ordenar pelas colunas que estão no SELECT
       sort_order = params[:sort_order] || 'appointment_newest_first'
       case sort_order
       when "appointment_newest_first"
-        scope.order('clinic_management_services.date DESC')
+        scope.order('service_date DESC')
       when "appointment_oldest_first"
-        scope.order('clinic_management_services.date ASC')
+        scope.order('service_date ASC')
       when "contact_newest_first"
-        scope.order(Arel.sql('clinic_management_appointments.last_message_sent_at DESC NULLS LAST'))
+        scope.order(Arel.sql('last_message_sent_at DESC NULLS LAST'))
       when "contact_oldest_first"
-        scope.order(Arel.sql('clinic_management_appointments.last_message_sent_at ASC NULLS LAST'))
+        scope.order(Arel.sql('last_message_sent_at ASC NULLS LAST'))
       else
-        scope.order('clinic_management_services.date DESC')
+        scope.order('service_date DESC')
       end
     end
 
@@ -314,13 +313,13 @@ module ClinicManagement
     def filter_by_query(scope)
       query = params[:q]&.strip
       if query.present?
-        scope.where(
+        scope.distinct.where(
           "clinic_management_leads.name ILIKE ? OR clinic_management_leads.phone ILIKE ?",
           "%#{query}%",
           "%#{query}%"
         )
       else
-        scope
+        scope.distinct
       end
     end
 
@@ -538,38 +537,32 @@ module ClinicManagement
       end
 
       def fetch_leads_by_appointment_condition(query_condition, value, date = nil)
-        # Data de um ano atrás a partir de hoje
         one_year_ago = Date.current - 1.year
-      
-        # IDs dos leads que tiveram attendance como true DENTRO do último ano
-        # (Estes serão excluídos dos resultados)
+
         excluded_lead_ids = ClinicManagement::Appointment.joins(:service)
                                                         .where('clinic_management_appointments.attendance = ? AND clinic_management_services.date >= ?', true, one_year_ago)
                                                         .pluck(:lead_id)
-      
-        # Build the base query joining leads, appointments, and services
-        base_query = ClinicManagement::Lead.joins(appointments: :service)
-                                            .where('last_appointment_id = clinic_management_appointments.id')
-                                            .where.not(id: excluded_lead_ids)
 
-        # Apply the specific condition (for absent leads OR for attended > 1 year)
+        # CORREÇÃO: Incluir as colunas necessárias para ordenação no SELECT
+        base_query = ClinicManagement::Lead
+          .select('clinic_management_leads.*, clinic_management_services.date as service_date, clinic_management_appointments.last_message_sent_at')
+          .joins(appointments: :service)
+          .where('last_appointment_id = clinic_management_appointments.id')
+          .where.not(id: excluded_lead_ids)
+          .distinct
+
         if date
-          # Condition can be either:
-          # 1. The standard absent condition (passed in as a parameter)
-          # 2. OR a condition where the last appointment was attended but more than a year ago
           base_query = base_query.where(
             "#{query_condition} OR (clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?)",
-            value, date,  # Parameters for original condition
-            true, one_year_ago  # Parameters for "attended > 1 year ago"
+            value, date,
+            true, one_year_ago
           )
           .where('clinic_management_appointments.service_id = clinic_management_services.id')
         else
-          # This is for cases not using the date parameter - keep original logic
           base_query = base_query.where(query_condition, value)
                                  .where('clinic_management_appointments.service_id = clinic_management_services.id')
         end
         
-        # Return the query object without ordering
         base_query
       end
         
