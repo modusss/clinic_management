@@ -1,5 +1,5 @@
 <tr>
-  <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><%= invitation&.lead&.name %></td>
+  <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><%= invitation.patient_name %></td>
   <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><%= invitation&.lead&.phone %></td>
   <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><%= link_to(invite_day(invitation.appointments.last), show_by_referral_services_path(referral_id: referral, id: service), class: "text-blue-500 hover:text-blue-700" ) %></td>
   <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm justify-center">
