@@ -12,6 +12,8 @@ module ClinicManagement
 
     before_destroy :destroy_appointments
 
+    # after_create :merge_with_duplicate_leads, if: :phone?
+
     def destroy_appointments
       appointments.destroy_all
     end
@@ -101,6 +103,42 @@ module ClinicManagement
       decimal *= -1 if type == :lat || type == :lon
 
       decimal
+    end
+
+    def merge_with_duplicate_leads
+      # Buscar outros leads com o mesmo telefone (exceto este)
+      duplicate_leads = ClinicManagement::Lead
+        .where(phone: phone)
+        .where.not(id: id)
+        .order(:created_at)
+      
+      return if duplicate_leads.empty?
+      
+      Rails.logger.info "Lead #{id} encontrou #{duplicate_leads.count} duplicatas. Iniciando merge..."
+      
+      # Este lead é o mais novo, então mesclar nos mais antigos
+      oldest_lead = duplicate_leads.first
+      
+      # Transferir dados deste lead para o mais antigo
+      self.invitations.update_all(lead_id: oldest_lead.id)
+      self.appointments.update_all(lead_id: oldest_lead.id)
+      
+      if self.leads_conversion.present?
+        self.leads_conversion.update!(clinic_management_lead_id: oldest_lead)
+      end
+      
+      # Atualizar informações do lead mais antigo se necessário
+      update_attrs = {}
+      update_attrs[:name] = self.name if oldest_lead.name.blank? && self.name.present?
+      update_attrs[:address] = self.address if oldest_lead.address.blank? && self.address.present?
+      update_attrs[:converted] = true if !oldest_lead.converted && self.converted
+      
+      oldest_lead.update_columns(update_attrs) if update_attrs.any?
+      
+      # Deletar este lead (o mais novo)
+      self.destroy!
+      
+      Rails.logger.info "Lead #{id} foi mesclado com lead #{oldest_lead.id}"
     end
   end
 end

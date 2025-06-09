@@ -44,6 +44,17 @@ module ClinicManagement
 
     # POST /leads
     def create
+      phone = lead_params[:phone]
+      
+      if phone.present?
+        existing_lead = Lead.find_by(phone: phone)
+        
+        if existing_lead.present?
+          flash[:alert] = "Já existe um lead com este telefone: #{existing_lead.name} (ID: #{existing_lead.id}). Redirecionando para o lead existente."
+          redirect_to existing_lead and return
+        end
+      end
+      
       @lead = Lead.new(lead_params)
 
       if @lead.save
@@ -55,6 +66,18 @@ module ClinicManagement
 
     # PATCH/PUT /leads/1
     def update
+      phone = lead_params[:phone]
+      
+      # Verificar se estamos mudando o telefone para um que já existe
+      if phone.present? && @lead.phone != phone
+        existing_lead = Lead.find_by(phone: phone)
+        
+        if existing_lead.present?
+          flash[:alert] = "Este telefone já pertence a outro lead: #{existing_lead.name} (ID: #{existing_lead.id})"
+          render :edit, status: :unprocessable_entity and return
+        end
+      end
+      
       if @lead.update(lead_params)
         redirect_to @lead, notice: "Lead was successfully updated."
       else

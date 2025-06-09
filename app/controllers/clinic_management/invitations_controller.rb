@@ -57,7 +57,7 @@ module ClinicManagement
           @invitation = @lead.invitations.build(invitation_params.except(:lead_attributes, :appointments_attributes))
           @lead.update!(name: @invitation.patient_name) if @lead.name.blank?
           appointment_params = invitation_params[:appointments_attributes]["0"].merge({status: "agendado", lead: @lead})
-          existing_appointment = @lead.appointments.find_by(service_id: appointment_params[:service_id])    
+          existing_appointment = already_schedule_this_patient?(@invitation, appointment_params[:service_id])   
           if existing_appointment
             @lead.errors.add(:base, "Este paciente chamado #{@lead.name} já está agendado para este atendimento.")
             @invitation.destroy
@@ -73,6 +73,19 @@ module ClinicManagement
       rescue ActiveRecord::RecordInvalid => exception
         render_validation_errors(exception)
       end
+    end
+
+    def already_schedule_this_patient?(invitation, service_id)
+      phone = invitation.lead.phone
+      patient_first_name = invitation.patient_name.split.first
+      # check if this service has any appointment with this patient first name and phone
+      ClinicManagement::Appointment
+        .joins(:service, :lead, :invitation)
+        .where(
+          clinic_management_services: { id: service_id },
+          clinic_management_leads: { phone: phone },
+          clinic_management_invitations: { patient_name: patient_first_name }
+        ).exists?
     end
     
     def new_patient_fitted
@@ -93,7 +106,7 @@ module ClinicManagement
           @invitation.save!
           @lead.update!(name: @invitation.patient_name) if @lead.name.blank?    
           appointment_params = invitation_params[:appointments_attributes]["0"].merge({status: "agendado", lead: @lead})
-          existing_appointment = @lead.appointments.find_by(service_id: appointment_params[:service_id])
+          existing_appointment = already_schedule_this_patient?(@invitation, appointment_params[:service_id])
           if existing_appointment
             @lead.errors.add(:base, "Este paciente chamado #{@lead.name} já está agendado para este atendimento.")
             raise ActiveRecord::RecordInvalid.new(@lead)
@@ -213,16 +226,65 @@ module ClinicManagement
 
 
     def check_existing_leads(params)
-      first_name = params.dig(:lead_attributes, :name)&.split&.first || params[:patient_name]&.split&.first
       phone = params.dig(:lead_attributes, :phone)
+      patient_name = params[:patient_name]
+      lead_name = params.dig(:lead_attributes, :name)
       
-      lead = Lead.find_by(phone: phone)
+      return Lead.create!(params[:lead_attributes]) if phone.blank?
       
-      if lead && lead.name.split.first.downcase == first_name.downcase
-        lead
+      existing_lead = Lead.find_by(phone: phone)
+      
+      if existing_lead.present?
+        Rails.logger.info "Usando lead existente (ID: #{existing_lead.id}) para telefone: #{phone}"
+        
+        # Auto-merge de informações
+        merge_lead_information(existing_lead, params, patient_name, lead_name)
+        
+        # Log da ação para auditoria
+        Rails.logger.info "Lead #{existing_lead.id} atualizado com novas informações do convite"
+        
+        return existing_lead
       else
         Lead.create!(params[:lead_attributes])
       end
+    end
+
+    def merge_lead_information(existing_lead, params, patient_name, lead_name)
+      updates = {}
+      
+      # Merge de nome (prioriza o nome mais completo)
+      new_name = lead_name.presence || patient_name
+      if should_update_name?(existing_lead.name, new_name)
+        updates[:name] = new_name
+      end
+      
+      # Merge de endereço
+      new_address = params.dig(:lead_attributes, :address)
+      if existing_lead.address.blank? && new_address.present?
+        updates[:address] = new_address
+      end
+      
+      # Merge de coordenadas
+      new_latitude = params.dig(:lead_attributes, :latitude)
+      new_longitude = params.dig(:lead_attributes, :longitude)
+      
+      if existing_lead.latitude.blank? && new_latitude.present?
+        updates[:latitude] = new_latitude
+      end
+      
+      if existing_lead.longitude.blank? && new_longitude.present?
+        updates[:longitude] = new_longitude
+      end
+      
+      existing_lead.update!(updates) if updates.any?
+    end
+
+    def should_update_name?(existing_name, new_name)
+      return true if existing_name.blank? && new_name.present?
+      return false if new_name.blank?
+      
+      # Atualiza se o novo nome é mais completo (mais palavras)
+      existing_name.split.length < new_name.split.length
     end
     
     def set_local_region
