@@ -10,52 +10,136 @@
     </div>
   <% end %>
 
-  <h2 class="text-lg font-bold mb-4">1. Dados do marcação</h2>
-  <div class="mb-4">
-    <%= form.label :referral_id, "Indicador", class: "block text-gray-700 font-bold" %>
-    <%= form.collection_select :referral_id, referrals, :id, :name, {selected: local_referral.id}, {class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline"} %>
-  </div>
+  <div data-controller="phone-checker" 
+       data-phone-checker-check-url-value="<%= check_existing_phone_invitations_path %>"
+       data-phone-checker-csrf-token-value="<%= form_authenticity_token %>">
 
-  <%= form.fields_for :appointments do |appointment_fields| %>
+    <h2 class="text-lg font-bold mb-4">1. Dados do marcação</h2>
     <div class="mb-4">
-      <%= appointment_fields.hidden_field :service_id, value: service.id %>
-  <% end %>
-  <br>
-  <br>
-  <h2 class="text-lg font-bold mb-4">2. Dados do convidado</h2>
-  <%= form.fields_for :lead do |lead_fields| %>
-    <div class="mb-4">
-      <label for="lead_phone" class="block text-gray-700 font-bold mb-2">Telefone</label>
-      <%= lead_fields.telephone_field :phone, value: "77", maxlength: 11, id: "lead_phone", class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline", placeholder: "779XXXXXXXX"  %>
-    </div>
-  <% end %>
-  <div class="mb-4">
-    <%= form.label "Nome do paciente", class: "block text-gray-700 font-bold" %>
-    <%= form.text_field :patient_name, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
-  </div>
-  <%= form.fields_for :lead do |lead_fields| %>
-    <div class="mb-4">
-      <label for="lead_name" class="block text-gray-700 font-bold mb-2">Nome do responsável</label>
-      <%= lead_fields.text_field :name, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline", placeholder: "Deixe em branco se o paciente é o responsável" %>
+      <%= form.label :referral_id, "Indicador", class: "block text-gray-700 font-bold" %>
+      <%= form.collection_select :referral_id, referrals, :id, :name, {selected: local_referral.id}, {class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline"} %>
     </div>
 
+    <%= form.fields_for :appointments do |appointment_fields| %>
+      <div class="mb-4">
+        <%= appointment_fields.hidden_field :service_id, value: service.id %>
+      </div>
+    <% end %>
+    
+    <br>
+    <br>
+    <h2 class="text-lg font-bold mb-4">2. Dados do convidado</h2>
+    <%= form.fields_for :lead do |lead_fields| %>
+      <div class="mb-4">
+        <label for="lead_phone" class="block text-gray-700 font-bold mb-2">Telefone</label>
+        <%= lead_fields.telephone_field :phone, 
+            value: "77", 
+            maxlength: 11, 
+            id: "lead_phone", 
+            class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline", 
+            placeholder: "779XXXXXXXX",
+            data: { 
+              phone_checker_target: "phoneInput",
+              action: "blur->phone-checker#checkPhone focus->phone-checker#onPhoneFocus"
+            }
+        %>
+        
+        <div data-phone-checker-target="existingLeadAlert" class="hidden mt-3 p-4 border-l-4 border-yellow-400 bg-yellow-50">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-yellow-800">
+                Telefone já cadastrado!
+              </h3>
+              <div class="mt-2 text-sm text-yellow-700" data-phone-checker-target="existingLeadInfo">
+                <!-- Informações do lead serão inseridas aqui -->
+              </div>
+              <div class="mt-4">
+                <div class="flex space-x-2">
+                  <button type="button" 
+                          data-action="click->phone-checker#associate"
+                          class="phone-action-button bg-green-500 hover:bg-green-600 text-white px-3 py-1 text-sm rounded transition-all">
+                    ✓ Usar cadastro existente
+                  </button>
+                  <button type="button" 
+                          data-action="click->phone-checker#transfer"
+                          class="phone-action-button bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 text-sm rounded transition-all">
+                    ↔ Transferir telefone
+                  </button>
+                  <button type="button" 
+                          data-action="click->phone-checker#cancel"
+                          class="phone-action-button bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 text-sm rounded transition-all">
+                    ✕ Cancelar
+                  </button>
+                </div>
+                
+                <div class="mt-2 text-xs text-gray-600">
+                  💡 <strong>Dica:</strong> Você pode trocar de opção a qualquer momento antes de submeter.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <%= hidden_field_tag :phone_action, '', data: { phone_checker_target: "phoneActionInput" } %>
+
     <div class="mb-4">
-      <label for="lead_address" class="block text-gray-700 font-bold mb-2">Endereço</label>
-      <%= lead_fields.text_field :address, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+      <%= form.label "Nome do paciente", class: "block text-gray-700 font-bold" %>
+      <%= form.text_field :patient_name, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
     </div>
-  <% end %>
+    
+    <%= form.fields_for :lead do |lead_fields| %>
+      <div class="mb-4">
+        <label for="lead_name" class="block text-gray-700 font-bold mb-2">Nome do responsável</label>
+        <%= lead_fields.text_field :name, 
+            class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline", 
+            placeholder: "Deixe em branco se o paciente é o responsável",
+            data: { phone_checker_target: "nameField" } %>
+      </div>
 
-  <div class="mb-4">
-    <%= form.label "Observações", class: "block text-gray-700 font-bold" %>
-    <%= form.text_area :notes, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+      <div class="mb-4">
+        <label for="lead_address" class="block text-gray-700 font-bold mb-2">Endereço</label>
+        <%= lead_fields.text_field :address, 
+            class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline",
+            data: { phone_checker_target: "addressField" } %>
+      </div>
+    <% end %>
+
+    <div class="mb-4">
+      <%= form.label "Observações", class: "block text-gray-700 font-bold" %>
+      <%= form.text_area :notes, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+    </div>
+
+    <div class="my-4">
+      <%= form.submit "Adicionar novo paciente", 
+          class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline",
+          data: { phone_checker_target: "submitButton" } %>
+      <br>
+      <br>
+      <div class="text-red-700" id="validation"></div>
+    </div>
+
   </div>
-
-  <div class="my-4">
-    <%= form.submit "Adicionar novo paciente", class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" %>
-  <br>
-  <br>
-  <div class="text-red-700" id="validation"></div>
-
-</div>
 <% end %>
+
+<style>
+  .selected-action {
+    @apply ring-2 ring-blue-500 ring-offset-2;
+  }
+  
+  .phone-action-button {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .phone-action-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+</style>
 

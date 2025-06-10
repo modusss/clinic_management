@@ -110,13 +110,24 @@ module ClinicManagement
     def create_patient_fitted
       begin
         ActiveRecord::Base.transaction do
-          @lead = check_existing_leads(invitation_params)
+          # Aplicar a mesma lógica de verificação de telefone
+          case params[:phone_action]
+          when 'associate'
+            @lead = associate_with_existing_lead(invitation_params)
+          when 'transfer'
+            @lead = transfer_phone_to_new_lead(invitation_params)
+          else
+            @lead = check_existing_leads(invitation_params)
+          end
+          
           @invitation = @lead.invitations.new(invitation_params.except(:lead_attributes, :appointments_attributes))       
           @invitation.region = set_local_region
           @invitation.save!
           @lead.update!(name: @invitation.patient_name) if @lead.name.blank?    
+          
           appointment_params = invitation_params[:appointments_attributes]["0"].merge({status: "agendado", lead: @lead})
           existing_appointment = already_schedule_this_patient?(@invitation, appointment_params[:service_id])
+          
           if existing_appointment
             @lead.errors.add(:base, "Este paciente chamado #{@lead.name} já está agendado para este atendimento.")
             raise ActiveRecord::RecordInvalid.new(@lead)
@@ -126,6 +137,9 @@ module ClinicManagement
             @appointment.save!
           end
         end
+        
+        @lead.update(last_appointment_id: @appointment.id)
+        
         if @appointment.service.date == Date.current
           redirect_to index_today_path
         elsif @appointment.service.date == Service.where('date > ?', Date.current).order(:date).pluck(:date).first
