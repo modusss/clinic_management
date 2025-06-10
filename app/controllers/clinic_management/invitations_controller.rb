@@ -53,11 +53,21 @@ module ClinicManagement
     def create
       begin
         ActiveRecord::Base.transaction do
-          @lead = check_existing_leads(invitation_params)
+          case params[:phone_action]
+          when 'associate'
+            @lead = associate_with_existing_lead(invitation_params)
+          when 'transfer'
+            @lead = transfer_phone_to_new_lead(invitation_params)
+          else
+            @lead = check_existing_leads(invitation_params)
+          end
+          
           @invitation = @lead.invitations.build(invitation_params.except(:lead_attributes, :appointments_attributes))
           @lead.update!(name: @invitation.patient_name) if @lead.name.blank?
+          
           appointment_params = invitation_params[:appointments_attributes]["0"].merge({status: "agendado", lead: @lead})
           existing_appointment = already_schedule_this_patient?(@invitation, appointment_params[:service_id])   
+          
           if existing_appointment
             @lead.errors.add(:base, "Este paciente chamado #{@lead.name} já está agendado para este atendimento.")
             @invitation.destroy
@@ -180,6 +190,38 @@ module ClinicManagement
             )
           end
         end
+      end
+    end
+
+    def check_existing_phone
+      phone = params[:phone]
+      
+      if phone.present? && phone.length >= 10
+        existing_lead = ClinicManagement::Lead.find_by(phone: phone)
+        
+        if existing_lead.present?
+          # Buscar dados do lead existente
+          last_invitation = existing_lead.invitations.last
+          last_appointment = existing_lead.appointments.last
+          
+          render json: {
+            exists: true,
+            lead: {
+              id: existing_lead.id,
+              name: existing_lead.name,
+              phone: existing_lead.phone,
+              address: existing_lead.address,
+              last_patient_name: last_invitation&.patient_name,
+              last_service_date: last_appointment&.service&.date&.strftime("%d/%m/%Y"),
+              invitations_count: existing_lead.invitations.count,
+              appointments_count: existing_lead.appointments.count
+            }
+          }
+        else
+          render json: { exists: false }
+        end
+      else
+        render json: { exists: false }
       end
     end
 
@@ -453,5 +495,37 @@ module ClinicManagement
           ]
         )      
       end      
+
+    def associate_with_existing_lead(params)
+      phone = params.dig(:lead_attributes, :phone)
+      existing_lead = ClinicManagement::Lead.find_by(phone: phone)
+      
+      if existing_lead.present?
+        # Atualizar informações se necessário
+        merge_lead_information(existing_lead, params, params[:patient_name], params.dig(:lead_attributes, :name))
+        existing_lead
+      else
+        Lead.create!(params[:lead_attributes])
+      end
+    end
+
+    def transfer_phone_to_new_lead(params)
+      phone = params.dig(:lead_attributes, :phone)
+      old_lead = ClinicManagement::Lead.find_by(phone: phone)
+      
+      if old_lead.present?
+        # Criar novo lead
+        new_lead = Lead.create!(params[:lead_attributes])
+        
+        # Limpar telefone do lead antigo
+        old_lead.update!(phone: nil)
+        
+        Rails.logger.info "Telefone #{phone} transferido do lead #{old_lead.id} para o lead #{new_lead.id}"
+        
+        new_lead
+      else
+        Lead.create!(params[:lead_attributes])
+      end
+    end
   end
 end

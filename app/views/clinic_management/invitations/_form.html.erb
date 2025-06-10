@@ -10,98 +10,159 @@
     </div>
   <% end %>
 
-  <h2 class="text-lg font-bold mb-4">1. Dados do marcação</h2>
-  <div class="mb-4">
-    <% if referral? current_user %>
-      <%= form.hidden_field :referral_id, value: user_referral.id %>
-    <% else %>
-      <%= form.label :referral_id, "Indicador", class: "block text-gray-700 font-bold" %>
-      <%= form.collection_select :referral_id, referrals, :id, :name, {selected: referral}, {class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline"} %>
+  <!-- Adicionar o controller Stimulus aqui -->
+  <div data-controller="phone-checker" 
+       data-phone-checker-check-url-value="<%= check_existing_phone_invitations_path %>"
+       data-phone-checker-csrf-token-value="<%= form_authenticity_token %>">
+
+    <h2 class="text-lg font-bold mb-4">1. Dados do marcação</h2>
+    <div class="mb-4">
+      <% if referral? current_user %>
+        <%= form.hidden_field :referral_id, value: user_referral.id %>
+      <% else %>
+        <%= form.label :referral_id, "Indicador", class: "block text-gray-700 font-bold" %>
+        <%= form.collection_select :referral_id, referrals, :id, :name, {selected: referral}, {class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline"} %>
+      <% end %>
+    </div>
+    <div class="mb-4">
+      <%= form.label "Dia da marcação", class: "block text-gray-700 font-bold" %>
+      <%= form.collection_select :date, 
+        [ ["Hoje, " + Date.current.strftime("%d/%m/%Y"), Date.current],
+          ["Ontem, " + (Date.current - 1.day).strftime("%d/%m/%Y"), (Date.current - 1.day)],
+          ["Há 2 dias, " + (Date.current - 2.days).strftime("%d/%m/%Y"), (Date.current - 2.days)],
+          ["Há 3 dias, " + (Date.current - 3.days).strftime("%d/%m/%Y"), (Date.current - 3.days)]
+        ], 
+        :last, 
+        :first,
+        {selected: date},
+        class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+      %>
+    </div>
+     <div class="mb-4">
+      <%= form.label "Região", class: "block text-gray-700 font-bold" %>
+      <%= form.collection_select :region_id, regions, :id, :name,
+            { selected: region }, 
+            class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+    </div>
+
+    <%= form.fields_for :appointments do |appointment_fields| %>
+      <div class="mb-4">
+        <%= appointment_fields.label "Dia destinado", class: "block text-gray-700 font-bold" %>
+        <%= appointment_fields.select :service_id,
+        options_for_select(services_list.map { |s| [description_service(s), s.id] }, selected: service),
+        {},
+        class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+      </div>
     <% end %>
-  </div>
-  <div class="mb-4">
-    <%= form.label "Dia da marcação", class: "block text-gray-700 font-bold" %>
-    <%= form.collection_select :date, 
-      [ ["Hoje, " + Date.current.strftime("%d/%m/%Y"), Date.current],
-        ["Ontem, " + (Date.current - 1.day).strftime("%d/%m/%Y"), (Date.current - 1.day)],
-        ["Há 2 dias, " + (Date.current - 2.days).strftime("%d/%m/%Y"), (Date.current - 2.days)],
-        ["Há 3 dias, " + (Date.current - 3.days).strftime("%d/%m/%Y"), (Date.current - 3.days)]
-      ], 
-      :last, 
-      :first,
-      {selected: date},
-      class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-    %>
-  </div>
-   <div class="mb-4">
-    <%= form.label "Região", class: "block text-gray-700 font-bold" %>
-    <%= form.collection_select :region_id, regions, :id, :name,
-          { selected: region }, 
-          class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
-  </div>
+    <br>
+    <br>
+    <h2 class="text-lg font-bold mb-4">2. Dados do convidado</h2>
+    <%= form.fields_for :lead do |lead_fields| %>
+      <div class="mb-4">
+        <label for="lead_phone" class="block text-gray-700 font-bold mb-2">Telefone</label>
+        <%= lead_fields.telephone_field :phone, 
+            value: "77", 
+            maxlength: 11, 
+            id: "lead_phone", 
+            class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline", 
+            placeholder: "779XXXXXXXX",
+            data: { 
+              phone_checker_target: "phoneInput",
+              action: "blur->phone-checker#checkPhone focus->phone-checker#onPhoneFocus"
+            }
+        %>
+        
+        <!-- Área para mostrar o lead existente -->
+        <div data-phone-checker-target="existingLeadAlert" class="hidden mt-3 p-4 border-l-4 border-yellow-400 bg-yellow-50">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-yellow-800">
+                Telefone já cadastrado!
+              </h3>
+              <div class="mt-2 text-sm text-yellow-700" data-phone-checker-target="existingLeadInfo">
+                <!-- Informações do lead serão inseridas aqui -->
+              </div>
+              <div class="mt-4">
+                <div class="flex space-x-2">
+                  <button type="button" 
+                          data-action="click->phone-checker#associate"
+                          class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 text-sm rounded">
+                    ✓ Usar cadastro existente
+                  </button>
+                  <button type="button" 
+                          data-action="click->phone-checker#transfer"
+                          class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 text-sm rounded">
+                    ↔ Transferir telefone
+                  </button>
+                  <button type="button" 
+                          data-action="click->phone-checker#cancel"
+                          class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 text-sm rounded">
+                    ✕ Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
 
+    <!-- Campo hidden para ação escolhida -->
+    <%= hidden_field_tag :phone_action, '', data: { phone_checker_target: "phoneActionInput" } %>
 
-  <%= form.fields_for :appointments do |appointment_fields| %>
     <div class="mb-4">
-      <%= appointment_fields.label "Dia destinado", class: "block text-gray-700 font-bold" %>
-      <%= appointment_fields.select :service_id,
-      options_for_select(services_list.map { |s| [description_service(s), s.id] }, selected: service),
-      {},
-      class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+      <%= form.label "Nome do paciente", class: "block text-gray-700 font-bold" %>
+      <%= form.text_field :patient_name, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
     </div>
-  <% end %>
-  <br>
-  <br>
-  <h2 class="text-lg font-bold mb-4">2. Dados do convidado</h2>
-  <%= form.fields_for :lead do |lead_fields| %>
+    <%= form.fields_for :lead do |lead_fields| %>
+      <div class="mb-4">
+        <label for="lead_name" class="block text-gray-700 font-bold mb-2">Nome do responsável</label>
+        <%= lead_fields.text_field :name, 
+            class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline", 
+            placeholder: "Deixe em branco se o paciente é o responsável",
+            data: { phone_checker_target: "nameField" } %>
+      </div>
+
+      <div class="mb-4">
+        <label for="lead_address" class="block text-gray-700 font-bold mb-2">Endereço</label>
+        <%= lead_fields.text_field :address, 
+            class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline",
+            data: { phone_checker_target: "addressField" } %>
+      </div>
+
+      <div class="flex mb-2">
+        <div class="w-1/2 pr-2">
+        <label for="lead_latitude" class="block text-gray-700 font-bold mb-2">Latitude</label>
+        <%= lead_fields.text_field :latitude, step: "any", class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline", placeholder: "14...", onInput: "updateCoordinates()" %>
+        <div id="latitude_display" class="text-gray-600"></div>
+      </div>
+
+      <div class="w-1/2 pl-2">
+        <label for="lead_longitude" class="block text-gray-700 font-bold mb-2">Longitude</label>
+        <%= lead_fields.text_field :longitude, step: "any", class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline", placeholder: "40...", onInput: "updateCoordinates()" %>
+        <div id="longitude_display" class="text-gray-600"></div>
+      </div>
+    </div>
+
+    <% end %>
+
     <div class="mb-4">
-      <label for="lead_phone" class="block text-gray-700 font-bold mb-2">Telefone</label>
-      <%= lead_fields.telephone_field :phone, value: "77", maxlength: 11, id: "lead_phone", class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline", placeholder: "779XXXXXXXX"  %>
-    </div>
-  <% end %>
-  <div class="mb-4">
-    <%= form.label "Nome do paciente", class: "block text-gray-700 font-bold" %>
-    <%= form.text_field :patient_name, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
-  </div>
-  <%= form.fields_for :lead do |lead_fields| %>
-    <div class="mb-4">
-      <label for="lead_name" class="block text-gray-700 font-bold mb-2">Nome do responsável</label>
-      <%= lead_fields.text_field :name, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline", placeholder: "Deixe em branco se o paciente é o responsável" %>
+      <%= form.label "Observações", class: "block text-gray-700 font-bold" %>
+      <%= form.text_area :notes, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
     </div>
 
-    <div class="mb-4">
-      <label for="lead_address" class="block text-gray-700 font-bold mb-2">Endereço</label>
-      <%= lead_fields.text_field :address, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+    <div class="my-4">
+      <%= form.submit "Adicionar novo paciente", 
+          class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline",
+          data: { phone_checker_target: "submitButton" } %>
     </div>
 
-    <div class="flex mb-2">
-      <div class="w-1/2 pr-2">
-      <label for="lead_latitude" class="block text-gray-700 font-bold mb-2">Latitude</label>
-      <%= lead_fields.text_field :latitude, step: "any", class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline", placeholder: "14...", onInput: "updateCoordinates()" %>
-      <div id="latitude_display" class="text-gray-600"></div>
-    </div>
-
-    <div class="w-1/2 pl-2">
-      <label for="lead_longitude" class="block text-gray-700 font-bold mb-2">Longitude</label>
-      <%= lead_fields.text_field :longitude, step: "any", class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline", placeholder: "40...", onInput: "updateCoordinates()" %>
-      <div id="longitude_display" class="text-gray-600"></div>
-    </div>
-  </div>
-
-  <% end %>
-
-  <div class="mb-4">
-    <%= form.label "Observações", class: "block text-gray-700 font-bold" %>
-    <%= form.text_area :notes, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
-  </div>
-
-  <div class="my-4">
-    <%= form.submit "Adicionar novo paciente", class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" %>
-  <br>
-  <br>
-  <div class="text-red-700" id="validation"></div>
-
-</div>
+  </div> <!-- Fim do controller -->
 <% end %>
 
 <style>
@@ -128,8 +189,6 @@ function updateCoordinates() {
   var longitude = document.getElementById("invitation_lead_attributes_longitude").value;
   var latitudeDisplay = document.getElementById("latitude_display");
   var longitudeDisplay = document.getElementById("longitude_display");
-  var latitudeDecimalDisplay = document.getElementById("latitude_decimal_display");
-  var longitudeDecimalDisplay = document.getElementById("longitude_decimal_display");
 
   if (isDecimalFormat(latitude)) {
     latitudeDisplay.textContent = "Latitude decimal";
