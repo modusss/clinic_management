@@ -2,11 +2,17 @@
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
   <% rows.each do |row| %>
     <div class="bg-white rounded shadow p-4 mb-4">
+      <% if rows.any? %>
       <%# Exibe cada campo do row, com header e content, igual à tabela, mas em formato de cartão %>
       <% row.each do |cell| %>
         <div class="mb-2" id="<%= cell[:id] %>">
           <span class="block text-xs text-gray-500 font-semibold"><%= cell[:header] %></span>
           <span class="block text-base text-gray-800" style="margin-top: 10px;"><%= cell[:content] %></span>
+        </div>
+      <% end %>
+      <% else %>
+        <div class="bg-white rounded shadow p-4 mb-4">
+          <span class="block text-base text-gray-800">Nenhum paciente agendado</span>
         </div>
       <% end %>
     </div>

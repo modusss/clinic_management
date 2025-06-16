@@ -1,5 +1,6 @@
 <%# Cards view for service appointments, using the same data as the table (rows) %>
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+  <% if rows.any? %>
   <% rows.each do |row| %>
     <div class="bg-white rounded shadow p-4 mb-4">
       <% row.each do |cell| %>
@@ -8,6 +9,11 @@
           <span class="block text-base text-gray-800" style="margin-top: 10px;"><%= cell[:content] %></span>
         </div>
       <% end %>
+    </div>
+  <% end %> 
+  <% else %>
+    <div class="bg-white rounded shadow p-4 mb-4">
+      <span class="block text-base text-gray-800">Nenhum paciente agendado</span>
     </div>
   <% end %>
 </div> 
