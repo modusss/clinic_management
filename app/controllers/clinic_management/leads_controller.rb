@@ -296,15 +296,15 @@ module ClinicManagement
       sort_order = params[:sort_order] || 'appointment_newest_first'
       case sort_order
       when "appointment_newest_first"
-        scope.order('service_date DESC')
+        scope.order('clinic_management_services.date DESC')
       when "appointment_oldest_first"
-        scope.order('service_date ASC')
+        scope.order('clinic_management_services.date ASC')
       when "contact_newest_first"
-        scope.order(Arel.sql('last_message_sent_at DESC NULLS LAST'))
+        scope.order(Arel.sql('clinic_management_appointments.last_message_sent_at DESC NULLS LAST'))
       when "contact_oldest_first"
-        scope.order(Arel.sql('last_message_sent_at ASC NULLS LAST'))
+        scope.order(Arel.sql('clinic_management_appointments.last_message_sent_at ASC NULLS LAST'))
       else
-        scope.order('service_date DESC')
+        scope.order('clinic_management_services.date DESC')
       end
     end
 
