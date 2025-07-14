@@ -152,11 +152,8 @@ module ClinicManagement
 
     def search_absents
       query = params[:q]&.strip
-      if helpers.referral?(current_user)
-        @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
-      else
-        @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 1.days.ago)
-      end
+      # Removida a diferenciação - usar sempre 1.day.ago para todos
+      @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 1.days.ago)
       
       if query.present?
         @leads = @all_leads.where("name ILIKE ? OR phone ILIKE ?", "%#{query}%", "%#{query}%").limit(10)
@@ -189,6 +186,7 @@ module ClinicManagement
       @all_leads = filter_by_patient_type(@all_leads)
       @all_leads = filter_by_date(@all_leads)
       @all_leads = filter_by_contact_status(@all_leads)
+      @all_leads = filter_by_referral(@all_leads)  # Novo filtro aqui
       @all_leads = apply_absent_leads_order(@all_leads)
 
       # 3) Filtro de busca por nome/telefone
@@ -224,9 +222,10 @@ module ClinicManagement
       session[:absent_leads_state] = uri.to_s
     end
 
-    # Retorna o escopo base de leads ausentes, considerando o tipo de usuário
+    # Retorna o escopo base de leads ausentes, sem diferenciação de usuário
     def base_absent_leads_scope
-      absent_threshold_date = helpers.referral?(current_user) ? 120.days.ago.to_date : 1.day.ago.to_date
+      # Removida a diferenciação - usar sempre 1.day.ago para todos
+      absent_threshold_date = 1.day.ago.to_date
       fetch_leads_by_appointment_condition(
         'clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?',
         false,
@@ -288,6 +287,24 @@ module ClinicManagement
       else
         scope
       end
+    end
+
+    # Novo filtro para referral
+    def filter_by_referral(scope)
+      return scope unless helpers.referral?(current_user)
+      
+      current_referral = helpers.user_referral
+      cutoff_date = 120.days.ago.to_date
+      
+      # Obter IDs dos leads que têm appointments nos últimos 120 dias que NÃO são do referral atual
+      excluded_lead_ids = ClinicManagement::Lead
+        .joins(appointments: [:service, :invitation])
+        .where('clinic_management_services.date >= ?', cutoff_date)
+        .where.not('clinic_management_invitations.referral_id = ?', current_referral.id)
+        .pluck(:id)
+      
+      # Excluir esses leads do escopo
+      scope.where.not(id: excluded_lead_ids)
     end
 
     # Aplica ordenação conforme o parâmetro de sort
@@ -439,67 +456,38 @@ module ClinicManagement
           status_content += "<div class='text-blue-600 mt-1'><i class='fas fa-shopping-bag mr-1'></i> #{order_text}</div>"
         end
         
-        if helpers.referral?(current_user)
-          new_appointment = ClinicManagement::Appointment.new
+        new_appointment = ClinicManagement::Appointment.new
 
-          [
-            {header: "Ordem", content: index + 1},
-            {
-              header: "Paciente", 
-              content: render_to_string(
-                partial: "clinic_management/leads/patient_name_with_edit_button", 
-                locals: { invitation: last_invitation }
-              ).html_safe, 
-              class: "nowrap size_20 patient-name"
-            },
-            # Status column with separated order information
-            {header: "Status", content: status_content.html_safe, class: "!min-w-[300px]"},   
-            {header: "Responsável", content: responsible_content(last_invitation), class: "nowrap"},
-            {
-              header: "Telefone", 
-              content: render_to_string(
-                partial: "clinic_management/leads/phone_with_message_tracking", 
-                locals: { lead: lead, appointment: last_appointment }
-              ).html_safe,
-              class: "text-blue-500 hover:text-blue-700 nowrap"
-            },
-            {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: last_appointment, message: "" }), id: "appointment-comments-#{last_appointment.id}"},
-            {header: "Vezes convidado", content: lead.invitations.count},
-            {header: "Último atendimento", content: service_content_link(last_appointment), class: "nowrap"},
-            {header: "Remarcação", content: reschedule_form(new_appointment, last_appointment), class: "text-orange-500" },
-            {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}"}
-          ]
-        else
-          [
-            {header: "Ordem", content: index + 1},
-            {
-              header: "Paciente", 
-              content: render_to_string(
-                partial: "clinic_management/leads/patient_name_with_edit_button", 
-                locals: { invitation: last_invitation }
-              ).html_safe, 
-              class: "nowrap size_20 patient-name" 
-            },
-            # Status column with separated order information
-            {header: "Status", content: status_content.html_safe, class: "!min-w-[300px]"},
-            {header: "Responsável", content: responsible_content(last_invitation), class: "nowrap"},
-            {
-              header: "Telefone", 
-              content: render_to_string(
-                partial: "clinic_management/leads/phone_with_message_tracking", 
-                locals: { lead: lead, appointment: last_appointment }
-              ).html_safe,
-              class: "text-blue-500 hover:text-blue-700 nowrap"
-            },
-            {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: last_appointment, message: "" }), id: "appointment-comments-#{last_appointment.id}"},
-            {header: "Último indicador", content: last_referral(last_invitation)},
-            {header: "Qtd. de convites", content: lead.invitations.count},
-            {header: "Qtd. de atendimentos", content: lead.appointments.count},
-            {header: "Último atendimento", content: service_content_link(last_appointment), class: "nowrap"},
-            {header: "Remarcação", content: reschedule_form(new_appointment, last_appointment), class: "text-orange-500" },
-            {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}"}
-          ]
-        end
+        # Removida a diferenciação - usar sempre a estrutura completa para todos
+        [
+          {header: "Ordem", content: index + 1},
+          {
+            header: "Paciente", 
+            content: render_to_string(
+              partial: "clinic_management/leads/patient_name_with_edit_button", 
+              locals: { invitation: last_invitation }
+            ).html_safe, 
+            class: "nowrap size_20 patient-name" 
+          },
+          # Status column with separated order information
+          {header: "Status", content: status_content.html_safe, class: "!min-w-[300px]"},
+          {header: "Responsável", content: responsible_content(last_invitation), class: "nowrap"},
+          {
+            header: "Telefone", 
+            content: render_to_string(
+              partial: "clinic_management/leads/phone_with_message_tracking", 
+              locals: { lead: lead, appointment: last_appointment }
+            ).html_safe,
+            class: "text-blue-500 hover:text-blue-700 nowrap"
+          },
+          {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: last_appointment, message: "" }), id: "appointment-comments-#{last_appointment.id}"},
+          {header: "Último indicador", content: last_referral(last_invitation)},
+          {header: "Qtd. de convites", content: lead.invitations.count},
+          {header: "Qtd. de atendimentos", content: lead.appointments.count},
+          {header: "Último atendimento", content: service_content_link(last_appointment), class: "nowrap"},
+          {header: "Remarcação", content: reschedule_form(new_appointment, last_appointment), class: "text-orange-500" },
+          {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}"}
+        ]
       end
     end
     
@@ -605,11 +593,8 @@ module ClinicManagement
       end
 
       def fetch_leads_for_download
-        if helpers.referral?(current_user)
-          leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 120.days.ago)
-        else
-          leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ?', false)
-        end
+        # Removida a diferenciação - usar sempre a estrutura padrão para todos
+        leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ?', false)
         
         if params[:year].present? && params[:month].present?
           start_date = Date.new(params[:year].to_i, params[:month].to_i, 1)
