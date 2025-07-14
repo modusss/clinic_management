@@ -211,18 +211,17 @@ module ClinicManagement
 
     private
 
-    # Armazena o estado da URL de ausentes na sessão, considerando o filtro 'not_contacted'
+    # Armazena o estado da URL de ausentes na sessão, SEMPRE removendo 'page' para sempre começar na página 1
     def store_absent_leads_state_in_session
       return unless request.get?
       uri = URI.parse(request.original_url)
       params_hash = Rack::Utils.parse_nested_query(uri.query || "")
-      if params_hash['contact_status'] == 'not_contacted'
-        params_hash.delete('page')
-        uri.query = Rack::Utils.build_query(params_hash).presence
-        session[:absent_leads_state] = uri.to_s
-      else
-        session[:absent_leads_state] = request.original_url
-      end
+      
+      # Sempre remover 'page' para evitar preservar paginação antiga (corrige problema de "inversão" aparente ao voltar)
+      params_hash.delete('page')
+      
+      uri.query = Rack::Utils.build_query(params_hash).presence
+      session[:absent_leads_state] = uri.to_s
     end
 
     # Retorna o escopo base de leads ausentes, considerando o tipo de usuário
