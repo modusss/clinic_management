@@ -291,9 +291,10 @@ module ClinicManagement
       end
     end
 
-    # Filtra por status de contato, se especificado
+    # Filtra por status de contato, usando os campos antigos para consistência
     def filter_by_contact_status(scope)
       return scope unless params[:contact_status].present? && params[:contact_status] != "all"
+      
       case params[:contact_status]
       when "not_contacted"
         contacted_lead_ids = ClinicManagement::Appointment.where('last_message_sent_at IS NOT NULL').distinct.pluck(:lead_id)
