@@ -32,8 +32,17 @@ module ClinicManagement
         last_message_sent_at: Time.current, 
         last_message_sent_by: current_user.name
       )
-      
-      head :no_content
+      #byebug
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.update(
+            "phone-container-#{@lead.id}",  # Usando o mesmo ID do partial
+            partial: "clinic_management/leads/phone_with_message_tracking",
+            locals: { lead: @lead, appointment: @appointment }
+          )
+        end
+        #format.json { head :no_content }
+      end
     end
     
     # GET /leads/1

@@ -1,0 +1,3 @@
+<%= turbo_stream.update "phone-container-#{@lead.id}" do %>
+  <%= render "phone_with_message_tracking", lead: @lead, appointment: @appointment %>
+<% end %> 
