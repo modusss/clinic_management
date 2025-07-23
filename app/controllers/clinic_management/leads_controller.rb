@@ -17,8 +17,23 @@ module ClinicManagement
     def record_message_sent
       @lead = Lead.find(params[:id])
       @appointment = @lead.appointments.find(params[:appointment_id])
-      @appointment.update(last_message_sent_at: Time.current, last_message_sent_by: current_user.name)
-      head :no_content # or head :ok
+      
+      # Criar o registro de interação
+      LeadInteraction.create!(
+        lead: @lead,
+        appointment: @appointment,
+        user: current_user,
+        interaction_type: params[:interaction_type] || 'whatsapp_click',
+        occurred_at: Time.current
+      )
+      
+      # Manter compatibilidade com sistema antigo
+      @appointment.update(
+        last_message_sent_at: Time.current, 
+        last_message_sent_by: current_user.name
+      )
+      
+      head :no_content
     end
     
     # GET /leads/1

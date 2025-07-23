@@ -8,6 +8,7 @@ module ClinicManagement
     has_many :appointments, dependent: :destroy
     has_one :leads_conversion, foreign_key: 'clinic_management_lead_id'
     has_one :customer, through: :leads_conversion
+    has_many :lead_interactions, dependent: :destroy
     validates :phone, format: { with: /\A\d{10,11}\z/, message: "deve ter 10 ou 11 dígitos" }, allow_blank: true
 
     before_destroy :destroy_appointments
@@ -20,6 +21,15 @@ module ClinicManagement
 
     def test_dms_to_dec(coordinate, type)
       dms_to_dec(coordinate, type)
+    end
+
+    # Métodos para estatísticas rápidas
+    def total_interactions
+      lead_interactions.count
+    end
+    
+    def interactions_by_user(user)
+      lead_interactions.where(user: user).count
     end
 
     private
