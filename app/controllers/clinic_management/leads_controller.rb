@@ -462,7 +462,7 @@ module ClinicManagement
     def load_leads_data(leads)
       leads.map.with_index do |lead, index|
         last_invitation = lead.invitations.last
-        last_appointment = lead.appointments.last
+        last_appointment = ClinicManagement::Appointment.find(lead.last_appointment_id)
         
         # Get order count information
         order_count = lead&.customer&.orders&.count || 0
@@ -604,7 +604,7 @@ module ClinicManagement
       def load_leads_data_for_csv(leads)
         leads.map.with_index do |lead, index|
           last_invitation = lead.invitations.last
-          last_appointment = lead.appointments.last
+          last_appointment = ClinicManagement::Appointment.find(lead.last_appointment_id)
 
           [
             last_invitation.patient_name,
