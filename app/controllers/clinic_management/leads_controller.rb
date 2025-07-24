@@ -297,18 +297,11 @@ module ClinicManagement
       
       case params[:contact_status]
       when "not_contacted"
-        contacted_lead_ids = ClinicManagement::Appointment.where('last_message_sent_at IS NOT NULL').distinct.pluck(:lead_id)
-        scope.where.not(id: contacted_lead_ids)
+        scope.where('leads.last_message_sent_at IS NULL')
       when "contacted"
-        contacted_lead_ids = ClinicManagement::Appointment.where('last_message_sent_at IS NOT NULL').distinct.pluck(:lead_id)
-        scope.where(id: contacted_lead_ids)
+        scope.where('leads.last_message_sent_at IS NOT NULL')
       when "contacted_by_me"
-        contacted_by_me_lead_ids = ClinicManagement::Appointment
-          .where('last_message_sent_at IS NOT NULL')
-          .where('last_message_sent_by = ?', current_user.name)
-          .distinct
-          .pluck(:lead_id)
-        scope.where(id: contacted_by_me_lead_ids)
+        scope.where('leads.last_message_sent_at IS NOT NULL AND leads.last_message_sent_by = ?', current_user.name)
       else
         scope
       end
@@ -334,19 +327,21 @@ module ClinicManagement
 
     # Aplica ordenação conforme o parâmetro de sort
     def apply_absent_leads_order(scope)
-      # Agora podemos ordenar pelas colunas que estão no SELECT
       sort_order = params[:sort_order] || 'appointment_newest_first'
+      
       case sort_order
       when "appointment_newest_first"
-        scope.order('clinic_management_services.date DESC')
+        scope.order('leads.service_date DESC')
       when "appointment_oldest_first"
-        scope.order('clinic_management_services.date ASC')
+        scope.order('leads.service_date ASC')
       when "contact_newest_first"
-        scope.order(Arel.sql('clinic_management_appointments.last_message_sent_at DESC NULLS LAST'))
+        # Tratamento robusto de NULLs - valores NULL vão para o final
+        scope.order(Arel.sql('COALESCE(leads.last_message_sent_at, \'1900-01-01 00:00:00\'::timestamp) DESC'))
       when "contact_oldest_first"
-        scope.order(Arel.sql('clinic_management_appointments.last_message_sent_at ASC NULLS LAST'))
+        # Valores NULL vão para o final (ou seja, nunca contatados aparecem no final)
+        scope.order(Arel.sql('COALESCE(leads.last_message_sent_at, \'2100-01-01 00:00:00\'::timestamp) ASC'))
       else
-        scope.order('clinic_management_services.date DESC')
+        scope.order('leads.service_date DESC')
       end
     end
 
@@ -551,28 +546,41 @@ module ClinicManagement
       def fetch_leads_by_appointment_condition(query_condition, value, date = nil)
         one_year_ago = Date.current - 1.year
 
-        excluded_lead_ids = ClinicManagement::Appointment.joins(:service)
-                                                        .where('clinic_management_appointments.attendance = ? AND clinic_management_services.date >= ?', true, one_year_ago)
-                                                        .pluck(:lead_id)
+        # Query otimizada com CTE para melhor performance e consistência
+        base_query = ClinicManagement::Lead.from(<<-SQL.squish)
+          (
+            WITH recent_attended_leads AS (
+              SELECT DISTINCT a.lead_id
+              FROM clinic_management_appointments a
+              INNER JOIN clinic_management_services s ON a.service_id = s.id
+              WHERE a.attendance = true AND s.date >= '#{one_year_ago.to_date}'
+            ),
+            lead_with_last_appointment AS (
+              SELECT 
+                l.*,
+                s.date as service_date,
+                a.last_message_sent_at,
+                a.last_message_sent_by,
+                a.id as appointment_id,
+                a.attendance,
+                ROW_NUMBER() OVER (PARTITION BY l.id ORDER BY s.date DESC) as rn
+              FROM clinic_management_leads l
+              INNER JOIN clinic_management_appointments a ON l.last_appointment_id = a.id
+              INNER JOIN clinic_management_services s ON a.service_id = s.id
+              WHERE l.id NOT IN (SELECT lead_id FROM recent_attended_leads)
+            )
+            SELECT * FROM lead_with_last_appointment WHERE rn = 1
+          ) AS leads
+        SQL
 
-        # CORREÇÃO: Incluir as colunas necessárias para ordenação no SELECT
-        base_query = ClinicManagement::Lead
-          .select('clinic_management_leads.*, clinic_management_services.date as service_date, clinic_management_appointments.last_message_sent_at')
-          .joins(appointments: :service)
-          .where('last_appointment_id = clinic_management_appointments.id')
-          .where.not(id: excluded_lead_ids)
-          .distinct
-
+        # Aplicar condições específicas
         if date
           base_query = base_query.where(
-            "#{query_condition} OR (clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?)",
-            value, date,
-            true, one_year_ago
+            "#{query_condition.gsub('clinic_management_appointments.', 'leads.')} OR (leads.attendance = ? AND leads.service_date < ?)",
+            value, date, true, one_year_ago
           )
-          .where('clinic_management_appointments.service_id = clinic_management_services.id')
         else
-          base_query = base_query.where(query_condition, value)
-                                 .where('clinic_management_appointments.service_id = clinic_management_services.id')
+          base_query = base_query.where(query_condition.gsub('clinic_management_appointments.', 'leads.'), value)
         end
         
         base_query
@@ -640,6 +648,36 @@ module ClinicManagement
         # Implemente a lógica para obter os serviços disponíveis
         # Similar à implementação que você já tem no ServicesController
         Service.where("date >= ?", Date.current).order(date: :asc)
+      end
+
+      # Adicione este método temporariamente para monitorar os resultados
+      private
+
+      def debug_ordering_results(scope, limit = 5)
+        return unless Rails.env.development? || Rails.logger.level == Logger::DEBUG
+        
+        Rails.logger.info "=== DEBUG ORDENAÇÃO ==="
+        Rails.logger.info "Environment: #{Rails.env}"
+        Rails.logger.info "Database timezone: #{ActiveRecord::Base.connection.execute('SELECT current_setting(\'timezone\')').first['current_setting']}"
+        Rails.logger.info "Rails timezone: #{Time.zone}"
+        
+        scope.limit(limit).each_with_index do |lead, i|
+          Rails.logger.info "#{i+1}. Lead #{lead.id}: last_message_sent_at=#{lead.last_message_sent_at} | service_date=#{lead.respond_to?(:service_date) ? lead.service_date : 'N/A'}"
+        end
+        Rails.logger.info "=== FIM DEBUG ==="
+      end
+
+      # Execute no Rails console para testar em ambos os ambientes
+      def test_ordering_consistency
+        controller = ClinicManagement::LeadsController.new
+        controller.params = { sort_order: 'contact_oldest_first' }
+        
+        leads = controller.send(:base_absent_leads_scope)
+        leads = controller.send(:apply_absent_leads_order, leads)
+        
+        leads.limit(10).each_with_index do |lead, i|
+          puts "#{i+1}. Lead #{lead.id}: #{lead.last_message_sent_at} | #{lead.service_date}"
+        end
       end
   end
 end
