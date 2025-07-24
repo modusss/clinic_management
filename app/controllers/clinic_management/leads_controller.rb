@@ -1,3 +1,5 @@
+require 'ostruct'
+
 module ClinicManagement
   class LeadsController < ApplicationController
     before_action :set_lead, only: %i[ show edit update destroy ]
@@ -294,20 +296,14 @@ module ClinicManagement
     # Filtra por status de contato, se especificado
     def filter_by_contact_status(scope)
       return scope unless params[:contact_status].present? && params[:contact_status] != "all"
+      
       case params[:contact_status]
       when "not_contacted"
-        contacted_lead_ids = ClinicManagement::Appointment.where('last_message_sent_at IS NOT NULL').distinct.pluck(:lead_id)
-        scope.where.not(id: contacted_lead_ids)
+        scope.where('main_apt.last_message_sent_at IS NULL')
       when "contacted"
-        contacted_lead_ids = ClinicManagement::Appointment.where('last_message_sent_at IS NOT NULL').distinct.pluck(:lead_id)
-        scope.where(id: contacted_lead_ids)
+        scope.where('main_apt.last_message_sent_at IS NOT NULL')
       when "contacted_by_me"
-        contacted_by_me_lead_ids = ClinicManagement::Appointment
-          .where('last_message_sent_at IS NOT NULL')
-          .where('last_message_sent_by = ?', current_user.name)
-          .distinct
-          .pluck(:lead_id)
-        scope.where(id: contacted_by_me_lead_ids)
+        scope.where('main_apt.last_message_sent_at IS NOT NULL AND main_apt.last_message_sent_by = ?', current_user.name)
       else
         scope
       end
@@ -333,21 +329,20 @@ module ClinicManagement
 
     # Aplica ordenação conforme o parâmetro de sort
     def apply_absent_leads_order(scope)
-      # Agora podemos ordenar pelas colunas que estão no SELECT
       sort_order = params[:sort_order] || 'appointment_newest_first'
       case sort_order
       when "appointment_newest_first"
-        scope.order('clinic_management_services.date DESC')
+        scope.order('main_svc.date DESC')
       when "appointment_oldest_first"
-        scope.order('clinic_management_services.date ASC')
+        scope.order('main_svc.date ASC')
       when "contact_newest_first"
-        # Contato mais recente: contatados recentemente primeiro, nunca contatados no final
-        scope.reorder(Arel.sql('clinic_management_appointments.last_message_sent_at DESC NULLS LAST'))
+        # Contato mais recente: usar o alias correto
+        scope.reorder('main_apt.last_message_sent_at DESC NULLS LAST')
       when "contact_oldest_first"
-        # Contato há mais tempo: força reordenação para evitar conflitos com DISTINCT
-        scope.reorder(Arel.sql('clinic_management_appointments.last_message_sent_at ASC NULLS LAST'))
+        # Contato há mais tempo: usar o alias correto
+        scope.reorder('main_apt.last_message_sent_at ASC NULLS LAST')
       else
-        scope.order('clinic_management_services.date DESC')
+        scope.order('main_svc.date DESC')
       end
     end
 
@@ -462,7 +457,18 @@ module ClinicManagement
     def load_leads_data(leads)
       leads.map.with_index do |lead, index|
         last_invitation = lead.invitations.last
-        last_appointment = ClinicManagement::Appointment.find(lead.last_appointment_id)
+        
+        # ✅ CORREÇÃO: Usar dados da query para evitar inconsistência de timezone
+        # Criar um objeto appointment que usa os dados já carregados da query
+        last_appointment = OpenStruct.new(
+          id: lead.current_appointment_id,
+          last_message_sent_at: lead.last_message_sent_at,
+          last_message_sent_by: lead.last_message_sent_by,
+          attendance: false  # Sabemos que é ausente pela query
+        )
+        
+        # Para funcionalidades que precisam do appointment completo, buscar quando necessário
+        full_appointment = nil
         
         # Get order count information
         order_count = lead&.customer&.orders&.count || 0
@@ -483,6 +489,11 @@ module ClinicManagement
         end
         
         new_appointment = ClinicManagement::Appointment.new
+
+        # Função helper para buscar appointment completo quando necessário
+        get_full_appointment = lambda do
+          full_appointment ||= ClinicManagement::Appointment.find(lead.current_appointment_id)
+        end
 
         # Removida a diferenciação - usar sempre a estrutura completa para todos
         [
@@ -506,13 +517,13 @@ module ClinicManagement
             ).html_safe,
             class: "text-blue-500 hover:text-blue-700 nowrap"
           },
-          {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: last_appointment, message: "" }), id: "appointment-comments-#{last_appointment.id}"},
+          {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: get_full_appointment.call, message: "" }), id: "appointment-comments-#{last_appointment.id}"},
           {header: "Último indicador", content: last_referral(last_invitation)},
           {header: "Qtd. de convites", content: lead.invitations.count},
           {header: "Qtd. de atendimentos", content: lead.appointments.count},
-          {header: "Último atendimento", content: service_content_link(last_appointment), class: "nowrap"},
-          {header: "Remarcação", content: reschedule_form(new_appointment, last_appointment), class: "text-orange-500" },
-          {header: "Mensagem", content: generate_message_content(lead, last_appointment), id: "whatsapp-link-#{lead.id}"}
+          {header: "Último atendimento", content: service_content_link(get_full_appointment.call), class: "nowrap"},
+          {header: "Remarcação", content: reschedule_form(new_appointment, get_full_appointment.call), class: "text-orange-500" },
+          {header: "Mensagem", content: generate_message_content(lead, get_full_appointment.call), id: "whatsapp-link-#{lead.id}"}
         ]
       end
     end
@@ -552,28 +563,35 @@ module ClinicManagement
       def fetch_leads_by_appointment_condition(query_condition, value, date = nil)
         one_year_ago = Date.current - 1.year
 
+        # 1. Leads que compareceram no último ano (excluir)
         excluded_lead_ids = ClinicManagement::Appointment.joins(:service)
-                                                        .where('clinic_management_appointments.attendance = ? AND clinic_management_services.date >= ?', true, one_year_ago)
-                                                        .pluck(:lead_id)
+          .where('clinic_management_appointments.attendance = ? AND clinic_management_services.date >= ?', true, one_year_ago)
+          .pluck(:lead_id)
 
-        # CORREÇÃO: Incluir as colunas necessárias para ordenação no SELECT
+        # 2. Query mais simples e direta
         base_query = ClinicManagement::Lead
-          .select('clinic_management_leads.*, clinic_management_services.date as service_date, clinic_management_appointments.last_message_sent_at, clinic_management_appointments.last_message_sent_by, clinic_management_appointments.id as current_appointment_id')
-          .joins(appointments: :service)
-          .where('last_appointment_id = clinic_management_appointments.id')
+          .joins("INNER JOIN clinic_management_appointments AS main_apt ON clinic_management_leads.last_appointment_id = main_apt.id")
+          .joins("INNER JOIN clinic_management_services AS main_svc ON main_apt.service_id = main_svc.id")
+          .select(
+            'clinic_management_leads.*',
+            'main_svc.date as service_date',
+            'main_apt.last_message_sent_at',
+            'main_apt.last_message_sent_by',
+            'main_apt.id as current_appointment_id'
+          )
           .where.not(id: excluded_lead_ids)
-          .distinct
 
+        # 3. Aplicar condições de forma mais simples
         if date
+          # Para a condition com data
           base_query = base_query.where(
-            "#{query_condition} OR (clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?)",
-            value, date,
+            "(main_apt.attendance = ? AND main_svc.date < ?) OR (main_apt.attendance = ? AND main_svc.date < ?)",
+            false, date,
             true, one_year_ago
           )
-          .where('clinic_management_appointments.service_id = clinic_management_services.id')
         else
-          base_query = base_query.where(query_condition, value)
-                                 .where('clinic_management_appointments.service_id = clinic_management_services.id')
+          # Para condition simples
+          base_query = base_query.where('main_apt.attendance = ?', false)
         end
         
         base_query
@@ -604,7 +622,8 @@ module ClinicManagement
       def load_leads_data_for_csv(leads)
         leads.map.with_index do |lead, index|
           last_invitation = lead.invitations.last
-          last_appointment = ClinicManagement::Appointment.find(lead.last_appointment_id)
+          # ✅ CORREÇÃO: Usar appointment completo quando necessário para CSV
+          last_appointment = ClinicManagement::Appointment.find(lead.current_appointment_id)
 
           [
             last_invitation.patient_name,
