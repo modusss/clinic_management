@@ -336,11 +336,11 @@ module ClinicManagement
       when "appointment_oldest_first"
         scope.order('main_svc.date ASC')
       when "contact_newest_first"
-        # Contato mais recente: usar o alias correto
-        scope.reorder('main_apt.last_message_sent_at DESC NULLS LAST')
+        # Contato mais recente: usar dados unificados (lead_interactions + appointment)
+        scope.reorder('unified_last_contact_at DESC NULLS LAST')
       when "contact_oldest_first"
-        # Contato há mais tempo: usar o alias correto
-        scope.reorder('main_apt.last_message_sent_at ASC NULLS LAST')
+        # Contato há mais tempo: usar dados unificados (lead_interactions + appointment)
+        scope.reorder('unified_last_contact_at ASC NULLS LAST')
       else
         scope.order('main_svc.date DESC')
       end
@@ -458,12 +458,12 @@ module ClinicManagement
       leads.map.with_index do |lead, index|
         last_invitation = lead.invitations.last
         
-        # ✅ CORREÇÃO: Usar dados da query para evitar inconsistência de timezone
+        # ✅ CORREÇÃO: Usar dados unificados da query (lead_interactions + appointment)
         # Criar um objeto appointment que usa os dados já carregados da query
         last_appointment = OpenStruct.new(
           id: lead.current_appointment_id,
-          last_message_sent_at: lead.last_message_sent_at,
-          last_message_sent_by: lead.last_message_sent_by,
+          last_message_sent_at: lead.unified_last_contact_at,
+          last_message_sent_by: lead.unified_last_contact_by,
           attendance: false  # Sabemos que é ausente pela query
         )
         
@@ -568,16 +568,23 @@ module ClinicManagement
           .where('clinic_management_appointments.attendance = ? AND clinic_management_services.date >= ?', true, one_year_ago)
           .pluck(:lead_id)
 
-        # 2. Query mais simples e direta
+        # 2. Query mais simples e direta com unificação de dados
         base_query = ClinicManagement::Lead
           .joins("INNER JOIN clinic_management_appointments AS main_apt ON clinic_management_leads.last_appointment_id = main_apt.id")
           .joins("INNER JOIN clinic_management_services AS main_svc ON main_apt.service_id = main_svc.id")
+          .joins("LEFT JOIN clinic_management_lead_interactions AS latest_interaction ON clinic_management_leads.id = latest_interaction.lead_id AND latest_interaction.occurred_at = (SELECT MAX(occurred_at) FROM clinic_management_lead_interactions WHERE lead_id = clinic_management_leads.id)")
+          .joins("LEFT JOIN users AS interaction_user ON latest_interaction.user_id = interaction_user.id")
           .select(
             'clinic_management_leads.*',
             'main_svc.date as service_date',
             'main_apt.last_message_sent_at',
             'main_apt.last_message_sent_by',
-            'main_apt.id as current_appointment_id'
+            'main_apt.id as current_appointment_id',
+            'latest_interaction.occurred_at as latest_interaction_at',
+            'interaction_user.name as latest_interaction_by',
+            # Usar a data mais recente entre as duas fontes para ordenação
+            'COALESCE(latest_interaction.occurred_at, main_apt.last_message_sent_at) as unified_last_contact_at',
+            'COALESCE(interaction_user.name, main_apt.last_message_sent_by) as unified_last_contact_by'
           )
           .where.not(id: excluded_lead_ids)
 
