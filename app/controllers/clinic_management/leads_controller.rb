@@ -558,7 +558,7 @@ module ClinicManagement
 
         # CORREÇÃO: Incluir as colunas necessárias para ordenação no SELECT
         base_query = ClinicManagement::Lead
-          .select('clinic_management_leads.*, clinic_management_services.date as service_date, clinic_management_appointments.last_message_sent_at, clinic_management_appointments.last_message_sent_by')
+          .select('clinic_management_leads.*, clinic_management_services.date as service_date, clinic_management_appointments.last_message_sent_at, clinic_management_appointments.last_message_sent_by, clinic_management_appointments.id as current_appointment_id')
           .joins(appointments: :service)
           .where('last_appointment_id = clinic_management_appointments.id')
           .where.not(id: excluded_lead_ids)
