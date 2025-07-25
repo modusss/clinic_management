@@ -270,7 +270,13 @@ module ClinicManagement
       one_year_ago = 1.year.ago.to_date
       case params[:patient_type]
       when "absent"
-        scope.where('main_apt.attendance = ?', false)
+        scope.joins("INNER JOIN clinic_management_appointments AS latest_apt ON latest_apt.id = (
+          SELECT id FROM clinic_management_appointments 
+          WHERE lead_id = clinic_management_leads.id 
+          ORDER BY created_at DESC 
+          LIMIT 1
+        )")
+        .where('latest_apt.attendance = ?', false)
       when "attended_year_ago"
         scope.where('main_apt.attendance = ? AND main_svc.date < ?', true, one_year_ago)
       else
