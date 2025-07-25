@@ -270,9 +270,9 @@ module ClinicManagement
       one_year_ago = 1.year.ago.to_date
       case params[:patient_type]
       when "absent"
-        scope.where('clinic_management_appointments.attendance = ?', false)
+        scope.where('main_apt.attendance = ?', false)
       when "attended_year_ago"
-        scope.where('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', true, one_year_ago)
+        scope.where('main_apt.attendance = ? AND main_svc.date < ?', true, one_year_ago)
       else
         scope
       end
@@ -283,11 +283,11 @@ module ClinicManagement
       if params[:year].present? && params[:month].present?
         start_date = Date.new(params[:year].to_i, params[:month].to_i, 1)
         end_date = start_date.end_of_month
-        scope.where('clinic_management_services.date BETWEEN ? AND ?', start_date, end_date)
+        scope.where('main_svc.date BETWEEN ? AND ?', start_date, end_date)
       elsif params[:year].present?
         start_date = Date.new(params[:year].to_i, 1, 1)
         end_date = Date.new(params[:year].to_i, 12, 31)
-        scope.where('clinic_management_services.date BETWEEN ? AND ?', start_date, end_date)
+        scope.where('main_svc.date BETWEEN ? AND ?', start_date, end_date)
       else
         scope
       end
