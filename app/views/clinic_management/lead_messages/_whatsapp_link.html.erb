@@ -12,19 +12,46 @@
   
   <br> <%# This <br> tag was in the original file. Consider styling with margins/padding instead if appropriate. %>
 
-  <%# 
-    The link itself now only needs the data-action.
-    The action will trigger 'recordMessageSent' on the parent 'message-tracking' controller.
-    The link's ID is also made dynamic.
-  %>
-  <%= link_to "Enviar mensagem", 
-        whatsapp_link(phone_number, message), 
-        id: "whatsapp_action_link_#{unique_id_suffix}", 
-        target: "_blank", 
-        class: "nowrap bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded",
-        data: {
-          action: "click->message-tracking#recordMessageSent"
-        } %>
+  <% if defined?(can_use_evolution) && can_use_evolution && defined?(message_id) && message_id.present? %>
+    <%# Evolution API automatic sending %>
+    <%= button_to "Enviar Mensagem Automática", 
+          send_evolution_message_lead_messages_path, 
+          params: { 
+            lead_id: lead_id, 
+            appointment_id: appointment_id, 
+            message_id: message_id 
+          },
+          method: :post,
+          remote: true,
+          id: "evolution_send_button_#{unique_id_suffix}",
+          class: "nowrap bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-4 rounded",
+          data: {
+            action: "click->message-tracking#recordMessageSent",
+            confirm: "Enviar mensagem automaticamente via WhatsApp?"
+          } %>
+    
+    <%# Fallback manual option %>
+    <div class="mt-2">
+      <%= link_to "Ou enviar manualmente", 
+            whatsapp_link(phone_number, message), 
+            id: "whatsapp_action_link_#{unique_id_suffix}", 
+            target: "_blank", 
+            class: "text-sm text-blue-600 hover:text-blue-800 underline",
+            data: {
+              action: "click->message-tracking#recordMessageSent"
+            } %>
+    </div>
+  <% else %>
+    <%# Manual WhatsApp link (original behavior) %>
+    <%= link_to "Enviar mensagem", 
+          whatsapp_link(phone_number, message), 
+          id: "whatsapp_action_link_#{unique_id_suffix}", 
+          target: "_blank", 
+          class: "nowrap bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded",
+          data: {
+            action: "click->message-tracking#recordMessageSent"
+          } %>
+  <% end %>
 </div>
 
 <%# = link_to "Enviar mensagem", "https://api.whatsapp.com/send/?phone=55#{phone_number}&text=#{message}", id: "whatsapp_link", target: "_blank", class: "nowrap bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded" %>

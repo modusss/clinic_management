@@ -13,7 +13,11 @@ ClinicManagement::Engine.routes.draw do
     end
   end
   get '/performance_report', to: 'invitations#performance_report', as: 'performance_report'
-  resources :lead_messages
+  resources :lead_messages do
+    collection do
+      post :send_evolution_message
+    end
+  end
 
   # post search appointment service_id
   post 'search_appointment/:service_id', to: 'services#search_appointment', as: 'search_appointment'
