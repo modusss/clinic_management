@@ -59,13 +59,13 @@ module ClinicManagement
       def media_url
         return nil unless has_media?
         
-        # For localhost development, use a simple approach
+        # For localhost development, use HTTP (not HTTPS)
         if Rails.env.development?
-          Rails.application.routes.url_helpers.rails_blob_url(media_file, host: 'localhost:3000')
+          Rails.application.routes.url_helpers.rails_blob_url(media_file, host: 'localhost:3000', protocol: 'http')
         else
-          # For production, use the configured host
-          host = Rails.application.config.action_mailer.default_url_options[:host] || 'localhost:3000'
-          Rails.application.routes.url_helpers.rails_blob_url(media_file, host: host)
+          # For staging/production, use the configured host with HTTPS
+          host = Rails.application.config.action_mailer.default_url_options[:host] || 'www.lipepaydev.com'
+          Rails.application.routes.url_helpers.rails_blob_url(media_file, host: host, protocol: 'https')
         end
       end
       
