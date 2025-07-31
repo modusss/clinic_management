@@ -12,7 +12,7 @@
   
   <br> <%# This <br> tag was in the original file. Consider styling with margins/padding instead if appropriate. %>
 
-  <% if defined?(can_use_evolution) && can_use_evolution && defined?(message_id) && message_id.present? %>
+  <% if can_use_evolution_api?(message_id) %>
     <%# Evolution API automatic sending %>
     <%= button_to "Enviar Mensagem Automática", 
           send_evolution_message_lead_messages_path, 
