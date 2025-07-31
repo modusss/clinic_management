@@ -59,23 +59,21 @@ module ClinicManagement
       def media_url
         return nil unless has_media?
         
-        # For localhost development, use HTTP (not HTTPS)
-        if Rails.env.development?
-          Rails.application.routes.url_helpers.rails_blob_url(media_file, host: 'localhost:3000', protocol: 'http')
-        elsif Rails.env.staging? && Rails.application.config.active_storage.service == :backblaze_s3_staging
-          # For staging with Backblaze B2, generate direct URL to avoid nginx routing issues
+        begin
+          # Use the same approach as LensModel - rails_blob_url with only_path: false
+          # This works correctly with Backblaze B2 in all environments
+          Rails.application.routes.url_helpers.rails_blob_url(media_file, only_path: false)
+        rescue => e
+          Rails.logger.error "Error generating media URL: #{e.message}"
+          Rails.logger.error "Backtrace: #{e.backtrace.first(5).join('\n')}"
+          
+          # Fallback: try to use the service directly (same as LensModel)
           begin
-            media_file.url
-          rescue => e
-            Rails.logger.error "Error generating Backblaze URL: #{e.message}"
-            # Fallback to Rails URL
-            host = Rails.application.config.action_mailer.default_url_options[:host]
-            Rails.application.routes.url_helpers.rails_blob_url(media_file, host: host, protocol: 'https')
+            media_file.service.url(media_file.key)
+          rescue => fallback_error
+            Rails.logger.error "Error in fallback: #{fallback_error.message}"
+            nil
           end
-        else
-          # For production, use the configured host from action_mailer
-          host = Rails.application.config.action_mailer.default_url_options[:host]
-          Rails.application.routes.url_helpers.rails_blob_url(media_file, host: host, protocol: 'https')
         end
       end
       
