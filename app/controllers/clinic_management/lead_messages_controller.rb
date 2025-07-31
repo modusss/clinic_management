@@ -30,6 +30,8 @@ module ClinicManagement
       if @message.save
         redirect_to lead_messages_path, notice: 'Mensagem customizada criada com sucesso.'
       else
+        # Log validation errors for debugging
+        Rails.logger.error "LeadMessage validation errors: #{@message.errors.full_messages.join(', ')}"
         render :new
       end
     end
