@@ -62,9 +62,19 @@ module ClinicManagement
         # For localhost development, use HTTP (not HTTPS)
         if Rails.env.development?
           Rails.application.routes.url_helpers.rails_blob_url(media_file, host: 'localhost:3000', protocol: 'http')
+        elsif Rails.env.staging? && Rails.application.config.active_storage.service == :backblaze_s3_staging
+          # For staging with Backblaze B2, generate direct URL to avoid nginx routing issues
+          begin
+            media_file.url
+          rescue => e
+            Rails.logger.error "Error generating Backblaze URL: #{e.message}"
+            # Fallback to Rails URL
+            host = Rails.application.config.action_mailer.default_url_options[:host]
+            Rails.application.routes.url_helpers.rails_blob_url(media_file, host: host, protocol: 'https')
+          end
         else
-          # For staging/production, use the configured host with HTTPS
-          host = Rails.application.config.action_mailer.default_url_options[:host] || 'www.lipepaydev.com'
+          # For production, use the configured host from action_mailer
+          host = Rails.application.config.action_mailer.default_url_options[:host]
           Rails.application.routes.url_helpers.rails_blob_url(media_file, host: host, protocol: 'https')
         end
       end
