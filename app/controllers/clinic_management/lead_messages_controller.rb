@@ -27,6 +27,7 @@ module ClinicManagement
       if referral?(current_user)
         @message.message_type = 3
       end
+      byebug
       if @message.save
         redirect_to lead_messages_path, notice: 'Mensagem customizada criada com sucesso.'
       else

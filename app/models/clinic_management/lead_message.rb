@@ -32,7 +32,12 @@ module ClinicManagement
           'application/pdf'
         ]
         
+        # Debug: log the actual content type received
+        Rails.logger.debug "Media file content_type: '#{media_file.content_type}'"
+        Rails.logger.debug "Acceptable types include this?: #{acceptable_types.include?(media_file.content_type)}"
+        
         unless acceptable_types.include?(media_file.content_type)
+          Rails.logger.error "Content type '#{media_file.content_type}' not in acceptable types: #{acceptable_types}"
           errors.add(:media_file, 'deve ser uma imagem, áudio, vídeo ou PDF')
         end
         
