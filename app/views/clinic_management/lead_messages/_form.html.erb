@@ -31,11 +31,40 @@
 
       <div class="field mb-4">
         <%= form.label :text, "Texto da mensagem", class: "block text-gray-700 text-sm font-bold mb-2" %>
-        <%= form.text_area :text, rows: 30, class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+        <%= form.text_area :text, rows: 20, class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+      </div>
+
+      <!-- Seção de Anexo de Mídia -->
+      <div class="border-t pt-4 mb-4">
+        <h3 class="text-lg font-semibold text-gray-700 mb-3">Anexar Arquivo de Mídia (Opcional)</h3>
+        <p class="text-sm text-gray-600 mb-4">
+          <strong>Importante:</strong> Para imagens e áudios, apenas o arquivo com legenda será enviado (sem o texto da mensagem). 
+          Para vídeos e PDFs, tanto o arquivo quanto o texto serão enviados.
+        </p>
+        
+        <div class="field mb-4">
+          <%= form.label :media_file, "Arquivo (Imagem, Áudio, Vídeo ou PDF)", class: "block text-gray-700 text-sm font-bold mb-2" %>
+          <%= form.file_field :media_file, 
+                accept: "image/*,audio/*,video/*,application/pdf", 
+                class: "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" %>
+          <p class="text-xs text-gray-500 mt-1">
+            Formatos aceitos: JPG, PNG, GIF, WebP, MP3, WAV, OGG, M4A, MP4, AVI, MOV, WMV, WebM, PDF
+          </p>
+        </div>
+
+        <div class="field mb-4">
+          <%= form.label :media_caption, "Legenda do arquivo (opcional)", class: "block text-gray-700 text-sm font-bold mb-2" %>
+          <%= form.text_area :media_caption, rows: 3, 
+                placeholder: "Digite uma legenda para o arquivo...",
+                class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+          <p class="text-xs text-gray-500 mt-1">
+            Para imagens e áudios: se não informar legenda, o texto da mensagem será usado como legenda.
+          </p>
+        </div>
       </div>
 
       <div class="actions">
-        <%= form.submit "Enviar", class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" %>
+        <%= form.submit "Salvar Mensagem", class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" %>
       </div>
     <% end %>
   </div>

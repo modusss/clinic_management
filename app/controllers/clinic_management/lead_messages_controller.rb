@@ -62,7 +62,7 @@ module ClinicManagement
         appointment = Appointment.find_by(id: params[:appointment_id])
         add_message_sent(appointment, message.name)
         lead = Lead.find_by(id: params[:lead_id])
-        message_text = get_message(message, lead, appointment.service)
+        message_data = get_message(message, lead, appointment.service)
         
         # Check if we can use Evolution API for automatic sending (with error handling)
         can_use_evolution = false
@@ -79,7 +79,8 @@ module ClinicManagement
             partial: "clinic_management/lead_messages/whatsapp_link", 
             locals: { 
               phone_number: lead.phone, 
-              message: message_text,
+              message: message_data[:text],
+              media_details: message_data[:media],
               lead_id: lead.id,
               appointment_id: appointment.id,
               can_use_evolution: can_use_evolution,
@@ -130,7 +131,10 @@ module ClinicManagement
         appointment = Appointment.find_by(id: params[:appointment_id])
         lead = Lead.find_by(id: params[:lead_id])
         
-        message_text = get_message(message, lead, appointment.service)
+        message_data = get_message(message, lead, appointment.service)
+        message_text = message_data[:text]
+        media_details = message_data[:media]
+        
         # Remove URL encoding for Evolution API
         message_text = CGI.unescape(message_text)
         
@@ -138,8 +142,8 @@ module ClinicManagement
         # Ensure phone has country code
         phone = "55#{phone}" unless phone.start_with?('55')
         
-        # Send via Evolution API
-        response = send_via_evolution_api(message_text, phone)
+        # Send via Evolution API (with media support)
+        response = send_via_evolution_api(message_text, phone, media_details)
         
         if response[:success]
           render json: { 
@@ -177,12 +181,12 @@ module ClinicManagement
       Rails.logger.debug "Lead: #{lead.inspect}"
       Rails.logger.debug "Service: #{service.inspect}"
 
-      return "" if message.nil?
+      return { text: "", media: nil } if message.nil?
       
       result = message.text
       Rails.logger.debug "Initial result: #{result.inspect}"
 
-      return "" if result.nil?
+      return { text: "", media: nil } if result.nil?
 
       # Escolha aleatória de segmentos de texto
       result = result.gsub(/\[.*?\]/) do |match|
@@ -206,8 +210,42 @@ module ClinicManagement
                        .gsub("{DATA_DO_ATENDIMENTO}", service&.date&.strftime("%d/%m/%Y").to_s)
       end
 
-      Rails.logger.debug "Final result: #{result.inspect}"
-      result
+      # Extract media details (both from attached files and URL-based media)
+      media_details = extract_media_details(message, result)
+      
+      # Remove URL-based media tags from final message if present
+      final_message = result.gsub(/\[url=".*?"\s+legenda=".*?"\s+tipo=".*?"\]/, '')
+
+      Rails.logger.debug "Final result: #{final_message.inspect}"
+      Rails.logger.debug "Media details: #{media_details.inspect}"
+      
+      { text: final_message.strip, media: media_details }
+    end
+    
+    # Extract media details from both attached files and URL-based media in text
+    def extract_media_details(message, text)
+      # Priority 1: Check for attached file
+      if message.has_media?
+        return {
+          url: message.media_url,
+          caption: message.media_caption.present? ? message.media_caption : '',
+          type: message.whatsapp_media_type
+        }
+      end
+      
+      # Priority 2: Check for URL-based media in text (legacy support)
+      media_regex = /\[url="(?<url>[^"]+)" legenda="(?<caption>[^"]*)" tipo="(?<type>[^"]+)"\]/
+      match = text.match(media_regex)
+      if match
+        return {
+          url: match[:url],
+          caption: match[:caption],
+          type: match[:type]
+        }
+      end
+      
+      # No media found
+      nil
     end
   
     def set_message
@@ -215,7 +253,7 @@ module ClinicManagement
     end
   
     def message_params
-      params.require(:lead_message).permit(:name, :text, :message_type, :service_type_id)
+      params.require(:lead_message).permit(:name, :text, :message_type, :service_type_id, :media_file, :media_caption, :media_type)
     end
 
     # Check if we can send via Evolution API
@@ -243,8 +281,8 @@ module ClinicManagement
       end
     end
 
-    # Send message via Evolution API
-    def send_via_evolution_api(message_text, phone)
+    # Send message via Evolution API (supports both text and media)
+    def send_via_evolution_api(message_text, phone, media_details = nil)
       begin
         # Check if we have the required methods and data available
         return { success: false, error: 'Usuário não encontrado' } unless respond_to?(:current_user) && current_user.present?
@@ -266,16 +304,61 @@ module ClinicManagement
         return { success: false, error: 'Configuração de WhatsApp não encontrada' } unless instance_name.present?
         return { success: false, error: 'Configuração da API não encontrada' } unless api_key.present? && base_url.present?
 
-        url = "#{base_url}/message/sendText/#{instance_name}"
         headers = {
           'Content-Type' => 'application/json',
           'apikey' => api_key
         }
         
-        body = {
-          number: phone,
-          text: message_text
-        }.to_json
+        # Check if we have media to send
+        if media_details.present? && media_details[:url].present?
+          # Send media message only (no separate text for images/audio)
+          url = "#{base_url}/message/sendMedia/#{instance_name}"
+          
+          # Map media types to Evolution API format
+          mediatype = case media_details[:type]
+                     when 'image'
+                       'image'
+                     when 'audio'
+                       'audio'
+                     when 'video'
+                       'video'
+                     when 'document'
+                       'document'
+                     else
+                       'document'
+                     end
+          
+          # For images and audio, only send the media with caption
+          # For documents and videos, we can include both caption and text
+          caption_text = if ['image', 'audio'].include?(media_details[:type])
+                          # Only caption for images and audio
+                          media_details[:caption].present? ? media_details[:caption] : message_text
+                        else
+                          # Caption + text for documents and videos
+                          [media_details[:caption], message_text].reject(&:blank?).join("\n\n")
+                        end
+          
+          body = {
+            number: phone,
+            options: {
+              delay: 10,
+              presence: "composing",
+              linkPreview: false
+            },
+            mediaMessage: {
+              mediatype: mediatype,
+              caption: caption_text.strip,
+              media: media_details[:url]
+            }
+          }.to_json
+        else
+          # Send text message only
+          url = "#{base_url}/message/sendText/#{instance_name}"
+          body = {
+            number: phone,
+            text: message_text
+          }.to_json
+        end
 
         response = HTTParty.post(url, headers: headers, body: body)
         

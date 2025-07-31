@@ -28,6 +28,7 @@
             <% end %>
             <th class="px-4 py-2">Nome da Mensagem</th>
             <th class="px-4 py-2">Texto da Mensagem</th>
+            <th class="px-4 py-2">Mídia Anexada</th>
             <th class="px-4 py-2">Ações</th>
           </tr>
         </thead>
@@ -47,6 +48,57 @@
                 <td class="px-4 py-2"><%= message.name %></td>
                 <%# Display message text, converting newlines to <br> %>
                 <td class="px-4 py-2"><%= message.text.gsub(/\n/, '<br>').html_safe %></td>
+                <%# Display media content if present %>
+                <td class="px-4 py-2">
+                  <% if message.has_media? %>
+                    <div class="media-preview">
+                      <% case message.whatsapp_media_type %>
+                      <% when 'image' %>
+                        <div class="mb-2">
+                          <%= image_tag message.media_url, 
+                                alt: "Imagem anexada", 
+                                class: "max-w-32 max-h-32 object-cover rounded border",
+                                style: "cursor: pointer;",
+                                onclick: "window.open('#{message.media_url}', '_blank')" %>
+                        </div>
+                        <p class="text-xs text-gray-600">📷 Imagem</p>
+                      <% when 'audio' %>
+                        <div class="mb-2">
+                          <audio controls class="w-full max-w-48">
+                            <source src="<%= message.media_url %>" type="<%= message.media_file.content_type %>">
+                            Seu navegador não suporta áudio.
+                          </audio>
+                        </div>
+                        <p class="text-xs text-gray-600">🎵 Áudio</p>
+                      <% when 'video' %>
+                        <div class="mb-2">
+                          <video controls class="max-w-32 max-h-32 rounded border">
+                            <source src="<%= message.media_url %>" type="<%= message.media_file.content_type %>">
+                            Seu navegador não suporta vídeo.
+                          </video>
+                        </div>
+                        <p class="text-xs text-gray-600">🎬 Vídeo</p>
+                      <% when 'document' %>
+                        <div class="mb-2">
+                          <%= link_to message.media_url, target: "_blank", class: "text-blue-600 hover:text-blue-800" do %>
+                            <div class="flex items-center space-x-2 p-2 border rounded bg-gray-50">
+                              <span class="text-2xl">📄</span>
+                              <div>
+                                <p class="text-sm font-medium">PDF</p>
+                                <p class="text-xs text-gray-500">Clique para abrir</p>
+                              </div>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+                      <% if message.media_caption.present? %>
+                        <p class="text-xs text-gray-700 italic mt-1">"<%= message.media_caption %>"</p>
+                      <% end %>
+                    </div>
+                  <% else %>
+                    <span class="text-gray-400 text-sm">Sem mídia</span>
+                  <% end %>
+                </td>
                 <%# Actions column (Edit/Delete) %>
                 <td class="px-4 py-2 space-x-2" style="display: flex;">
                   <%= link_to 'Editar', edit_lead_message_path(message), class: "px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600" %>
@@ -70,6 +122,7 @@
           <th class="px-4 py-2">Tipo da Mensagem</th>
           <th class="px-4 py-2">Nome da Mensagem</th>
           <th class="px-4 py-2">Texto da Mensagem</th>
+          <th class="px-4 py-2">Mídia Anexada</th>
           <th class="px-4 py-2">Ações</th>
         </tr>
       </thead>
@@ -87,6 +140,57 @@
               <td class="px-4 py-2"><%= message.name %></td>
               <%# Display message text, converting newlines to <br> %>
               <td class="px-4 py-2"><%= message.text.gsub(/\n/, '<br>').html_safe %></td>
+              <%# Display media content if present %>
+              <td class="px-4 py-2">
+                <% if message.has_media? %>
+                  <div class="media-preview">
+                    <% case message.whatsapp_media_type %>
+                    <% when 'image' %>
+                      <div class="mb-2">
+                        <%= image_tag message.media_url, 
+                              alt: "Imagem anexada", 
+                              class: "max-w-32 max-h-32 object-cover rounded border",
+                              style: "cursor: pointer;",
+                              onclick: "window.open('#{message.media_url}', '_blank')" %>
+                      </div>
+                      <p class="text-xs text-gray-600">📷 Imagem</p>
+                    <% when 'audio' %>
+                      <div class="mb-2">
+                        <audio controls class="w-full max-w-48">
+                          <source src="<%= message.media_url %>" type="<%= message.media_file.content_type %>">
+                          Seu navegador não suporta áudio.
+                        </audio>
+                      </div>
+                      <p class="text-xs text-gray-600">🎵 Áudio</p>
+                    <% when 'video' %>
+                      <div class="mb-2">
+                        <video controls class="max-w-32 max-h-32 rounded border">
+                          <source src="<%= message.media_url %>" type="<%= message.media_file.content_type %>">
+                          Seu navegador não suporta vídeo.
+                        </video>
+                      </div>
+                      <p class="text-xs text-gray-600">🎬 Vídeo</p>
+                    <% when 'document' %>
+                      <div class="mb-2">
+                        <%= link_to message.media_url, target: "_blank", class: "text-blue-600 hover:text-blue-800" do %>
+                          <div class="flex items-center space-x-2 p-2 border rounded bg-gray-50">
+                            <span class="text-2xl">📄</span>
+                            <div>
+                              <p class="text-sm font-medium">PDF</p>
+                              <p class="text-xs text-gray-500">Clique para abrir</p>
+                            </div>
+                          </div>
+                        <% end %>
+                      </div>
+                    <% end %>
+                    <% if message.media_caption.present? %>
+                      <p class="text-xs text-gray-700 italic mt-1">"<%= message.media_caption %>"</p>
+                    <% end %>
+                  </div>
+                <% else %>
+                  <span class="text-gray-400 text-sm">Sem mídia</span>
+                <% end %>
+              </td>
                <%# Actions column (Edit/Delete) - Corrected display style %>
                <td class="px-4 py-2 space-x-2" style="display: flex;"> <%# Corrected from 'display: ruby;' %>
                 <%= link_to 'Editar', edit_lead_message_path(message), class: "px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600" %>
