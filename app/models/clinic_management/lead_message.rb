@@ -59,20 +59,25 @@ module ClinicManagement
       def media_url
         return nil unless has_media?
         
-        begin
-          # Use the same approach as LensModel - rails_blob_url with only_path: false
-          # This works correctly with Backblaze B2 in all environments
-          Rails.application.routes.url_helpers.rails_blob_url(media_file, only_path: false)
-        rescue => e
-          Rails.logger.error "Error generating media URL: #{e.message}"
-          Rails.logger.error "Backtrace: #{e.backtrace.first(5).join('\n')}"
-          
-          # Fallback: try to use the service directly (same as LensModel)
+        # Different approach based on storage service
+        if Rails.env.development?
+          # For localhost development with local storage, use HTTP with explicit host
+          Rails.application.routes.url_helpers.rails_blob_url(media_file, host: 'localhost:3000', protocol: 'http')
+        else
+          # For staging/production with Backblaze B2, use the same approach as LensModel
           begin
-            media_file.service.url(media_file.key)
-          rescue => fallback_error
-            Rails.logger.error "Error in fallback: #{fallback_error.message}"
-            nil
+            Rails.application.routes.url_helpers.rails_blob_url(media_file, only_path: false)
+          rescue => e
+            Rails.logger.error "Error generating media URL: #{e.message}"
+            Rails.logger.error "Backtrace: #{e.backtrace.first(5).join('\n')}"
+            
+            # Fallback: try to use the service directly (same as LensModel)
+            begin
+              media_file.service.url(media_file.key)
+            rescue => fallback_error
+              Rails.logger.error "Error in fallback: #{fallback_error.message}"
+              nil
+            end
           end
         end
       end
