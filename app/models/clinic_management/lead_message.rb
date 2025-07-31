@@ -27,17 +27,12 @@ module ClinicManagement
         
         acceptable_types = [
           'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-          'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a',
+          'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/wav', 'audio/ogg', 'audio/m4a',
           'video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/webm',
           'application/pdf'
         ]
         
-        # Debug: log the actual content type received
-        Rails.logger.debug "Media file content_type: '#{media_file.content_type}'"
-        Rails.logger.debug "Acceptable types include this?: #{acceptable_types.include?(media_file.content_type)}"
-        
         unless acceptable_types.include?(media_file.content_type)
-          Rails.logger.error "Content type '#{media_file.content_type}' not in acceptable types: #{acceptable_types}"
           errors.add(:media_file, 'deve ser uma imagem, áudio, vídeo ou PDF')
         end
         
