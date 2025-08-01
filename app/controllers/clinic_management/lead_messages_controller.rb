@@ -300,7 +300,7 @@ module ClinicManagement
         api_key = current_account.evolution_api_key
         base_url = current_account.evolution_base_url
         
-        if respond_to?(:referral?) && referral?(current_user) && respond_to?(:user_referral)
+        if referral?(current_user)
           # Use referral's WhatsApp instance
           referral = user_referral
           instance_name = referral&.evolution_instance_name

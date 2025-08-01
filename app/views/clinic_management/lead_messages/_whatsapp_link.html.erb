@@ -14,22 +14,14 @@
 
   <% if can_use_evolution_api? %>
     <%# Evolution API automatic sending %>
-    <%= button_to "Enviar Mensagem Automática", 
-          send_evolution_message_lead_messages_path, 
-          params: { 
-            lead_id: lead_id, 
-            appointment_id: appointment_id, 
-            message_id: message_id 
-          },
-          method: :post,
-          local: false,
-          id: "evolution_send_button_#{unique_id_suffix}",
-          class: "nowrap bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-4 rounded",
-          data: {
-            turbo_method: :post,
-            turbo_confirm: "Enviar mensagem automaticamente via WhatsApp?",
-            action: "click->message-tracking#recordMessageSent"
-          } %>
+    <%= form_with url: send_evolution_message_lead_messages_path, method: :post, local: false, class: "inline-block" do |form| %>
+      <%= form.hidden_field :lead_id, value: lead_id %>
+      <%= form.hidden_field :appointment_id, value: appointment_id %>
+      <%= form.hidden_field :message_id, value: message_id %>
+      <%= form.submit "Enviar Mensagem Automática", 
+            id: "evolution_send_button_#{unique_id_suffix}",
+            class: "nowrap bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-4 rounded cursor-pointer" %>
+    <% end %>
     
     <%# Fallback manual option %>
     <div class="mt-2">
