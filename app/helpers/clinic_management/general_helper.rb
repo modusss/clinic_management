@@ -327,6 +327,41 @@ module ClinicManagement
           current_membership.role == "clinical_assistant"
         end
 
+        # Evolution API message sending helpers
+        def send_evolution_message_with_media(phone, message_text, media_details, instance_name = nil)
+          # Use the main helper functions from GeneralHelper
+          helper = Object.new.extend(::GeneralHelper)
+          
+          if media_details.present? && media_details[:url].present?
+            case media_details[:type]
+            when 'image'
+              caption = media_details[:caption].present? ? media_details[:caption] : message_text
+              helper.send_api_zap_image(media_details[:url], caption, phone, false, instance_name)
+            when 'audio'
+              helper.send_api_zap_audio(media_details[:url], phone, false, instance_name)
+            when 'video'
+              caption = [media_details[:caption], message_text].reject(&:blank?).join("\n\n")
+              helper.send_api_zap_video(media_details[:url], caption, phone, false, instance_name)
+            when 'document'
+              caption = [media_details[:caption], message_text].reject(&:blank?).join("\n\n")
+              helper.send_api_zap_pdf(media_details[:url], caption, phone, false, instance_name)
+            else
+              # Fallback to document for unknown types
+              caption = [media_details[:caption], message_text].reject(&:blank?).join("\n\n")
+              helper.send_api_zap_pdf(media_details[:url], caption, phone, false, instance_name)
+            end
+          else
+            # Send text message only
+            helper.send_api_zap_message(message_text, phone, false, instance_name)
+          end
+        end
+
+        def format_evolution_response(response)
+          # Use the main helper function for response formatting
+          helper = Object.new.extend(::GeneralHelper)
+          helper.response_feedback_api_zap(response)
+        end
+
     end
   end
   

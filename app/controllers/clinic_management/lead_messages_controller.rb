@@ -297,9 +297,6 @@ module ClinicManagement
         return { success: false, error: 'Conta não encontrada' } unless respond_to?(:current_account) && current_account.present?
         
         instance_name = nil
-        api_key = current_account.evolution_api_key
-        base_url = current_account.evolution_base_url
-        
         if referral?(current_user)
           # Use referral's WhatsApp instance
           referral = user_referral
@@ -310,65 +307,9 @@ module ClinicManagement
         end
 
         return { success: false, error: 'Configuração de WhatsApp não encontrada' } unless instance_name.present?
-        return { success: false, error: 'Configuração da API não encontrada' } unless api_key.present? && base_url.present?
-
-        headers = {
-          'Content-Type' => 'application/json',
-          'apikey' => api_key
-        }
         
-        # Check if we have media to send
-        if media_details.present? && media_details[:url].present?
-          # Send media message only (no separate text for images/audio)
-          url = "#{base_url}/message/sendMedia/#{instance_name}"
-          
-          # Map media types to Evolution API format
-          mediatype = case media_details[:type]
-                     when 'image'
-                       'image'
-                     when 'audio'
-                       'audio'
-                     when 'video'
-                       'video'
-                     when 'document'
-                       'document'
-                     else
-                       'document'
-                     end
-          
-          # For images and audio, only send the media with caption
-          # For documents and videos, we can include both caption and text
-          caption_text = if ['image', 'audio'].include?(media_details[:type])
-                          # Only caption for images and audio
-                          media_details[:caption].present? ? media_details[:caption] : message_text
-                        else
-                          # Caption + text for documents and videos
-                          [media_details[:caption], message_text].reject(&:blank?).join("\n\n")
-                        end
-          
-          body = {
-            number: phone,
-            options: {
-              delay: 10,
-              presence: "composing",
-              linkPreview: false
-            },
-            mediaMessage: {
-              mediatype: mediatype,
-              caption: caption_text.strip,
-              media: media_details[:url]
-            }
-          }.to_json
-        else
-          # Send text message only
-          url = "#{base_url}/message/sendText/#{instance_name}"
-          body = {
-            number: phone,
-            text: message_text
-          }.to_json
-        end
-
-        response = HTTParty.post(url, headers: headers, body: body)
+        # Use the helper function to send the message
+        response = send_evolution_message_with_media(phone, message_text, media_details, instance_name)
         
         if response.success?
           { success: true }
