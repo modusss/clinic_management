@@ -268,9 +268,9 @@ module ClinicManagement
     def can_send_via_evolution?
       begin
         # Check if we have the required methods available
-        return false unless respond_to?(:current_user) && current_user.present?
-        return false unless respond_to?(:current_account) && current_account.present?
-        
+        #return false unless respond_to?(:current_user) && current_user.present?
+        #return false unless respond_to?(:current_account) && current_account.present?
+        current_account = Account.first
         if respond_to?(:referral?) && referral?(current_user)
           # For referrals, check if their WhatsApp instance is connected
           if respond_to?(:user_referral)
@@ -281,7 +281,7 @@ module ClinicManagement
           end
         else
           # For accounts, check if instance 2 is connected
-          return current_account&.evolution_instance_name_2.present? && current_account&.instance_2_connected
+          return Account.first&.evolution_instance_name_2.present? && current_account&.instance_2_connected
         end
       rescue => e
         Rails.logger.error "Error in can_send_via_evolution?: #{e.message}"
@@ -291,10 +291,10 @@ module ClinicManagement
 
     # Send message via Evolution API (supports both text and media)
     def send_via_evolution_api(message_text, phone, media_details = nil)
-      begin
+      #begin
         # Check if we have the required methods and data available
-        return { success: false, error: 'Usuário não encontrado' } unless respond_to?(:current_user) && current_user.present?
-        return { success: false, error: 'Conta não encontrada' } unless respond_to?(:current_account) && current_account.present?
+        #return { success: false, error: 'Usuário não encontrado' } unless respond_to?(:current_user) && current_user.present?
+        #return { success: false, error: 'Conta não encontrada' } unless respond_to?(:current_account) && current_account.present?
         
         instance_name = nil
         if referral?(current_user)
@@ -303,10 +303,10 @@ module ClinicManagement
           instance_name = referral&.evolution_instance_name
         else
           # Use account's instance 2
-          instance_name = current_account.evolution_instance_name_2
+          instance_name = Account.first.evolution_instance_name_2
         end
 
-        return { success: false, error: 'Configuração de WhatsApp não encontrada' } unless instance_name.present?
+        #return { success: false, error: 'Configuração de WhatsApp não encontrada' } unless instance_name.present?
         Rails.logger.info "🚀 Calling send_evolution_message_with_media with phone: #{phone}, instance: #{instance_name}"
         # Use the helper function to send the message
         response = send_evolution_message_with_media(phone, message_text, media_details, instance_name)
@@ -319,10 +319,10 @@ module ClinicManagement
           error_message = response.parsed_response.dig('response', 'message')&.join(', ') || 'Erro desconhecido'
           { success: false, error: error_message }
         end
-      rescue => e
-        Rails.logger.error "Evolution API error: #{e.message}"
-        { success: false, error: e.message }
-      end
+      #rescue => e
+      #  Rails.logger.error "Evolution API error: #{e.message}"
+      #  { success: false, error: e.message }
+      #end
     end
   end
 end
