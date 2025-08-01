@@ -6,7 +6,27 @@
           <%= select_tag :custom_message_id, 
             grouped_options_for_select(
               get_lead_messages(lead, appointment).map { |category, messages|
-                [category, messages.map { |m| [m.name, m.id] }]
+                [category, messages.map { |m| 
+                  # Determine message type based on media attachment
+                  type_label = if m.has_media?
+                    case m.whatsapp_media_type
+                    when 'image'
+                      '[imagem]'
+                    when 'audio'
+                      '[áudio]'
+                    when 'video'
+                      '[vídeo]'
+                    when 'document'
+                      '[documento]'
+                    else
+                      '[mídia]'
+                    end
+                  else
+                    ''
+                  end
+                  
+                  ["#{m.name} #{type_label}", m.id] 
+                }]
               }
             ),
             prompt: "Escolha uma mensagem", 
