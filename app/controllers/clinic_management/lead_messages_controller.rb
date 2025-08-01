@@ -309,7 +309,7 @@ module ClinicManagement
         return { success: false, error: 'Configuração de WhatsApp não encontrada' } unless instance_name.present?
         
         # Use the helper function to send the message
-        response = send_evolution_message_with_media(phone, message_text, media_details, instance_name)
+        response = helper.send_evolution_message_with_media(phone, message_text, media_details, instance_name)
         
         if response.success?
           { success: true }
