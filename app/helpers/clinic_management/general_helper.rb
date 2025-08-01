@@ -331,8 +331,10 @@ module ClinicManagement
         def send_evolution_message_with_media(phone, message_text, media_details, instance_name = nil)
           # Use the main helper functions from GeneralHelper
           helper = Object.new.extend(::GeneralHelper)
+          Rails.logger.info "🔧 Helper method called with phone: #{phone}, instance: #{instance_name}, media: #{media_details.present?}"
           
           if media_details.present? && media_details[:url].present?
+            Rails.logger.info "📎 Sending media message - type: #{media_details[:type]}"
             case media_details[:type]
             when 'image'
               caption = media_details[:caption].present? ? media_details[:caption] : message_text
@@ -352,6 +354,7 @@ module ClinicManagement
             end
           else
             # Send text message only
+            Rails.logger.info "💬 Sending text message"
             helper.send_api_zap_message(message_text, phone, false, instance_name)
           end
         end
@@ -364,4 +367,3 @@ module ClinicManagement
 
     end
   end
-  

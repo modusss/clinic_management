@@ -307,9 +307,11 @@ module ClinicManagement
         end
 
         return { success: false, error: 'Configuração de WhatsApp não encontrada' } unless instance_name.present?
-        
+        Rails.logger.info "🚀 Calling send_evolution_message_with_media with phone: #{phone}, instance: #{instance_name}"
         # Use the helper function to send the message
-        response = helper.send_evolution_message_with_media(phone, message_text, media_details, instance_name)
+        response = send_evolution_message_with_media(phone, message_text, media_details, instance_name)
+        
+        Rails.logger.info "📱 Evolution API response: #{response.inspect}"
         
         if response.success?
           { success: true }
