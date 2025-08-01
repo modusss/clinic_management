@@ -130,10 +130,14 @@ module ClinicManagement
     end
 
     def send_evolution_message
+      Rails.logger.info "🚀 send_evolution_message called with params: #{params.inspect}"
+      
       begin
         message = LeadMessage.find_by(id: params[:message_id])
         appointment = Appointment.find_by(id: params[:appointment_id])
         lead = Lead.find_by(id: params[:lead_id])
+        
+        Rails.logger.info "📋 Found records - Message: #{message&.id}, Appointment: #{appointment&.id}, Lead: #{lead&.id}"
         
         message_data = get_message(message, lead, appointment.service)
         message_text = message_data[:text]

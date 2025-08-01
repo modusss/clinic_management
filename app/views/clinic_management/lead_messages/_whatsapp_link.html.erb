@@ -22,12 +22,13 @@
             message_id: message_id 
           },
           method: :post,
-          remote: true,
+          local: false,
           id: "evolution_send_button_#{unique_id_suffix}",
           class: "nowrap bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-4 rounded",
           data: {
-            action: "click->message-tracking#recordMessageSent",
-            confirm: "Enviar mensagem automaticamente via WhatsApp?"
+            turbo_method: :post,
+            turbo_confirm: "Enviar mensagem automaticamente via WhatsApp?",
+            action: "click->message-tracking#recordMessageSent"
           } %>
     
     <%# Fallback manual option %>
