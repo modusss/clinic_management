@@ -4,6 +4,7 @@ module ClinicManagement
     before_action :set_message, only: [:show, :edit, :update, :destroy]
     skip_before_action :redirect_referral_users
     include GeneralHelper
+    include MessagesHelper
     require 'httparty'
 
     def index
