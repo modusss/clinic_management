@@ -43,18 +43,22 @@
         </div>
       <% end %>
       
-      <%# Botão para replicar mensagem aos demais %>
-      <div class="mt-2" data-message-replicator-target="replicateButtonContainer" style="display: none;">
-        <button type="button" 
-                class="btn btn-small blue lighten-1 waves-effect waves-light"
-                data-action="click->message-replicator#replicateToAll"
-                data-message-replicator-target="replicateButton">
-          <i class="material-icons left">content_copy</i>
-          Replicar
-        </button>
+      <%# Container para botões alinhados horizontalmente %>
+      <div class="message-actions-container" style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
+        <%# Botão para replicar mensagem aos demais %>
+        <div data-message-replicator-target="replicateButtonContainer" style="display: none;">
+          <button type="button" 
+                  class="btn btn-small blue lighten-1 waves-effect waves-light"
+                  data-action="click->message-replicator#replicateToAll"
+                  data-message-replicator-target="replicateButton">
+            <i class="material-icons left">content_copy</i>
+            Replicar
+          </button>
+        </div>
+        
+        <%# Container para botões do WhatsApp %>
+        <div id="whatsapp-link-<%=lead.id%>" class="whatsapp-buttons-container"></div>
       </div>
-      
-      <div id="whatsapp-link-<%=lead.id%>"></div>
     </div>
   </div>
 </div>
