@@ -1,7 +1,9 @@
-<div>
+<div data-controller="message-replicator" 
+     data-message-replicator-lead-id-value="<%= lead.id %>"
+     data-message-replicator-appointment-id-value="<%= appointment.present? ? appointment.id : '' %>">
   <div class="row">
     <div class="col s12">
-      <%= form_with(url: build_message_path(lead), method: :post, remote: true, id: "whatsapp_form") do %>
+      <%= form_with(url: build_message_path(lead), method: :post, remote: true, id: "whatsapp_form_#{lead.id}") do %>
         <div class="input-field">
           <%= select_tag :custom_message_id, 
             grouped_options_for_select(
@@ -31,11 +33,27 @@
             ),
             prompt: "Escolha uma mensagem", 
             class: "browser-default", 
-            onchange: "this.form.requestSubmit()" 
+            onchange: "this.form.requestSubmit()",
+            data: { 
+              message_replicator_target: "messageSelect",
+              action: "change->message-replicator#updateReplicateButtonVisibility"
+            }
           %>
           <%= hidden_field_tag :appointment_id, (appointment.present? ? appointment.id : "") %>
         </div>
       <% end %>
+      
+      <%# Botão para replicar mensagem aos demais %>
+      <div class="mt-2" data-message-replicator-target="replicateButtonContainer" style="display: none;">
+        <button type="button" 
+                class="btn btn-small blue lighten-1 waves-effect waves-light"
+                data-action="click->message-replicator#replicateToAll"
+                data-message-replicator-target="replicateButton">
+          <i class="material-icons left">content_copy</i>
+          Replicar
+        </button>
+      </div>
+      
       <div id="whatsapp-link-<%=lead.id%>"></div>
     </div>
   </div>
@@ -44,5 +62,13 @@
 <style>
   #custom_message_id {
     width: 100%;
+  }
+  
+  .mt-2 {
+    margin-top: 8px;
+  }
+  
+  .mt-1 {
+    margin-top: 4px;
   }
 </style>
