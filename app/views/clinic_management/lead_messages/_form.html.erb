@@ -45,10 +45,10 @@
         <div class="field mb-4">
           <%= form.label :media_file, "Arquivo (Imagem, Áudio, Vídeo ou PDF)", class: "block text-gray-700 text-sm font-bold mb-2" %>
           <%= form.file_field :media_file, 
-                accept: "image/*,audio/*,video/*,application/pdf", 
+                accept: "image/*,audio/*,video/*,application/pdf,audio/opus", 
                 class: "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" %>
           <p class="text-xs text-gray-500 mt-1">
-            Formatos aceitos: JPG, PNG, GIF, WebP, MP3, WAV, OGG, M4A, MP4, AVI, MOV, WMV, WebM, PDF
+            Formatos aceitos: JPG, PNG, GIF, WebP, MP3, WAV, OGG, OPUS, M4A, MP4, AVI, MOV, WMV, WebM, PDF
           </p>
         </div>
 

@@ -27,7 +27,7 @@ module ClinicManagement
         
         acceptable_types = [
           'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-          'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/wav', 'audio/ogg', 'audio/m4a',
+          'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/wav', 'audio/ogg', 'audio/opus', 'audio/m4a',
           'video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/webm',
           'application/pdf'
         ]
