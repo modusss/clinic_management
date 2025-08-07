@@ -64,20 +64,13 @@ module ClinicManagement
           # For localhost development with local storage, use HTTP with explicit host
           Rails.application.routes.url_helpers.rails_blob_url(media_file, host: 'localhost:3000', protocol: 'http')
         else
-          # For staging/production with Backblaze B2, use the same approach as LensModel
+          # For staging/production with Backblaze B2, use service directly to avoid host issues
           begin
-            Rails.application.routes.url_helpers.rails_blob_url(media_file, only_path: false)
+            media_file.service.url(media_file.key)
           rescue => e
             Rails.logger.error "Error generating media URL: #{e.message}"
             Rails.logger.error "Backtrace: #{e.backtrace.first(5).join('\n')}"
-            
-            # Fallback: try to use the service directly (same as LensModel)
-            begin
-              media_file.service.url(media_file.key)
-            rescue => fallback_error
-              Rails.logger.error "Error in fallback: #{fallback_error.message}"
-              nil
-            end
+            nil
           end
         end
       end
