@@ -187,7 +187,7 @@ module ClinicManagement
         @leads = @all_leads.page(params[:page]).per(50)
       end
 
-      @rows = load_leads_data(@leads)
+      @rows = load_leads_data(@leads, 'absent')
 
       respond_to do |format|
         format.turbo_stream do
@@ -203,7 +203,7 @@ module ClinicManagement
     def absent
       # Store the URL, potentially modified, in the session on GET requests
       store_absent_leads_state_in_session
-
+      
       # 1) Carregar a coleção base (com base se é referral ou não)
       @all_leads = base_absent_leads_scope
 
@@ -460,17 +460,28 @@ module ClinicManagement
       ]
     end
 
-    def load_leads_data(leads)
+    def load_leads_data(leads, context = nil)
       leads.map.with_index do |lead, index|
         last_invitation = lead.invitations.last
         
-        # ✅ CORREÇÃO: Usar dados unificados da query (lead_interactions + appointment)
+        # ✅ CORREÇÃO: Determinar attendance baseado no contexto da action
+        # Se não temos contexto, buscar o appointment real para determinar attendance
+        attendance_value = if context == 'absent'
+          false
+        elsif context == 'attended' 
+          true
+        else
+          # Fallback: buscar o appointment real se não temos contexto
+          real_appointment = ClinicManagement::Appointment.find_by(id: lead.current_appointment_id)
+          real_appointment&.attendance || false
+        end
+        
         # Criar um objeto appointment que usa os dados já carregados da query
         last_appointment = OpenStruct.new(
           id: lead.current_appointment_id,
           last_message_sent_at: lead.unified_last_contact_at,
           last_message_sent_by: lead.unified_last_contact_by,
-          attendance: false  # Sabemos que é ausente pela query
+          attendance: attendance_value
         )
         
         # Para funcionalidades que precisam do appointment completo, buscar quando necessário
