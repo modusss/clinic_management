@@ -632,7 +632,7 @@ module ClinicManagement
       end
 
       def appointment_params
-        params.require(:clinic_management_appointment).permit(:comments)
+        params.require(:clinic_management_appointment).permit(:comments, :registered_by_user)
       end
 
       def prescription_link(ap)
