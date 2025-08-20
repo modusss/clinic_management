@@ -36,8 +36,11 @@ module ClinicManagement
       if helpers.referral?(current_user)
         referral = helpers.user_referral
       else
-        referral = if params[:referral_id].present?
-          Referral.find_by(id: params[:referral_id])
+        # Verificar tanto params[:referral_id] quanto params[:appointment][:referral_id]
+        referral_id = params[:referral_id] || params.dig(:appointment, :referral_id)
+        
+        referral = if referral_id.present?
+          Referral.find_by(id: referral_id)
         else
           if before_appointment.created_at < 12.month.ago
             Referral.find_by(name: "Local")
