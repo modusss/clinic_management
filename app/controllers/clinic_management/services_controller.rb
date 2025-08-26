@@ -169,7 +169,14 @@ module ClinicManagement
             { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
             { header: "Observações", content: ap.comments },
             { header: "Responsável", content: ((lead.name == invitation&.patient_name) ? "" : lead.name) },
-            { header: "Telefone", content: helpers.masked_whatsapp_link(lead.phone), class: "text-blue-500 hover:text-blue-700 nowrap" },
+            {  
+              header: "Telefone", 
+              content: render_to_string(
+                partial: "clinic_management/leads/phone_with_message_tracking", 
+                locals: { lead: lead, appointment: ap }
+              ).html_safe,
+              class: "text-blue-500 hover:text-blue-700 nowrap"
+            },
             { header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500" },
             { header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id.to_s}" },
             { header: "Endereço", content: invitation&.lead&.address },
@@ -229,7 +236,14 @@ module ClinicManagement
             { header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "pt-2 pb-0" },          
             { header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500 nowrap" },
             { header: "Responsável", content: ((lead.name == invitation.patient_name) ? "" : lead.name), class: "nowrap" },
-            { header: "Telefone", content: helpers.masked_whatsapp_link(lead.phone), class: "text-blue-500 hover:text-blue-700 nowrap" },
+            {  
+              header: "Telefone", 
+              content: render_to_string(
+                partial: "clinic_management/leads/phone_with_message_tracking", 
+                locals: { lead: lead, appointment: ap }
+              ).html_safe,
+              class: "text-blue-500 hover:text-blue-700 nowrap"
+            },
             { header: "Endereço", content: invitation.lead.address },
             { header: "Região", content: invitation.region.name.upcase },
             { header: "Localização", content: get_location_link(lead) },
