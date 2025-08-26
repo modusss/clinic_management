@@ -21,6 +21,9 @@
          data-action="click->message-tracking#recordMessageSent">
                  <i class="fas fa-phone" style="margin-right: 4px;"></i>
         <span style="font-size: 15px;">Ligar</span>
+        <% if current_user&.phone_prefix.present? %>
+          <span style="font-size: 10px; color: #9CA3AF; margin-left: 4px;" title="Prefixo configurado: <%= current_user.phone_prefix %>">(<%= current_user.phone_prefix %>)</span>
+        <% end %>
       </a>
     <% end %>
   </div>
