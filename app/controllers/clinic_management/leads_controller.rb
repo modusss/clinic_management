@@ -279,6 +279,24 @@ module ClinicManagement
         .where('latest_apt.attendance = ?', false)
       when "attended_year_ago"
         scope.where('main_apt.attendance = ? AND main_svc.date < ?', true, one_year_ago)
+      when "attended_year_ago_customer"
+        # Pacientes que compareceram há mais de um ano E são clientes (têm orders)
+        scope.where('main_apt.attendance = ? AND main_svc.date < ?', true, one_year_ago)
+             .where('EXISTS (
+               SELECT 1 FROM leads_conversions lc 
+               INNER JOIN customers c ON lc.customer_id = c.id
+               INNER JOIN orders o ON c.id = o.customer_id 
+               WHERE lc.clinic_management_lead_id = clinic_management_leads.id
+             )')
+      when "attended_year_ago_non_customer"
+        # Pacientes que compareceram há mais de um ano E NÃO são clientes (não têm orders)
+        scope.where('main_apt.attendance = ? AND main_svc.date < ?', true, one_year_ago)
+             .where('NOT EXISTS (
+               SELECT 1 FROM leads_conversions lc 
+               INNER JOIN customers c ON lc.customer_id = c.id
+               INNER JOIN orders o ON c.id = o.customer_id 
+               WHERE lc.clinic_management_lead_id = clinic_management_leads.id
+             )')
       else
         scope
       end
