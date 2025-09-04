@@ -5,6 +5,12 @@
       rows: 4,
       placeholder: "Adicione seus comentários aqui...",
       data: { appointment_comments_target: "textarea" } %>
+    
+    <% if appointment.comments.present? && appointment.updated_at.present? %>
+      <div class="mt-2 text-xs text-gray-500">
+        Última atualização: <p><%= l(appointment.updated_at.to_date, format: :long) %></p>
+      </div>
+    <% end %>
   </div>
   
   <%= f.submit 'Atualizar', 
