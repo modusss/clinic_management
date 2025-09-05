@@ -83,5 +83,19 @@ module ClinicManagement
       end
     end
 
+    # Generate a specific variation of a message with random options
+    def generate_random_variation(text, appointment, seed)
+      # First replace placeholders with patient data
+      processed_text = format_placeholder_preview(text, appointment)
+      
+      # Then process random options [option1|option2|option3]
+      processed_text.gsub(/\[([^\]]+)\]/) do |match|
+        options = $1.split('|').map(&:strip)
+        # Use seed to ensure different variations
+        index = (seed.to_f * options.length).floor % options.length
+        options[index]
+      end
+    end
+
   end
 end
