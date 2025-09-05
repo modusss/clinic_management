@@ -173,6 +173,38 @@ module ClinicManagement
         }
       end
     end
+
+    def refresh_preview
+      begin
+        message_text = params[:message_text] || ""
+        
+        # Get a new random appointment
+        sample_appointment = get_sample_appointment_for_preview
+        
+        # Format the preview with the new appointment data
+        preview_text = format_placeholder_preview(message_text, sample_appointment)
+        
+        # Generate patient info text
+        patient_info = if sample_appointment.respond_to?(:invitation) && sample_appointment.invitation.respond_to?(:lead)
+          "Exemplo baseado em agendamento real do paciente: <strong>#{sample_appointment.invitation.lead&.name || sample_appointment.invitation.patient_name}</strong>"
+        else
+          "Exemplo com dados fictícios (nenhum agendamento encontrado no banco)"
+        end
+        
+        render json: {
+          success: true,
+          original_text: message_text,
+          preview_text: preview_text.gsub("\n", "<br>"),
+          patient_info: patient_info
+        }
+      rescue => e
+        Rails.logger.error "Error in refresh_preview: #{e.message}"
+        render json: {
+          success: false,
+          error: e.message
+        }
+      end
+    end
   
     private
 

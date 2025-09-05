@@ -1,70 +1,158 @@
-<div class="p-4 bg-white rounded shadow-md">
+<div class="p-4 bg-white rounded shadow-md" data-controller="placeholder-inserter">
     <h5 class="text-lg font-semibold mb-4">Por favor, substitua os seguintes placeholders pelas informações correspondentes:</h5>
-    <ul class="list-disc list-inside text-gray-700">
-        <li><strong>{NOME_COMPLETO_PACIENTE}</strong> : Substituirá por nome completo do paciente;</li>
-        <li><strong>{PRIMEIRO_NOME_PACIENTE}</strong> : Substituirá pelo primeiro nome do paciente;</li>
-        <li><strong>{DIA_SEMANA_ATENDIMENTO}</strong> : Substituirá pelo dia da semana do atendimento, por extenso (por exemplo, "Quarta-feira");</li>
-        <li><strong>{DATA_DO_ATENDIMENTO}</strong> : Substituirá pela data completa do atendimento (por exemplo, "15/05/23");</li>
-        <li><strong>{MES_DO_ATENDIMENTO}</strong> : Substituirá pelo dia do atendimento escrito por extenso (por exemplo, "Maio");</li>
-        <li><strong>{DIA_ATENDIMENTO_NUMERO}</strong> : Substituirá pelo dia do mês do atendimento, em números (por exemplo, "05");</li>
-        <li><strong>{HORARIO_DE_INICIO}</strong> : Substituirá pelo horário de início do atendimento (por exemplo, "13:00");</li>
-        <li><strong>{HORARIO_DE_TERMINO}</strong> : Substituirá pelo horário de término do atendimento (por exemplo, "16:30");</li>
-    </ul>
+    <p class="text-sm text-gray-600 mb-4">💡 <strong>Dica:</strong> Clique nos botões abaixo para inserir automaticamente os placeholders no texto da mensagem.</p>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+        <button type="button" 
+                class="placeholder-btn flex items-center justify-between p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors duration-200"
+                data-placeholder="{NOME_COMPLETO_PACIENTE}"
+                data-action="click->placeholder-inserter#insertPlaceholder">
+            <div class="text-left">
+                <div class="font-semibold text-blue-800">{NOME_COMPLETO_PACIENTE}</div>
+                <div class="text-sm text-blue-600">Nome completo do paciente</div>
+            </div>
+            <i class="material-icons text-blue-500">add_circle_outline</i>
+        </button>
+        
+        <button type="button" 
+                class="placeholder-btn flex items-center justify-between p-3 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors duration-200"
+                data-placeholder="{PRIMEIRO_NOME_PACIENTE}"
+                data-action="click->placeholder-inserter#insertPlaceholder">
+            <div class="text-left">
+                <div class="font-semibold text-green-800">{PRIMEIRO_NOME_PACIENTE}</div>
+                <div class="text-sm text-green-600">Primeiro nome do paciente</div>
+            </div>
+            <i class="material-icons text-green-500">add_circle_outline</i>
+        </button>
+        
+        <button type="button" 
+                class="placeholder-btn flex items-center justify-between p-3 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors duration-200"
+                data-placeholder="{DIA_SEMANA_ATENDIMENTO}"
+                data-action="click->placeholder-inserter#insertPlaceholder">
+            <div class="text-left">
+                <div class="font-semibold text-purple-800">{DIA_SEMANA_ATENDIMENTO}</div>
+                <div class="text-sm text-purple-600">Dia da semana por extenso</div>
+            </div>
+            <i class="material-icons text-purple-500">add_circle_outline</i>
+        </button>
+        
+        <button type="button" 
+                class="placeholder-btn flex items-center justify-between p-3 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors duration-200"
+                data-placeholder="{DATA_DO_ATENDIMENTO}"
+                data-action="click->placeholder-inserter#insertPlaceholder">
+            <div class="text-left">
+                <div class="font-semibold text-indigo-800">{DATA_DO_ATENDIMENTO}</div>
+                <div class="text-sm text-indigo-600">Data completa (15/05/23)</div>
+            </div>
+            <i class="material-icons text-indigo-500">add_circle_outline</i>
+        </button>
+        
+        <button type="button" 
+                class="placeholder-btn flex items-center justify-between p-3 bg-pink-50 hover:bg-pink-100 border border-pink-200 rounded-lg transition-colors duration-200"
+                data-placeholder="{MES_DO_ATENDIMENTO}"
+                data-action="click->placeholder-inserter#insertPlaceholder">
+            <div class="text-left">
+                <div class="font-semibold text-pink-800">{MES_DO_ATENDIMENTO}</div>
+                <div class="text-sm text-pink-600">Mês por extenso (Maio)</div>
+            </div>
+            <i class="material-icons text-pink-500">add_circle_outline</i>
+        </button>
+        
+        <button type="button" 
+                class="placeholder-btn flex items-center justify-between p-3 bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 rounded-lg transition-colors duration-200"
+                data-placeholder="{DIA_ATENDIMENTO_NUMERO}"
+                data-action="click->placeholder-inserter#insertPlaceholder">
+            <div class="text-left">
+                <div class="font-semibold text-yellow-800">{DIA_ATENDIMENTO_NUMERO}</div>
+                <div class="text-sm text-yellow-600">Dia do mês em números (05)</div>
+            </div>
+            <i class="material-icons text-yellow-500">add_circle_outline</i>
+        </button>
+        
+        <button type="button" 
+                class="placeholder-btn flex items-center justify-between p-3 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-lg transition-colors duration-200"
+                data-placeholder="{HORARIO_DE_INICIO}"
+                data-action="click->placeholder-inserter#insertPlaceholder">
+            <div class="text-left">
+                <div class="font-semibold text-teal-800">{HORARIO_DE_INICIO}</div>
+                <div class="text-sm text-teal-600">Horário de início (13:00)</div>
+            </div>
+            <i class="material-icons text-teal-500">add_circle_outline</i>
+        </button>
+        
+        <button type="button" 
+                class="placeholder-btn flex items-center justify-between p-3 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg transition-colors duration-200"
+                data-placeholder="{HORARIO_DE_TERMINO}"
+                data-action="click->placeholder-inserter#insertPlaceholder">
+            <div class="text-left">
+                <div class="font-semibold text-orange-800">{HORARIO_DE_TERMINO}</div>
+                <div class="text-sm text-orange-600">Horário de término (16:30)</div>
+            </div>
+            <i class="material-icons text-orange-500">add_circle_outline</i>
+        </button>
+    </div>
     <h5 class="text-lg font-semibold mt-4 mb-2">Funcionalidade de Múltiplas Mensagens Sorteadas:</h5>
     <p>Para incluir múltiplas opções de frases na mensagem, que serão escolhidas aleatoriamente, use colchetes `[]` com opções separadas pelo símbolo `|`. Por exemplo, `[Opção 1|Opção 2|Opção 3]` escolherá aleatoriamente uma das opções.</p>
 
-    <h5 class="text-lg font-semibold mt-4 mb-2">📎 Anexar Arquivos de Mídia:</h5>
-    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
-        <p class="text-blue-800 font-semibold">✨ NOVO: Upload Direto de Arquivos</p>
-        <p class="text-blue-700">Use o campo "Anexar Arquivo de Mídia" no formulário para fazer upload direto de imagens, áudios, vídeos ou PDFs.</p>
-    </div>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div class="bg-green-50 border border-green-200 rounded p-3">
-            <h6 class="font-semibold text-green-800 mb-2">📱 Para Imagens e Áudios:</h6>
-            <ul class="text-sm text-green-700 list-disc list-inside">
-                <li>Apenas o arquivo com legenda será enviado</li>
-                <li>Texto da mensagem será ignorado</li>
-                <li>Se não informar legenda, o texto será usado como legenda</li>
-            </ul>
+    <!-- Preview Section -->
+    <% sample_appointment = get_sample_appointment_for_preview %>
+    <div class="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4" data-controller="message-preview">
+        <div class="flex items-center justify-between mb-3">
+            <h5 class="text-lg font-semibold text-blue-800 flex items-center">
+                <i class="material-icons mr-2">preview</i>
+                📋 Exemplo de Como a Mensagem Ficaria
+            </h5>
+            <button type="button" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200"
+                    data-action="click->message-preview#refreshPreview"
+                    data-message-preview-target="refreshButton">
+                <i class="material-icons mr-2 text-sm">refresh</i>
+                Atualizar
+            </button>
         </div>
         
-        <div class="bg-purple-50 border border-purple-200 rounded p-3">
-            <h6 class="font-semibold text-purple-800 mb-2">🎬 Para Vídeos e PDFs:</h6>
-            <ul class="text-sm text-purple-700 list-disc list-inside">
-                <li>Arquivo + legenda + texto serão enviados</li>
-                <li>Conteúdo mais completo</li>
-                <li>Ideal para materiais informativos</li>
-            </ul>
+        <div class="bg-white rounded-lg p-4 border border-blue-100" data-message-preview-target="previewContainer">
+            <div class="mb-3">
+                <h6 class="font-semibold text-gray-700 mb-2">📝 Texto Original (com placeholders):</h6>
+                <div class="bg-gray-50 p-3 rounded border text-sm font-mono" data-message-preview-target="originalText">
+                    <% if action_name == 'edit' && defined?(@message) && @message.text.present? %>
+                        <%= @message.text.gsub("\n", "<br>").html_safe %>
+                    <% elsif action_name == 'new' %>
+                        <span class="text-gray-400 italic">Digite sua mensagem no campo acima para ver o preview aqui...</span>
+                    <% else %>
+                        👋 Olá, {PRIMEIRO_NOME_PACIENTE}!<br><br>
+                        Aqui é a Jussara! [Estávamos te esperando|te aguardamos] para o seu exame de vista 👁 no {DIA_SEMANA_ATENDIMENTO}, dia {DIA_ATENDIMENTO_NUMERO} de {MES_DO_ATENDIMENTO} ({DATA_DO_ATENDIMENTO}), das {HORARIO_DE_INICIO} às {HORARIO_DE_TERMINO}, mas você não pode vir.<br><br>
+                        Se quiser, me avise 📱 que agendamos um novo horário! Cuidar da sua visão é muito importante! 👁💙
+                    <% end %>
+                </div>
+            </div>
+            
+            <div>
+                <h6 class="font-semibold text-gray-700 mb-2">✨ Como Ficaria Enviada (com dados reais):</h6>
+                <div class="bg-green-50 p-3 rounded border" style="font-size: 16px;" data-message-preview-target="previewText">
+                    <% if action_name == 'edit' && defined?(@message) && @message.text.present? %>
+                        <%= format_placeholder_preview(@message.text, sample_appointment).gsub("\n", "<br>").html_safe %>
+                    <% elsif action_name == 'new' %>
+                        <span class="text-gray-400 italic">Preview aparecerá aqui quando você digitar uma mensagem...</span>
+                    <% else %>
+                        <%= format_placeholder_preview("👋 Olá, {PRIMEIRO_NOME_PACIENTE}!
+
+Aqui é a Jussara! [Estávamos te esperando|te aguardamos] para o seu exame de vista 👁 no {DIA_SEMANA_ATENDIMENTO}, dia {DIA_ATENDIMENTO_NUMERO} de {MES_DO_ATENDIMENTO} ({DATA_DO_ATENDIMENTO}), das {HORARIO_DE_INICIO} às {HORARIO_DE_TERMINO}, mas você não pode vir.
+
+Se quiser, me avise 📱 que agendamos um novo horário! Cuidar da sua visão é muito importante! 👁💙", sample_appointment).html_safe %>
+                    <% end %>
+                </div>
+            </div>
+            
+            <div class="mt-3 text-xs text-gray-500 flex items-center" data-message-preview-target="patientInfo">
+                <i class="material-icons text-sm mr-1">info</i>
+                <% if sample_appointment.respond_to?(:invitation) && sample_appointment.invitation.respond_to?(:lead) %>
+                    Exemplo baseado em agendamento real do paciente: <strong><%= sample_appointment.invitation.lead&.name || sample_appointment.invitation.patient_name %></strong>
+                <% else %>
+                    Exemplo com dados fictícios (nenhum agendamento encontrado no banco)
+                <% end %>
+            </div>
         </div>
     </div>
     
-    <div class="bg-gray-50 border border-gray-200 rounded p-3 mb-4">
-        <h6 class="font-semibold text-gray-800 mb-2">📋 Formatos Aceitos:</h6>
-        <div class="grid grid-cols-2 gap-2 text-sm text-gray-700">
-            <div>
-                <strong>📷 Imagens:</strong> JPG, PNG, GIF, WebP
-            </div>
-            <div>
-                <strong>🎵 Áudios:</strong> MP3, WAV, OGG, M4A
-            </div>
-            <div>
-                <strong>🎬 Vídeos:</strong> MP4, AVI, MOV, WMV, WebM
-            </div>
-            <div>
-                <strong>📄 Documentos:</strong> PDF
-            </div>
-        </div>
-        <p class="text-xs text-gray-600 mt-2">Tamanho máximo: 50MB por arquivo</p>
-    </div>
-    
-    <% unless referral?(current_user) %>
-        <div class="bg-yellow-50 border border-yellow-200 rounded p-3">
-            <h6 class="font-semibold text-yellow-800 mb-2">🔄 Método Alternativo (Legado):</h6>
-            <p class="text-sm text-yellow-700 mb-2">Ainda é possível usar URLs manuais no texto da mensagem:</p>
-            <p class="text-sm"><code class="bg-yellow-100 px-2 py-1 rounded">[url="URL_DO_ARQUIVO" legenda="LEGENDA" tipo="TIPO"]</code></p>
-            <p class="text-xs text-yellow-600 mt-1">Tipos: "imagem", "audio", "video", "pdf"</p>
-            <p class="text-xs text-yellow-600">Exemplo: <code>[url="https://example.com/video.mp4" legenda="Vídeo explicativo" tipo="video"]</code></p>
-        </div>
-    <% end %>
 </div>

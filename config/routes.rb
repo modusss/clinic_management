@@ -16,6 +16,7 @@ ClinicManagement::Engine.routes.draw do
   resources :lead_messages do
     collection do
       post :send_evolution_message
+      post :refresh_preview
     end
   end
 
