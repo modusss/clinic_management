@@ -80,14 +80,17 @@ module ClinicManagement
 #
 def table_body(rows, fix_to)
   content_tag(:tbody, class: "divide-y divide-gray-200") do
-    rows.map do |row|
+    rows.map.with_index do |row, row_index|
       next if row.nil?
       
       row_class = "border-b hover:bg-gray-50 odd:bg-white even:bg-gray-50"
       row_class += " #{row.first[:row_class]}" if row.first && row.first[:row_class].present?
       
-      content_tag(:tr, class: row_class, id: row.first[:row_id]) do
-        row.map.with_index do |cell, index|
+      # Adicionar ID único para cada linha baseado no lead
+      row_id = row.first[:row_id] || "table-row-#{row_index}"
+      
+      content_tag(:tr, class: row_class, id: row_id) do
+        cells_html = row.map.with_index do |cell, index|
           # Verifica o número de palavras no conteúdo
           content = cell[:content].to_s
           word_count = content.split.size
@@ -113,6 +116,44 @@ def table_body(rows, fix_to)
           # Cria a célula final
           content_tag(:td, cell[:content], id: cell[:id], class: cell_class)
         end.join.html_safe
+        
+        # Adicionar botão de ocultar como última coluna se estiver na view de ausentes
+        if controller_name == 'leads' && action_name == 'absent'
+          hide_button_cell = content_tag(:td, class: "px-6 py-4 text-center") do
+            if params[:hidden_status] != "hidden"
+              # Botão para ocultar
+              button_to clinic_management.hide_from_absent_lead_path(controller.instance_variable_get(:@leads)[row_index]), 
+                method: :patch,
+                remote: true,
+                data: { 
+                  turbo_method: :patch,
+                  turbo_stream: true,
+                  confirm: "Tem certeza que deseja ocultar este lead da listagem? Ele ficará disponível no filtro 'Ocultados da lista'."
+                },
+                class: "bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded",
+                title: "Não aparecer mais nesta lista" do
+                content_tag(:i, "", class: "fas fa-eye-slash") + " Ocultar"
+              end
+            else
+              # Botão para restaurar
+              button_to clinic_management.unhide_from_absent_lead_path(controller.instance_variable_get(:@leads)[row_index]), 
+                method: :patch,
+                remote: true,
+                data: { 
+                  turbo_method: :patch,
+                  turbo_stream: true,
+                  confirm: "Tem certeza que deseja restaurar este lead na listagem?"
+                },
+                class: "bg-green-500 hover:bg-green-600 text-white text-xs px-2 py-1 rounded",
+                title: "Mostrar novamente na lista principal" do
+                content_tag(:i, "", class: "fas fa-eye") + " Restaurar"
+              end
+            end
+          end
+          cells_html + hide_button_cell
+        else
+          cells_html
+        end
       end
     end.compact.join.html_safe
   end

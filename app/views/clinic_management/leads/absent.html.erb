@@ -163,6 +163,22 @@
       %>
     </div>
     
+    <!-- Filtro de Visibilidade -->
+    <div>
+      <%= f.label :hidden_status, "Visibilidade:", class: "block font-semibold mb-1" %>
+      <%= f.select :hidden_status, 
+          options_for_select(
+            [
+              ["Visíveis na lista", "visible"],
+              ["Ocultados da lista", "hidden"]
+            ], 
+            params[:hidden_status] || 'visible'
+          ), 
+          { include_blank: false },
+          class: "border rounded p-2"
+      %>
+    </div>
+    
     <!-- Ordenação -->
     <div>
       <%= f.label :sort_order, "Ordenar por:", class: "block font-semibold mb-1" %>

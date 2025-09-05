@@ -200,6 +200,31 @@ module ClinicManagement
       end
     end
 
+    def hide_from_absent
+      @lead = ClinicManagement::Lead.find(params[:id])
+      @lead.update!(hidden_from_absent: true)
+      
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.remove("lead-card-#{@lead.id}")
+        end
+        format.json { render json: { success: true, message: "Lead ocultado da listagem com sucesso" } }
+      end
+    end
+
+    def unhide_from_absent
+      @lead = ClinicManagement::Lead.find(params[:id])
+      @lead.update!(hidden_from_absent: false)
+      
+      respond_to do |format|
+        format.turbo_stream do
+          # Recarregar a página para mostrar o lead novamente
+          redirect_to absent_leads_path
+        end
+        format.json { render json: { success: true, message: "Lead restaurado na listagem com sucesso" } }
+      end
+    end
+
     def absent
       # Store the URL, potentially modified, in the session on GET requests
       store_absent_leads_state_in_session
@@ -209,6 +234,7 @@ module ClinicManagement
 
       # 2) Aplicar filtros sequenciais encapsulados
       @all_leads = filter_leads_with_phone(@all_leads)
+      @all_leads = filter_by_hidden_status(@all_leads)  # Novo filtro de ocultação
       @all_leads = filter_by_patient_type(@all_leads)
       @all_leads = filter_by_date(@all_leads)
       @all_leads = filter_by_contact_status(@all_leads)
@@ -262,6 +288,19 @@ module ClinicManagement
     # Filtra leads que possuem telefone válido
     def filter_leads_with_phone(scope)
       scope.where.not(phone: [nil, ''])
+    end
+
+    # Filtra por status de ocultação
+    def filter_by_hidden_status(scope)
+      case params[:hidden_status]
+      when "hidden"
+        scope.where(hidden_from_absent: true)
+      when "visible"
+        scope.where(hidden_from_absent: [false, nil])
+      else
+        # Default: sempre excluir leads ocultados da listagem principal
+        scope.where(hidden_from_absent: [false, nil])
+      end
     end
 
     # Filtra por tipo de paciente, se especificado

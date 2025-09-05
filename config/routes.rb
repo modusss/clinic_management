@@ -68,6 +68,8 @@ ClinicManagement::Engine.routes.draw do
   resources :leads do
     member do
       post :record_message_sent
+      patch :hide_from_absent
+      patch :unhide_from_absent
     end
     collection do
       get 'absent'
