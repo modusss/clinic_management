@@ -170,7 +170,9 @@
           options_for_select(
             [
               ["Visíveis na lista", "visible"],
-              ["Ocultados da lista", "hidden"]
+              ["Ocultados da lista", "hidden"],
+              ["Sem WhatsApp", "no_whatsapp"],
+              ["Sem interesse", "no_interest"]
             ], 
             params[:hidden_status] || 'visible'
           ), 

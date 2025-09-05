@@ -42,6 +42,85 @@
           </div>
         </dd>
       </div>
+      
+      <!-- Status Management Section -->
+      <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 border-l-4 border-blue-500">
+        <dt class="text-gray-500 text-[18px] font-semibold">
+          Status do Lead
+        </dt>
+        <dd class="mt-1 sm:mt-0 sm:col-span-2">
+          <% if lead.hidden_from_absent || lead.no_whatsapp || lead.no_interest %>
+            <!-- Mostrar status atual e botão restaurar -->
+            <div class="flex flex-wrap items-center gap-3 mb-3">
+              <% if lead.hidden_from_absent %>
+                <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+                  <i class="fas fa-eye-slash mr-1"></i> Oculto
+                </span>
+              <% end %>
+              <% if lead.no_whatsapp %>
+                <span class="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+                  <i class="fab fa-whatsapp mr-1"></i> Sem WhatsApp
+                </span>
+              <% end %>
+              <% if lead.no_interest %>
+                <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
+                  <i class="fas fa-times mr-1"></i> Sem Interesse
+                </span>
+              <% end %>
+            </div>
+            
+            <%= button_to clinic_management.restore_lead_lead_path(lead), 
+                method: :patch,
+                data: { 
+                  turbo_method: :patch,
+                  confirm: "Tem certeza que deseja restaurar este lead na listagem principal?"
+                },
+                class: "bg-green-500 hover:bg-green-600 active:bg-green-700 text-white text-sm px-4 py-2 rounded-lg shadow-md flex items-center gap-2 transition-all duration-200 transform hover:scale-105",
+                title: "Restaurar na lista principal" do %>
+              <i class="fas fa-undo"></i> Restaurar Lead
+            <% end %>
+          <% else %>
+            <!-- Botões para marcar status -->
+            <div class="text-sm text-gray-600 mb-3">
+              Lead ativo na listagem principal
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <%= button_to clinic_management.hide_from_absent_lead_path(lead), 
+                  method: :patch,
+                  data: { 
+                    turbo_method: :patch,
+                    confirm: "Tem certeza que deseja ocultar este lead da listagem?"
+                  },
+                  class: "bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-sm px-3 py-2 rounded-lg shadow-md flex items-center gap-2 transition-all duration-200 transform hover:scale-105",
+                  title: "Ocultar da lista" do %>
+                <i class="fas fa-eye-slash"></i> Ocultar
+              <% end %>
+              
+              <%= button_to clinic_management.mark_no_whatsapp_lead_path(lead), 
+                  method: :patch,
+                  data: { 
+                    turbo_method: :patch,
+                    confirm: "Marcar este lead como 'Sem WhatsApp'?"
+                  },
+                  class: "bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white text-sm px-3 py-2 rounded-lg shadow-md flex items-center gap-2 transition-all duration-200 transform hover:scale-105",
+                  title: "Sem WhatsApp" do %>
+                <i class="fab fa-whatsapp"></i> Sem WhatsApp
+              <% end %>
+              
+              <%= button_to clinic_management.mark_no_interest_lead_path(lead), 
+                  method: :patch,
+                  data: { 
+                    turbo_method: :patch,
+                    confirm: "Marcar este lead como 'Sem interesse'?"
+                  },
+                  class: "bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white text-sm px-3 py-2 rounded-lg shadow-md flex items-center gap-2 transition-all duration-200 transform hover:scale-105",
+                  title: "Sem interesse" do %>
+                <i class="fas fa-times"></i> Sem Interesse
+              <% end %>
+            </div>
+          <% end %>
+        </dd>
+      </div>
       <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
         <dt class="text-gray-500 text-[18px]">
           Endereço

@@ -206,20 +206,83 @@ module ClinicManagement
       
       respond_to do |format|
         format.turbo_stream do
-          render turbo_stream: turbo_stream.remove("lead-card-#{@lead.id}")
+          # Se vier da página show, redirecionar para atualizar a interface
+          if request.referer&.include?("/leads/#{@lead.id}")
+            redirect_to lead_path(@lead), notice: "Lead ocultado da listagem com sucesso"
+          else
+            # Se vier da listagem, apenas remover o card
+            render turbo_stream: turbo_stream.remove("lead-card-#{@lead.id}")
+          end
+        end
+        format.html do
+          redirect_to lead_path(@lead), notice: "Lead ocultado da listagem com sucesso"
         end
         format.json { render json: { success: true, message: "Lead ocultado da listagem com sucesso" } }
       end
     end
 
-    def unhide_from_absent
+    def mark_no_whatsapp
       @lead = ClinicManagement::Lead.find(params[:id])
-      @lead.update!(hidden_from_absent: false)
+      @lead.update!(no_whatsapp: true)
       
       respond_to do |format|
         format.turbo_stream do
-          # Recarregar a página para mostrar o lead novamente
-          redirect_to absent_leads_path
+          # Se vier da página show, redirecionar para atualizar a interface
+          if request.referer&.include?("/leads/#{@lead.id}")
+            redirect_to lead_path(@lead), notice: "Lead marcado como 'sem whatsapp'"
+          else
+            # Se vier da listagem, apenas remover o card
+            render turbo_stream: turbo_stream.remove("lead-card-#{@lead.id}")
+          end
+        end
+        format.html do
+          redirect_to lead_path(@lead), notice: "Lead marcado como 'sem whatsapp'"
+        end
+        format.json { render json: { success: true, message: "Lead marcado como 'sem whatsapp'" } }
+      end
+    end
+
+    def mark_no_interest
+      @lead = ClinicManagement::Lead.find(params[:id])
+      @lead.update!(no_interest: true)
+      
+      respond_to do |format|
+        format.turbo_stream do
+          # Se vier da página show, redirecionar para atualizar a interface
+          if request.referer&.include?("/leads/#{@lead.id}")
+            redirect_to lead_path(@lead), notice: "Lead marcado como 'sem interesse'"
+          else
+            # Se vier da listagem, apenas remover o card
+            render turbo_stream: turbo_stream.remove("lead-card-#{@lead.id}")
+          end
+        end
+        format.html do
+          redirect_to lead_path(@lead), notice: "Lead marcado como 'sem interesse'"
+        end
+        format.json { render json: { success: true, message: "Lead marcado como 'sem interesse'" } }
+      end
+    end
+
+    def restore_lead
+      @lead = ClinicManagement::Lead.find(params[:id])
+      @lead.update!(
+        hidden_from_absent: false,
+        no_whatsapp: false,
+        no_interest: false
+      )
+      
+      respond_to do |format|
+        format.turbo_stream do
+          # Se vier da página show, redirecionar de volta para show
+          if request.referer&.include?("/leads/#{@lead.id}")
+            redirect_to lead_path(@lead), notice: "Lead restaurado na listagem com sucesso"
+          else
+            # Se vier da listagem, recarregar a página de ausentes
+            redirect_to absent_leads_path
+          end
+        end
+        format.html do
+          redirect_to lead_path(@lead), notice: "Lead restaurado na listagem com sucesso"
         end
         format.json { render json: { success: true, message: "Lead restaurado na listagem com sucesso" } }
       end
@@ -295,11 +358,23 @@ module ClinicManagement
       case params[:hidden_status]
       when "hidden"
         scope.where(hidden_from_absent: true)
+      when "no_whatsapp"
+        scope.where(no_whatsapp: true)
+      when "no_interest"
+        scope.where(no_interest: true)
       when "visible"
-        scope.where(hidden_from_absent: [false, nil])
+        scope.where(
+          hidden_from_absent: [false, nil],
+          no_whatsapp: [false, nil],
+          no_interest: [false, nil]
+        )
       else
-        # Default: sempre excluir leads ocultados da listagem principal
-        scope.where(hidden_from_absent: [false, nil])
+        # Default: sempre excluir leads com qualquer status especial da listagem principal
+        scope.where(
+          hidden_from_absent: [false, nil],
+          no_whatsapp: [false, nil],
+          no_interest: [false, nil]
+        )
       end
     end
 
