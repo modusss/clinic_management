@@ -10,20 +10,6 @@
             <p class="text-xs text-gray-600 mb-2 text-right">Lançar ficha para a lista de:</p>
             <div class="flex flex-wrap gap-2 justify-end">
             
-            <%= button_to clinic_management.mark_no_whatsapp_lead_path(lead), 
-                method: :patch,
-                remote: true,
-                data: { 
-                  turbo_method: :patch,
-                  turbo_stream: true,
-                  confirm: "Marcar este lead como 'Sem WhatsApp'?"
-                },
-                class: "bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white text-xs px-2 py-1 rounded shadow-sm flex items-center gap-1 transition-all duration-200 transform hover:scale-105 active:scale-95",
-                title: "Sem WhatsApp" do %>
-              <i class="fab fa-whatsapp"></i> 
-              <span>Sem WhatsApp</span>
-            <% end %>
-
             <%= button_to clinic_management.hide_from_absent_lead_path(lead), 
                 method: :patch,
                 remote: true,

@@ -263,6 +263,22 @@ module ClinicManagement
       end
     end
 
+    def toggle_whatsapp_status
+      @lead = ClinicManagement::Lead.find(params[:id])
+      Rails.logger.info "Before toggle: no_whatsapp = #{@lead.no_whatsapp}"
+      @lead.toggle_whatsapp_status!
+      Rails.logger.info "After toggle: no_whatsapp = #{@lead.no_whatsapp}"
+      
+      respond_to do |format|
+        format.json { render json: { success: true, no_whatsapp: @lead.no_whatsapp } }
+      end
+    rescue => e
+      Rails.logger.error "Error toggling WhatsApp status: #{e.message}"
+      respond_to do |format|
+        format.json { render json: { success: false, error: e.message } }
+      end
+    end
+
     def restore_lead
       @lead = ClinicManagement::Lead.find(params[:id])
       @lead.update!(
@@ -297,7 +313,8 @@ module ClinicManagement
 
       # 2) Aplicar filtros sequenciais encapsulados
       @all_leads = filter_leads_with_phone(@all_leads)
-      @all_leads = filter_by_hidden_status(@all_leads)  # Novo filtro de ocultação
+      @all_leads = filter_by_whatsapp_status(@all_leads)  # Novo filtro de WhatsApp
+      @all_leads = filter_by_hidden_status(@all_leads)  # Filtro de ocultação/interesse
       @all_leads = filter_by_patient_type(@all_leads)
       @all_leads = filter_by_date(@all_leads)
       @all_leads = filter_by_contact_status(@all_leads)
@@ -353,26 +370,35 @@ module ClinicManagement
       scope.where.not(phone: [nil, ''])
     end
 
-    # Filtra por status de ocultação
+    # Filtra por status de WhatsApp
+    def filter_by_whatsapp_status(scope)
+      case params[:whatsapp_status]
+      when "has_whatsapp"
+        scope.where(no_whatsapp: [false, nil])  # nil defaults to has whatsapp
+      when "no_whatsapp"
+        scope.where(no_whatsapp: true)
+      else
+        # Default: mostrar todos independente do status WhatsApp
+        scope
+      end
+    end
+
+    # Filtra por status de interesse/visibilidade
     def filter_by_hidden_status(scope)
       case params[:hidden_status]
       when "hidden"
         scope.where(hidden_from_absent: true)
-      when "no_whatsapp"
-        scope.where(no_whatsapp: true)
       when "no_interest"
         scope.where(no_interest: true)
       when "visible"
         scope.where(
           hidden_from_absent: [false, nil],
-          no_whatsapp: [false, nil],
           no_interest: [false, nil]
         )
       else
-        # Default: sempre excluir leads com qualquer status especial da listagem principal
+        # Default: sempre excluir leads com status especial da listagem principal
         scope.where(
           hidden_from_absent: [false, nil],
-          no_whatsapp: [false, nil],
           no_interest: [false, nil]
         )
       end

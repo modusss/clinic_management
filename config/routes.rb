@@ -72,6 +72,7 @@ ClinicManagement::Engine.routes.draw do
       patch :mark_no_whatsapp
       patch :mark_no_interest
       patch :restore_lead
+      patch :toggle_whatsapp_status
     end
     collection do
       get 'absent'

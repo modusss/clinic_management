@@ -32,6 +32,15 @@ module ClinicManagement
       lead_interactions.where(user: user).count
     end
 
+    # Métodos para WhatsApp status
+    def has_whatsapp?
+      !no_whatsapp
+    end
+
+    def toggle_whatsapp_status!
+      update!(no_whatsapp: !no_whatsapp)
+    end
+
     private
 
     def self.search_by_name_or_phone(query)

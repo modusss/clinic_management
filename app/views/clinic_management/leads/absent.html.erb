@@ -1,7 +1,7 @@
 <%# render_menu(@menu) %>
 <%# Toggle for table/cards view. Stores preference in a cookie. %>
 <%= render partial: "clinic_management/shared/toggle_cards_table", locals: { 
-      path: ->(args = {}) { absent_leads_path(params.permit(:year, :month, :patient_type, :contact_status, :sort_order, :tab).merge(args)) }, 
+      path: ->(args = {}) { absent_leads_path(params.permit(:year, :month, :patient_type, :contact_status, :whatsapp_status, :hidden_status, :sort_order, :tab).merge(args)) }, 
       cookie_name: "preferred_absent_view", 
       view_type: @view_type 
     } %>
@@ -167,10 +167,27 @@
         <label for="contact_status_contacted_by_me" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:contact_status] == 'contacted_by_me' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Contatados por mim</label>
       </div>
     </div>
+    <!-- Filtro de WhatsApp -->
+    <div>
+      <%= f.label :whatsapp_status, class: "block font-semibold mb-2 flex items-center" do %>
+        <i class="fab fa-whatsapp mr-2 text-green-600"></i> Status WhatsApp:
+      <% end %>
+      <div class="flex flex-wrap gap-2">
+        <%= f.radio_button :whatsapp_status, "all", checked: (params[:whatsapp_status] == "all" || params[:whatsapp_status].blank?), class: "sr-only", id: "whatsapp_status_all" %>
+        <label for="whatsapp_status_all" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:whatsapp_status] == 'all' || params[:whatsapp_status].blank? ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Todos</label>
+        
+        <%= f.radio_button :whatsapp_status, "has_whatsapp", checked: (params[:whatsapp_status] == "has_whatsapp"), class: "sr-only", id: "whatsapp_status_has_whatsapp" %>
+        <label for="whatsapp_status_has_whatsapp" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:whatsapp_status] == 'has_whatsapp' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Tem WhatsApp</label>
+        
+        <%= f.radio_button :whatsapp_status, "no_whatsapp", checked: (params[:whatsapp_status] == "no_whatsapp"), class: "sr-only", id: "whatsapp_status_no_whatsapp" %>
+        <label for="whatsapp_status_no_whatsapp" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:whatsapp_status] == 'no_whatsapp' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Sem WhatsApp</label>
+      </div>
+    </div>
+    
     <!-- Filtro de Visibilidade -->
     <div>
       <%= f.label :hidden_status, class: "block font-semibold mb-2 flex items-center" do %>
-        <i class="fas fa-eye mr-2 text-purple-600"></i> Visibilidade:
+        <i class="fas fa-eye mr-2 text-purple-600"></i> Status de Interesse:
       <% end %>
       <div class="flex flex-wrap gap-2">
         <%= f.radio_button :hidden_status, "visible", checked: (params[:hidden_status] == "visible" || params[:hidden_status].blank?), class: "sr-only", id: "hidden_status_visible" %>
@@ -178,9 +195,6 @@
         
         <%= f.radio_button :hidden_status, "hidden", checked: (params[:hidden_status] == "hidden"), class: "sr-only", id: "hidden_status_hidden" %>
         <label for="hidden_status_hidden" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:hidden_status] == 'hidden' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Contato futuro</label>
-        
-        <%= f.radio_button :hidden_status, "no_whatsapp", checked: (params[:hidden_status] == "no_whatsapp"), class: "sr-only", id: "hidden_status_no_whatsapp" %>
-        <label for="hidden_status_no_whatsapp" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:hidden_status] == 'no_whatsapp' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Sem WhatsApp</label>
         
         <%= f.radio_button :hidden_status, "no_interest", checked: (params[:hidden_status] == "no_interest"), class: "sr-only", id: "hidden_status_no_interest" %>
         <label for="hidden_status_no_interest" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:hidden_status] == 'no_interest' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Sem interesse</label>

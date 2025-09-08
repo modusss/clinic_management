@@ -4,27 +4,43 @@
 <div id="phone-container-<%= lead.id %>" 
      data-controller="message-tracking"
      data-message-tracking-lead-id-value="<%= lead.id %>"
-     data-message-tracking-appointment-id-value="<%= appointment.id %>">
+     data-message-tracking-appointment-id-value="<%= appointment.id %>"
+     data-message-tracking-no-whatsapp-value="<%= lead.no_whatsapp || false %>">
   <div class="flex items-center">
     <% if lead.phone.present? %>
-    <%= link_to add_phone_mask(lead.phone), 
-                whatsapp_link(lead.phone, ""), 
-                target: '_blank',
-                data: { 
-                  action: "click->message-tracking#recordMessageSent"
-                },
-                class: "whatsapp-link" %>
-    
-      <a style="margin-left: 10px; display: inline-flex; align-items: center; color: #4B5563; text-decoration: none;" 
-         href="tel:<%= current_user&.phone_prefix.present? ? current_user.phone_prefix : '' %><%= lead.phone %>" 
-         title="Ligar para <%= current_user&.phone_prefix.present? ? current_user.phone_prefix : '' %><%= lead.phone %>"
-         data-action="click->message-tracking#recordMessageSent">
-                 <i class="fas fa-phone" style="margin-right: 4px;"></i>
-        <span style="font-size: 15px;">Ligar</span>
-        <% if current_user&.phone_prefix.present? %>
-          <span style="font-size: 10px; color: #9CA3AF; margin-left: 4px;" title="Prefixo configurado: <%= current_user.phone_prefix %>">(<%= current_user.phone_prefix %>)</span>
-        <% end %>
-      </a>
+      <div class="flex items-center gap-2">
+        <%= link_to add_phone_mask(lead.phone), 
+                    whatsapp_link(lead.phone, ""), 
+                    target: '_blank',
+                    data: { 
+                      action: "click->message-tracking#recordMessageSent"
+                    },
+                    class: "whatsapp-link #{'opacity-50' unless lead.has_whatsapp?}" %>
+        
+        <a style="display: inline-flex; align-items: center; color: #4B5563; text-decoration: none;" 
+           href="tel:<%= current_user&.phone_prefix.present? ? current_user.phone_prefix : '' %><%= lead.phone %>" 
+           title="Ligar para <%= current_user&.phone_prefix.present? ? current_user.phone_prefix : '' %><%= lead.phone %>"
+           data-action="click->message-tracking#recordMessageSent">
+          <i class="fas fa-phone" style="margin-right: 4px;"></i>
+          <span style="font-size: 15px;">Ligar</span>
+          <% if current_user&.phone_prefix.present? %>
+            <span style="font-size: 10px; color: #9CA3AF; margin-left: 4px;" title="Prefixo configurado: <%= current_user.phone_prefix %>">(<%= current_user.phone_prefix %>)</span>
+          <% end %>
+        </a>
+        
+        <!-- WhatsApp Status Toggle -->
+        <div class="flex items-center ml-2">
+          <span class="text-xs text-gray-600 mr-1">WhatsApp:</span>
+          <button type="button"
+                  data-action="click->message-tracking#toggleWhatsappStatus"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 <%= lead.has_whatsapp? ? 'bg-green-600' : 'bg-gray-200' %>"
+                  title="<%= lead.has_whatsapp? ? 'Clique para marcar como sem WhatsApp' : 'Clique para marcar como tem WhatsApp' %>">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out <%= lead.has_whatsapp? ? 'translate-x-6' : 'translate-x-1' %>">
+              <i class="fab fa-whatsapp text-xs <%= lead.has_whatsapp? ? 'text-green-600' : 'text-gray-400' %>" style="font-size: 13px; margin-left: 1px; margin-top: 1px; position: absolute; right: 2px; bottom: 0px"></i>
+            </span>
+          </button>
+        </div>
+      </div>
     <% end %>
   </div>
   
