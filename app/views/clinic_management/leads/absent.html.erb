@@ -95,7 +95,7 @@
   </div>
   <br>
 <!-- Formulário de seleção de ano/mês -->
-<div class="my-4 p-4 bg-gray-100 rounded">
+<div class="my-4 p-4 bg-gray-100 rounded" data-controller="radio-button">
   <%= form_with url: absent_leads_path, method: :get,
                 local: true,
                 class: "flex flex-col sm:flex-row gap-4 flex-wrap" do |f| %>
@@ -126,77 +126,85 @@
       %>
     </div>
     
-    <!-- Novo Filtro de Tipo de Paciente -->
+    <!-- Filtro de Tipo de Paciente -->
     <div>
-      <%= f.label :patient_type, "Tipo de Paciente:", class: "block font-semibold mb-1" %>
-      <%= f.select :patient_type, 
-          options_for_select(
-            [
-              ["Todos", "all"],
-              ["Ausente no último atendimento", "absent"],
-              ["Compareceu há mais de um ano", "attended_year_ago"],
-              ["Compareceu há mais de um ano - Já é cliente", "attended_year_ago_customer"],
-              ["Compareceu há mais de um ano - Não é cliente", "attended_year_ago_non_customer"]
-            ], 
-            params[:patient_type]
-          ), 
-          { include_blank: false },
-          class: "border rounded p-2"
-      %>
+      <%= f.label :patient_type, class: "block font-semibold mb-2 flex items-center" do %>
+        <i class="fas fa-user-injured mr-2 text-blue-600"></i> Tipo de Paciente:
+      <% end %>
+      <div class="flex flex-wrap gap-2">
+        <%= f.radio_button :patient_type, "all", checked: (params[:patient_type] == "all" || params[:patient_type].blank?), class: "sr-only", id: "patient_type_all" %>
+        <label for="patient_type_all" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:patient_type] == 'all' || params[:patient_type].blank? ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Todos</label>
+        
+        <%= f.radio_button :patient_type, "absent", checked: (params[:patient_type] == "absent"), class: "sr-only", id: "patient_type_absent" %>
+        <label for="patient_type_absent" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:patient_type] == 'absent' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Ausente último atendimento</label>
+        
+        <%= f.radio_button :patient_type, "attended_year_ago", checked: (params[:patient_type] == "attended_year_ago"), class: "sr-only", id: "patient_type_attended_year_ago" %>
+        <label for="patient_type_attended_year_ago" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:patient_type] == 'attended_year_ago' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Compareceu +1 ano</label>
+        
+        <%= f.radio_button :patient_type, "attended_year_ago_customer", checked: (params[:patient_type] == "attended_year_ago_customer"), class: "sr-only", id: "patient_type_attended_year_ago_customer" %>
+        <label for="patient_type_attended_year_ago_customer" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:patient_type] == 'attended_year_ago_customer' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Já é cliente +1 ano</label>
+        
+        <%= f.radio_button :patient_type, "attended_year_ago_non_customer", checked: (params[:patient_type] == "attended_year_ago_non_customer"), class: "sr-only", id: "patient_type_attended_year_ago_non_customer" %>
+        <label for="patient_type_attended_year_ago_non_customer" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:patient_type] == 'attended_year_ago_non_customer' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Não cliente +1 ano</label>
+      </div>
     </div>
-    
     <!-- Filtro de Contato -->
     <div>
-      <%= f.label :contact_status, "Status de Contato:", class: "block font-semibold mb-1" %>
-      <%= f.select :contact_status, 
-          options_for_select(
-            [
-              ["Todos", "all"],
-              ["Não contatados", "not_contacted"],
-              ["Contatados", "contacted"],
-              ["Contatados por mim", "contacted_by_me"]
-            ], 
-            params[:contact_status]
-          ), 
-          { include_blank: false },
-          class: "border rounded p-2"
-      %>
+      <%= f.label :contact_status, class: "block font-semibold mb-2 flex items-center" do %>
+        <i class="fas fa-phone mr-2 text-green-600"></i> Status de Contato:
+      <% end %>
+      <div class="flex flex-wrap gap-2">
+        <%= f.radio_button :contact_status, "all", checked: (params[:contact_status] == "all" || params[:contact_status].blank?), class: "sr-only", id: "contact_status_all" %>
+        <label for="contact_status_all" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:contact_status] == 'all' || params[:contact_status].blank? ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Todos</label>
+        
+        <%= f.radio_button :contact_status, "not_contacted", checked: (params[:contact_status] == "not_contacted"), class: "sr-only", id: "contact_status_not_contacted" %>
+        <label for="contact_status_not_contacted" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:contact_status] == 'not_contacted' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Não contatados</label>
+        
+        <%= f.radio_button :contact_status, "contacted", checked: (params[:contact_status] == "contacted"), class: "sr-only", id: "contact_status_contacted" %>
+        <label for="contact_status_contacted" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:contact_status] == 'contacted' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Contatados</label>
+        
+        <%= f.radio_button :contact_status, "contacted_by_me", checked: (params[:contact_status] == "contacted_by_me"), class: "sr-only", id: "contact_status_contacted_by_me" %>
+        <label for="contact_status_contacted_by_me" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:contact_status] == 'contacted_by_me' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Contatados por mim</label>
+      </div>
     </div>
-    
     <!-- Filtro de Visibilidade -->
     <div>
-      <%= f.label :hidden_status, "Visibilidade:", class: "block font-semibold mb-1" %>
-      <%= f.select :hidden_status, 
-          options_for_select(
-            [
-              ["Visíveis na lista", "visible"],
-              ["Ocultados da lista", "hidden"],
-              ["Sem WhatsApp", "no_whatsapp"],
-              ["Sem interesse", "no_interest"]
-            ], 
-            params[:hidden_status] || 'visible'
-          ), 
-          { include_blank: false },
-          class: "border rounded p-2"
-      %>
+      <%= f.label :hidden_status, class: "block font-semibold mb-2 flex items-center" do %>
+        <i class="fas fa-eye mr-2 text-purple-600"></i> Visibilidade:
+      <% end %>
+      <div class="flex flex-wrap gap-2">
+        <%= f.radio_button :hidden_status, "visible", checked: (params[:hidden_status] == "visible" || params[:hidden_status].blank?), class: "sr-only", id: "hidden_status_visible" %>
+        <label for="hidden_status_visible" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:hidden_status] == 'visible' || params[:hidden_status].blank? ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Visíveis na lista</label>
+        
+        <%= f.radio_button :hidden_status, "hidden", checked: (params[:hidden_status] == "hidden"), class: "sr-only", id: "hidden_status_hidden" %>
+        <label for="hidden_status_hidden" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:hidden_status] == 'hidden' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Ocultados</label>
+        
+        <%= f.radio_button :hidden_status, "no_whatsapp", checked: (params[:hidden_status] == "no_whatsapp"), class: "sr-only", id: "hidden_status_no_whatsapp" %>
+        <label for="hidden_status_no_whatsapp" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:hidden_status] == 'no_whatsapp' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Sem WhatsApp</label>
+        
+        <%= f.radio_button :hidden_status, "no_interest", checked: (params[:hidden_status] == "no_interest"), class: "sr-only", id: "hidden_status_no_interest" %>
+        <label for="hidden_status_no_interest" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:hidden_status] == 'no_interest' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Sem interesse</label>
+      </div>
     </div>
     
     <!-- Ordenação -->
     <div>
-      <%= f.label :sort_order, "Ordenar por:", class: "block font-semibold mb-1" %>
-      <%= f.select :sort_order, 
-          options_for_select(
-            [
-              ["Último atendimento mais recente", "appointment_newest_first"],
-              ["Último atendimento mais antigo", "appointment_oldest_first"],
-              ["Contatado mais recente", "contact_newest_first"],
-              ["Contatado há mais tempo", "contact_oldest_first"]
-            ], 
-            params[:sort_order] || 'appointment_newest_first' # Set default selection
-          ), 
-          { include_blank: false },
-          class: "border rounded p-2"
-      %>
+      <%= f.label :sort_order, class: "block font-semibold mb-2 flex items-center" do %>
+        <i class="fas fa-sort mr-2 text-orange-600"></i> Ordenar por:
+      <% end %>
+      <div class="flex flex-wrap gap-2">
+        <%= f.radio_button :sort_order, "appointment_newest_first", checked: (params[:sort_order] == "appointment_newest_first" || params[:sort_order].blank?), class: "sr-only", id: "sort_order_appointment_newest_first" %>
+        <label for="sort_order_appointment_newest_first" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:sort_order] == 'appointment_newest_first' || params[:sort_order].blank? ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Último atendimento mais recente</label>
+        
+        <%= f.radio_button :sort_order, "appointment_oldest_first", checked: (params[:sort_order] == "appointment_oldest_first"), class: "sr-only", id: "sort_order_appointment_oldest_first" %>
+        <label for="sort_order_appointment_oldest_first" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:sort_order] == 'appointment_oldest_first' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Último atendimento mais antigo</label>
+        
+        <%= f.radio_button :sort_order, "contact_newest_first", checked: (params[:sort_order] == "contact_newest_first"), class: "sr-only", id: "sort_order_contact_newest_first" %>
+        <label for="sort_order_contact_newest_first" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:sort_order] == 'contact_newest_first' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Contatado mais recente</label>
+        
+        <%= f.radio_button :sort_order, "contact_oldest_first", checked: (params[:sort_order] == "contact_oldest_first"), class: "sr-only", id: "sort_order_contact_oldest_first" %>
+        <label for="sort_order_contact_oldest_first" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:sort_order] == 'contact_oldest_first' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Contatado há mais tempo</label>
+      </div>
     </div>
 
     <!-- Botão de busca -->
@@ -233,6 +241,18 @@
 <% end %>
 
 <style>
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .pagination {
   display: flex;
   justify-content: center;
@@ -293,3 +313,4 @@
 }
 
 </style>
+
