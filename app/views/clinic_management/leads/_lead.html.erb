@@ -19,27 +19,7 @@
           Telefone
         </dt>
         <dd class="mt-1 text-gray-900 sm:mt-0 sm:col-span-2 text-[18px]">
-          <div id="phone-container-<%= lead.id %>" 
-               data-controller="message-tracking"
-               data-message-tracking-lead-id-value="<%= lead.id %>"
-               data-message-tracking-appointment-id-value="<%= @old_appointment&.id %>">
-            <div class="flex items-center">
-              <% if lead.phone.present? %>
-                <%= masked_whatsapp_link(lead.phone) %>
-              <% else %>
-                <span class="text-red-500 text-sm italic">
-                  Telefone não cadastrado
-                </span>
-              <% end %>
-            </div>
-            
-            <% if @old_appointment&.last_message_sent_at.present? %>
-              <div class="text-xs text-gray-500 mt-1">
-                Última mensagem: <%= time_ago_in_words(@old_appointment.last_message_sent_at) %> atrás 
-                por <%= @old_appointment.last_message_sent_by %>
-              </div>
-            <% end %>
-          </div>
+          <%= render 'phone_with_message_tracking', lead: lead, appointment: @old_appointment %>
         </dd>
       </div>
       
@@ -49,17 +29,12 @@
           Status do Lead
         </dt>
         <dd class="mt-1 sm:mt-0 sm:col-span-2">
-          <% if lead.hidden_from_absent || lead.no_whatsapp || lead.no_interest %>
+          <% if lead.hidden_from_absent || lead.no_interest %>
             <!-- Mostrar status atual e botão restaurar -->
             <div class="flex flex-wrap items-center gap-3 mb-3">
               <% if lead.hidden_from_absent %>
                 <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
                   <i class="fas fa-eye-slash mr-1"></i> Contato futuro
-                </span>
-              <% end %>
-              <% if lead.no_whatsapp %>
-                <span class="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
-                  <i class="fab fa-whatsapp mr-1"></i> Sem WhatsApp
                 </span>
               <% end %>
               <% if lead.no_interest %>
