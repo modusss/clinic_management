@@ -174,10 +174,10 @@
       <% end %>
       <div class="flex flex-wrap gap-2">
         <%= f.radio_button :hidden_status, "visible", checked: (params[:hidden_status] == "visible" || params[:hidden_status].blank?), class: "sr-only", id: "hidden_status_visible" %>
-        <label for="hidden_status_visible" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:hidden_status] == 'visible' || params[:hidden_status].blank? ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Visíveis na lista</label>
+        <label for="hidden_status_visible" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:hidden_status] == 'visible' || params[:hidden_status].blank? ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Disponível</label>
         
         <%= f.radio_button :hidden_status, "hidden", checked: (params[:hidden_status] == "hidden"), class: "sr-only", id: "hidden_status_hidden" %>
-        <label for="hidden_status_hidden" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:hidden_status] == 'hidden' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Ocultados</label>
+        <label for="hidden_status_hidden" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:hidden_status] == 'hidden' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Contato futuro</label>
         
         <%= f.radio_button :hidden_status, "no_whatsapp", checked: (params[:hidden_status] == "no_whatsapp"), class: "sr-only", id: "hidden_status_no_whatsapp" %>
         <label for="hidden_status_no_whatsapp" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:hidden_status] == 'no_whatsapp' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Sem WhatsApp</label>
