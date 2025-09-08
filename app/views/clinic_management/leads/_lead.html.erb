@@ -82,7 +82,7 @@
           <% else %>
             <!-- Botões para marcar status -->
             <div class="text-sm text-gray-600 mb-3">
-              Lead ativo na listagem principal
+              Lançar ficha para a lista de:
             </div>
             <div class="flex flex-wrap gap-2">
               <%= button_to clinic_management.hide_from_absent_lead_path(lead), 
@@ -93,7 +93,7 @@
                   },
                   class: "bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-sm px-3 py-2 rounded-lg shadow-md flex items-center gap-2 transition-all duration-200 transform hover:scale-105",
                   title: "Ocultar da lista" do %>
-                <i class="fas fa-eye-slash"></i> Ocultar
+                <i class="fas fa-eye-slash"></i> Ocultados
               <% end %>
               
               <%= button_to clinic_management.mark_no_whatsapp_lead_path(lead), 
