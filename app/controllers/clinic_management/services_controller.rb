@@ -10,6 +10,7 @@ module ClinicManagement
     # GET /services
     def index
       @referrals = Referral.all
+      @view_type = params[:view_type] || 'daily'
       @services = ClinicManagement::Service.includes(:appointments).order(date: :desc)
       
       # Filtrar serviços para auxiliares de clínica
@@ -17,8 +18,15 @@ module ClinicManagement
         @services = @services.where("date >= ?", Date.current)
       end
       
-      @services = @services.page(params[:page]).per(20)
-      @rows = process_services_data(@services)
+      case @view_type
+      when 'weekly'
+        @rows = process_weekly_data(@services)
+      when 'monthly'
+        @rows = process_monthly_data(@services)
+      else # daily
+        @services = @services.page(params[:page]).per(20)
+        @rows = process_services_data(@services)
+      end
     end
 
     def index_by_referral
@@ -363,6 +371,68 @@ module ClinicManagement
   
     def percentage(count, total)
       (count.to_f / total * 100).round(2)
+    end
+
+    def process_weekly_data(services)
+      # Group services by week
+      weekly_groups = services.group_by { |service| service.date.beginning_of_week }
+      
+      weekly_groups.map do |week_start, week_services|
+        week_end = week_start.end_of_week
+        total_appointments = 0
+        total_scheduled = 0
+        total_rescheduled = 0
+        total_canceled = 0
+        
+        week_services.each do |service|
+          appointments, scheduled, rescheduled, canceled = appointment_counts(service)
+          total_appointments += appointments
+          total_scheduled += scheduled
+          total_rescheduled += rescheduled
+          total_canceled += canceled
+        end
+        
+        [
+          { header: "Período", content: "#{week_start.strftime('%d/%m/%Y')} - #{week_end.strftime('%d/%m/%Y')}" },
+          { header: "Serviços", content: week_services.count },
+          { header: "Total de Pacientes", content: total_appointments },
+          { header: "Compareceram", content: total_scheduled, class: "text-blue-700" },
+          { header: "Remarcados", content: total_rescheduled, class: "text-green-700" },
+          { header: "Cancelados", content: total_canceled, class: "text-red-600" },
+          { header: "Taxa de Comparecimento", content: total_appointments > 0 ? "#{percentage(total_scheduled, total_appointments)}%" : "0%", class: "text-blue-700" }
+        ]
+      end
+    end
+
+    def process_monthly_data(services)
+      # Group services by month
+      monthly_groups = services.group_by { |service| service.date.beginning_of_month }
+      
+      monthly_groups.map do |month_start, month_services|
+        month_end = month_start.end_of_month
+        total_appointments = 0
+        total_scheduled = 0
+        total_rescheduled = 0
+        total_canceled = 0
+        
+        month_services.each do |service|
+          appointments, scheduled, rescheduled, canceled = appointment_counts(service)
+          total_appointments += appointments
+          total_scheduled += scheduled
+          total_rescheduled += rescheduled
+          total_canceled += canceled
+        end
+        
+        [
+          { header: "Mês", content: I18n.l(month_start, format: "%B de %Y").capitalize },
+          { header: "Serviços", content: month_services.count },
+          { header: "Total de Pacientes", content: total_appointments },
+          { header: "Compareceram", content: total_scheduled, class: "text-blue-700" },
+          { header: "Remarcados", content: total_rescheduled, class: "text-green-700" },
+          { header: "Cancelados", content: total_canceled, class: "text-red-600" },
+          { header: "Taxa de Comparecimento", content: total_appointments > 0 ? "#{percentage(total_scheduled, total_appointments)}%" : "0%", class: "text-blue-700" }
+        ]
+      end
     end
 
     def set_cancel_button(ap)

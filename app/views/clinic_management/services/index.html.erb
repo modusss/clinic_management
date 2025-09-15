@@ -13,11 +13,41 @@
     </header>
     <% end %>
 
+    <!-- Filter Section -->
+    <div class="mb-6 p-4 bg-gray-50 rounded-lg border">
+      <div class="flex items-center space-x-4">
+        <label for="view_type" class="text-sm font-medium text-gray-700">Visualização:</label>
+        <%= form_with url: services_path, method: :get, local: true, class: "flex items-center space-x-2" do |form| %>
+          <%= form.select :view_type, 
+                options_for_select([
+                  ['Diária (padrão)', 'daily'],
+                  ['Semanal', 'weekly'],
+                  ['Mensal', 'monthly']
+                ], @view_type), 
+                {}, 
+                { 
+                  class: "px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                  onchange: "this.form.submit();"
+                } %>
+        <% end %>
+        <div class="text-sm text-gray-600">
+          <% case @view_type %>
+          <% when 'weekly' %>
+            Dados agrupados por semana
+          <% when 'monthly' %>
+            Dados agrupados por mês
+          <% else %>
+            Dados detalhados por dia
+          <% end %>
+        </div>
+      </div>
+    </div>
+
     <div class="overflow-hidden border-gray-200 sm:rounded-lg">
       <%= data_table(@rows) %>
     </div>
     <br>
-    <% if @services.present? %>
+    <% if @view_type == 'daily' && @services.present? %>
       <%= paginate @services %>
     <% end %>
   </section>
