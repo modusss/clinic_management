@@ -47,6 +47,19 @@
       <%= data_table(@rows) %>
     </div>
     <br>
+    
+    <!-- Chart Section for Weekly/Monthly Views -->
+    <% if @view_type != 'daily' && @chart_data.present? %>
+      <div class="mt-8 p-6 bg-white rounded-lg shadow-lg border">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+          Gráfico de <%= @view_type == 'weekly' ? 'Dados Semanais' : 'Dados Mensais' %>
+        </h3>
+        <div class="relative" style="height: 400px;">
+          <canvas id="servicesChart"></canvas>
+        </div>
+      </div>
+    <% end %>
+    
     <% if @view_type == 'daily' && @services.present? %>
       <%= paginate @services %>
     <% end %>
@@ -114,6 +127,7 @@
 </style>
 
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
   .service-past {
@@ -139,3 +153,67 @@
   }
 }
 </style>
+
+<% if @view_type != 'daily' && @chart_data.present? %>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('servicesChart').getContext('2d');
+    
+    const chartData = <%= raw @chart_data.to_json %>;
+    
+    new Chart(ctx, {
+      type: 'bar',
+      data: chartData,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: '<%= @view_type == "weekly" ? "Estatísticas Semanais" : "Estatísticas Mensais" %>',
+            font: {
+              size: 16,
+              weight: 'bold'
+            }
+          },
+          legend: {
+            display: true,
+            position: 'top'
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': ' + context.parsed.y + ' pacientes';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            display: true,
+            title: {
+              display: true,
+              text: '<%= @view_type == "weekly" ? "Semanas" : "Meses" %>'
+            }
+          },
+          y: {
+            display: true,
+            title: {
+              display: true,
+              text: 'Número de Pacientes'
+            },
+            beginAtZero: true
+          }
+        },
+        interaction: {
+          mode: 'nearest',
+          axis: 'x',
+          intersect: false
+        }
+      }
+    });
+  });
+</script>
+<% end %>

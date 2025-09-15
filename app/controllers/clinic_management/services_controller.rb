@@ -21,8 +21,10 @@ module ClinicManagement
       case @view_type
       when 'weekly'
         @rows = process_weekly_data(@services)
+        @chart_data = generate_weekly_chart_data(@services)
       when 'monthly'
         @rows = process_monthly_data(@services)
+        @chart_data = generate_monthly_chart_data(@services)
       else # daily
         @services = @services.page(params[:page]).per(20)
         @rows = process_services_data(@services)
@@ -433,6 +435,139 @@ module ClinicManagement
           { header: "Taxa de Comparecimento", content: total_appointments > 0 ? "#{percentage(total_scheduled, total_appointments)}%" : "0%", class: "text-blue-700" }
         ]
       end
+    end
+
+    def generate_weekly_chart_data(services)
+      weekly_groups = services.group_by { |service| service.date.beginning_of_week }
+      
+      labels = []
+      appointments_data = []
+      scheduled_data = []
+      rescheduled_data = []
+      canceled_data = []
+      
+      weekly_groups.each do |week_start, week_services|
+        week_end = week_start.end_of_week
+        labels << "#{week_start.strftime('%d/%m')} - #{week_end.strftime('%d/%m')}"
+        
+        total_appointments = 0
+        total_scheduled = 0
+        total_rescheduled = 0
+        total_canceled = 0
+        
+        week_services.each do |service|
+          appointments, scheduled, rescheduled, canceled = appointment_counts(service)
+          total_appointments += appointments
+          total_scheduled += scheduled
+          total_rescheduled += rescheduled
+          total_canceled += canceled
+        end
+        
+        appointments_data << total_appointments
+        scheduled_data << total_scheduled
+        rescheduled_data << total_rescheduled
+        canceled_data << total_canceled
+      end
+      
+      {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Total de Pacientes',
+            data: appointments_data,
+            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+            borderColor: 'rgb(59, 130, 246)',
+            borderWidth: 2
+          },
+          {
+            label: 'Compareceram',
+            data: scheduled_data,
+            backgroundColor: 'rgba(34, 197, 94, 0.5)',
+            borderColor: 'rgb(34, 197, 94)',
+            borderWidth: 2
+          },
+          {
+            label: 'Remarcados',
+            data: rescheduled_data,
+            backgroundColor: 'rgba(251, 191, 36, 0.5)',
+            borderColor: 'rgb(251, 191, 36)',
+            borderWidth: 2
+          },
+          {
+            label: 'Cancelados',
+            data: canceled_data,
+            backgroundColor: 'rgba(239, 68, 68, 0.5)',
+            borderColor: 'rgb(239, 68, 68)',
+            borderWidth: 2
+          }
+        ]
+      }
+    end
+
+    def generate_monthly_chart_data(services)
+      monthly_groups = services.group_by { |service| service.date.beginning_of_month }
+      
+      labels = []
+      appointments_data = []
+      scheduled_data = []
+      rescheduled_data = []
+      canceled_data = []
+      
+      monthly_groups.each do |month_start, month_services|
+        labels << I18n.l(month_start, format: "%B %Y").capitalize
+        
+        total_appointments = 0
+        total_scheduled = 0
+        total_rescheduled = 0
+        total_canceled = 0
+        
+        month_services.each do |service|
+          appointments, scheduled, rescheduled, canceled = appointment_counts(service)
+          total_appointments += appointments
+          total_scheduled += scheduled
+          total_rescheduled += rescheduled
+          total_canceled += canceled
+        end
+        
+        appointments_data << total_appointments
+        scheduled_data << total_scheduled
+        rescheduled_data << total_rescheduled
+        canceled_data << total_canceled
+      end
+      
+      {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Total de Pacientes',
+            data: appointments_data,
+            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+            borderColor: 'rgb(59, 130, 246)',
+            borderWidth: 2
+          },
+          {
+            label: 'Compareceram',
+            data: scheduled_data,
+            backgroundColor: 'rgba(34, 197, 94, 0.5)',
+            borderColor: 'rgb(34, 197, 94)',
+            borderWidth: 2
+          },
+          {
+            label: 'Remarcados',
+            data: rescheduled_data,
+            backgroundColor: 'rgba(251, 191, 36, 0.5)',
+            borderColor: 'rgb(251, 191, 36)',
+            borderWidth: 2
+          },
+          {
+            label: 'Cancelados',
+            data: canceled_data,
+            backgroundColor: 'rgba(239, 68, 68, 0.5)',
+            borderColor: 'rgb(239, 68, 68)',
+            borderWidth: 2
+          }
+        ]
+      }
     end
 
     def set_cancel_button(ap)
