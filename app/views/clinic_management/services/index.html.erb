@@ -19,7 +19,7 @@
     <div class="mb-6 p-4 bg-gray-50 rounded-lg border">
       <div class="flex items-center space-x-4">
         <label for="view_type" class="text-sm font-medium text-gray-700">Visualização:</label>
-        <%= form_with url: services_path, method: :get, local: true, class: "flex items-center space-x-2" do |form| %>
+        <%= form_with url: services_path, method: :get, local: true, class: "flex items-center space-x-2", id: "view-type-form" do |form| %>
           <%= form.select :view_type, 
                 options_for_select([
                   ['Diária (padrão)', 'daily'],
@@ -29,7 +29,8 @@
                 {}, 
                 { 
                   class: "px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                  onchange: "this.form.submit();"
+                  onchange: "showLoadingAndSubmit(this);",
+                  id: "view_type_select"
                 } %>
         <% end %>
         <div class="text-sm text-gray-600">
@@ -45,6 +46,20 @@
       </div>
     </div>
     <% end %>
+
+    <!-- Loading Notification -->
+    <div id="loading-notification" class="fixed top-4 right-4 z-50 bg-white p-4 rounded-lg shadow-lg border-l-4 border-blue-500 flex items-center space-x-3" style="display: none;">
+      <div class="loading-spinner"></div>
+      <div>
+        <h4 class="text-sm font-semibold text-gray-900">Processando dados...</h4>
+        <p class="text-xs text-gray-600">Organizando informações por <span id="loading-period">período</span></p>
+      </div>
+      <button onclick="hideLoadingNotification()" class="text-gray-400 hover:text-gray-600 ml-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
 
     <div class="overflow-hidden border-gray-200 sm:rounded-lg">
       <%= data_table(@rows) %>
@@ -155,6 +170,67 @@
     margin: 10px;
   }
 }
+</style>
+
+<script>
+  function showLoadingAndSubmit(selectElement) {
+    const selectedValue = selectElement.value;
+    const loadingNotification = document.getElementById('loading-notification');
+    const loadingPeriod = document.getElementById('loading-period');
+    
+    // Submit the form first
+    selectElement.form.submit();
+    
+    // Only show loading for weekly and monthly views after submission
+    if (selectedValue === 'weekly' || selectedValue === 'monthly') {
+      // Update loading text based on selection
+      loadingPeriod.textContent = selectedValue === 'weekly' ? 'semana' : 'mês';
+      
+      // Show loading notification with a small delay to ensure form submission
+      setTimeout(function() {
+        loadingNotification.style.display = 'flex';
+        // Notification will persist until page reloads - no auto-hide
+      }, 100);
+    }
+  }
+  
+  function hideLoadingNotification() {
+    const loadingNotification = document.getElementById('loading-notification');
+    loadingNotification.style.display = 'none';
+  }
+</script>
+
+<style>
+  .loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f4f6;
+    border-top: 2px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    flex-shrink: 0;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  #loading-notification {
+    max-width: 300px;
+    animation: slideIn 0.3s ease-out;
+  }
+  
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
 </style>
 
 <% if @view_type != 'daily' && @chart_data.present? %>
