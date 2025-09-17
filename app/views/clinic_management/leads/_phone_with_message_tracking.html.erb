@@ -69,6 +69,14 @@
           Última: <%= time_ago_in_words(lead.lead_interactions.recent.first.occurred_at) %> atrás 
           por <%= lead.lead_interactions.recent.first.user.name %>
         </div>
+        
+        <!-- Destacar quando o usuário atual enviou a última mensagem -->
+        <% if lead.lead_interactions.recent.first.user == current_user %>
+          <div class="text-xs mt-1 bg-blue-50 text-blue-700 px-2 py-1 rounded inline-block">
+            <i class="fas fa-user-check text-xs mr-1"></i>
+            Você enviou há <%= time_ago_in_words(lead.lead_interactions.recent.first.occurred_at) %>
+          </div>
+        <% end %>
       <% end %>
       
       <!-- Dropdown do histórico -->
