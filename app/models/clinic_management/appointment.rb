@@ -12,7 +12,7 @@ module ClinicManagement
     # Método helper para exibir o nome do usuário que registrou
     def registered_by_user_name
       if registered_by_user_id.present?
-        registered_by_user&.name || "Usuário não encontrado"
+        User.find_by(id: registered_by_user_id)&.name || "Usuário não encontrado"
       else
         read_attribute(:registered_by_user).presence || "Sistema"
       end
