@@ -20,7 +20,7 @@ module ClinicManagement
           service: @service,
           referral_code: @invitation&.referral&.code,
           status: "agendado",
-          registered_by_user: current_user&.name || "Sistema"
+          registered_by_user_id: current_user&.id
         )
         if @appointment.save
           redirect_to @service
@@ -65,7 +65,7 @@ module ClinicManagement
           service: @next_service,
           status: "agendado",
           referral_code: invitation&.referral&.code,
-          registered_by_user: current_user&.name || "Sistema"
+          registered_by_user_id: current_user&.id
         )
         if @appointment.save
           before_appointment.update(status: "remarcado")
@@ -169,7 +169,7 @@ module ClinicManagement
 
       # Only allow a list of trusted parameters through.
       def appointment_params
-        params.require(:appointment).permit(:attendance, :status, :lead_id, :service_id, :comments, :confirmed, :registered_by_user)
+        params.require(:appointment).permit(:attendance, :status, :lead_id, :service_id, :comments, :confirmed, :registered_by_user_id)
       end
   end
 end
