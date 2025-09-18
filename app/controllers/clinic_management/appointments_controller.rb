@@ -152,6 +152,77 @@ module ClinicManagement
       # redirect_back(fallback_location: service_path(@appointment.service))
     end
 
+    def my_reschedules
+      # Busca appointments criados pelo usuário atual onde o status é "agendado"
+      # e existe um appointment anterior com status "remarcado" do mesmo lead
+      @appointments = Appointment.joins(:lead)
+                                 .where(registered_by_user_id: current_user&.id, status: 'agendado')
+                                 .where(
+                                   'EXISTS (SELECT 1 FROM clinic_management_appointments ca2 
+                                    WHERE ca2.lead_id = clinic_management_appointments.lead_id 
+                                    AND ca2.status = ? 
+                                    AND ca2.created_at < clinic_management_appointments.created_at)',
+                                   'remarcado'
+                                 )
+                                 .includes(:service, :invitation, :lead)
+                                 .order(created_at: :desc)
+                                 .page(params[:page]).per(50)
+
+      # Prepara os dados para a tabela usando partials
+      @rows = @appointments.map do |appointment|
+        invitation = appointment.invitation
+        lead = appointment.lead
+        service = appointment.service
+        
+        [
+          {
+            header: "Data do exame",
+            content: render_to_string(partial: "clinic_management/appointments/reschedule_service_date", 
+                                    locals: { service: service }),
+            class: "nowrap"
+          },
+          {
+            header: "Nome do paciente", 
+            content: render_to_string(partial: "clinic_management/appointments/reschedule_patient_name", 
+                                    locals: { invitation: invitation, lead: lead }),
+            class: "patient-name nowrap"
+          },
+          {
+            header: "Nome do responsável",
+            content: render_to_string(partial: "clinic_management/appointments/reschedule_responsible_name", 
+                                    locals: { lead: lead, invitation: invitation }),
+            class: "nowrap"
+          },
+          
+          {
+            header: "Telefone",
+            content: render_to_string(partial: "clinic_management/appointments/reschedule_phone", 
+                                    locals: { lead: lead, appointment: appointment }).html_safe,
+            class: "text-blue-500 hover:text-blue-700 nowrap"
+          },
+          {
+            header: "Status",
+            content: render_to_string(partial: "clinic_management/appointments/reschedule_status", 
+                                    locals: { appointment: appointment }).html_safe,
+            id: "status-#{appointment.id}",
+            class: helpers.status_class(appointment)
+          },
+          {
+            header: "Observações",
+            content: render_to_string(partial: "clinic_management/appointments/reschedule_comments", 
+                                    locals: { appointment: appointment }),
+            class: "comments",
+            id: "appointment-comments-#{appointment.id}"
+          },
+          {
+            header: "Indicação",
+            content: invitation.referral.name.upcase,
+            class: "nowrap"
+          }
+        ]
+      end
+    end
+
     private
 
       def reschedule_region(referral, lead)

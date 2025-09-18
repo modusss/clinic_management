@@ -1,0 +1,4 @@
+<%= link_to (invitation&.patient_name || lead&.name), 
+    clinic_management.lead_path(lead), 
+    class: "text-blue-500 hover:text-blue-700 nowrap", 
+    target: "_blank" if lead.present? %>

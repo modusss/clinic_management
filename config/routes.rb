@@ -26,6 +26,9 @@ ClinicManagement::Engine.routes.draw do
   post 'search_index_today', to: 'prescriptions#search_index_today', as: 'search_index_today'
 
   resources :appointments do
+    collection do
+      get :my_reschedules
+    end
     member do
       patch :update_comments
       patch :set_attendance

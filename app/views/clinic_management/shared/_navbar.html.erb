@@ -120,6 +120,7 @@
            <%= link_to "Tipos de serviço", clinic_management.service_types_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'service_types'}" %>
          <% end %>
          <%= link_to "Atendimentos", clinic_management.services_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'services'}" %>
+         <%= link_to "Minhas Remarcações", clinic_management.my_reschedules_appointments_path, class: "text-white hover:text-blue-300 #{'active' if action_name == 'my_reschedules'}" %>
          <% unless clinical_assistant?(current_user) %>
          <%= link_to "Regiões", clinic_management.regions_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'regions'}" %>
          <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'time_slots'}" %>
@@ -189,6 +190,7 @@
       <%= link_to "Tipos de serviço", clinic_management.service_types_path, class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if controller_name == 'service_types'}" %>
     <% end %>
     <%= link_to "Atendimentos", clinic_management.services_path, class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if controller_name == 'services'}" %>
+    <%= link_to "Minhas Remarcações", clinic_management.my_reschedules_appointments_path, class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if action_name == 'my_reschedules'}" %>
     <% unless clinical_assistant?(current_user) %>
     <%= link_to "Regiões", clinic_management.regions_path, class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if controller_name == 'regions'}" %>
     <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if controller_name == 'time_slots'}" %>
