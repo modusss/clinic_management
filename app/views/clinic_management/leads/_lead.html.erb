@@ -93,32 +93,7 @@
           <%= lead.address %>
         </dd>
       </div>
-      <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-        <dt class="text-gray-500 text-[18px]">
-          Latitude
-        </dt>
-        <dd class="mt-1 text-gray-900 sm:mt-0 sm:col-span-2 text-[18px]">
-          <%= lead.latitude %>
-        </dd>
-      </div>
-      <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-        <dt class="text-gray-500 text-[18px]">
-          Longitude
-        </dt>
-        <dd class="mt-1 text-gray-900 sm:mt-0 sm:col-span-2 text-[18px]">
-          <%= lead.longitude %>
-        </dd>
-      </div>
-      <% if lead.latitude.present? && lead.longitude.present? %>
-      <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-        <dt class="text-gray-500 text-[18px]">
-          Localização
-        </dt>
-        <dd class="mt-1 text-gray-900 sm:mt-0 sm:col-span-2 text-[18px]">
-          <a target='_blank' href='https://www.google.com/maps/search/?api=1&query=<%= lead.latitude %>,<%= lead.longitude %>' class="text-[18px]">Ver localização</a>
-        </dd>
-      </div>
-      <% end %>
+      
       <% unless referral?(current_user) %>
       <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
         <dt class="text-gray-500 text-[18px]">

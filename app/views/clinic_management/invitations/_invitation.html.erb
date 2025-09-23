@@ -2,6 +2,7 @@
   <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><%= invitation.patient_name %></td>
   <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><%= add_phone_mask(invitation&.lead&.phone) %></td>
   <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><%= link_to(invite_day(invitation.appointments.last), show_by_referral_services_path(referral_id: referral, id: service), class: "text-blue-500 hover:text-blue-700" ) %></td>
+  <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><%= link_to 'Editar', edit_lead_path(invitation.lead), class: "text-blue-500 hover:text-blue-700" %></td>
   <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm justify-center">
     <%= button_to lead_path(invitation.lead), method: :delete, data: { confirm: 'Are you sure?' } do %>
       <svg class="w-6 h-6 text-red-500 hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
