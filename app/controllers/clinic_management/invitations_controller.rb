@@ -64,7 +64,7 @@ module ClinicManagement
           
           @invitation = @lead.invitations.build(invitation_params.except(:lead_attributes, :appointments_attributes))
           @lead.update!(name: @invitation.patient_name) if @lead.name.blank?
-          
+          puts @lead.errors.full_messages
           appointment_params = invitation_params[:appointments_attributes]["0"].merge({status: "agendado", lead: @lead})
           existing_appointment = already_schedule_this_patient?(@invitation, appointment_params[:service_id])   
           
@@ -79,6 +79,7 @@ module ClinicManagement
           end
         end
         @lead.update(last_appointment_id: @appointment.id)
+        puts @lead.errors.full_messages
         render_turbo_stream
       rescue ActiveRecord::RecordInvalid => exception
         render_validation_errors(exception)
@@ -211,7 +212,9 @@ module ClinicManagement
       phone = params[:phone]
       
       if phone.present? && phone.length >= 10
-        existing_lead = ClinicManagement::Lead.find_by(phone: phone)
+        # Sanitizar o telefone para busca (remover caracteres da máscara)
+        clean_phone = phone.gsub(/\D/, '')
+        existing_lead = ClinicManagement::Lead.find_by(phone: clean_phone)
         
         if existing_lead.present?
           # Buscar dados do lead existente
@@ -288,7 +291,10 @@ module ClinicManagement
       
       return Lead.create!(params[:lead_attributes]) if phone.blank?
       
-      existing_lead = Lead.find_by(phone: phone)
+      # Sanitizar o telefone para busca (remover caracteres da máscara)
+      clean_phone = phone.gsub(/\D/, '')
+      
+      existing_lead = Lead.find_by(phone: clean_phone)
       
       if existing_lead.present?
         Rails.logger.info "Usando lead existente (ID: #{existing_lead.id}) para telefone: #{phone}"
@@ -301,7 +307,11 @@ module ClinicManagement
         
         return existing_lead
       else
-        Lead.create!(params[:lead_attributes])
+        # Sanitizar os parâmetros do lead antes de criar
+        lead_params = params[:lead_attributes].dup
+        lead_params[:phone] = clean_phone if lead_params[:phone].present?
+        
+        Lead.create!(lead_params)
       end
     end
 
@@ -512,24 +522,35 @@ module ClinicManagement
 
     def associate_with_existing_lead(params)
       phone = params.dig(:lead_attributes, :phone)
-      existing_lead = ClinicManagement::Lead.find_by(phone: phone)
+      # Sanitizar o telefone para busca (remover caracteres da máscara)
+      clean_phone = phone.gsub(/\D/, '')
+      existing_lead = ClinicManagement::Lead.find_by(phone: clean_phone)
       
       if existing_lead.present?
         # Atualizar informações se necessário
         merge_lead_information(existing_lead, params, params[:patient_name], params.dig(:lead_attributes, :name))
         existing_lead
       else
-        Lead.create!(params[:lead_attributes])
+        # Sanitizar os parâmetros do lead antes de criar
+        lead_params = params[:lead_attributes].dup
+        lead_params[:phone] = clean_phone if lead_params[:phone].present?
+        Lead.create!(lead_params)
       end
     end
 
     def transfer_phone_to_new_lead(params)
       phone = params.dig(:lead_attributes, :phone)
-      old_lead = ClinicManagement::Lead.find_by(phone: phone)
+      # Sanitizar o telefone para busca (remover caracteres da máscara)
+      clean_phone = phone.gsub(/\D/, '')
+      old_lead = ClinicManagement::Lead.find_by(phone: clean_phone)
       
       if old_lead.present?
+        # Sanitizar os parâmetros do lead antes de criar
+        lead_params = params[:lead_attributes].dup
+        lead_params[:phone] = clean_phone if lead_params[:phone].present?
+        
         # Criar novo lead
-        new_lead = Lead.create!(params[:lead_attributes])
+        new_lead = Lead.create!(lead_params)
         
         # Limpar telefone do lead antigo
         old_lead.update!(phone: nil)
@@ -538,7 +559,10 @@ module ClinicManagement
         
         new_lead
       else
-        Lead.create!(params[:lead_attributes])
+        # Sanitizar os parâmetros do lead antes de criar
+        lead_params = params[:lead_attributes].dup
+        lead_params[:phone] = clean_phone if lead_params[:phone].present?
+        Lead.create!(lead_params)
       end
     end
   end

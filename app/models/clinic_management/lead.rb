@@ -1,7 +1,7 @@
 module ClinicManagement
   class Lead < ApplicationRecord
     
-    before_save :format_latitude, :format_longitude
+    before_save :format_latitude, :format_longitude, :sanitize_phone
 
     has_many :invitations, dependent: :destroy
     has_many :appointments, through: :invitations
@@ -42,6 +42,16 @@ module ClinicManagement
     end
 
     private
+
+    def sanitize_phone
+      return unless phone.present?
+      
+      # Remove todos os caracteres não numéricos (parênteses, espaços, hífens, etc.)
+      self.phone = phone.gsub(/\D/, '')
+      
+      # Log para debug (opcional - pode ser removido em produção)
+      Rails.logger.debug "Telefone sanitizado: #{phone_was} -> #{phone}" if phone_changed?
+    end
 
     def self.search_by_name_or_phone(query)
       if query.present?

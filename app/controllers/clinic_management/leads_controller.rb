@@ -73,7 +73,9 @@ module ClinicManagement
       phone = lead_params[:phone]
       
       if phone.present?
-        existing_lead = Lead.find_by(phone: phone)
+        # Sanitizar o telefone para busca (remover caracteres da máscara)
+        clean_phone = phone.gsub(/\D/, '')
+        existing_lead = Lead.find_by(phone: clean_phone)
         
         if existing_lead.present?
           flash[:alert] = "Já existe um lead com este telefone: #{existing_lead.name} (ID: #{existing_lead.id}). Redirecionando para o lead existente."
@@ -96,7 +98,9 @@ module ClinicManagement
       
       # Verificar se estamos mudando o telefone para um que já existe
       if phone.present? && @lead.phone != phone
-        existing_lead = Lead.find_by(phone: phone)
+        # Sanitizar o telefone para busca (remover caracteres da máscara)
+        clean_phone = phone.gsub(/\D/, '')
+        existing_lead = Lead.find_by(phone: clean_phone)
         
         if existing_lead.present?
           flash[:alert] = "Este telefone já pertence a outro lead: #{existing_lead.name} (ID: #{existing_lead.id})"

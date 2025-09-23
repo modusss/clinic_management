@@ -61,12 +61,14 @@
       <div class="mb-4">
         <label for="lead_phone" class="block text-gray-700 font-bold mb-2">Telefone</label>
         <%= lead_fields.telephone_field :phone, 
-            value: "77", 
-            maxlength: 11, 
+            value: "(77) ", 
+            maxlength: 15, 
             id: "lead_phone", 
             class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline", 
-            placeholder: "779XXXXXXXX",
+            placeholder: "(77) 98888-8888",
             data: { 
+              controller: "phone-mask",
+              phone_mask_target: "input",
               phone_checker_target: "phoneInput",
               action: "blur->phone-checker#checkPhone focus->phone-checker#onPhoneFocus"
             }
