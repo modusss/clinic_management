@@ -9,10 +9,14 @@
   <%= render @lead %>
 </div>
 
-<div class="flex flex-wrap gap-2">
-  <%= link_to "Editar dados do responsável", edit_lead_path(@lead), class: "text-white bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded" %>
+<div class="flex flex-col sm:flex-row flex-wrap gap-3 mb-6 px-4 sm:px-0">
+  <%= link_to "Editar dados do responsável", edit_lead_path(@lead), 
+      class: "w-full sm:w-auto text-center text-white bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 px-4 py-3 rounded-lg shadow-md transition-all duration-200 font-medium" %>
   <% unless referral?(current_user) %>
-  <%= link_to "Voltar para pacientes", leads_path, class: "text-indigo-500 hover:text-indigo-600 px-4 py-2 border border-indigo-500 rounded" %>
-  <%= button_to "Excluir esta ficha", @lead, method: :delete, class: "text-white bg-red-500 hover:bg-red-600 px-4 py-2 rounded", data: { confirm: "Tem certeza que deseja excluir esta ficha?" } %>
+  <%= link_to "Voltar para pacientes", leads_path, 
+      class: "w-full sm:w-auto text-center text-indigo-500 hover:text-indigo-600 active:text-indigo-700 px-4 py-3 border-2 border-indigo-500 hover:border-indigo-600 rounded-lg transition-all duration-200 font-medium" %>
+  <%= button_to "Excluir esta ficha", @lead, method: :delete, 
+      class: "w-full sm:w-auto text-center text-white bg-red-500 hover:bg-red-600 active:bg-red-700 px-4 py-3 rounded-lg shadow-md transition-all duration-200 font-medium", 
+      data: { confirm: "Tem certeza que deseja excluir esta ficha?" } %>
   <% end %>
 </div>

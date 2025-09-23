@@ -50,7 +50,7 @@
                   turbo_method: :patch,
                   confirm: "Tem certeza que deseja restaurar este lead na listagem principal?"
                 },
-                class: "bg-green-500 hover:bg-green-600 active:bg-green-700 text-white text-sm px-4 py-2 rounded-lg shadow-md flex items-center gap-2 transition-all duration-200 transform hover:scale-105",
+                class: "w-full sm:w-auto bg-green-500 hover:bg-green-600 active:bg-green-700 text-white text-sm px-4 py-2 rounded-lg shadow-md flex items-center justify-center gap-2 transition-all duration-200 transform hover:scale-105",
                 title: "Restaurar na lista principal" do %>
               <i class="fas fa-undo"></i> Restaurar Lead
             <% end %>
@@ -59,14 +59,15 @@
             <div class="text-sm text-gray-600 mb-3">
               Lançar ficha para a lista de:
             </div>
-              
+            
+            <div class="flex flex-col sm:flex-row gap-3">
               <%= button_to clinic_management.hide_from_absent_lead_path(lead), 
                   method: :patch,
                   data: { 
                     turbo_method: :patch,
                     confirm: "Tem certeza que deseja ocultar este lead da listagem?"
                   },
-                  class: "bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-sm px-3 py-2 rounded-lg shadow-md flex items-center gap-2 transition-all duration-200 transform hover:scale-105",
+                  class: "w-full sm:w-auto bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-sm px-3 py-2 rounded-lg shadow-md flex items-center justify-center gap-2 transition-all duration-200 transform hover:scale-105",
                   title: "Ocultar da lista" do %>
                 <i class="fas fa-calendar-plus"></i> Contato futuro
               <% end %>
@@ -77,7 +78,7 @@
                     turbo_method: :patch,
                     confirm: "Marcar este lead como 'Sem interesse'?"
                   },
-                  class: "bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white text-sm px-3 py-2 rounded-lg shadow-md flex items-center gap-2 transition-all duration-200 transform hover:scale-105",
+                  class: "w-full sm:w-auto bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white text-sm px-3 py-2 rounded-lg shadow-md flex items-center justify-center gap-2 transition-all duration-200 transform hover:scale-105",
                   title: "Sem interesse" do %>
                 <i class="fas fa-times"></i> Sem Interesse
               <% end %>
