@@ -4,7 +4,21 @@ module ClinicManagement
 
     # GET /regions
     def index
-      @rows = Region.all.order(:name).map.with_index(1) do |reg, index|
+      @regions = Region.includes(:invitations).all
+      
+      # Ordenação baseada no parâmetro
+      @regions = case params[:sort_by]
+      when "invitations_desc"
+        @regions.sort_by { |r| -r.invitations.count }
+      when "invitations_asc"
+        @regions.sort_by { |r| r.invitations.count }
+      when "name"
+        @regions.sort_by(&:name)
+      else
+        @regions.order(:name)
+      end
+      
+      @rows = @regions.map.with_index(1) do |reg, index|
         [
           { header: "#", content: index },
           { header: "Nome", content: reg.name },
