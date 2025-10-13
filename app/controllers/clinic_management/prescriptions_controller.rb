@@ -11,7 +11,7 @@
       end
 
       def index_today
-        @services = Service.where(date: Date.current)
+        @services = Service.where(date: Date.current).order(:start_time)
         @rows = mapping_rows(@services)
       end
 
@@ -19,14 +19,14 @@
       # Shows all services scheduled for the next available day after today (not including today)
       def index_next
         next_date = Service.where('date > ?', Date.current).order(:date).pluck(:date).first
-        @services = Service.where(date: next_date)
+        @services = Service.where(date: next_date).order(:start_time)
         @rows = mapping_rows(@services)
       end
 
       def index_before
         # Busca o dia anterior ao dia atual que tenha pelo menos um service
         before_date = Service.where('date < ?', Date.current).order(date: :desc).pluck(:date).first
-        @services = Service.where(date: before_date)
+        @services = Service.where(date: before_date).order(:start_time)
         @rows = mapping_rows(@services)
       end
 
