@@ -308,6 +308,23 @@ module ClinicManagement
       end
     end
 
+    def check_phone
+      phone = params[:phone]&.gsub(/\D/, '')
+      lead_id = params[:lead_id].to_i
+      
+      existing_lead = Lead.find_by(phone: phone)
+      
+      if existing_lead.present? && existing_lead.id != lead_id
+        render json: {
+          exists: true,
+          lead_name: existing_lead.name,
+          lead_id: existing_lead.id
+        }
+      else
+        render json: { exists: false }
+      end
+    end
+
     def absent
       # Store the URL, potentially modified, in the session on GET requests
       store_absent_leads_state_in_session

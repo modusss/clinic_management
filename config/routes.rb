@@ -85,6 +85,7 @@ ClinicManagement::Engine.routes.draw do
       post 'search_absents'
       get 'download_leads'
       get 'absent_download'
+      get 'check_phone'
     end
   end
   post 'build_message/:lead_id', to: 'lead_messages#build_message', as: 'build_message'
