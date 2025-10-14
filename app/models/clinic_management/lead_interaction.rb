@@ -4,7 +4,7 @@ module ClinicManagement
     
     belongs_to :lead
     belongs_to :appointment
-    belongs_to :user, class_name: '::User'
+    belongs_to :user, class_name: '::User', optional: true
     
     validates :interaction_type, presence: true
     validates :occurred_at, presence: true
