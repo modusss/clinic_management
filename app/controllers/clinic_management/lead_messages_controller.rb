@@ -148,21 +148,41 @@ module ClinicManagement
         message_text = CGI.unescape(message_text)
         
         phone = lead.phone
-        # Ensure phone has country code
-        phone = "55#{phone}" unless phone.start_with?('55')
+        # Remove código do país se já tiver (será adicionado no job)
+        phone = phone.sub(/^55/, '')
         
-        # Send via Evolution API (with media support)
-        response = send_via_evolution_api(message_text, phone, media_details)
+        # Determina qual instância usar
+        instance_name = get_instance_name
         
-        if response[:success]
+        # Enfileira a mensagem com delay automático
+        result = EvolutionMessageQueueService.enqueue_message(
+          phone: phone,
+          message_text: message_text,
+          media_details: media_details&.stringify_keys,
+          instance_name: instance_name
+        )
+        
+        if result[:success]
+          # Formata mensagem de sucesso com informações do enfileiramento
+          delay_msg = if result[:delay_seconds] > 0
+            " (enviando em #{result[:delay_seconds]}s - posição #{result[:position_in_queue]} na fila)"
+          else
+            " (enviando agora)"
+          end
+          
           render json: { 
             success: true, 
-            message: 'Mensagem enviada automaticamente via WhatsApp!' 
+            message: "Mensagem enfileirada com sucesso!#{delay_msg}",
+            queue_info: {
+              position: result[:position_in_queue],
+              delay_seconds: result[:delay_seconds],
+              estimated_send_time: result[:estimated_send_time]&.strftime('%H:%M:%S')
+            }
           }
         else
           render json: { 
             success: false, 
-            message: "Erro ao enviar mensagem: #{response[:error]}" 
+            message: "Erro ao enfileirar mensagem: #{result[:error]}" 
           }
         end
       rescue => e
@@ -295,6 +315,18 @@ module ClinicManagement
   
     def message_params
       params.require(:lead_message).permit(:name, :text, :message_type, :service_type_id, :media_file, :media_caption, :media_type)
+    end
+
+    # Get the instance name to use for sending messages
+    def get_instance_name
+      if respond_to?(:referral?) && referral?(current_user)
+        # Use referral's WhatsApp instance
+        referral = user_referral
+        referral&.evolution_instance_name
+      else
+        # Use account's instance 2
+        Account.first&.evolution_instance_name_2
+      end
     end
 
     # Check if we can send via Evolution API
