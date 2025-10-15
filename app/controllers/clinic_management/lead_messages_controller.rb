@@ -159,7 +159,8 @@ module ClinicManagement
           phone: phone,
           message_text: message_text,
           media_details: media_details&.stringify_keys,
-          instance_name: instance_name
+          instance_name: instance_name,
+          lead_id: lead.id  # Adiciona lead_id para verificação de cooldown
         )
         
         if result[:success]
