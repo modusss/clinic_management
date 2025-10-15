@@ -67,7 +67,7 @@
       <% if lead.lead_interactions.recent.first %>
         <div class="text-xs mt-1">
           Última: <%= time_ago_in_words(lead.lead_interactions.recent.first.occurred_at) %> atrás 
-          por <%= lead.lead_interactions.recent.first.user.name %>
+          por <%= lead.lead_interactions.recent&.first&.user&.name %>
         </div>
         
         <!-- Destacar quando o usuário atual enviou a última mensagem -->
