@@ -177,19 +177,37 @@ module ClinicManagement
               position: result[:position_in_queue],
               delay_seconds: result[:delay_seconds],
               estimated_send_time: result[:estimated_send_time]&.strftime('%H:%M:%S')
-            }
+            },
+            lead_id: lead.id
           }
         else
+          # Marcar lead como "sem WhatsApp" quando houver erro
+          if lead.present?
+            lead.update(no_whatsapp: true)
+            Rails.logger.info "❌ Lead #{lead.id} marcado como sem WhatsApp devido a erro no envio"
+          end
+          
           render json: { 
             success: false, 
-            message: "Erro ao enfileirar mensagem: #{result[:error]}" 
+            message: "Erro ao enfileirar mensagem: #{result[:error]}",
+            lead_id: lead.id,
+            whatsapp_disabled: true # Flag para atualizar UI
           }
         end
       rescue => e
         Rails.logger.error "Error in send_evolution_message: #{e.message}"
+        
+        # Marcar lead como "sem WhatsApp" também em caso de exceção
+        if lead.present?
+          lead.update(no_whatsapp: true)
+          Rails.logger.info "❌ Lead #{lead.id} marcado como sem WhatsApp devido a exceção: #{e.message}"
+        end
+        
         render json: { 
           success: false, 
-          message: "Erro interno: #{e.message}" 
+          message: "Erro interno: #{e.message}",
+          lead_id: lead&.id,
+          whatsapp_disabled: true # Flag para atualizar UI
         }
       end
     end
