@@ -184,7 +184,11 @@ module ClinicManagement
           Referral.find_by(code: code)
         end
 
-        def allowed_to_access_leads?(current_user)
+        # Verifica se o usuário pode acessar TODOS os leads ou apenas os que ele registrou
+        # Doctors não podem acessar
+        # Referrals sempre podem acessar, mas com acesso filtrado baseado em can_access_leads
+        # Outros usuários têm acesso completo
+        def allowed_to_access_all_leads?(current_user)
           return false if doctor?(current_user)
           if referral?(current_user)
             referral = user_referral
@@ -192,6 +196,12 @@ module ClinicManagement
           else
             true
           end
+        end
+        
+        # Verifica se pode acessar a página de leads (mesmo que com filtro)
+        def allowed_to_access_leads?(current_user)
+          return false if doctor?(current_user)
+          true  # Referrals e outros usuários podem acessar (com filtros aplicados)
         end
         
         def current_membership

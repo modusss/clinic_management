@@ -499,6 +499,22 @@ module ClinicManagement
       return scope unless helpers.referral?(current_user)
       
       current_referral = helpers.user_referral
+      
+      # Se o referral não tem permissão de acessar todos os leads (can_access_leads = false),
+      # mostrar apenas os leads cujos appointments foram feitos através DELE (via invitation)
+      unless current_referral&.can_access_leads
+        # Buscar IDs dos leads que têm appointments com invitations do referral atual
+        allowed_lead_ids = ClinicManagement::Lead
+          .joins(appointments: :invitation)
+          .where('clinic_management_invitations.referral_id = ?', current_referral.id)
+          .distinct
+          .pluck('clinic_management_leads.id')
+        
+        # Retornar apenas esses leads
+        return scope.where('clinic_management_leads.id IN (?)', allowed_lead_ids.presence || [0])
+      end
+      
+      # Se tem permissão (can_access_leads = true), aplicar filtro antigo de referral
       cutoff_date = 120.days.ago.to_date
       
       # Obter IDs dos leads que têm appointments nos últimos 120 dias que NÃO são do referral atual
