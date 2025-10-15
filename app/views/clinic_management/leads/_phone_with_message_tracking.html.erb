@@ -104,7 +104,7 @@
                   
                   <div class="text-xs">
                     <div class="font-medium text-gray-700">
-                      <%= interaction.user.name %>
+                      <%= interaction&.user&.name %>
                     </div>
                     <div class="text-gray-500">
                       <%= l(interaction.occurred_at, format: "%d/%m/%Y às %H:%M") %>
