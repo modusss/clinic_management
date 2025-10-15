@@ -1,8 +1,8 @@
 <% if (doctor? current_user) %>
-  <header class="bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 py-4 shadow-md">
+  <header class="bg-gradient-to-r from-emerald-700 via-emerald-600 to-emerald-500 py-4 shadow-md">
     <nav class="container mx-auto flex items-center justify-between p-6">
       <div class="flex items-center text-white mr-6">
-        <span class="font-semibold text-xl tracking-tight">Lipepay <span class="ml-1 text-xs bg-white text-blue-700 rounded px-2 py-0.5 font-medium shadow-sm">atendimentos</span></span>
+        <span class="font-semibold text-xl tracking-tight">Lipepay <span class="ml-1 text-xs bg-white text-emerald-700 rounded px-2 py-0.5 font-medium shadow-sm">atendimentos</span></span>
       </div>
       <% if user_signed_in? %>
         <div class="flex items-center">
@@ -14,21 +14,21 @@
     </nav>
   </header>
 <% elsif (referral? current_user) %>
-  <header class="navbar-fixed relative bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 py-4 shadow-md md:pl-64 z-50" style="width:100%;">
+  <header class="navbar-fixed relative bg-gradient-to-r from-emerald-700 via-emerald-600 to-emerald-500 py-4 shadow-md md:pl-64 z-50" style="width:100%;">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex flex-wrap justify-between items-center">
         <h1 class="text-white text-xl font-bold mb-4 sm:mb-0">
-          <%= link_to raw("Lipepay <span class='ml-1 text-xs bg-white text-blue-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-blue-300" %>
+          <%= link_to raw("Lipepay <span class='ml-1 text-xs bg-white text-emerald-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-emerald-300" %>
         </h1>
 
         <% if user_signed_in? %>
           <nav class="text-lg w-full order-3 sm:order-2 sm:w-auto mt-4 sm:mt-0 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 md:hidden">
             <%= link_to "Pacientes ausentes", 
                 session[:absent_leads_state] || clinic_management.absent_leads_path, 
-                class: "text-white hover:text-blue-300 #{'active' if controller_name == 'leads'}" %>
-            <%= link_to "Atendimentos", clinic_management.index_by_referral_services_path(user_referral), class: "text-white hover:text-blue-300 #{'active' if controller_name == 'services'}" %>
-            <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'lead_messages'}" %>
-            <%= link_to "Convites", clinic_management.invitations_path(referral_id: user_referral.id), class: "text-white hover:text-blue-300 #{'active' if controller_name == 'invitations'}" %>
+                class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'leads'}" %>
+            <%= link_to "Atendimentos", clinic_management.index_by_referral_services_path(user_referral), class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'services'}" %>
+            <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'lead_messages'}" %>
+            <%= link_to "Convites", clinic_management.invitations_path(referral_id: user_referral.id), class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'invitations'}" %>
           </nav>
         <% end %>
 
@@ -41,7 +41,7 @@
                   placeholder: "Busque pelo nome ou telefone...",
                   autocomplete: "off",
                   spellcheck: false,
-                  class: "bg-white rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent",
+                  class: "bg-white rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent",
                   style: "font-size: 16px; padding: 12px;" %>
               <label class="absolute right-2 top-1/2 transform -translate-y-1/2" for="search_lead">
                 <i class="fas fa-search text-gray-500"></i>
@@ -81,7 +81,7 @@
 
   <aside class="hidden md:block w-64 bg-gray-800 text-white fixed top-0 left-0 h-screen pt-6 p-4 z-40 overflow-y-auto">
     <h1 class="text-white text-xl font-bold mb-6">
-       <%= link_to raw("Lipepay <span class='block mt-1 text-xs bg-white text-blue-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-blue-300" %>
+       <%= link_to raw("Lipepay <span class='block mt-1 text-xs bg-white text-emerald-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-emerald-300" %>
     </h1>
     
     <nav class="flex flex-col space-y-3 text-lg">
@@ -97,32 +97,32 @@
   </aside>
 
 <% else %>
-<header class="navbar-fixed relative bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 py-4 shadow-md md:pl-64 z-50">
+<header class="navbar-fixed relative bg-gradient-to-r from-emerald-700 via-emerald-600 to-emerald-500 py-4 shadow-md md:pl-64 z-50">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex flex-wrap justify-between items-center">
       <h1 class="text-white text-2xl font-bold mb-4 sm:mb-0 w-full sm:w-auto text-center sm:text-left">
-         <%= link_to raw("Lipepay <span class='ml-1 text-xs bg-white text-blue-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-blue-300" %>
+         <%= link_to raw("Lipepay <span class='ml-1 text-xs bg-white text-emerald-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-emerald-300" %>
       </h1>
 
       <nav class="text-xl order-3 sm:order-2 w-full sm:w-auto mt-4 sm:mt-0 flex flex-col sm:flex-row sm:flex-wrap justify-center space-y-4 sm:space-y-0 sm:space-x-4 md:hidden">
-         <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-white hover:text-blue-300 #{'active' if request.path == clinic_management.index_today_path}", data: { turbo: false } %>
-         <%= link_to "Próximo atendimento", clinic_management.index_next_path, class: "text-white hover:text-blue-300 #{'active' if request.path == clinic_management.index_next_path }", data: { turbo: false } %>
-         <%= link_to "Atendimento anterior", clinic_management.index_before_path, class: "text-white hover:text-blue-300 #{'active' if request.path == clinic_management.index_before_path }", data: { turbo: false } %>
+         <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-white hover:text-emerald-300 #{'active' if request.path == clinic_management.index_today_path}", data: { turbo: false } %>
+         <%= link_to "Próximo atendimento", clinic_management.index_next_path, class: "text-white hover:text-emerald-300 #{'active' if request.path == clinic_management.index_next_path }", data: { turbo: false } %>
+         <%= link_to "Atendimento anterior", clinic_management.index_before_path, class: "text-white hover:text-emerald-300 #{'active' if request.path == clinic_management.index_before_path }", data: { turbo: false } %>
          <% unless clinical_assistant?(current_user) %>
          <%= link_to "Pacientes ausentes",
              session[:absent_leads_state] || clinic_management.absent_leads_path,
-             class: "text-white hover:text-blue-300 #{'active' if controller_name == 'leads'}" %>
+             class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'leads'}" %>
          <% end %>
          <% if is_manager_above? %>
-           <%= link_to "Convites", clinic_management.invitations_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'invitations'}" %>
-           <%= link_to "Tipos de serviço", clinic_management.service_types_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'service_types'}" %>
+           <%= link_to "Convites", clinic_management.invitations_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'invitations'}" %>
+           <%= link_to "Tipos de serviço", clinic_management.service_types_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'service_types'}" %>
          <% end %>
-         <%= link_to "Atendimentos", clinic_management.services_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'services'}" %>
-         <%= link_to "Minhas Remarcações", clinic_management.my_reschedules_appointments_path, class: "text-white hover:text-blue-300 #{'active' if action_name == 'my_reschedules'}" %>
+         <%= link_to "Atendimentos", clinic_management.services_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'services'}" %>
+         <%= link_to "Minhas Remarcações", clinic_management.my_reschedules_appointments_path, class: "text-white hover:text-emerald-300 #{'active' if action_name == 'my_reschedules'}" %>
          <% unless clinical_assistant?(current_user) %>
-         <%= link_to "Regiões", clinic_management.regions_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'regions'}" %>
-         <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'time_slots'}" %>
-         <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-blue-300 #{'active' if controller_name == 'lead_messages'}"  %>
+         <%= link_to "Regiões", clinic_management.regions_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'regions'}" %>
+         <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'time_slots'}" %>
+         <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'lead_messages'}"  %>
          <% end %>
       </nav>
 
@@ -135,7 +135,7 @@
                 placeholder: "Busque pelo nome ou telefone...",
                 autocomplete: "off",
                 spellcheck: false,
-                class: "bg-white rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent",
+                class: "bg-white rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent",
                 style: "font-size: 16px; padding: 12px;" %>
             <label class="absolute right-2 top-1/2 transform -translate-y-1/2" for="search_lead">
               <i class="fas fa-search text-gray-500"></i>
@@ -172,7 +172,7 @@
 
 <aside class="hidden md:block w-64 bg-gray-800 text-white fixed top-0 left-0 h-screen pt-6 p-4 z-40 overflow-y-auto">
   <h1 class="text-white text-2xl font-bold mb-6">
-     <%= link_to raw("Lipepay <span class='block mt-1 text-xs bg-white text-blue-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-blue-300" %>
+     <%= link_to raw("Lipepay <span class='block mt-1 text-xs bg-white text-emerald-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-emerald-300" %>
   </h1>
   <nav class="flex flex-col space-y-3 text-lg">
     <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md #{'bg-gray-900 text-white' if request.path == clinic_management.index_today_path}", data: { turbo: false } %>
