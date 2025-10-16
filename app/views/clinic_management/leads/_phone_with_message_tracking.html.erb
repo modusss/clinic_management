@@ -1,5 +1,5 @@
-<!-- Removido o turbo-stream-source para eliminar custo de processamento desnecessário -->
-<!-- <turbo-stream-source channel="message_tracking_lead_<%= lead.id %>"></turbo-stream-source> -->
+<!-- Turbo stream para receber atualizações quando uma interação é criada -->
+<%= turbo_stream_from "lead_#{lead.id}_phone_tracking" %>
 
 <div id="phone-container-<%= lead.id %>" 
      data-controller="message-tracking"

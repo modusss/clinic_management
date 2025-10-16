@@ -173,7 +173,9 @@ module ClinicManagement
           message_text: message_text,
           media_details: media_details&.stringify_keys,
           instance_name: instance_name,
-          lead_id: lead.id  # Adiciona lead_id para verificação de cooldown
+          lead_id: lead.id,              # Adiciona lead_id para verificação de cooldown
+          user_id: current_user.id,      # Adiciona user_id para registro de interação
+          appointment_id: appointment.id # Adiciona appointment_id (obrigatório para interação)
         )
         
         if result[:success]

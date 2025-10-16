@@ -3,7 +3,7 @@ module ClinicManagement
     self.table_name = 'clinic_management_lead_interactions'
     
     belongs_to :lead
-    belongs_to :appointment
+    belongs_to :appointment, optional: true
     belongs_to :user, class_name: '::User', optional: true
     
     validates :interaction_type, presence: true
