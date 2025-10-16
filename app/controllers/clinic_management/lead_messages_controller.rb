@@ -154,6 +154,8 @@ module ClinicManagement
         # Determina qual instância usar
         instance_name = get_instance_name
         
+        Rails.logger.info "🔍 Lead #{lead.id} (#{lead.name}) usando instância: #{instance_name}"
+        
         # Enfileira a mensagem com delay automático
         result = EvolutionMessageQueueService.enqueue_message(
           phone: phone,
@@ -165,8 +167,11 @@ module ClinicManagement
         
         if result[:success]
           # Formata mensagem de sucesso com informações do enfileiramento
+          # Inclui nome da instância para debug/transparência
+          instance_abbr = result[:instance_name]&.split('_')&.last || 'default'
+          
           delay_msg = if result[:delay_seconds] > 0
-            " (enviando em #{result[:delay_seconds]}s - posição #{result[:position_in_queue]} na fila)"
+            " (enviando em #{result[:delay_seconds]}s - posição #{result[:position_in_queue]} na fila #{instance_abbr})"
           else
             " (enviando agora)"
           end
