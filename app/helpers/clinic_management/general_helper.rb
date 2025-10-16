@@ -375,5 +375,216 @@ module ClinicManagement
           helper.response_feedback_api_zap(response)
         end
 
+        # ========================================
+        # Métodos de Envio Evolution API
+        # ========================================
+
+        def custom_delay
+          sleep(rand(1..3))
+        end
+
+        def send_api_zap_message(message, phone, delay, instance_name = nil)
+          return { "status" => 400, "error" => "Invalid phone or message" } if phone.blank? || message.blank? || phone.nil?       
+          
+          instance_name = instance_name || Account.first.evolution_instance_name
+          
+          if (delay == true) || (delay == "true")
+            custom_delay
+          end
+          
+          base_url = Account.last.evolution_base_url
+          api_key = Account.last.evolution_api_key
+          encoded_instance_name = ERB::Util.url_encode(instance_name)
+          
+          headers = {
+            "Content-Type" => "application/json",
+            "apikey" => api_key
+          }
+          
+          body = {
+            number: "55" + phone.to_s,
+            textMessage: {
+              text: message
+            },
+            options: {
+              delay: 10,
+              presence: "composing",
+              linkPreview: false
+            }
+          }.to_json
+          
+          endpoint = "#{base_url}/message/sendText/#{encoded_instance_name}"
+          
+          response = HTTParty.post(
+            endpoint,
+            body: body,
+            headers: headers
+          )
+          
+          response
+        end
+
+        def send_api_zap_image(media_url, caption, phone, delay, instance_name = nil)
+          instance_name = instance_name || Account.first.evolution_instance_name
+
+          if (delay == true) || (delay == "true")
+            custom_delay
+          end
+          
+          base_url = Account.last.evolution_base_url
+          api_key = Account.last.evolution_api_key
+          encoded_instance_name = ERB::Util.url_encode(instance_name)
+          
+          headers = {
+            "Content-Type" => "application/json",
+            "apikey" => api_key
+          }
+          
+          body = {
+            number: "55" + phone,
+            options: {
+              delay: 10,
+              presence: "composing",
+              linkPreview: false
+            },
+            mediaMessage: {
+              mediatype: "image",
+              caption: caption,
+              media: media_url
+            }
+          }.to_json
+          
+          endpoint = "#{base_url}/message/sendMedia/#{encoded_instance_name}"
+          
+          response = HTTParty.post(
+            endpoint,
+            body: body,
+            headers: headers
+          )
+          
+          response
+        end
+
+        def send_api_zap_video(video_url, caption, phone, delay, instance_name = nil)
+          instance_name = instance_name || Account.first.evolution_instance_name
+
+          if (delay == true) || (delay == "true")
+            custom_delay
+          end
+          
+          base_url = Account.last.evolution_base_url
+          api_key = Account.last.evolution_api_key
+          encoded_instance_name = ERB::Util.url_encode(instance_name)
+          
+          headers = {
+            "Content-Type" => "application/json",
+            "apikey" => api_key
+          }
+          
+          body = {
+            number: "55" + phone,
+            options: {
+              delay: 10,
+              presence: "composing"
+            },
+            mediaMessage: {
+              mediatype: "video",
+              caption: caption,
+              media: video_url
+            }
+          }.to_json
+          
+          endpoint = "#{base_url}/message/sendMedia/#{encoded_instance_name}"
+          
+          response = HTTParty.post(
+            endpoint,
+            body: body,
+            headers: headers
+          )
+          
+          response
+        end
+
+        def send_api_zap_audio(audio_url, phone, delay, instance_name = nil)
+          instance_name = instance_name || Account.first.evolution_instance_name
+
+          if (delay == true) || (delay == "true")
+            custom_delay
+          end
+          
+          base_url = Account.last.evolution_base_url
+          api_key = Account.last.evolution_api_key
+          encoded_instance_name = ERB::Util.url_encode(instance_name)
+          
+          headers = {
+            "Content-Type" => "application/json",
+            "apikey" => api_key
+          }
+          
+          body = {
+            number: "55" + phone,
+            options: {
+              delay: 10,
+              presence: "composing",
+              linkPreview: false
+            },
+            mediaMessage: {
+              mediatype: "audio",
+              media: audio_url
+            }
+          }.to_json
+          
+          endpoint = "#{base_url}/message/sendMedia/#{encoded_instance_name}"
+          
+          response = HTTParty.post(
+            endpoint,
+            body: body,
+            headers: headers
+          )
+          
+          response
+        end
+
+        def send_api_zap_pdf(pdf_url, caption, phone, delay, instance_name = nil)
+          instance_name = instance_name || Account.first.evolution_instance_name
+
+          if (delay == true) || (delay == "true")
+            custom_delay
+          end
+          
+          base_url = Account.last.evolution_base_url
+          api_key = Account.last.evolution_api_key
+          encoded_instance_name = ERB::Util.url_encode(instance_name)
+          
+          headers = {
+            "Content-Type" => "application/json",
+            "apikey" => api_key
+          }
+          
+          body = {
+            number: "55" + phone,
+            options: {
+              delay: 10,
+              presence: "composing"
+            },
+            mediaMessage: {
+              mediatype: "document",
+              caption: caption,
+              media: pdf_url,
+              fileName: "documento.pdf"
+            }
+          }.to_json
+          
+          endpoint = "#{base_url}/message/sendMedia/#{encoded_instance_name}"
+          
+          response = HTTParty.post(
+            endpoint,
+            body: body,
+            headers: headers
+          )
+          
+          response
+        end
+
     end
   end
