@@ -174,10 +174,12 @@ module ClinicManagement
           render json: { 
             success: true, 
             message: "Mensagem enfileirada com sucesso!#{delay_msg}",
+            delay_seconds: result[:delay_seconds],  # ← Adicionar aqui para JavaScript
             queue_info: {
               position: result[:position_in_queue],
               delay_seconds: result[:delay_seconds],
-              estimated_send_time: result[:estimated_send_time]&.strftime('%H:%M:%S')
+              estimated_send_time: result[:estimated_send_time]&.strftime('%H:%M:%S'),
+              instance_name: result[:instance_name]
             },
             lead_id: lead.id
           }
