@@ -156,6 +156,17 @@ module ClinicManagement
         
         Rails.logger.info "🔍 Lead #{lead.id} (#{lead.name}) usando instância: #{instance_name}"
         
+        # Validar se instance_name está presente
+        if instance_name.blank?
+          Rails.logger.error "❌ instance_name está vazio! Não é possível enviar mensagem."
+          render json: {
+            success: false,
+            message: "Erro: Instância do WhatsApp não configurada. Por favor, configure a instância Evolution API.",
+            lead_id: lead.id
+          }
+          return
+        end
+        
         # Enfileira a mensagem com delay automático
         result = EvolutionMessageQueueService.enqueue_message(
           phone: phone,
@@ -348,10 +359,29 @@ module ClinicManagement
       if respond_to?(:referral?) && referral?(current_user)
         # Use referral's WhatsApp instance
         referral = user_referral
-        referral&.evolution_instance_name
+        instance = referral&.evolution_instance_name
+        
+        Rails.logger.info "🔍 Referral detected - ID: #{referral&.id}, Name: #{referral&.name}"
+        Rails.logger.info "🔍 Referral evolution_instance_name: #{instance.inspect}"
+        Rails.logger.info "🔍 Referral instance_connected: #{referral&.instance_connected}"
+        
+        if instance.blank?
+          Rails.logger.warn "⚠️ Referral #{referral&.id} não tem evolution_instance_name configurado!"
+        end
+        
+        instance
       else
         # Use account's instance 2
-        Account.first&.evolution_instance_name_2
+        instance = Account.first&.evolution_instance_name_2
+        
+        Rails.logger.info "🔍 Account user detected"
+        Rails.logger.info "🔍 Account evolution_instance_name_2: #{instance.inspect}"
+        
+        if instance.blank?
+          Rails.logger.warn "⚠️ Account não tem evolution_instance_name_2 configurado!"
+        end
+        
+        instance
       end
     end
 
