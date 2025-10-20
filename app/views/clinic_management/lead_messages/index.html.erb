@@ -1,220 +1,93 @@
 <div class="my-8">
-  <%# Add a conditional title based on whether the user is a referral %>
   <% if @current_referral %>
     <h5 class="text-2xl font-bold">Minhas Mensagens Customizadas</h5>
     <p class="text-sm text-gray-600">Estas são as mensagens customizadas criadas por você.</p>
   <% else %>
-    <h5 class="text-2xl font-bold">Mensagens Customizadas Globais</h5>
-    <p class="text-sm text-gray-600">Estas são as mensagens globais disponíveis para uso.</p>
+    <h5 class="text-2xl font-bold">Mensagens Customizadas</h5>
   <% end %>
 </div>
 
-<div class="w-full">
-  <%# Fetch all service types once, filtering out removed ones %>
-  <% service_types = ClinicManagement::ServiceType.where(removed: false).order(:name) %>
+<% unless @current_referral %>
+  <%# Tabs para usuários não-referral %>
+  <div class="mb-6">
+    <div class="border-b border-gray-200">
+      <nav class="-mb-px flex space-x-4">
+        <button onclick="showTab('personalizadas')" 
+                id="tab-personalizadas"
+                class="tab-button py-2 px-4 border-b-2 font-medium text-sm active">
+          Personalizadas
+        </button>
+        <button onclick="showTab('globais')" 
+                id="tab-globais"
+                class="tab-button py-2 px-4 border-b-2 font-medium text-sm">
+          Mensagens Globais
+        </button>
+      </nav>
+    </div>
+  </div>
+<% end %>
 
-  <%# Iterate through each service type %>
-  <% service_types.each do |service_type| %>
-    <%# Filter the pre-filtered @messages (which are either global or referral-specific) by service type %>
-    <% filtered_messages = @messages.select { |m| m.service_type == service_type }.sort_by(&:created_at) %>
-    <%# Display table only if there are messages for this service type %>
-    <% if filtered_messages.any? %>
-      <h6 class="text-xl font-bold mt-6 mb-4"><%= "#{service_type.name} (#{filtered_messages.count})" %></h6>
-      <table class="w-full table-auto border-collapse border border-gray-300 text-left">
-        <thead>
-          <tr class="bg-gray-100">
-            <% unless referral?(current_user) %>
-              <th class="px-4 py-2">Tipo da Mensagem</th>
-            <% end %>
-            <th class="px-4 py-2">Nome da Mensagem</th>
-            <th class="px-4 py-2">Texto da Mensagem</th>
-            <th class="px-4 py-2">Mídia Anexada</th>
-            <th class="px-4 py-2">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          <%# Iterate through defined message types %>
-          <% ClinicManagement::LeadMessage.message_types.keys.each do |message_type| %>
-            <%# Filter messages further by the current message type %>
-            <% type_filtered_messages = filtered_messages.select { |m| m.message_type == message_type } %>
-            <%# Display each message %>
-            <% type_filtered_messages.each_with_index do |message, index| %>
-              <tr class="border-b border-gray-200 hover:bg-gray-50">
-                <%# Display humanized message type and index %>
-                <% unless referral?(current_user) %>
-                  <td class="px-4 py-2"><%= "#{message.message_type.humanize} ##{index + 1}" %></td>
-                <% end %>
-                <%# Display message name %>
-                <td class="px-4 py-2"><%= message.name %></td>
-                <%# Display message text, converting newlines to <br> %>
-                <td class="px-4 py-2"><%= message.text.gsub(/\n/, '<br>').html_safe %></td>
-                <%# Display media content if present %>
-                <td class="px-4 py-2">
-                  <% if message.has_media? %>
-                    <div class="media-preview">
-                      <% case message.whatsapp_media_type %>
-                      <% when 'image' %>
-                        <div class="mb-2">
-                          <%= image_tag message.media_url, 
-                                alt: "Imagem anexada", 
-                                class: "max-w-32 max-h-32 object-cover rounded border",
-                                style: "cursor: pointer;",
-                                onclick: "window.open('#{message.media_url}', '_blank')" %>
-                        </div>
-                        <p class="text-xs text-gray-600">📷 Imagem</p>
-                      <% when 'audio' %>
-                        <div class="mb-2">
-                          <audio controls class="w-full max-w-48">
-                            <source src="<%= message.media_url %>" type="<%= message.media_file.content_type %>">
-                            Seu navegador não suporta áudio.
-                          </audio>
-                        </div>
-                        <p class="text-xs text-gray-600">🎵 Áudio</p>
-                      <% when 'video' %>
-                        <div class="mb-2">
-                          <video controls class="max-w-32 max-h-32 rounded border">
-                            <source src="<%= message.media_url %>" type="<%= message.media_file.content_type %>">
-                            Seu navegador não suporta vídeo.
-                          </video>
-                        </div>
-                        <p class="text-xs text-gray-600">🎬 Vídeo</p>
-                      <% when 'document' %>
-                        <div class="mb-2">
-                          <%= link_to message.media_url, target: "_blank", class: "text-blue-600 hover:text-blue-800" do %>
-                            <div class="flex items-center space-x-2 p-2 border rounded bg-gray-50">
-                              <span class="text-2xl">📄</span>
-                              <div>
-                                <p class="text-sm font-medium">PDF</p>
-                                <p class="text-xs text-gray-500">Clique para abrir</p>
-                              </div>
-                            </div>
-                          <% end %>
-                        </div>
-                      <% end %>
-                      <% if message.media_caption.present? %>
-                        <p class="text-xs text-gray-700 italic mt-1">"<%= message.media_caption %>"</p>
-                      <% end %>
-                    </div>
-                  <% else %>
-                    <span class="text-gray-400 text-sm">Sem mídia</span>
-                  <% end %>
-                </td>
-                <%# Actions column (Edit/Delete) %>
-                <td class="px-4 py-2 space-x-2" style="display: flex;">
-                  <% can_modify = is_manager_above? || message.message_type == 'outro' %>
-                  <% if can_modify %>
-                    <%= link_to 'Editar', edit_lead_message_path(message), class: "px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600" %>
-                    <%= button_to 'Excluir', message, method: :delete, data: { turbo_confirm: 'Tem certeza que deseja excluir esta mensagem?' }, class: "px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600" %>
-                  <% else %>
-                    <span class="text-gray-400 text-sm italic">Somente gerentes</span>
-                  <% end %>
-                </td>
-              </tr>
-            <% end %>
-          <% end %>
-        </tbody>
-      </table>
-    <% end %>
-  <% end %>
+<% if @current_referral %>
+  <%# REFERRALS: Mostrar todas as mensagens sem tabs %>
+  <%= render partial: 'messages_table', locals: { messages_to_show: @messages, show_type_column: false } %>
+<% else %>
+  <%# NÃO-REFERRALS: Separar em duas tabs %>
+  
+  <%# TAB: Mensagens Personalizadas %>
+  <div id="tab-content-personalizadas" class="tab-content">
+    <p class="text-sm text-gray-600 mb-4">Mensagens personalizadas que você criou. Você pode editar e excluir estas mensagens.</p>
+    <% personalizadas = @messages.select { |m| m.message_type == 'outro' } %>
+    <%= render partial: 'messages_table', locals: { messages_to_show: personalizadas, show_type_column: true } %>
+  </div>
 
-  <%# Section for messages not assigned to any ServiceType %>
-  <% unassigned_messages = @messages.select { |m| m.service_type.nil? }.sort_by(&:created_at) %>
-  <% if unassigned_messages.any? %>
-    <h6 class="text-xl font-bold mt-6 mb-4">Mensagens Não Atribuídas (<%= unassigned_messages.count %>)</h6>
-    <table class="w-full table-auto border-collapse border border-gray-300 text-left">
-      <thead>
-        <tr class="bg-gray-100">
-          <th class="px-4 py-2">Tipo da Mensagem</th>
-          <th class="px-4 py-2">Nome da Mensagem</th>
-          <th class="px-4 py-2">Texto da Mensagem</th>
-          <th class="px-4 py-2">Mídia Anexada</th>
-          <th class="px-4 py-2">Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        <%# Iterate through defined message types %>
-        <% ClinicManagement::LeadMessage.message_types.keys.each do |message_type| %>
-          <%# Filter unassigned messages by the current message type %>
-          <% type_unassigned_messages = unassigned_messages.select { |m| m.message_type == message_type } %>
-          <%# Display each unassigned message %>
-          <% type_unassigned_messages.each_with_index do |message, index| %>
-            <tr class="border-b border-gray-200 hover:bg-gray-50">
-              <%# Display humanized message type and index %>
-              <td class="px-4 py-2"><%= "#{message.message_type.humanize} ##{index + 1}" %></td>
-              <%# Display message name %>
-              <td class="px-4 py-2"><%= message.name %></td>
-              <%# Display message text, converting newlines to <br> %>
-              <td class="px-4 py-2"><%= message.text.gsub(/\n/, '<br>').html_safe %></td>
-              <%# Display media content if present %>
-              <td class="px-4 py-2">
-                <% if message.has_media? %>
-                  <div class="media-preview">
-                    <% case message.whatsapp_media_type %>
-                    <% when 'image' %>
-                      <div class="mb-2">
-                        <%= image_tag message.media_url, 
-                              alt: "Imagem anexada", 
-                              class: "max-w-32 max-h-32 object-cover rounded border",
-                              style: "cursor: pointer;",
-                              onclick: "window.open('#{message.media_url}', '_blank')" %>
-                      </div>
-                      <p class="text-xs text-gray-600">📷 Imagem</p>
-                    <% when 'audio' %>
-                      <div class="mb-2">
-                        <audio controls class="w-full max-w-48">
-                          <source src="<%= message.media_url %>" type="<%= message.media_file.content_type %>">
-                          Seu navegador não suporta áudio.
-                        </audio>
-                      </div>
-                      <p class="text-xs text-gray-600">🎵 Áudio</p>
-                    <% when 'video' %>
-                      <div class="mb-2">
-                        <video controls class="max-w-32 max-h-32 rounded border">
-                          <source src="<%= message.media_url %>" type="<%= message.media_file.content_type %>">
-                          Seu navegador não suporta vídeo.
-                        </video>
-                      </div>
-                      <p class="text-xs text-gray-600">🎬 Vídeo</p>
-                    <% when 'document' %>
-                      <div class="mb-2">
-                        <%= link_to message.media_url, target: "_blank", class: "text-blue-600 hover:text-blue-800" do %>
-                          <div class="flex items-center space-x-2 p-2 border rounded bg-gray-50">
-                            <span class="text-2xl">📄</span>
-                            <div>
-                              <p class="text-sm font-medium">PDF</p>
-                              <p class="text-xs text-gray-500">Clique para abrir</p>
-                            </div>
-                          </div>
-                        <% end %>
-                      </div>
-                    <% end %>
-                    <% if message.media_caption.present? %>
-                      <p class="text-xs text-gray-700 italic mt-1">"<%= message.media_caption %>"</p>
-                    <% end %>
-                  </div>
-                <% else %>
-                  <span class="text-gray-400 text-sm">Sem mídia</span>
-                <% end %>
-              </td>
-               <%# Actions column (Edit/Delete) %>
-               <td class="px-4 py-2 space-x-2" style="display: flex;">
-                <% can_modify = is_manager_above? || message.message_type == 'outro' %>
-                <% if can_modify %>
-                  <%= link_to 'Editar', edit_lead_message_path(message), class: "px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600" %>
-                  <%= button_to 'Excluir', message, method: :delete, data: { turbo_confirm: 'Tem certeza que deseja excluir esta mensagem?' }, class: "px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600" %>
-                <% else %>
-                  <span class="text-gray-400 text-sm italic">Somente gerentes</span>
-                <% end %>
-              </td>
-            </tr>
-          <% end %>
-        <% end %>
-      </tbody>
-    </table>
-  <% end %>
-</div>
+  <%# TAB: Mensagens Globais %>
+  <div id="tab-content-globais" class="tab-content" style="display: none;">
+    <p class="text-sm text-gray-600 mb-4">Mensagens de sistema (Confirmação, Remarcação, Lembrete, etc.). <%= is_manager_above? ? 'Você pode editá-las.' : 'Apenas gerentes podem editar estas mensagens.' %></p>
+    <% globais = @messages.select { |m| m.message_type != 'outro' } %>
+    <%= render partial: 'messages_table', locals: { messages_to_show: globais, show_type_column: true } %>
+  </div>
+<% end %>
 
-<%# Button to create a new message - text remains the same %>
+<%# Button to create a new message %>
 <div class="mt-8">
   <%= link_to 'Criar Nova Mensagem Customizada', new_lead_message_path, class: "px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" %>
 </div>
+
+<script>
+function showTab(tabName) {
+  // Esconder todos os conteúdos
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.style.display = 'none';
+  });
+  
+  // Remover classe active de todos os botões
+  document.querySelectorAll('.tab-button').forEach(button => {
+    button.classList.remove('active');
+    button.classList.remove('border-blue-500', 'text-blue-600');
+    button.classList.add('border-transparent', 'text-gray-500');
+  });
+  
+  // Mostrar conteúdo selecionado
+  document.getElementById('tab-content-' + tabName).style.display = 'block';
+  
+  // Ativar botão selecionado
+  const activeButton = document.getElementById('tab-' + tabName);
+  activeButton.classList.add('active');
+  activeButton.classList.remove('border-transparent', 'text-gray-500');
+  activeButton.classList.add('border-blue-500', 'text-blue-600');
+}
+</script>
+
+<style>
+.tab-button {
+  transition: all 0.2s;
+}
+
+.tab-button:not(.active) {
+  @apply border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300;
+}
+
+.tab-button.active {
+  @apply border-blue-500 text-blue-600;
+}
+</style>
