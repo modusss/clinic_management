@@ -101,8 +101,13 @@
                 </td>
                 <%# Actions column (Edit/Delete) %>
                 <td class="px-4 py-2 space-x-2" style="display: flex;">
-                  <%= link_to 'Editar', edit_lead_message_path(message), class: "px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600" %>
-                  <%= button_to 'Excluir', message, method: :delete, data: { turbo_confirm: 'Tem certeza que deseja excluir esta mensagem?' }, class: "px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600" %> <%# Use turbo_confirm %>
+                  <% can_modify = is_manager_above? || message.message_type == 'outro' %>
+                  <% if can_modify %>
+                    <%= link_to 'Editar', edit_lead_message_path(message), class: "px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600" %>
+                    <%= button_to 'Excluir', message, method: :delete, data: { turbo_confirm: 'Tem certeza que deseja excluir esta mensagem?' }, class: "px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600" %>
+                  <% else %>
+                    <span class="text-gray-400 text-sm italic">Somente gerentes</span>
+                  <% end %>
                 </td>
               </tr>
             <% end %>
@@ -191,10 +196,15 @@
                   <span class="text-gray-400 text-sm">Sem mídia</span>
                 <% end %>
               </td>
-               <%# Actions column (Edit/Delete) - Corrected display style %>
-               <td class="px-4 py-2 space-x-2" style="display: flex;"> <%# Corrected from 'display: ruby;' %>
-                <%= link_to 'Editar', edit_lead_message_path(message), class: "px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600" %>
-                <%= button_to 'Excluir', message, method: :delete, data: { turbo_confirm: 'Tem certeza que deseja excluir esta mensagem?' }, class: "px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600" %> <%# Use turbo_confirm %>
+               <%# Actions column (Edit/Delete) %>
+               <td class="px-4 py-2 space-x-2" style="display: flex;">
+                <% can_modify = is_manager_above? || message.message_type == 'outro' %>
+                <% if can_modify %>
+                  <%= link_to 'Editar', edit_lead_message_path(message), class: "px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600" %>
+                  <%= button_to 'Excluir', message, method: :delete, data: { turbo_confirm: 'Tem certeza que deseja excluir esta mensagem?' }, class: "px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600" %>
+                <% else %>
+                  <span class="text-gray-400 text-sm italic">Somente gerentes</span>
+                <% end %>
               </td>
             </tr>
           <% end %>

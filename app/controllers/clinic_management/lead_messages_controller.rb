@@ -2,6 +2,7 @@ module ClinicManagement
   class LeadMessagesController < ApplicationController
     before_action :authenticate_user!
     before_action :set_message, only: [:show, :edit, :update, :destroy]
+    before_action :check_message_permissions, only: [:edit, :update, :destroy]
     skip_before_action :redirect_referral_users
     include GeneralHelper
     include MessagesHelper
@@ -25,7 +26,11 @@ module ClinicManagement
       @message = LeadMessage.new(message_params)
       # If the user is a referral, associate the message with their referral_id
       @message.referral_id = user_referral.id if referral?(current_user)
+      
+      # Force message_type = 3 (outro) for referrals and non-manager users
       if referral?(current_user)
+        @message.message_type = 3
+      elsif !is_manager_above?
         @message.message_type = 3
       end
       
@@ -47,9 +52,13 @@ module ClinicManagement
   
     def update
       if @message.update(message_params)
+        # Force message_type = 3 (outro) for referrals and non-manager users
         if referral?(current_user)
           @message.message_type = 3
+        elsif !is_manager_above?
+          @message.message_type = 3
         end
+        @message.save if @message.message_type_changed?
         redirect_to lead_messages_path
       else
         render :edit
@@ -350,6 +359,16 @@ module ClinicManagement
   
     def set_message
       @message = LeadMessage.find(params[:id])
+    end
+
+    def check_message_permissions
+      # Gerentes podem editar/excluir qualquer mensagem
+      return if is_manager_above?
+      
+      # Usuários comuns só podem editar/excluir mensagens do tipo "outro"
+      unless @message.message_type == 'outro'
+        redirect_to lead_messages_path, alert: 'Você não tem permissão para modificar mensagens de sistema. Apenas gerentes podem fazer isso.'
+      end
     end
   
     def message_params
