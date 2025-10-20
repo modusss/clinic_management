@@ -4,17 +4,42 @@ module ClinicManagement
     def get_lead_messages(lead, appointment)
       # Only show messages for the current referral if user is a referral, otherwise show global messages
       if referral?(current_user)
+        # Referrals: agrupar apenas por service_type
         LeadMessage.includes(:service_type)
           .joins(:service_type)
           .where(referral_id: user_referral.id)
           .where(clinic_management_service_types: { removed: false })
           .group_by { |m| m.service_type&.name || 'Sem categoria' }
       else
-        LeadMessage.includes(:service_type)
+        # Não-referrals: agrupar por tipo (Personalizadas vs Globais) e depois por service_type
+        messages = LeadMessage.includes(:service_type)
           .joins(:service_type)
           .where(referral_id: nil)
           .where(clinic_management_service_types: { removed: false })
-          .group_by { |m| m.service_type&.name || 'Sem categoria' }
+        
+        # Separar mensagens personalizadas das globais
+        personalizadas = messages.select { |m| m.message_type == 'outro' }
+        globais = messages.select { |m| m.message_type != 'outro' }
+        
+        result = {}
+        
+        # Adicionar mensagens personalizadas
+        if personalizadas.any?
+          personalizadas_por_tipo = personalizadas.group_by { |m| m.service_type&.name || 'Sem categoria' }
+          personalizadas_por_tipo.each do |service_name, msgs|
+            result["📝 Personalizadas - #{service_name}"] = msgs
+          end
+        end
+        
+        # Adicionar mensagens globais
+        if globais.any?
+          globais_por_tipo = globais.group_by { |m| m.service_type&.name || 'Sem categoria' }
+          globais_por_tipo.each do |service_name, msgs|
+            result["🌐 Mensagens Globais - #{service_name}"] = msgs
+          end
+        end
+        
+        result
       end
     end
 
