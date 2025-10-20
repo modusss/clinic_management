@@ -20,20 +20,33 @@ module ClinicManagement
       @lead = Lead.find(params[:id])
       @appointment = @lead.appointments.find(params[:appointment_id])
       
-      # Criar o registro de interação
-      LeadInteraction.create!(
-        lead: @lead,
-        appointment: @appointment,
-        user: current_user,
-        interaction_type: params[:interaction_type] || 'whatsapp_click',
-        occurred_at: Time.current
-      )
+      # Verificar se já existe uma interação recente (última hora) para evitar duplicações
+      last_interaction = @lead.lead_interactions
+        .where(appointment: @appointment, interaction_type: params[:interaction_type] || 'whatsapp_click')
+        .where('occurred_at > ?', 1.hour.ago)
+        .order(occurred_at: :desc)
+        .first
       
-      # Manter compatibilidade com sistema antigo
-      @appointment.update(
-        last_message_sent_at: Time.current, 
-        last_message_sent_by: current_user.name
-      )
+      @cooldown_active = last_interaction.present?
+      
+      # Se não houver interação na última hora, criar nova
+      if last_interaction.blank?
+        # Criar o registro de interação
+        LeadInteraction.create!(
+          lead: @lead,
+          appointment: @appointment,
+          user: current_user,
+          interaction_type: params[:interaction_type] || 'whatsapp_click',
+          occurred_at: Time.current
+        )
+        
+        # Manter compatibilidade com sistema antigo
+        @appointment.update(
+          last_message_sent_at: Time.current, 
+          last_message_sent_by: current_user.name
+        )
+      end
+      
       #byebug
       respond_to do |format|
         format.turbo_stream do
