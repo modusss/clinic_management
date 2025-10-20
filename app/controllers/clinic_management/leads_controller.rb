@@ -350,7 +350,7 @@ module ClinicManagement
         @date_range = (Date.current - 1.year)..Date.current
       else
         @leads = @leads.page(params[:page]).per(50)
-        @rows = load_leads_data(@leads)
+        @rows = load_leads_data(@leads, 'absent')
       end
 
       # 5) Renderização
@@ -725,7 +725,7 @@ module ClinicManagement
             header: "Telefone", 
             content: render_to_string(
               partial: "clinic_management/leads/phone_with_message_tracking", 
-              locals: { lead: lead, appointment: last_appointment }
+              locals: { lead: lead, appointment: last_appointment, persist_hint: (context == 'absent') }
             ).html_safe,
             class: "text-blue-500 hover:text-blue-700 nowrap"
           },
