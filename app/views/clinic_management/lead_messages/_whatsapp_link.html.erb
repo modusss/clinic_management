@@ -66,15 +66,33 @@
       </div>
     </div>
   <% else %>
-    <%# Manual WhatsApp link (original behavior) %>
-    <%= link_to "Enviar mensagem", 
-          whatsapp_link(phone_number, message), 
-          id: "whatsapp_action_link_#{unique_id_suffix}", 
-          target: "_blank", 
-          class: "nowrap bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded",
-          data: {
-            action: "click->message-tracking#recordMessageSent"
-          } %>
+    <%# Manual WhatsApp link (quando não conectado) %>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <%= link_to "Enviar mensagem", 
+            whatsapp_link(phone_number, message), 
+            id: "whatsapp_action_link_#{unique_id_suffix}", 
+            target: "_blank", 
+            class: "nowrap bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded",
+            data: {
+              action: "click->message-tracking#recordMessageSent"
+            } %>
+      
+      <%# Observações %>
+      <div style="font-size: 12px; color: #666; text-align: center;">
+        Observações
+      </div>
+      
+      <%# Botão copiar mensagem %>
+      <div style="display: flex; justify-content: center; align-items: center; gap: 16px;">
+        <button type="button"
+                class="text-sm text-gray-600 hover:text-gray-700 underline font-medium inline-flex items-center gap-1"
+                data-action="click->message-tracking#copyMessageText"
+                data-message-tracking-target="copyButton">
+          <i class="far fa-copy"></i>
+          Copiar mensagem
+        </button>
+      </div>
+    </div>
   <% end %>
 </div>
 
