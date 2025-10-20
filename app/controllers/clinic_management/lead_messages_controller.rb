@@ -34,6 +34,11 @@ module ClinicManagement
         @message.message_type = 3
       end
       
+      # Auto-assign service_type if there's only one available and none selected
+      if @message.service_type_id.blank?
+        service_types = ServiceType.where(removed: false)
+        @message.service_type_id = service_types.first.id if service_types.count == 1
+      end
 
       if @message.save
         redirect_to lead_messages_path, notice: 'Mensagem customizada criada com sucesso.'
@@ -58,7 +63,14 @@ module ClinicManagement
         elsif !is_manager_above?
           @message.message_type = 3
         end
-        @message.save if @message.message_type_changed?
+        
+        # Auto-assign service_type if there's only one available and none selected
+        if @message.service_type_id.blank?
+          service_types = ServiceType.where(removed: false)
+          @message.service_type_id = service_types.first.id if service_types.count == 1
+        end
+        
+        @message.save if @message.changed?
         redirect_to lead_messages_path
       else
         render :edit

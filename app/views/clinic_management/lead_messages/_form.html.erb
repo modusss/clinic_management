@@ -24,10 +24,19 @@
         </div>
       <% end %>
 
-      <div class="field mb-4">
-        <%= form.label :service_type_id, "Tipo de serviço", class: "block text-gray-700 text-sm font-bold mb-2" %>
-        <%= form.collection_select :service_type_id, ClinicManagement::ServiceType.where(removed: false).order(:name), :id, :name, { prompt: "Selecione um tipo de serviço", selected: ClinicManagement::ServiceType.where(removed: false).order(:name).first&.id }, { class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" } %>
-      </div>
+      <% service_types = ClinicManagement::ServiceType.where(removed: false).order(:name) %>
+      <% if service_types.count > 1 %>
+        <div class="field mb-4">
+          <%= form.label :service_type_id, "Tipo de serviço", class: "block text-gray-700 text-sm font-bold mb-2" %>
+          <%= form.collection_select :service_type_id, service_types, :id, :name, { prompt: "Selecione um tipo de serviço", selected: service_types.first&.id }, { class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" } %>
+        </div>
+      <% else %>
+        <%# Se houver apenas 1 tipo de serviço, não mostrar o campo %>
+        <%= form.hidden_field :service_type_id, value: service_types.first&.id %>
+        <div class="mb-4 px-3 py-2 bg-blue-50 border border-blue-200 rounded text-blue-800 text-sm">
+          <strong>Tipo de serviço:</strong> <%= service_types.first&.name %>
+        </div>
+      <% end %>
 
       <div class="field mb-4">
         <%= form.label :text, "Texto da mensagem", class: "block text-gray-700 text-sm font-bold mb-2" %>
