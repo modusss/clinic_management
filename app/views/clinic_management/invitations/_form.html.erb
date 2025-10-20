@@ -46,12 +46,20 @@
     </div>
 
     <%= form.fields_for :appointments do |appointment_fields| %>
-      <div class="mb-4">
+      <div class="mb-4" data-controller="service-display">
         <%= appointment_fields.label "Dia destinado", class: "block text-gray-700 font-bold" %>
+        <% use_grouping, options_data = grouped_services_for_select(services_list) %>
         <%= appointment_fields.select :service_id,
-        options_for_select(services_list.map { |s| [description_service(s), s.id] }, selected: service),
+        use_grouping ? grouped_options_for_select(options_data, selected: service) : options_for_select(options_data, selected: service),
         {},
-        class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+        class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline",
+        data: { 
+          service_display_target: "select",
+          action: "change->service-display#updateDisplay"
+        } %>
+        <div data-service-display-target="display" 
+             class="hidden mt-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded text-blue-800 text-sm font-medium">
+        </div>
       </div>
     <% end %>
     <br>
