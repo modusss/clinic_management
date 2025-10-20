@@ -37,7 +37,7 @@
   <div id="tab-content-personalizadas" class="tab-content">
     <p class="text-sm text-gray-600 mb-4">Mensagens personalizadas que você criou. Você pode editar e excluir estas mensagens.</p>
     <% personalizadas = @messages.select { |m| m.message_type == 'outro' } %>
-    <%= render partial: 'messages_table', locals: { messages_to_show: personalizadas, show_type_column: true } %>
+    <%= render partial: 'messages_table', locals: { messages_to_show: personalizadas, show_type_column: false } %>
   </div>
 
   <%# TAB: Mensagens Globais %>
