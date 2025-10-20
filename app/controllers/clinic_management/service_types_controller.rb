@@ -4,7 +4,7 @@ module ClinicManagement
   
       # GET /service_types
       def index
-        @rows = ServiceType.all.order(:name).map.with_index(1) do |st, index|
+        @rows = ServiceType.where(removed: false).order(:name).map.with_index(1) do |st, index|
           [
             { header: "#", content: index },
             { header: "Nome", content: st.name },
@@ -49,8 +49,8 @@ module ClinicManagement
   
       # DELETE /service_types/1
       def destroy
-        @service_type.destroy
-        redirect_to service_types_url, notice: "Tipo de serviço removido com sucesso."
+        @service_type.update(removed: true)
+        redirect_to service_types_url, notice: "Tipo de serviço removido com sucesso. Ele não aparecerá mais nas listas, mas os registros existentes serão mantidos."
       end
   
       private
@@ -62,12 +62,8 @@ module ClinicManagement
       end
   
       def delete_button(st)
-        if st.services.present? || st.lead_messages.present?
-          "--"
-        else
-          helpers.button_to(service_type_path(st), method: :delete, data: { confirm: "Are you sure?" }) do
-            helpers.content_tag(:i, "", class: "fas fa-trash")
-          end
+        helpers.button_to(service_type_path(st), method: :delete, data: { confirm: "Tem certeza que deseja remover este tipo de serviço? Ele não aparecerá mais nas listas, mas os registros existentes serão mantidos." }) do
+          helpers.content_tag(:i, "", class: "fas fa-trash")
         end
       end
   

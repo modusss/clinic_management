@@ -10,8 +10,8 @@
 </div>
 
 <div class="w-full">
-  <%# Fetch all service types once %>
-  <% service_types = ClinicManagement::ServiceType.all.order(:name) %>
+  <%# Fetch all service types once, filtering out removed ones %>
+  <% service_types = ClinicManagement::ServiceType.where(removed: false).order(:name) %>
 
   <%# Iterate through each service type %>
   <% service_types.each do |service_type| %>

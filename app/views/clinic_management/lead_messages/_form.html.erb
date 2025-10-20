@@ -26,7 +26,7 @@
 
       <div class="field mb-4">
         <%= form.label :service_type_id, "Tipo de serviço", class: "block text-gray-700 text-sm font-bold mb-2" %>
-        <%= form.collection_select :service_type_id, ClinicManagement::ServiceType.all, :id, :name, { prompt: "Selecione um tipo de serviço", selected: ClinicManagement::ServiceType.all.first.id }, { class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" } %>
+        <%= form.collection_select :service_type_id, ClinicManagement::ServiceType.where(removed: false).order(:name), :id, :name, { prompt: "Selecione um tipo de serviço", selected: ClinicManagement::ServiceType.where(removed: false).order(:name).first&.id }, { class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" } %>
       </div>
 
       <div class="field mb-4">

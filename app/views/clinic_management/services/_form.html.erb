@@ -13,7 +13,7 @@
   <div>
     <%= form.label :service_type_id, "Tipo de atendimento", class: "block font-medium mb-2" %>
     <%= form.collection_select :service_type_id, 
-        ClinicManagement::ServiceType.all, 
+        ClinicManagement::ServiceType.where(removed: false).order(:name), 
         :id, 
         :name, 
         {}, 
