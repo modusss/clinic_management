@@ -10,6 +10,12 @@ module ClinicManagement
     def set_referral
       @current_referral = Referral.find_by(code: current_user.memberships.last.code)
     end
+    
+    # Helper para acessar a conta do usuário atual
+    def current_account
+      @current_account ||= current_user&.accounts&.first
+    end
+    helper_method :current_account
 
     def authenticate_user!
       unless user_signed_in?
