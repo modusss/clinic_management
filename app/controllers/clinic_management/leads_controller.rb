@@ -60,6 +60,65 @@ module ClinicManagement
       end
     end
     
+    # POST /leads/:id/make_call
+    # Inicia uma chamada telefônica através da API nVoip
+    def make_call
+      @lead = Lead.find(params[:id])
+      @appointment = @lead.appointments.find(params[:appointment_id])
+      
+      # Verificar se nVoip está configurado para a conta
+      unless current_account.nvoip_configured?
+        return render json: { 
+          success: false, 
+          error: 'nVoip não está configurado para esta conta' 
+        }, status: :unprocessable_entity
+      end
+      
+      # Iniciar chamada via nVoip
+      service = NvoipService.new(current_account)
+      result = service.make_call(
+        @lead.phone,
+        lead_id: @lead.id,
+        appointment_id: @appointment.id
+      )
+      
+      if result[:success]
+        # Registrar interação apenas se a chamada foi iniciada com sucesso
+        LeadInteraction.create!(
+          lead: @lead,
+          appointment: @appointment,
+          user: current_user,
+          interaction_type: 'phone_call',
+          occurred_at: Time.current,
+          notes: "Chamada iniciada via nVoip - ID: #{result[:data]['id']}"
+        )
+        
+        # Manter compatibilidade com sistema antigo
+        @appointment.update(
+          last_message_sent_at: Time.current,
+          last_message_sent_by: current_user.name
+        )
+        
+        render json: {
+          success: true,
+          message: 'Chamada iniciada com sucesso',
+          call_id: result[:data]['id']
+        }
+      else
+        render json: {
+          success: false,
+          error: result[:error]
+        }, status: :unprocessable_entity
+      end
+      
+    rescue StandardError => e
+      Rails.logger.error "❌ Erro ao iniciar chamada: #{e.message}"
+      render json: {
+        success: false,
+        error: e.message
+      }, status: :internal_server_error
+    end
+    
     # GET /leads/1
     def show
       @rows = get_lead_data

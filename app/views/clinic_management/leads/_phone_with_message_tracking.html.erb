@@ -18,16 +18,28 @@
                     },
                     class: "whatsapp-link #{'opacity-50' unless lead.has_whatsapp?}" %>
         
-        <a style="display: inline-flex; align-items: center; color: #4B5563; text-decoration: none;" 
-           href="tel:<%= current_user&.phone_prefix.present? ? current_user.phone_prefix : '' %><%= lead.phone %>" 
-           title="Ligar para <%= current_user&.phone_prefix.present? ? current_user.phone_prefix : '' %><%= lead.phone %>"
-           data-action="click->message-tracking#recordMessageSent">
-          <i class="fas fa-phone" style="margin-right: 4px;"></i>
-          <span style="font-size: 15px;">Ligar</span>
-          <% if current_user&.phone_prefix.present? %>
-            <span style="font-size: 10px; color: #9CA3AF; margin-left: 4px;" title="Prefixo configurado: <%= current_user.phone_prefix %>">(<%= current_user.phone_prefix %>)</span>
-          <% end %>
-        </a>
+        <% if current_account&.nvoip_configured? %>
+          <%# Usar nVoip API para fazer chamadas %>
+          <button type="button"
+                  style="display: inline-flex; align-items: center; background: none; border: none; color: #4B5563; cursor: pointer; padding: 0; font: inherit;"
+                  title="Ligar via nVoip para <%= lead.phone %>"
+                  data-action="click->message-tracking#makeNvoipCall">
+            <i class="fas fa-phone" style="margin-right: 4px;"></i>
+            <span style="font-size: 15px;">Ligar via nVoip</span>
+          </button>
+        <% else %>
+          <%# Fallback para link tel: tradicional %>
+          <a style="display: inline-flex; align-items: center; color: #4B5563; text-decoration: none;" 
+             href="tel:<%= current_user&.phone_prefix.present? ? current_user.phone_prefix : '' %><%= lead.phone %>" 
+             title="Ligar para <%= current_user&.phone_prefix.present? ? current_user.phone_prefix : '' %><%= lead.phone %>"
+             data-action="click->message-tracking#recordMessageSent">
+            <i class="fas fa-phone" style="margin-right: 4px;"></i>
+            <span style="font-size: 15px;">Ligar</span>
+            <% if current_user&.phone_prefix.present? %>
+              <span style="font-size: 10px; color: #9CA3AF; margin-left: 4px;" title="Prefixo configurado: <%= current_user.phone_prefix %>">(<%= current_user.phone_prefix %>)</span>
+            <% end %>
+          </a>
+        <% end %>
         
         <!-- WhatsApp Status Toggle -->
         <div class="flex items-center ml-2">
