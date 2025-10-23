@@ -75,13 +75,22 @@ module ClinicManagement
         }, status: :unprocessable_entity
       end
       
-      # Iniciar chamada via nVoip com contexto
+      # Verificar se o usuário atual tem Usuário SIP configurado
+      unless current_user.nvoip_enabled && current_user.nvoip_sip_user.present?
+        return render json: { 
+          success: false, 
+          error: 'Você não tem um Usuário SIP (ramal) configurado. Contate o administrador.' 
+        }, status: :unprocessable_entity
+      end
+      
+      # Iniciar chamada via nVoip com contexto e ramal do usuário
       service = NvoipService.new(current_account)
       result = service.make_call(
         @lead.phone,
         lead_id: @lead.id,
         appointment_id: @appointment.id,
-        context: @context
+        context: @context,
+        user_sip_ramal: current_user.nvoip_sip_user
       )
       
       if result[:success]
