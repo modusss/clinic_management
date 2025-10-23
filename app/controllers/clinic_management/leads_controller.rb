@@ -65,6 +65,7 @@ module ClinicManagement
     def make_call
       @lead = Lead.find(params[:id])
       @appointment = @lead.appointments.find(params[:appointment_id])
+      @context = params[:context] || 'other'  # 'absent' ou 'other'
       
       # Verificar se nVoip está configurado para a conta
       unless current_account.nvoip_configured?
@@ -74,12 +75,13 @@ module ClinicManagement
         }, status: :unprocessable_entity
       end
       
-      # Iniciar chamada via nVoip
+      # Iniciar chamada via nVoip com contexto
       service = NvoipService.new(current_account)
       result = service.make_call(
         @lead.phone,
         lead_id: @lead.id,
-        appointment_id: @appointment.id
+        appointment_id: @appointment.id,
+        context: @context
       )
       
       if result[:success]
