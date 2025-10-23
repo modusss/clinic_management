@@ -83,17 +83,10 @@ module ClinicManagement
       )
       
       if result[:success]
-        # Registrar interação apenas se a chamada foi iniciada com sucesso
-        LeadInteraction.create!(
-          lead: @lead,
-          appointment: @appointment,
-          user: current_user,
-          interaction_type: 'phone_call',
-          occurred_at: Time.current,
-          notes: "Chamada iniciada via nVoip - ID: #{result[:data]['id']}"
-        )
+        # NÃO registrar interação aqui - será registrada pelo webhook quando confirmar que foi atendida
+        Rails.logger.info "📞 nVoip: Chamada iniciada - Call ID: #{result[:data]['id']} - aguardando confirmação via webhook"
         
-        # Manter compatibilidade com sistema antigo
+        # Manter compatibilidade com sistema antigo (marca que tentou contato)
         @appointment.update(
           last_message_sent_at: Time.current,
           last_message_sent_by: current_user.name
