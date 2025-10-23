@@ -1,0 +1,76 @@
+/* Highlight de chamada em andamento */
+.calling-active {
+  animation: callingPulse 2s ease-in-out infinite;
+  position: relative;
+}
+
+.calling-active::before {
+  content: "📞 Ligando...";
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 13px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  z-index: 100;
+  animation: badgePulse 1.5s ease-in-out infinite;
+  white-space: nowrap;
+}
+
+@keyframes callingPulse {
+  0%, 100% {
+    background-color: rgba(16, 185, 129, 0.08);
+    border-left: 4px solid #10B981;
+  }
+  50% {
+    background-color: rgba(16, 185, 129, 0.15);
+    border-left: 4px solid #059669;
+  }
+}
+
+@keyframes badgePulse {
+  0%, 100% {
+    transform: translateY(-50%) scale(1);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    transform: translateY(-50%) scale(1.05);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.6);
+  }
+}
+
+/* Ajuste para hover não conflitar com calling-active */
+.calling-active:hover {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+}
+
+/* Animação de entrada do badge */
+.calling-active::before {
+  animation: badgePulse 1.5s ease-in-out infinite, slideInBadge 0.3s ease-out;
+}
+
+@keyframes slideInBadge {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+  .calling-active::before {
+    font-size: 11px;
+    padding: 6px 12px;
+    left: 5px;
+  }
+}
+

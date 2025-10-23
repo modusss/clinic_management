@@ -785,7 +785,12 @@ module ClinicManagement
 
         # Removida a diferenciação - usar sempre a estrutura completa para todos
         [
-          {header: "Ordem", content: index + 1},
+          {
+            header: "Ordem", 
+            content: index + 1, 
+            row_id: "lead-row-#{lead.id}",  # ID único para highlight
+            row_class: ""  # Classe será manipulada via JS para highlight
+          },
           {
             header: "Paciente", 
             content: render_to_string(

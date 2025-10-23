@@ -6,7 +6,8 @@
      data-message-tracking-lead-id-value="<%= lead.id %>"
      data-message-tracking-appointment-id-value="<%= appointment.id %>"
      data-message-tracking-no-whatsapp-value="<%= lead.no_whatsapp || false %>"
-     data-message-tracking-persist-hint-value="<%= local_assigns[:persist_hint] || false %>">
+     data-message-tracking-persist-hint-value="<%= local_assigns[:persist_hint] || false %>"
+     data-message-tracking-row-id-value="lead-row-<%= lead.id %>">
   <div class="flex items-center">
     <% if lead.phone.present? %>
       <div class="flex items-center gap-2">
