@@ -6,6 +6,11 @@
       view_type: @view_type 
     } %>
 
+<%# Wrapper para o sistema de fila de ligações - ENVOLVE TODA A PÁGINA %>
+<div data-controller="call-queue" data-call-queue-nvoip-configured-value="<%= current_account&.nvoip_configured? %>">
+  <%# O dropdown flutuante será renderizado aqui %>
+  <%= render partial: "clinic_management/leads/call_queue_dropdown" if current_account&.nvoip_configured? %>
+
 <% if referral?(current_user) %>
 <h5 class="text-xl font-semibold text-gray-800">Lista dos pacientes ausentes mais antigos que 120 dias</h5>
 <br>
@@ -253,6 +258,8 @@
   <% end %>
 
 <% end %>
+
+</div><%# Fecha o wrapper do call-queue controller %>
 
 <style>
 .sr-only {

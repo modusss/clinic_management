@@ -19,16 +19,33 @@
                     class: "whatsapp-link #{'opacity-50' unless lead.has_whatsapp?}" %>
         
         <% if current_account&.nvoip_configured? %>
-          <%# Usar nVoip API para fazer chamadas (desktop) ou tel: direto (mobile) %>
-          <button type="button"
-                  style="display: inline-flex; align-items: center; background: none; border: none; color: #4B5563; cursor: pointer; padding: 0; font: inherit;"
-                  title="Ligar para <%= lead.phone %>"
-                  data-phone="<%= current_user&.phone_prefix.present? ? current_user.phone_prefix : '' %><%= lead.phone %>"
-                  data-context="<%= local_assigns[:persist_hint] ? 'absent' : 'other' %>"
-                  data-action="click->message-tracking#makeNvoipCall">
-            <i class="fas fa-phone" style="margin-right: 4px;"></i>
-            <span style="font-size: 15px;">Ligar</span>
-          </button>
+          <div class="flex items-center gap-2">
+            <%# Botão Ligar %>
+            <button type="button"
+                    style="display: inline-flex; align-items: center; background: none; border: none; color: #4B5563; cursor: pointer; padding: 0; font: inherit;"
+                    title="Ligar para <%= lead.phone %>"
+                    data-phone="<%= current_user&.phone_prefix.present? ? current_user.phone_prefix : '' %><%= lead.phone %>"
+                    data-context="<%= local_assigns[:persist_hint] ? 'absent' : 'other' %>"
+                    data-action="click->message-tracking#makeNvoipCall">
+              <i class="fas fa-phone" style="margin-right: 4px;"></i>
+              <span style="font-size: 15px;">Ligar</span>
+            </button>
+            
+            <%# Botão Adicionar à Fila (apenas na página de ausentes) %>
+            <% if local_assigns[:persist_hint] %>
+              <button type="button"
+                      class="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 border border-blue-300 rounded hover:bg-blue-50 transition"
+                      title="Adicionar à fila de ligações"
+                      data-action="click->call-queue#addToQueue"
+                      data-lead-id="<%= lead.id %>"
+                      data-appointment-id="<%= appointment.id %>"
+                      data-lead-name="<%= lead.name %>"
+                      data-lead-phone="<%= lead.phone %>">
+                <i class="fas fa-plus-circle mr-1"></i>
+                Fila
+              </button>
+            <% end %>
+          </div>
         <% else %>
           <%# Fallback para link tel: tradicional %>
           <a style="display: inline-flex; align-items: center; color: #4B5563; text-decoration: none;" 
