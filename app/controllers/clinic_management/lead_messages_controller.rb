@@ -193,6 +193,35 @@ module ClinicManagement
           return
         end
         
+        # ⚠️ VALIDAÇÃO SÍNCRONA: Verificar se o número tem WhatsApp ANTES de enfileirar
+        Rails.logger.info "🔍 Validando se número #{phone} tem WhatsApp..."
+        validation_response = send_api_zap_message("✓", phone, false, instance_name)
+        
+        # Parsear resposta se for HTTParty::Response
+        parsed_validation = validation_response.is_a?(HTTParty::Response) ? validation_response.parsed_response : validation_response
+        
+        # Verificar se o número não tem WhatsApp
+        if parsed_validation.is_a?(Hash) && 
+           parsed_validation["status"] == 400 && 
+           parsed_validation.dig("response", "message")&.is_a?(Array) &&
+           parsed_validation.dig("response", "message")&.any? { |msg| msg["exists"] == false }
+          
+          Rails.logger.warn "⚠️ Número #{phone} não tem WhatsApp"
+          
+          # Marcar lead como sem WhatsApp
+          lead.update(no_whatsapp: true)
+          
+          render json: {
+            success: false,
+            message: "❌ Este número não possui WhatsApp. O lead foi marcado como 'sem WhatsApp'.",
+            lead_id: lead.id,
+            whatsapp_disabled: true
+          }
+          return
+        end
+        
+        Rails.logger.info "✅ Número validado, enfileirando mensagem real..."
+        
         # Enfileira a mensagem com delay automático
         # ⚠️ IMPORTANTE: Aplicar cooldown APENAS se context == 'absent'
         result = EvolutionMessageQueueService.enqueue_message(
