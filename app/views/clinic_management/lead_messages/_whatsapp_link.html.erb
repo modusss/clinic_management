@@ -21,6 +21,7 @@
         <%= form.hidden_field :lead_id, value: lead_id %>
         <%= form.hidden_field :appointment_id, value: appointment_id %>
         <%= form.hidden_field :message_id, value: message_id %>
+        <%= form.hidden_field :context, value: (local_assigns[:context] || 'other') %>
         <%= form.submit "Enviar pelo Sistema", 
               id: "evolution_send_button_#{unique_id_suffix}",
               class: "w-full bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-4 rounded cursor-pointer transition-all duration-200 shadow-sm",

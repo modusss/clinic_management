@@ -40,6 +40,7 @@
             }
           %>
           <%= hidden_field_tag :appointment_id, (appointment.present? ? appointment.id : "") %>
+          <%= hidden_field_tag :context, (local_assigns[:context] || 'other') %>
         </div>
       <% end %>
       

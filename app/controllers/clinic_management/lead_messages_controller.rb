@@ -89,6 +89,7 @@ module ClinicManagement
         add_message_sent(appointment, message.name)
         lead = Lead.find_by(id: params[:lead_id])
         message_data = get_message(message, lead, appointment.service)
+        context = params[:context] || 'other'  # Capturar contexto
         
         # Check if we can use Evolution API for automatic sending (with error handling)
         can_use_evolution = false
@@ -110,7 +111,8 @@ module ClinicManagement
               lead_id: lead.id,
               appointment_id: appointment.id,
               can_use_evolution: can_use_evolution,
-              message_id: message.id
+              message_id: message.id,
+              context: context  # Passar contexto para o partial
             }
           ),
           turbo_stream.update(
@@ -125,6 +127,7 @@ module ClinicManagement
         # Always provide fallback manual option even on error
         lead = Lead.find_by(id: params[:lead_id])
         appointment = Appointment.find_by(id: params[:appointment_id])
+        context = params[:context] || 'other'  # Capturar contexto mesmo no erro
         
         if lead && appointment
           # Try to get a basic message or use a fallback
@@ -139,7 +142,8 @@ module ClinicManagement
               lead_id: lead.id,
               appointment_id: appointment.id,
               can_use_evolution: false,
-              message_id: nil
+              message_id: nil,
+              context: context  # Passar contexto para o partial
             }
           )
         else
@@ -158,8 +162,9 @@ module ClinicManagement
         message = LeadMessage.find_by(id: params[:message_id])
         appointment = Appointment.find_by(id: params[:appointment_id])
         lead = Lead.find_by(id: params[:lead_id])
+        context = params[:context] || 'other'  # Capturar contexto
         
-        Rails.logger.info "📋 Found records - Message: #{message&.id}, Appointment: #{appointment&.id}, Lead: #{lead&.id}"
+        Rails.logger.info "📋 Found records - Message: #{message&.id}, Appointment: #{appointment&.id}, Lead: #{lead&.id}, Context: #{context}"
         
         message_data = get_message(message, lead, appointment.service)
         message_text = message_data[:text]
@@ -189,14 +194,16 @@ module ClinicManagement
         end
         
         # Enfileira a mensagem com delay automático
+        # ⚠️ IMPORTANTE: Aplicar cooldown APENAS se context == 'absent'
         result = EvolutionMessageQueueService.enqueue_message(
           phone: phone,
           message_text: message_text,
           media_details: media_details&.stringify_keys,
           instance_name: instance_name,
-          lead_id: lead.id,              # Adiciona lead_id para verificação de cooldown
-          user_id: current_user.id,      # Adiciona user_id para registro de interação
-          appointment_id: appointment.id # Adiciona appointment_id (obrigatório para interação)
+          lead_id: lead.id,
+          user_id: current_user.id,
+          appointment_id: appointment.id,
+          skip_cooldown_check: (context != 'absent')  # Pular cooldown EXCETO se for da view absent
         )
         
         if result[:success]

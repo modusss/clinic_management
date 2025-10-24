@@ -660,10 +660,10 @@ module ClinicManagement
     end
     
 
-    def generate_message_content(lead, appointment)
+    def generate_message_content(lead, appointment, context = nil)
       render_to_string(
         partial: "clinic_management/lead_messages/lead_message_form",
-        locals: { lead: lead, appointment: appointment }
+        locals: { lead: lead, appointment: appointment, context: context }
       )
     end
 
@@ -694,7 +694,7 @@ module ClinicManagement
           {header: "Status", content: ap.status, class: helpers.status_class(ap)},
           {header: "Data do convite", content: invitation&.created_at&.strftime("%d/%m/%Y")},
           {header: "Região", content: invitation&.region&.name},
-          {header: "Mensagem", content: generate_message_content(@lead, ap), id: "whatsapp-link-#{@lead.id}"}
+          {header: "Mensagem", content: generate_message_content(@lead, ap, 'show'), id: "whatsapp-link-#{@lead.id}"}
         ]
 
         unless helpers.referral?(current_user)
@@ -810,7 +810,7 @@ module ClinicManagement
             ).html_safe,
             class: "text-blue-500 hover:text-blue-700 nowrap"
           },
-          {header: "Mensagem", content: generate_message_content(lead, get_full_appointment.call), id: "whatsapp-link-#{lead.id}"},
+          {header: "Mensagem", content: generate_message_content(lead, get_full_appointment.call, context), id: "whatsapp-link-#{lead.id}"},
           {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: get_full_appointment.call, message: "" }), id: "appointment-comments-#{last_appointment.id}"},
           {header: "Último indicador", content: last_referral(last_invitation)},
           {header: "Qtd. de convites", content: lead.invitations.count},
