@@ -34,6 +34,19 @@
             
             <%# Botão Adicionar à Fila (apenas na página de ausentes) %>
             <% if local_assigns[:persist_hint] %>
+              <% 
+                # Buscar appointment completo para pegar observações e data do serviço
+                full_appointment = ClinicManagement::Appointment.includes(:service).find_by(id: appointment.id)
+                service_date = full_appointment&.service&.date&.strftime("%d/%m/%Y") || "Data não disponível"
+                appointment_comments = full_appointment&.comments.presence || "Sem observações"
+                
+                # Determinar status baseado em attendance
+                status_text = if appointment.attendance == false
+                  "Ausente"
+                else
+                  "Atendeu há mais de 1 ano"
+                end
+              %>
               <button type="button"
                       class="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 border border-blue-300 rounded hover:bg-blue-50 transition"
                       title="Adicionar à fila de ligações"
@@ -41,7 +54,10 @@
                       data-lead-id="<%= lead.id %>"
                       data-appointment-id="<%= appointment.id %>"
                       data-lead-name="<%= lead.name %>"
-                      data-lead-phone="<%= lead.phone %>">
+                      data-lead-phone="<%= lead.phone %>"
+                      data-service-date="<%= service_date %>"
+                      data-appointment-comments="<%= appointment_comments %>"
+                      data-status="<%= status_text %>">
                 <i class="fas fa-plus-circle mr-1"></i>
                 Fila
               </button>
