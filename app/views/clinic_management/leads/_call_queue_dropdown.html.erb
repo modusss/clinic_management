@@ -1,3 +1,6 @@
+<%# Subscrever ao canal de eventos da fila de ligações %>
+<%= turbo_stream_from "call_queue_events" %>
+
 <%# Dropdown flutuante da fila de ligações - aparece no canto inferior direito %>
 <div data-call-queue-target="dropdown"
      class="call-queue-dropdown hidden"
