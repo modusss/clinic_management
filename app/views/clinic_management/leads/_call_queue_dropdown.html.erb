@@ -97,6 +97,20 @@
     50% { opacity: 0.8; }
   }
   
+  /* Seta indicadora de chamada ativa */
+  .calling-indicator {
+    color: #2563eb;
+    font-size: 1.2rem;
+    font-weight: bold;
+    animation: bounce 1s ease-in-out infinite;
+    display: inline-block;
+  }
+  
+  @keyframes bounce {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(5px); }
+  }
+  
   @keyframes slideInRight {
     from {
       transform: translateX(400px);
