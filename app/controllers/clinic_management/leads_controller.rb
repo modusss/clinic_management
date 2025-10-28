@@ -691,7 +691,7 @@ module ClinicManagement
           {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: ap, message: "" }), id: "appointment-comments-#{ap.id}"},                   
           {header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500"},
           {header: "Comparecimento", content: (ap.attendance == true ? "Sim" : "Não"), class: helpers.attendance_class(ap)},
-          {header: "Status", content: ap.status, class: helpers.status_class(ap)},
+          {header: "Status", content: ap.status, class: "size_20 " + helpers.status_class(ap.attendance)},
           {header: "Data do convite", content: invitation&.created_at&.strftime("%d/%m/%Y")},
           {header: "Região", content: invitation&.region&.name},
           {header: "Mensagem", content: generate_message_content(@lead, ap, 'show'), id: "whatsapp-link-#{@lead.id}"}
@@ -735,17 +735,13 @@ module ClinicManagement
       leads.map.with_index do |lead, index|
         last_invitation = lead.invitations.last
         
-        # ✅ CORREÇÃO: Determinar attendance baseado no contexto da action
-        # Se não temos contexto, buscar o appointment real para determinar attendance
-        attendance_value = if context == 'absent'
-          false
-        elsif context == 'attended' 
-          true
-        else
-          # Fallback: buscar o appointment real se não temos contexto
-          real_appointment = ClinicManagement::Appointment.find_by(id: lead.current_appointment_id)
-          real_appointment&.attendance || false
-        end
+        # ✅ CORREÇÃO: SEMPRE buscar o appointment real para determinar attendance correto
+        # A página "absent" pode conter:
+        # 1. Leads que faltaram no último atendimento (attendance = false)
+        # 2. Leads que compareceram há mais de 1 ano (attendance = true, mas antiga)
+        # Portanto, NÃO podemos assumir attendance baseado apenas no contexto!
+        real_appointment = ClinicManagement::Appointment.find_by(id: lead.current_appointment_id)
+        attendance_value = real_appointment&.attendance || false
         
         # Criar um objeto appointment que usa os dados já carregados da query
         last_appointment = OpenStruct.new(
@@ -764,10 +760,10 @@ module ClinicManagement
         # Determine the patient's status with order info on a separate line
         status_content = if last_appointment.attendance == false
           # First line: Patient was absent
-          "<div class='text-red-500 font-semibold'>Ausente</div>"
+          "<div class='text-red-500 font-semibold size_20'>Ausente</div>"
         else
           # First line: Patient attended but more than a year ago
-          "<div class='text-orange-500 font-semibold'>Atendeu há mais de 1 ano</div>"
+          "<div class='text-orange-500 font-semibold size_20'>Compareceu há mais de 1 ano</div>"
         end
         
         # Add order information as a second line with icon if there are orders
@@ -800,7 +796,7 @@ module ClinicManagement
             class: "nowrap size_20 patient-name" 
           },
           # Status column with separated order information
-          {header: "Status", content: status_content.html_safe, class: "!min-w-[300px]"},
+          {header: "Status", content: status_content.html_safe, class: "!min-w-[300px] size_20 " + helpers.status_class(last_appointment)},
           {header: "Responsável", content: responsible_content(last_invitation), class: "nowrap"},
           {
             header: "Telefone", 
