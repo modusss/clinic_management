@@ -812,9 +812,6 @@ module ClinicManagement
           },
           {header: "Mensagem", content: generate_message_content(lead, get_full_appointment.call, context), id: "whatsapp-link-#{lead.id}"},
           {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: get_full_appointment.call, message: "" }), id: "appointment-comments-#{last_appointment.id}"},
-          {header: "Último indicador", content: last_referral(last_invitation)},
-          {header: "Qtd. de convites", content: lead.invitations.count},
-          {header: "Qtd. de atendimentos", content: lead.appointments.count},
           {header: "Último atendimento", content: service_content_link(get_full_appointment.call), class: "nowrap"},
           {header: "Remarcação", content: reschedule_form(new_appointment, get_full_appointment.call), class: "text-orange-500" },
         ]
