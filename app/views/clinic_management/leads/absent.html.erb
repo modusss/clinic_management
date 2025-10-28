@@ -237,12 +237,49 @@
   <br>
   
   <!-- Add result count display -->
-  <div class="my-4 text-gray-700 px-4">
-    <!-- Format the count -->
-    <%= number_with_delimiter(@leads.total_count, delimiter: ".") %> 
-    <!-- Determine singular or plural word based on count -->
-    <%= @leads.total_count == 1 ? 'resultado' : 'resultados' %> 
-    encontrado(s).
+  <div class="my-4 px-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="text-gray-700">
+      <!-- Format the count -->
+      <%= number_with_delimiter(@leads.total_count, delimiter: ".") %> 
+      <!-- Determine singular or plural word based on count -->
+      <%= @leads.total_count == 1 ? 'resultado' : 'resultados' %> 
+      encontrado(s).
+    </div>
+    
+    <%# Botão para adicionar todos os leads da página à fila de ligações %>
+    <% if current_account&.nvoip_configured? && @rows.any? %>
+      <% 
+        # Preparar dados dos leads de forma eficiente
+        leads_data = @leads.map do |lead| 
+          # Usar o appointment já carregado pela query complexa
+          appointment_id = lead.respond_to?(:current_appointment_id) ? lead.current_appointment_id : lead.appointments.last&.id
+          
+          # Buscar o appointment completo apenas se necessário
+          appointment = lead.appointments.find_by(id: appointment_id) if appointment_id
+          
+          next unless appointment
+          
+          {
+            id: lead.id,
+            appointment_id: appointment.id,
+            name: lead.name,
+            phone: lead.phone,
+            service_date: appointment.service.date.strftime('%d/%m/%Y'),
+            appointment_comments: appointment.comments || 'Sem observações',
+            status: lead.no_interest ? 'Sem interesse' : 
+                    (lead.respond_to?(:unified_last_contact_at) && lead.unified_last_contact_at.present? ? 'Contatado' : 'Ausente')
+          }
+        end.compact
+      %>
+      <button type="button"
+              class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-2.5 px-5 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
+              data-action="click->call-queue#addAllToQueue"
+              data-leads="<%= leads_data.to_json.gsub('"', '&quot;') %>"
+              title="Adicionar todos os <%= leads_data.size %> leads desta página à fila de ligações">
+        <i class="fas fa-plus-circle"></i>
+        <span>Adicionar Todos à Fila (<%= leads_data.size %>)</span>
+      </button>
+    <% end %>
   </div>
   
   <div id="table-tab" class="tab-content">
