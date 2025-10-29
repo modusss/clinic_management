@@ -85,12 +85,22 @@ module ClinicManagement
       
       # Iniciar chamada via nVoip com contexto e ramal do usuário
       service = NvoipService.new(current_account)
+      
+      # Definir timeout baseado no tipo de chamada:
+      # - is_sequence=true (fila automática): 15s (rápido para não travar)
+      # - is_sequence=false ou ausente (ligação individual): 25s (mais tempo)
+      is_sequence = params[:is_sequence] == 'true' || params[:is_sequence] == true
+      call_timeout = is_sequence ? 15 : 25
+      
+      Rails.logger.info "📞 nVoip: Tipo de chamada: #{is_sequence ? 'SEQUÊNCIA' : 'INDIVIDUAL'} - Timeout: #{call_timeout}s"
+      
       result = service.make_call(
         @lead.phone,
         lead_id: @lead.id,
         appointment_id: @appointment.id,
         context: @context,
-        user_sip_ramal: current_user.nvoip_sip_user
+        user_sip_ramal: current_user.nvoip_sip_user,
+        timeout: call_timeout
       )
       
       if result[:success]
