@@ -4,76 +4,55 @@
 <%# Dropdown flutuante da fila de ligações - aparece no canto inferior direito %>
 <div data-call-queue-target="dropdown"
      class="call-queue-dropdown hidden"
-     style="z-index: 100000 !important; position: fixed; bottom: 20px; right: 20px; width: 480px; max-height: 700px; z-index: 1000; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden;">
+     style="z-index: 100000 !important; position: fixed; bottom: 20px; right: 20px; width: 550px; max-height: 750px; z-index: 1000; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden;">
   
   <%# Header do Dropdown %>
-  <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 flex items-center justify-between cursor-pointer"
+  <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-4 flex items-center justify-between cursor-pointer"
        data-action="click->call-queue#toggleDropdown">
-    <div class="flex items-center gap-2">
-      <i class="fas fa-phone-volume"></i>
-      <span class="font-semibold">Fila de Ligações</span>
+    <div class="flex items-center gap-3">
+      <i class="fas fa-phone-volume text-xl"></i>
+      <span class="font-bold text-lg">Fila de Ligações</span>
       <span data-call-queue-target="counter" 
-            class="bg-white text-blue-700 rounded-full px-2 py-0.5 text-xs font-bold">
+            class="bg-white text-blue-700 rounded-full px-3 py-1 text-sm font-bold shadow-md">
         0
       </span>
     </div>
     <button type="button" class="text-white hover:text-gray-200">
-      <i class="fas fa-chevron-down"></i>
+      <i class="fas fa-chevron-down text-lg"></i>
     </button>
   </div>
   
   <%# Body do Dropdown %>
-  <div class="call-queue-body" style="max-height: 500px; overflow-y: auto;">
+  <div class="call-queue-body" style="max-height: 580px; overflow-y: auto;">
     <%# Estado vazio %>
-    <div data-call-queue-target="emptyState" class="text-center py-8 text-gray-500">
-      <i class="fas fa-phone-slash text-4xl mb-3 text-gray-300"></i>
-      <p class="text-sm">Nenhum lead na fila</p>
-      <p class="text-xs mt-1">Clique em "Fila" para adicionar</p>
+    <div data-call-queue-target="emptyState" class="text-center py-10 text-gray-500">
+      <i class="fas fa-phone-slash text-5xl mb-4 text-gray-300"></i>
+      <p class="text-base font-semibold">Nenhum lead na fila</p>
+      <p class="text-sm mt-2">Clique em "Fila" para adicionar</p>
     </div>
     
     <%# Lista de leads na fila %>
-    <div data-call-queue-target="queueList" class="divide-y divide-gray-200">
+    <div data-call-queue-target="queueList">
       <%# Preenchido dinamicamente via JavaScript %>
     </div>
   </div>
   
   <%# Footer com controles %>
-  <div class="border-t border-gray-200 bg-gray-50 px-4 py-3">
-    <div class="flex gap-2">
-      <%# Botão Iniciar Sequência %>
-      <button type="button"
-              data-call-queue-target="startButton"
-              data-action="click->call-queue#startSequence"
-              class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded transition disabled:opacity-50 disabled:cursor-not-allowed text-sm">
-        <i class="fas fa-play mr-1"></i>
-        Iniciar Sequência
-      </button>
-      
-      <%# Botão Pausar/Retomar %>
-      <button type="button"
-              data-call-queue-target="pauseButton"
-              data-action="click->call-queue#pauseSequence"
-              class="hidden bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-4 rounded transition text-sm">
-        ⏸️ Pausar
-      </button>
-      
-      <%# Botão de Emergência - Parar Tudo %>
-      <button type="button"
-              data-call-queue-target="stopButton"
-              data-action="click->call-queue#emergencyStop"
-              class="hidden bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-3 rounded transition text-sm"
-              title="Parar sequência imediatamente">
-        <i class="fas fa-stop"></i>
-      </button>
-      
+  <div class="border-t-2 border-gray-200 bg-gray-50 px-5 py-4">
+    <div class="flex gap-2 justify-center">
       <%# Botão Limpar Fila %>
       <button type="button"
               data-call-queue-target="clearButton"
               data-action="click->call-queue#clearQueue"
-              class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-3 rounded transition text-sm"
+              class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-5 rounded-lg transition text-base shadow-md transform hover:scale-105"
               title="Limpar fila">
-        <i class="fas fa-trash"></i>
+        <i class="fas fa-trash mr-2"></i>
+        Limpar Fila
       </button>
+    </div>
+    <div class="mt-3 text-center text-sm text-gray-700 font-medium">
+      <i class="fas fa-info-circle mr-1"></i>
+      Clique em "Ligar" ao lado de cada nome para fazer as ligações
     </div>
   </div>
 </div>
@@ -94,30 +73,20 @@
   
   .queue-item {
     transition: all 0.2s ease;
+    position: relative;
   }
   
-  .queue-item.current {
-    background: linear-gradient(90deg, #EFF6FF 0%, #DBEAFE 100%);
-    animation: pulse 2s ease-in-out infinite;
+  .queue-item:not(:last-child) {
+    border-bottom: 3px solid #e2e8f0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   }
   
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.8; }
+  .queue-item + .queue-item {
+    margin-top: 2px;
   }
   
-  /* Seta indicadora de chamada ativa */
-  .calling-indicator {
-    color: #2563eb;
-    font-size: 1.2rem;
-    font-weight: bold;
-    animation: bounce 1s ease-in-out infinite;
-    display: inline-block;
-  }
-  
-  @keyframes bounce {
-    0%, 100% { transform: translateX(0); }
-    50% { transform: translateX(5px); }
+  .queue-item:hover {
+    background-color: #f8fafc;
   }
   
   @keyframes slideInRight {
@@ -144,16 +113,17 @@
   
   /* Scrollbar customizada para a lista */
   .call-queue-body::-webkit-scrollbar {
-    width: 8px;
+    width: 10px;
   }
   
   .call-queue-body::-webkit-scrollbar-track {
     background: #f1f1f1;
+    border-radius: 5px;
   }
   
   .call-queue-body::-webkit-scrollbar-thumb {
     background: #888;
-    border-radius: 4px;
+    border-radius: 5px;
   }
   
   .call-queue-body::-webkit-scrollbar-thumb:hover {

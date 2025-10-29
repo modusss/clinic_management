@@ -272,11 +272,11 @@
         end.compact
       %>
       <button type="button"
-              class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-2.5 px-5 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
+              class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-3 text-base"
               data-action="click->call-queue#addAllToQueue"
               data-leads="<%= leads_data.to_json.gsub('"', '&quot;') %>"
               title="Adicionar todos os <%= leads_data.size %> leads desta página à fila de ligações">
-        <i class="fas fa-plus-circle"></i>
+        <i class="fas fa-plus-circle text-lg"></i>
         <span>Adicionar Todos à Fila (<%= leads_data.size %>)</span>
       </button>
     <% end %>
