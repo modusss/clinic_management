@@ -92,7 +92,8 @@ module ClinicManagement
       is_sequence = params[:is_sequence] == 'true' || params[:is_sequence] == true
       call_timeout = is_sequence ? 15 : 25
       
-      Rails.logger.info "📞 nVoip: Tipo de chamada: #{is_sequence ? 'SEQUÊNCIA' : 'INDIVIDUAL'} - Timeout: #{call_timeout}s"
+      Rails.logger.info "📞 nVoip: Tipo: #{is_sequence ? 'SEQUÊNCIA' : 'INDIVIDUAL'} - Timeout: #{call_timeout}s"
+      Rails.logger.info "📞 nVoip: Cancelamento automático via SIP BYE agendado com GoodJob"
       
       result = service.make_call(
         @lead.phone,
@@ -100,7 +101,8 @@ module ClinicManagement
         appointment_id: @appointment.id,
         context: @context,
         user_sip_ramal: current_user.nvoip_sip_user,
-        timeout: call_timeout
+        timeout: call_timeout,
+        schedule_cancellation: true  # Agendar cancelamento via SIP BYE
       )
       
       if result[:success]
