@@ -416,6 +416,7 @@ module ClinicManagement
       @all_leads = filter_by_date(@all_leads)
       @all_leads = filter_by_contact_status(@all_leads)
       @all_leads = filter_by_referral(@all_leads)  # Novo filtro aqui
+      @all_leads = filter_by_page_views(@all_leads)  # 🆕 Filtrar leads visualizados por outros
       @all_leads = apply_absent_leads_order(@all_leads)
 
       # 3) Filtro de busca por nome/telefone
@@ -426,10 +427,17 @@ module ClinicManagement
         @date_range = (Date.current - 1.year)..Date.current
       else
         @leads = @leads.page(params[:page]).per(50)
+        
+        # 🆕 Registrar visualização dos leads desta página
+        register_page_views(@leads)
+        
         @rows = load_leads_data(@leads, 'absent')
       end
 
-      # 5) Renderização
+      # 5) Limpeza de visualizações expiradas (executar ocasionalmente)
+      cleanup_expired_views if should_cleanup?
+
+      # 6) Renderização
       respond_to do |format|
         format.html { render :absent }
         format.html { render :absent_download if params[:view] == 'download' }
@@ -953,6 +961,61 @@ module ClinicManagement
         # Implemente a lógica para obter os serviços disponíveis
         # Similar à implementação que você já tem no ServicesController
         Service.where("date >= ?", Date.current).order(date: :asc)
+      end
+
+      # 🆕 Filtrar leads que estão sendo visualizados por outros usuários
+      def filter_by_page_views(scope)
+        # Obter IDs dos leads que estão bloqueados para este usuário
+        blocked_ids = ClinicManagement::LeadPageView.blocked_lead_ids_for_user(
+          current_user.id,
+          context: 'absent'
+        )
+        
+        # Se houver leads bloqueados, excluí-los do resultado
+        if blocked_ids.any?
+          Rails.logger.info "🔒 Filtrando #{blocked_ids.count} leads reservados por outros usuários"
+          scope.where.not(id: blocked_ids)
+        else
+          scope
+        end
+      end
+
+      # 🆕 Registrar visualização dos leads da página atual
+      def register_page_views(leads)
+        return if leads.blank?
+        
+        lead_ids = leads.map(&:id)
+        
+        # Registrar cada lead como visualizado pelo usuário atual
+        lead_ids.each do |lead_id|
+          ClinicManagement::LeadPageView.register_view(
+            lead_id,
+            current_user.id,
+            context: 'absent',
+            duration_hours: 3
+          )
+        end
+        
+        Rails.logger.info "✅ Registradas #{lead_ids.count} visualizações para usuário #{current_user.id}"
+      rescue StandardError => e
+        # Não quebrar a aplicação se houver erro no registro
+        Rails.logger.error "❌ Erro ao registrar visualizações: #{e.message}"
+      end
+
+      # 🆕 Decidir se deve limpar visualizações expiradas
+      def should_cleanup?
+        # Limpar apenas ocasionalmente (10% das requisições)
+        # ou se for o primeiro acesso do dia
+        rand(100) < 10 || session[:last_cleanup_date] != Date.current.to_s
+      end
+
+      # 🆕 Limpar visualizações expiradas
+      def cleanup_expired_views
+        deleted_count = ClinicManagement::LeadPageView.cleanup_expired
+        session[:last_cleanup_date] = Date.current.to_s
+        Rails.logger.info "🧹 Limpeza: #{deleted_count} visualizações expiradas removidas"
+      rescue StandardError => e
+        Rails.logger.error "❌ Erro na limpeza: #{e.message}"
       end
   end
 end

@@ -9,6 +9,7 @@ module ClinicManagement
     has_one :leads_conversion, foreign_key: 'clinic_management_lead_id'
     has_one :customer, through: :leads_conversion
     has_many :lead_interactions, dependent: :destroy
+    has_many :lead_page_views, dependent: :destroy
     validates :phone, format: { with: /\A\d{10,11}\z/, message: "deve ter 10 ou 11 dígitos" }, allow_blank: true
 
     before_destroy :destroy_appointments
