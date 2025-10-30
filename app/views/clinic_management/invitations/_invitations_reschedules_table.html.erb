@@ -24,6 +24,37 @@
           </div>
         </div>
 
+        <!-- Totals Summary (only show when multiple referrals) -->
+        <% 
+          total_invitations = referrals_data.sum { |_, data| data[:invitations].size }
+          total_reschedules = referrals_data.sum { |_, data| data[:reschedules].size }
+          show_totals = referrals_data.size > 1 && (total_invitations > 0 || total_reschedules > 0)
+        %>
+        
+        <% if show_totals %>
+          <div class="totals-summary">
+            <div class="totals-content">
+              <div class="total-item total-invitations">
+                <i class="material-icons">event_available</i>
+                <div class="total-info">
+                  <span class="total-label">Total de Convites</span>
+                  <span class="total-value"><%= total_invitations %></span>
+                </div>
+              </div>
+              
+              <div class="total-separator"></div>
+              
+              <div class="total-item total-reschedules">
+                <i class="material-icons">update</i>
+                <div class="total-info">
+                  <span class="total-label">Total de Remarcações</span>
+                  <span class="total-value"><%= total_reschedules %></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
         <!-- Referrals Data Table -->
         <div class="referrals-table-wrapper">
           <table class="referrals-table">
@@ -192,6 +223,67 @@
   color: #ffffff;
   letter-spacing: 0.025em;
   text-transform: uppercase;
+}
+
+/* Totals Summary */
+.totals-summary {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-left: 4px solid #0ea5e9;
+  padding: 1rem 1.5rem;
+  margin-bottom: 0;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.totals-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.total-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.total-item i {
+  font-size: 1.75rem;
+}
+
+.total-item.total-invitations i {
+  color: #2563eb;
+}
+
+.total-item.total-reschedules i {
+  color: #db2777;
+}
+
+.total-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.total-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.total-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.total-separator {
+  width: 2px;
+  height: 3rem;
+  background: linear-gradient(180deg, transparent 0%, #cbd5e1 20%, #cbd5e1 80%, transparent 100%);
 }
 
 /* Table Wrapper */
@@ -374,6 +466,30 @@
 
   .date-text {
     font-size: 0.875rem;
+  }
+
+  .totals-summary {
+    padding: 0.875rem 1rem;
+  }
+
+  .totals-content {
+    gap: 1.25rem;
+  }
+
+  .total-item i {
+    font-size: 1.5rem;
+  }
+
+  .total-label {
+    font-size: 0.75rem;
+  }
+
+  .total-value {
+    font-size: 1.25rem;
+  }
+
+  .total-separator {
+    height: 2.5rem;
   }
 
   .referrals-table {
