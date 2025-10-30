@@ -118,6 +118,37 @@
              } %>
 </div>
 
+<!-- Period Totals Summary -->
+<% if @total_invitations > 0 || @total_reschedules > 0 %>
+  <div style="margin: 15px 15px 25px 15px">
+    <div class="period-totals-container">
+      <div class="period-totals-header">
+        <i class="material-icons">summarize</i>
+        <h3>Totais do Período</h3>
+      </div>
+      <div class="period-totals-content">
+        <div class="period-total-item period-total-invitations">
+          <i class="material-icons">event_available</i>
+          <div class="period-total-info">
+            <span class="period-total-label">Total de Convites</span>
+            <span class="period-total-value"><%= @total_invitations %></span>
+          </div>
+        </div>
+        
+        <div class="period-total-separator"></div>
+        
+        <div class="period-total-item period-total-reschedules">
+          <i class="material-icons">update</i>
+          <div class="period-total-info">
+            <span class="period-total-label">Total de Remarcações</span>
+            <span class="period-total-value"><%= @total_reschedules %></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
 <!-- Invitations and Reschedules Table -->
 <div style="margin: 15px">
   <%= render partial: "invitations_reschedules_table", locals: { invitations_data: @invitations_data } %>
@@ -552,6 +583,159 @@
 /* If you are using SVG for the icons: */
 .pagination li a svg {
   vertical-align: middle;
+}
+
+/* ========================================
+   PERIOD TOTALS STYLES
+   Premium, Modern, Card Design
+   ======================================== */
+
+.period-totals-container {
+  background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+.period-totals-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  border-bottom: 2px solid #4338ca;
+}
+
+.period-totals-header i {
+  color: #ffffff;
+  font-size: 1.5rem;
+}
+
+.period-totals-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.period-totals-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  gap: 3rem;
+}
+
+.period-total-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.period-total-item i {
+  font-size: 2.5rem;
+}
+
+.period-total-item.period-total-invitations i {
+  color: #2563eb;
+}
+
+.period-total-item.period-total-reschedules i {
+  color: #db2777;
+}
+
+.period-total-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.period-total-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.period-total-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.period-total-separator {
+  width: 2px;
+  height: 4rem;
+  background: linear-gradient(180deg, transparent 0%, #cbd5e1 20%, #cbd5e1 80%, transparent 100%);
+}
+
+/* Responsive Design for Period Totals */
+@media (max-width: 1024px) {
+  .period-totals-content {
+    padding: 1.75rem 1.25rem;
+    gap: 2rem;
+  }
+
+  .period-total-item i {
+    font-size: 2rem;
+  }
+
+  .period-total-value {
+    font-size: 1.75rem;
+  }
+
+  .period-total-separator {
+    height: 3.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .period-totals-header {
+    padding: 0.875rem 1.25rem;
+  }
+
+  .period-totals-header h3 {
+    font-size: 1rem;
+  }
+
+  .period-totals-header i {
+    font-size: 1.25rem;
+  }
+
+  .period-totals-content {
+    flex-direction: column;
+    padding: 1.5rem 1rem;
+    gap: 1.5rem;
+  }
+
+  .period-total-item {
+    width: 100%;
+    justify-content: center;
+    gap: 0.875rem;
+  }
+
+  .period-total-item i {
+    font-size: 1.75rem;
+  }
+
+  .period-total-label {
+    font-size: 0.8125rem;
+  }
+
+  .period-total-value {
+    font-size: 1.5rem;
+  }
+
+  .period-total-separator {
+    width: 80%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, #cbd5e1 20%, #cbd5e1 80%, transparent 100%);
+  }
 }
 </style>
 

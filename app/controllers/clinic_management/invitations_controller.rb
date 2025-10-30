@@ -51,6 +51,10 @@ module ClinicManagement
       
       # Prepare data for the new elegant table
       @invitations_data = prepare_invitations_reschedules_data(@invitations, @appointments)
+      
+      # Calculate period totals for display
+      @total_invitations = @invitations.count
+      @total_reschedules = @appointments.count
     end
 
     def performance_report
