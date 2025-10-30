@@ -6,17 +6,18 @@
 <% end %>
 
 <% unless referral?(current_user) %>
-<div class="mb-6">
-  <h2 class="text-xl font-bold mb-2" style="margin: 15px">Filtrar por indicador:</h2>
-  <ul class="flex flex-wrap" style="margin: 15px">
-    <li class="mr-4">
-      <%= link_to "Todos", invitations_path, class: "text-blue-500 hover:text-blue-700" %>
-    </li>
-    <% @referrals.each do |referral| %>
+  <!-- Referral Filter for Managers/Owners -->
+  <div class="mb-6">
+    <h2 class="text-xl font-bold mb-2" style="margin: 15px">Filtrar por indicador:</h2>
+    <ul class="flex flex-wrap" style="margin: 15px">
       <li class="mr-4">
-        <%= link_to referral.name, invitations_path(referral_id: referral.id), class: "text-blue-500 hover:text-blue-700" %>
+        <%= link_to "Todos", invitations_path, class: "text-blue-500 hover:text-blue-700" %>
       </li>
-    <% end %>
+      <% @referrals.each do |referral| %>
+        <li class="mr-4">
+          <%= link_to referral.name, invitations_path(referral_id: referral.id), class: "text-blue-500 hover:text-blue-700" %>
+        </li>
+      <% end %>
     </ul>
   </div>
 <% end %>
@@ -28,14 +29,24 @@
 </div>
 
 <div class="flex justify-between items-end mb-6" style="margin: 15px">
-  <h1 class="text-3xl font-bold">Últimos convites lançados</h1>
+  <h1 class="text-3xl font-bold">Últimos convites lançados e remarcações realizadas</h1>
   <%= link_to "Novo convite", new_invitation_path, class: "inline-block bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded" %>
 </div>
 
-<%= data_table(@rows) %>
+<!-- Month/Year Filter -->
+<div style="margin: 15px">
+  <%= render partial: "month_year_filter", 
+             locals: { 
+               selected_month: @selected_month, 
+               selected_year: @selected_year,
+               available_dates: @available_dates,
+               current_path: invitations_path
+             } %>
+</div>
 
-<div class="mt-6">
-  <%= paginate @invitations %>
+<!-- Invitations and Reschedules Table -->
+<div style="margin: 15px">
+  <%= render partial: "invitations_reschedules_table", locals: { invitations_data: @invitations_data } %>
 </div>
 
 <style>

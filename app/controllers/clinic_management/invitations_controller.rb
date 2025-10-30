@@ -7,16 +7,50 @@ module ClinicManagement
     # GET /invitations
     def index
       @referrals = Referral.all
-      if params[:referral_id].present?
-        @invitations = Invitation.where(referral_id: params[:referral_id]).includes(:lead, :region, appointments: :service).order(created_at: :desc).page(params[:page]).per(800)
+      
+      # Get month/year filter params (default to current month)
+      @selected_month = params[:month]&.to_i || Date.current.month
+      @selected_year = params[:year]&.to_i || Date.current.year
+      
+      # Calculate date range for the selected month
+      start_date = Date.new(@selected_year, @selected_month, 1)
+      end_date = start_date.end_of_month
+      
+      # Check if current user is a referral (restrict to own data)
+      @is_referral_user = referral?(current_user)
+      @current_user_referral = nil
+      
+      if @is_referral_user
+        # Referral users can only see their own data
+        user_referral = helpers.user_referral
+        @current_user_referral = user_referral
+        
+        @invitations = Invitation.where(referral_id: user_referral.id)
+                                 .where(date: start_date..end_date)
+                                 .includes(:lead, :region, appointments: :service)
+                                 .order(created_at: :desc)
+        @appointments = fetch_reschedules_for_referral(user_referral.id, start_date, end_date)
       else
-        @invitations = Invitation.all.includes(:lead, :region, appointments: :service).order(created_at: :desc).page(params[:page]).per(800)
+        # Managers and owners can see all or filter by referral
+        if params[:referral_id].present?
+          @invitations = Invitation.where(referral_id: params[:referral_id])
+                                   .where(date: start_date..end_date)
+                                   .includes(:lead, :region, appointments: :service)
+                                   .order(created_at: :desc)
+          @appointments = fetch_reschedules_for_referral(params[:referral_id], start_date, end_date)
+        else
+          @invitations = Invitation.where(date: start_date..end_date)
+                                   .includes(:lead, :region, appointments: :service)
+                                   .order(created_at: :desc)
+          @appointments = fetch_all_reschedules(start_date, end_date)
+        end
       end
-      if @invitations.present?
-        @rows = process_invitations_data(@invitations)
-      else
-        @rows = ""
-      end
+      
+      # Prepare available months/years for the filter
+      @available_dates = prepare_available_months_years(@is_referral_user ? @current_user_referral&.id : nil)
+      
+      # Prepare data for the new elegant table
+      @invitations_data = prepare_invitations_reschedules_data(@invitations, @appointments)
     end
 
     def performance_report
@@ -454,12 +488,215 @@ module ClinicManagement
         rows
       end
 
+      def process_invitations_and_appointments_data(invitations, appointments)
+        rows = []
+        
+        # Get date range from both invitations and appointments (when they were made, not scheduled for)
+        invitation_dates = invitations.where.not(date: nil).map(&:date).compact
+        appointment_dates = appointments.map { |apt| apt.created_at&.to_date }.compact
+        all_dates = (invitation_dates + appointment_dates).uniq.sort
+        
+        return rows if all_dates.empty?
+        
+        start_date = all_dates.min
+        end_date = all_dates.max
+      
+        (start_date..end_date).reverse_each do |date|
+          date_invitations = invitations.select { |invite| invite.date == date }
+          date_appointments = appointments.select { |apt| apt.created_at&.to_date == date }
+      
+          if date_invitations.any? || date_appointments.any?
+            rows << [{header: "", content: helpers.show_week_day(date.strftime("%A")) + ", " + date.strftime("%d/%m/%Y"), colspan: 5, class: "bg-gray-100 font-bold"}]
+      
+            # Group invitations by referral
+            referral_invitations = date_invitations.group_by { |invite| invite.referral }
+            
+            # Group appointments by referral (through invitation)
+            referral_appointments = date_appointments.group_by do |apt|
+              apt.invitation&.referral
+            end
+            
+            # Combine all referrals from both groups
+            all_referrals = (referral_invitations.keys + referral_appointments.keys).compact.uniq
+            
+            sorted_referrals = all_referrals.sort_by do |referral|
+              invitation_count = referral_invitations[referral]&.size || 0
+              appointment_count = referral_appointments[referral]&.size || 0
+              -(invitation_count + appointment_count)
+            end
+      
+            sorted_referrals.each do |referral|
+              r_invitations = referral_invitations[referral] || []
+              r_appointments = referral_appointments[referral] || []
+              
+              # Build invitation patient links
+              invitation_patient_links = []
+              if r_invitations.any?
+                lead_invitations = r_invitations.group_by { |invite| invite.lead }
+                invitation_patient_links = lead_invitations.map do |lead, invites|
+                  count = lead.appointments.count
+                  patient_link(invites.first, count)
+                end
+              end
+              
+              # Build appointment patient links (remarcações)
+              appointment_patient_links = []
+              if r_appointments.any?
+                lead_appointments = r_appointments.group_by { |apt| apt.lead }
+                appointment_patient_links = lead_appointments.map do |lead, apts|
+                  appointment_link(apts.first)
+                end
+              end
+      
+              rows << [
+                {header: "Indicador", content: referral&.name},
+                {header: "Qtd de convites", content: r_invitations.size},
+                {header: "Convites", content: invitation_patient_links.join(", ").html_safe},
+                {header: "Qtd de remarcações", content: r_appointments.size},
+                {header: "Remarcações", content: appointment_patient_links.join(", ").html_safe}
+              ]
+            end
+          else
+            rows << [{header: "", content: helpers.show_week_day(date.strftime("%A")) + ", " + date.strftime("%d/%m/%Y"), colspan: 5, class: "bg-gray-100 font-bold"}]
+            rows << [
+              {header: "Indicador", content: ""},
+              {header: "Qtd de convites", content: ""},
+              {header: "Convites", content: "Sem lançamentos"},
+              {header: "Qtd de remarcações", content: ""},
+              {header: "Remarcações", content: ""}
+            ]
+          end
+        end
+      
+        rows
+      end
+
+      def fetch_reschedules_for_referral(referral_id, start_date, end_date)
+        # Busca remarcações através das invitations do referral no período
+        ClinicManagement::Appointment.joins(:invitation)
+                                     .where(clinic_management_invitations: { referral_id: referral_id })
+                                     .where(status: 'agendado')
+                                     .where('clinic_management_appointments.created_at >= ? AND clinic_management_appointments.created_at <= ?', 
+                                            start_date.beginning_of_day, end_date.end_of_day)
+                                     .where(
+                                       'EXISTS (SELECT 1 FROM clinic_management_appointments ca2 
+                                        WHERE ca2.lead_id = clinic_management_appointments.lead_id 
+                                        AND ca2.status = ? 
+                                        AND ca2.created_at < clinic_management_appointments.created_at)',
+                                       'remarcado'
+                                     )
+                                     .includes(:service, :lead, :invitation)
+                                     .order(created_at: :desc)
+      end
+
+      def fetch_all_reschedules(start_date, end_date)
+        # Busca todas as remarcações no período
+        ClinicManagement::Appointment.joins(:invitation)
+                                     .where(status: 'agendado')
+                                     .where('clinic_management_appointments.created_at >= ? AND clinic_management_appointments.created_at <= ?', 
+                                            start_date.beginning_of_day, end_date.end_of_day)
+                                     .where(
+                                       'EXISTS (SELECT 1 FROM clinic_management_appointments ca2 
+                                        WHERE ca2.lead_id = clinic_management_appointments.lead_id 
+                                        AND ca2.status = ? 
+                                        AND ca2.created_at < clinic_management_appointments.created_at)',
+                                       'remarcado'
+                                     )
+                                     .includes(:service, :lead, :invitation)
+                                     .order(created_at: :desc)
+      end
+
+      def prepare_available_months_years(referral_id = nil)
+        # Get date range from invitations (filtered by referral if provided)
+        invitations_scope = referral_id.present? ? Invitation.where(referral_id: referral_id) : Invitation.all
+        min_date = invitations_scope.minimum(:date) || Date.current
+        max_date = Date.current
+        
+        available_dates = []
+        current = min_date.beginning_of_month
+        
+        while current <= max_date
+          available_dates << { month: current.month, year: current.year, label: I18n.l(current, format: '%B %Y') }
+          current = current.next_month
+        end
+        
+        available_dates.reverse
+      end
+
+      def prepare_invitations_reschedules_data(invitations, appointments)
+        # Estrutura: { date => { referral => { invitations: [], reschedules: [] } } }
+        data = {}
+        
+        # Get all unique dates from both invitations and appointments
+        invitation_dates = invitations.where.not(date: nil).map(&:date).compact
+        appointment_dates = appointments.map { |apt| apt.created_at&.to_date }.compact
+        all_dates = (invitation_dates + appointment_dates).uniq.sort.reverse
+        
+        all_dates.each do |date|
+          # Get invitations and appointments for this date
+          date_invitations = invitations.select { |inv| inv.date == date }
+          date_appointments = appointments.select { |apt| apt.created_at&.to_date == date }
+          
+          # Group by referral
+          referral_data = {}
+          
+          # Process invitations
+          date_invitations.group_by(&:referral).each do |referral, invites|
+            referral_data[referral] ||= { invitations: [], reschedules: [] }
+            referral_data[referral][:invitations] = invites
+          end
+          
+          # Process appointments (reschedules)
+          date_appointments.group_by { |apt| apt.invitation&.referral }.each do |referral, apts|
+            referral_data[referral] ||= { invitations: [], reschedules: [] }
+            referral_data[referral][:reschedules] = apts
+          end
+          
+          data[date] = referral_data unless referral_data.empty?
+        end
+        
+        data
+      end
+
+      def get_referral_from_user(user_id)
+        return nil if user_id.nil?
+        
+        user = User.find_by(id: user_id)
+        return nil unless user
+        
+        # Find the referral membership for this user
+        membership = user.memberships.find_by(role: 'referral')
+        return nil unless membership&.code
+        
+        # Find the referral by code
+        Referral.find_by(code: membership.code)
+      end
+
+      def appointment_link(appointment)
+        return "" unless appointment&.invitation
+        
+        invitation = appointment.invitation
+        count = appointment.lead.appointments.count
+        
+        render_to_string(
+          partial: "patient_name_display",
+          locals: { invitation: invitation, count: count }
+        ).html_safe
+      end
+
       def patient_link(invite, count = 1)
         render_to_string(
           partial: "patient_name_display",
           locals: { invitation: invite, count: count }
         ).html_safe
       end
+
+      def current_path_with_params(new_params = {})
+        # Merge current params with new params, preserving referral_id
+        merged_params = params.permit(:referral_id).to_h.merge(new_params.stringify_keys)
+        invitations_path(merged_params)
+      end
+      helper_method :current_path_with_params
 
       def last_appointment_link(last_appointment)
         if last_appointment&.service.present?

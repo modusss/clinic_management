@@ -1,0 +1,405 @@
+<%# 
+  Partial: Invitations & Reschedules Table
+  Exibe convites e remarcações agrupados por data e referral
+  Params: 
+    - invitations_data: Hash com estrutura { date => { referral => { invitations: [], reschedules: [] } } }
+%>
+
+<div class="invitations-reschedules-container">
+  <% if invitations_data.blank? %>
+    <div class="empty-state">
+      <div class="empty-state-icon">
+        <i class="material-icons">event_busy</i>
+      </div>
+      <p class="empty-state-text">Nenhum convite ou remarcação encontrada</p>
+    </div>
+  <% else %>
+    <% invitations_data.each do |date, referrals_data| %>
+      <div class="date-section">
+        <!-- Date Header -->
+        <div class="date-header">
+          <div class="date-header-content">
+            <i class="material-icons">calendar_today</i>
+            <span class="date-text"><%= show_week_day(date.strftime("%A")) %>, <%= date.strftime("%d/%m/%Y") %></span>
+          </div>
+        </div>
+
+        <!-- Referrals Data Table -->
+        <div class="referrals-table-wrapper">
+          <table class="referrals-table">
+            <thead>
+              <tr>
+                <th class="col-referral">Indicador</th>
+                <th class="col-count">Qtd Convites</th>
+                <th class="col-names">Convites</th>
+                <th class="col-count">Qtd Remarcações</th>
+                <th class="col-names">Remarcações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if referrals_data.blank? || referrals_data.all? { |_, data| data[:invitations].blank? && data[:reschedules].blank? } %>
+                <tr class="empty-row">
+                  <td colspan="5">
+                    <span class="empty-message">Sem lançamentos</span>
+                  </td>
+                </tr>
+              <% else %>
+                <% referrals_data.sort_by { |_, data| -(data[:invitations].size + data[:reschedules].size) }.each do |referral, data| %>
+                  <tr class="data-row">
+                    <!-- Referral Name -->
+                    <td class="referral-cell">
+                      <div class="referral-name">
+                        <i class="material-icons referral-icon">person</i>
+                        <%= referral&.name || "Sem indicador" %>
+                      </div>
+                    </td>
+
+                    <!-- Invitations Count -->
+                    <td class="count-cell">
+                      <span class="count-badge invitations-badge">
+                        <%= data[:invitations].size %>
+                      </span>
+                    </td>
+
+                    <!-- Invitations Names -->
+                    <td class="names-cell">
+                      <% if data[:invitations].any? %>
+                        <div class="patient-links">
+                          <% data[:invitations].each_with_index do |invitation, index| %>
+                            <%= render partial: "patient_name_display", 
+                                       locals: { invitation: invitation, count: invitation.lead.appointments.count } %>
+                            <%= ", " unless index == data[:invitations].size - 1 %>
+                          <% end %>
+                        </div>
+                      <% else %>
+                        <span class="empty-cell">—</span>
+                      <% end %>
+                    </td>
+
+                    <!-- Reschedules Count -->
+                    <td class="count-cell">
+                      <span class="count-badge reschedules-badge">
+                        <%= data[:reschedules].size %>
+                      </span>
+                    </td>
+
+                    <!-- Reschedules Names -->
+                    <td class="names-cell">
+                      <% if data[:reschedules].any? %>
+                        <div class="patient-links">
+                          <% data[:reschedules].each_with_index do |appointment, index| %>
+                            <% invitation = appointment.invitation %>
+                            <%= render partial: "patient_name_display", 
+                                       locals: { invitation: invitation, count: appointment.lead.appointments.count } %>
+                            <%= ", " unless index == data[:reschedules].size - 1 %>
+                          <% end %>
+                        </div>
+                      <% else %>
+                        <span class="empty-cell">—</span>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+</div>
+
+<style>
+/* ========================================
+   INVITATIONS & RESCHEDULES TABLE STYLES
+   Premium, Modern, Enterprise-Grade Design
+   ======================================== */
+
+.invitations-reschedules-container {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.empty-state-icon {
+  font-size: 4rem;
+  color: #adb5bd;
+  margin-bottom: 1rem;
+}
+
+.empty-state-icon i {
+  font-size: 4rem;
+}
+
+.empty-state-text {
+  font-size: 1.125rem;
+  color: #6c757d;
+  margin: 0;
+}
+
+/* Date Section */
+.date-section {
+  margin-bottom: 2.5rem;
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Date Header */
+.date-header {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  border-radius: 8px 8px 0 0;
+  padding: 0.875rem 1.5rem;
+  margin-bottom: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.date-header-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.date-header-content i {
+  color: #60a5fa;
+  font-size: 1.25rem;
+}
+
+.date-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+/* Table Wrapper */
+.referrals-table-wrapper {
+  background: #ffffff;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Table */
+.referrals-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+}
+
+/* Table Header */
+.referrals-table thead {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.referrals-table thead th {
+  padding: 1rem 1.25rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+.referrals-table thead th.col-referral {
+  width: 15%;
+  min-width: 120px;
+}
+
+.referrals-table thead th.col-count {
+  width: 10%;
+  text-align: center;
+  min-width: 80px;
+}
+
+.referrals-table thead th.col-names {
+  width: 32.5%;
+  min-width: 200px;
+}
+
+/* Table Body */
+.referrals-table tbody tr {
+  border-bottom: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.referrals-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.referrals-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.referrals-table tbody td {
+  padding: 1.125rem 1.25rem;
+  vertical-align: middle;
+  font-size: 0.9375rem;
+  color: #1e293b;
+}
+
+/* Referral Cell */
+.referral-cell {
+  font-weight: 600;
+}
+
+.referral-name {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.referral-icon {
+  font-size: 1.25rem;
+  color: #64748b;
+}
+
+/* Count Cell */
+.count-cell {
+  text-align: center;
+}
+
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+}
+
+.invitations-badge {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+
+.reschedules-badge {
+  background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+  color: #be185d;
+  border: 1px solid #f9a8d4;
+}
+
+/* Names Cell */
+.names-cell {
+  line-height: 1.6;
+}
+
+.patient-links {
+  display: inline;
+}
+
+.patient-links a {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.patient-links a:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.empty-cell {
+  color: #94a3b8;
+  font-style: italic;
+  font-size: 0.875rem;
+}
+
+/* Empty Row */
+.empty-row td {
+  text-align: center;
+  padding: 2rem;
+}
+
+.empty-message {
+  color: #64748b;
+  font-size: 0.9375rem;
+  font-style: italic;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .referrals-table thead th {
+    padding: 0.875rem 1rem;
+    font-size: 0.75rem;
+  }
+
+  .referrals-table tbody td {
+    padding: 1rem;
+    font-size: 0.875rem;
+  }
+
+  .count-badge {
+    min-width: 2rem;
+    height: 2rem;
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .date-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .date-text {
+    font-size: 0.875rem;
+  }
+
+  .referrals-table {
+    font-size: 0.8125rem;
+  }
+
+  .referrals-table thead th {
+    padding: 0.75rem 0.75rem;
+    font-size: 0.6875rem;
+  }
+
+  .referrals-table tbody td {
+    padding: 0.875rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .referral-icon {
+    font-size: 1rem;
+  }
+
+  .count-badge {
+    min-width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.8125rem;
+    padding: 0 0.5rem;
+  }
+}
+</style>
+

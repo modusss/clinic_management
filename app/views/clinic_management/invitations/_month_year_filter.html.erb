@@ -1,0 +1,400 @@
+<%# 
+  Partial: Month/Year Filter
+  Filtro elegante para selecionar mês e ano
+  Params: 
+    - selected_month: Mês selecionado (Integer)
+    - selected_year: Ano selecionado (Integer)
+    - available_dates: Array de hashes com { month, year, label }
+    - current_path: Path atual para manter outros filtros (como referral_id)
+%>
+
+<div class="month-year-filter-container">
+  <%= form_tag current_path, method: :get, class: "month-year-filter-form" do %>
+    <div class="filter-wrapper">
+      <!-- Filter Label -->
+      <div class="filter-label-section">
+        <i class="material-icons filter-icon">date_range</i>
+        <span class="filter-label">Período:</span>
+      </div>
+
+      <!-- Month/Year Selects -->
+      <div class="filter-selects">
+        <!-- Month Select -->
+        <div class="select-wrapper">
+          <%= select_tag :month, 
+                         options_for_select(
+                           [
+                             ['Janeiro', 1], ['Fevereiro', 2], ['Março', 3],
+                             ['Abril', 4], ['Maio', 5], ['Junho', 6],
+                             ['Julho', 7], ['Agosto', 8], ['Setembro', 9],
+                             ['Outubro', 10], ['Novembro', 11], ['Dezembro', 12]
+                           ],
+                           selected_month
+                         ),
+                         class: "month-select" %>
+        </div>
+
+        <!-- Year Select -->
+        <div class="select-wrapper">
+          <%= select_tag :year,
+                         options_for_select(
+                           available_dates.map { |d| [d[:year], d[:year]] }.uniq.reverse,
+                           selected_year
+                         ),
+                         class: "year-select" %>
+        </div>
+      </div>
+
+      <!-- Navigation Buttons -->
+      <div class="filter-navigation">
+        <!-- Previous Month -->
+        <%= link_to current_path_with_params(month: (selected_month == 1 ? 12 : selected_month - 1), 
+                                              year: (selected_month == 1 ? selected_year - 1 : selected_year)),
+                    class: "nav-button prev-button",
+                    title: "Mês anterior" do %>
+          <i class="material-icons">chevron_left</i>
+        <% end %>
+
+        <!-- Current Month -->
+        <%= link_to current_path_with_params(month: Date.current.month, year: Date.current.year),
+                    class: "nav-button current-button",
+                    title: "Mês atual" do %>
+          <i class="material-icons">today</i>
+          <span class="current-text">Hoje</span>
+        <% end %>
+
+        <!-- Next Month -->
+        <% if Date.new(selected_year, selected_month, 1) < Date.current.beginning_of_month %>
+          <%= link_to current_path_with_params(month: (selected_month == 12 ? 1 : selected_month + 1), 
+                                                year: (selected_month == 12 ? selected_year + 1 : selected_year)),
+                      class: "nav-button next-button",
+                      title: "Próximo mês" do %>
+            <i class="material-icons">chevron_right</i>
+          <% end %>
+        <% else %>
+          <button type="button" class="nav-button next-button disabled" disabled title="Não há dados futuros">
+            <i class="material-icons">chevron_right</i>
+          </button>
+        <% end %>
+      </div>
+
+      <!-- Apply Button -->
+      <div class="filter-actions">
+        <%= submit_tag "Filtrar", class: "apply-button" %>
+      </div>
+    </div>
+
+    <!-- Hidden Fields to Maintain Other Filters -->
+    <%= hidden_field_tag :referral_id, params[:referral_id] if params[:referral_id].present? %>
+  <% end %>
+
+  <!-- Summary Info -->
+  <div class="filter-summary">
+    <div class="summary-content">
+      <i class="material-icons summary-icon">info</i>
+      <span class="summary-text">
+        Exibindo dados de 
+        <strong><%= I18n.l(Date.new(selected_year, selected_month, 1), format: '%B de %Y') %></strong>
+      </span>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ========================================
+   MONTH/YEAR FILTER STYLES
+   Premium, Modern, Enterprise-Grade Design
+   ======================================== */
+
+.month-year-filter-container {
+  margin-bottom: 2rem;
+}
+
+.month-year-filter-form {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+.filter-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+/* Filter Label Section */
+.filter-label-section {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-right: 0.75rem;
+  border-right: 2px solid #e2e8f0;
+}
+
+.filter-icon {
+  color: #3b82f6;
+  font-size: 1.5rem;
+}
+
+.filter-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  letter-spacing: 0.025em;
+}
+
+/* Filter Selects */
+.filter-selects {
+  display: flex;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 300px;
+}
+
+.select-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+.month-select,
+.year-select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #1e293b;
+  background: #ffffff;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
+}
+
+.month-select:hover,
+.year-select:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.month-select:focus,
+.year-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+/* Navigation Buttons */
+.filter-navigation {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.nav-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.625rem 1rem;
+  background: #ffffff;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  color: #475569;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nav-button i {
+  font-size: 1.25rem;
+}
+
+.nav-button:hover:not(.disabled) {
+  background: #f1f5f9;
+  border-color: #3b82f6;
+  color: #3b82f6;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.nav-button:active:not(.disabled) {
+  transform: translateY(0);
+}
+
+.nav-button.current-button {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.nav-button.current-button:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.nav-button.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.current-text {
+  font-weight: 600;
+}
+
+/* Apply Button */
+.filter-actions {
+  margin-left: auto;
+}
+
+.apply-button {
+  padding: 0.75rem 2rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.apply-button:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.apply-button:active {
+  transform: translateY(0);
+}
+
+/* Filter Summary */
+.filter-summary {
+  margin-top: 1rem;
+  padding: 0.875rem 1.25rem;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.summary-content {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.summary-icon {
+  color: #3b82f6;
+  font-size: 1.25rem;
+}
+
+.summary-text {
+  font-size: 0.9375rem;
+  color: #1e40af;
+  line-height: 1.5;
+}
+
+.summary-text strong {
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .filter-wrapper {
+    gap: 1rem;
+  }
+
+  .filter-selects {
+    min-width: 250px;
+  }
+
+  .nav-button {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem;
+  }
+
+  .apply-button {
+    padding: 0.625rem 1.5rem;
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .month-year-filter-form {
+    padding: 1.25rem;
+  }
+
+  .filter-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .filter-label-section {
+    border-right: none;
+    border-bottom: 2px solid #e2e8f0;
+    padding-right: 0;
+    padding-bottom: 0.75rem;
+  }
+
+  .filter-selects {
+    min-width: 100%;
+    flex-direction: column;
+  }
+
+  .filter-navigation {
+    justify-content: space-between;
+  }
+
+  .nav-button {
+    flex: 1;
+  }
+
+  .current-text {
+    display: none;
+  }
+
+  .filter-actions {
+    margin-left: 0;
+  }
+
+  .apply-button {
+    width: 100%;
+  }
+}
+</style>
+
+<script>
+// Auto-submit form when selects change (optional UX enhancement)
+document.addEventListener('DOMContentLoaded', function() {
+  const monthSelect = document.querySelector('.month-select');
+  const yearSelect = document.querySelector('.year-select');
+  
+  if (monthSelect && yearSelect) {
+    // Optional: Uncomment to auto-submit on change
+    // monthSelect.addEventListener('change', function() {
+    //   this.form.submit();
+    // });
+    // yearSelect.addEventListener('change', function() {
+    //   this.form.submit();
+    // });
+  }
+});
+</script>
+
