@@ -6,19 +6,40 @@
 <% end %>
 
 <% unless referral?(current_user) %>
-  <!-- Referral Filter for Managers/Owners -->
-  <div class="mb-6">
-    <h2 class="text-xl font-bold mb-2" style="margin: 15px">Filtrar por indicador:</h2>
-    <ul class="flex flex-wrap" style="margin: 15px">
-      <li class="mr-4">
-        <%= link_to "Todos", invitations_path, class: "text-blue-500 hover:text-blue-700" %>
-      </li>
-      <% @referrals.each do |referral| %>
-        <li class="mr-4">
-          <%= link_to referral.name, invitations_path(referral_id: referral.id), class: "text-blue-500 hover:text-blue-700" %>
-        </li>
-      <% end %>
-    </ul>
+  <!-- Elegant Referral Filter for Managers/Owners -->
+  <div class="referral-filter-container" style="margin: 15px">
+    <div class="referral-filter-wrapper">
+      <!-- Filter Header -->
+      <div class="filter-header">
+        <div class="filter-header-content">
+          <i class="material-icons filter-header-icon">group</i>
+          <h2 class="filter-title">Filtrar por Indicador</h2>
+        </div>
+        <% if params[:referral_id].present? %>
+          <div class="active-filter-badge">
+            <i class="material-icons">check_circle</i>
+            <span>Filtro ativo</span>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Filter Pills -->
+      <div class="filter-pills-container">
+        <%= link_to invitations_path(month: params[:month], year: params[:year]), 
+                    class: "filter-pill #{params[:referral_id].blank? ? 'active' : ''}" do %>
+          <i class="material-icons">view_list</i>
+          <span>Todos</span>
+        <% end %>
+
+        <% @referrals.sort_by(&:name).each do |referral| %>
+          <%= link_to invitations_path(referral_id: referral.id, month: params[:month], year: params[:year]), 
+                      class: "filter-pill #{params[:referral_id].to_i == referral.id ? 'active' : ''}" do %>
+            <i class="material-icons">person</i>
+            <span><%= referral.name %></span>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
   </div>
 <% end %>
 
@@ -50,6 +71,229 @@
 </div>
 
 <style>
+/* ========================================
+   REFERRAL FILTER STYLES
+   Premium, Modern, Enterprise-Grade Design
+   ======================================== */
+
+.referral-filter-container {
+  margin-bottom: 1.5rem;
+}
+
+.referral-filter-wrapper {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+/* Filter Header */
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.filter-header-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.filter-header-icon {
+  color: #6366f1;
+  font-size: 1.75rem;
+}
+
+.filter-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: 0.025em;
+  margin: 0;
+}
+
+/* Active Filter Badge */
+.active-filter-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  border: 1px solid #86efac;
+  border-radius: 20px;
+  color: #166534;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.active-filter-badge i {
+  font-size: 1rem;
+  color: #15803d;
+}
+
+/* Filter Pills Container */
+.filter-pills-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* Filter Pill */
+.filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: #ffffff;
+  border: 2px solid #cbd5e1;
+  border-radius: 24px;
+  color: #475569;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.filter-pill i {
+  font-size: 1.125rem;
+  transition: transform 0.2s ease;
+}
+
+.filter-pill:hover {
+  background: #f8fafc;
+  border-color: #6366f1;
+  color: #6366f1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.filter-pill:hover i {
+  transform: scale(1.1);
+}
+
+/* Active Filter Pill */
+.filter-pill.active {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  border-color: #4f46e5;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.filter-pill.active i {
+  color: #ffffff;
+}
+
+.filter-pill.active:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+/* Special styling for "Todos" pill */
+.filter-pills-container > .filter-pill:first-child {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-width: 2px;
+  font-weight: 600;
+}
+
+.filter-pills-container > .filter-pill:first-child.active {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .referral-filter-wrapper {
+    padding: 1.25rem;
+  }
+
+  .filter-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.875rem;
+  }
+
+  .filter-title {
+    font-size: 1rem;
+  }
+
+  .filter-pill {
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .referral-filter-wrapper {
+    padding: 1rem;
+  }
+
+  .filter-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .filter-header-icon {
+    font-size: 1.5rem;
+  }
+
+  .filter-title {
+    font-size: 0.9375rem;
+  }
+
+  .active-filter-badge {
+    padding: 0.375rem 0.875rem;
+    font-size: 0.75rem;
+  }
+
+  .filter-pills-container {
+    gap: 0.5rem;
+  }
+
+  .filter-pill {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem;
+  }
+
+  .filter-pill i {
+    font-size: 1rem;
+  }
+}
+
+/* Animation for pills */
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.filter-pill {
+  animation: fadeInScale 0.3s ease-out backwards;
+}
+
+.filter-pill:nth-child(1) { animation-delay: 0.05s; }
+.filter-pill:nth-child(2) { animation-delay: 0.1s; }
+.filter-pill:nth-child(3) { animation-delay: 0.15s; }
+.filter-pill:nth-child(4) { animation-delay: 0.2s; }
+.filter-pill:nth-child(5) { animation-delay: 0.25s; }
+.filter-pill:nth-child(6) { animation-delay: 0.3s; }
+.filter-pill:nth-child(7) { animation-delay: 0.35s; }
+.filter-pill:nth-child(8) { animation-delay: 0.4s; }
+
 .pagination {
   display: flex;
   justify-content: center;
