@@ -587,4 +587,17 @@ module ClinicManagement
         end
 
     end
-  end
+
+    # Helper method for performance report conversion badges
+    def conversion_class(rate)
+      if rate >= 40
+        'excellent'
+      elsif rate >= 30
+        'good'
+      elsif rate >= 20
+        'average'
+      else
+        'low'
+      end
+    end
+end

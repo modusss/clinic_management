@@ -1,41 +1,565 @@
-<h1 class="text-3xl font-bold mb-4">Relatório de Desempenho dos Marcadores</h1>
-
-<% @report_data.reverse_each do |month_data| %>
-  <% if month_data[:referral_data].any? %>
-    <div class="bg-gray-100 px-6 py-4 mb-4">
-      <h2 class="text-lg font-medium text-gray-900"><%= month_data[:period] %></h2>
+<div class="performance-report-container" style="margin: 15px">
+  <!-- Header Section -->
+  <div class="report-header">
+    <div class="report-header-content">
+      <div class="header-icon-wrapper">
+        <i class="material-icons header-icon">assessment</i>
+      </div>
+      <div class="header-text">
+        <h1 class="report-title">Relatório de Desempenho dos Marcadores</h1>
+        <p class="report-subtitle">Análise detalhada de conversões e resultados por período</p>
+      </div>
     </div>
+  </div>
 
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th scope="col" class="px-6 py-3 text-left text-lg font-medium text-gray-500 uppercase tracking-wider">Marcador</th>
-            <th scope="col" class="px-6 py-3 text-left text-lg font-medium text-gray-500 uppercase tracking-wider">Dias trabalhados</th>
-            <th scope="col" class="px-6 py-3 text-left text-lg font-medium text-gray-500 uppercase tracking-wider">Convidados</th>
-            <th scope="col" class="px-6 py-3 text-left text-lg font-medium text-gray-500 uppercase tracking-wider">Conversões</th>
-            <th scope="col" class="px-6 py-3 text-left text-lg font-medium text-gray-500 uppercase tracking-wider">% Conversões</th>
-            <th scope="col" class="px-6 py-3 text-left text-lg font-medium text-gray-500 uppercase tracking-wider">Pedidos entregues</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          <% month_data[:referral_data].each do |referral_data| %>
-            <tr>
-              <td class="px-6 py-4 whitespace-nowrap text-lg text-gray-900"><%= referral_data[:referral] %></td>
-              <td class="px-6 py-4 whitespace-nowrap text-lg text-gray-500"><%= referral_data[:days_worked] %></td>
-              <td class="px-6 py-4 whitespace-nowrap text-lg text-gray-500"><%= referral_data[:invited] %></td>
-              <td class="px-6 py-4 whitespace-nowrap text-lg text-gray-500"><%= referral_data[:conversions] %></td>
-              <td class="px-6 py-4 whitespace-nowrap text-lg text-gray-500"><%= number_to_percentage(referral_data[:conversion_rate], precision: 0) %></td>
-              <td class="px-6 py-4 whitespace-nowrap text-lg text-gray-500"><%= referral_data[:delivered_orders] %></td>
-            </tr>
+  <!-- Report Data -->
+  <% @report_data.reverse_each do |month_data| %>
+    <% if month_data[:referral_data].any? %>
+      <!-- Month Section -->
+      <div class="month-section">
+        <!-- Month Header -->
+        <div class="month-header">
+          <div class="month-header-content">
+            <i class="material-icons month-icon">calendar_month</i>
+            <h2 class="month-title"><%= month_data[:period] %></h2>
+          </div>
+          <div class="month-stats">
+            <span class="month-stat">
+              <i class="material-icons">people</i>
+              <%= month_data[:referral_data].count %> marcadores
+            </span>
+            <span class="month-stat">
+              <i class="material-icons">event_available</i>
+              <%= month_data[:referral_data].sum { |r| r[:days_worked] } %> dias trabalhados
+            </span>
+          </div>
+        </div>
+
+        <!-- Performance Cards -->
+        <div class="performance-cards">
+          <% sorted_data = month_data[:referral_data].sort_by { |r| -r[:conversions] } %>
+          <% sorted_data.each_with_index do |referral_data, index| %>
+            <div class="performance-card <%= 'top-performer' if index == 0 && referral_data[:conversions] > 0 %>">
+              <!-- Card Header -->
+              <div class="card-header">
+                <div class="referral-name-section">
+                  <i class="material-icons referral-icon">person</i>
+                  <h3 class="referral-name"><%= referral_data[:referral] %></h3>
+                  <% if index == 0 && referral_data[:conversions] > 0 %>
+                    <span class="top-badge">
+                      <i class="material-icons">star</i>
+                      Top
+                    </span>
+                  <% end %>
+                </div>
+                <div class="conversion-badge <%= referral_data[:conversion_class] %>">
+                  <%= number_to_percentage(referral_data[:conversion_rate], precision: 0) %>
+                </div>
+              </div>
+
+              <!-- Card Metrics -->
+              <div class="card-metrics">
+                <div class="metric">
+                  <div class="metric-icon-wrapper blue">
+                    <i class="material-icons">event</i>
+                  </div>
+                  <div class="metric-content">
+                    <span class="metric-label">Dias Trabalhados</span>
+                    <span class="metric-value"><%= referral_data[:days_worked] %></span>
+                  </div>
+                </div>
+
+                <div class="metric">
+                  <div class="metric-icon-wrapper purple">
+                    <i class="material-icons">group_add</i>
+                  </div>
+                  <div class="metric-content">
+                    <span class="metric-label">Convidados</span>
+                    <span class="metric-value"><%= referral_data[:invited] %></span>
+                  </div>
+                </div>
+
+                <div class="metric">
+                  <div class="metric-icon-wrapper green">
+                    <i class="material-icons">check_circle</i>
+                  </div>
+                  <div class="metric-content">
+                    <span class="metric-label">Conversões</span>
+                    <span class="metric-value"><%= referral_data[:conversions] %></span>
+                  </div>
+                </div>
+
+                <div class="metric">
+                  <div class="metric-icon-wrapper orange">
+                    <i class="material-icons">local_shipping</i>
+                  </div>
+                  <div class="metric-content">
+                    <span class="metric-label">Pedidos Entregues</span>
+                    <span class="metric-value"><%= referral_data[:delivered_orders] %></span>
+                  </div>
+                </div>
+              </div>
+            </div>
           <% end %>
-        </tbody>
-      </table>
-    </div>
-  <% else %>
-    <div class="bg-gray-100 px-6 py-4 mb-4">
-      <h2 class="text-lg font-medium text-gray-900"><%= month_data[:period] %></h2>
-      <p class="text-gray-500">Sem dados</p>
-    </div>
+        </div>
+      </div>
+    <% else %>
+      <!-- Empty Month Section -->
+      <div class="month-section empty-section">
+        <div class="month-header empty">
+          <div class="month-header-content">
+            <i class="material-icons month-icon">calendar_month</i>
+            <h2 class="month-title"><%= month_data[:period] %></h2>
+          </div>
+        </div>
+        <div class="empty-state">
+          <i class="material-icons empty-icon">info</i>
+          <p class="empty-text">Sem dados para este período</p>
+        </div>
+      </div>
+    <% end %>
   <% end %>
-<% end %>
+</div>
+
+<style>
+/* ========================================
+   PERFORMANCE REPORT STYLES
+   Premium, Modern, Enterprise-Grade Design
+   ======================================== */
+
+.performance-report-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Report Header */
+.report-header {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.report-header-content {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.header-icon-wrapper {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  width: 4rem;
+  height: 4rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.header-icon {
+  font-size: 2rem;
+  color: #ffffff;
+}
+
+.header-text {
+  flex: 1;
+}
+
+.report-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.025em;
+}
+
+.report-subtitle {
+  font-size: 1rem;
+  color: #cbd5e1;
+  margin: 0;
+}
+
+/* Month Section */
+.month-section {
+  margin-bottom: 3rem;
+}
+
+.month-section.empty-section {
+  margin-bottom: 2rem;
+}
+
+/* Month Header */
+.month-header {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  border-radius: 10px 10px 0 0;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+}
+
+.month-header.empty {
+  border-radius: 10px;
+}
+
+.month-header-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.month-icon {
+  font-size: 1.75rem;
+  color: #ffffff;
+}
+
+.month-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: 0.025em;
+}
+
+.month-stats {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.month-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: #e0e7ff;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.month-stat i {
+  font-size: 1.125rem;
+  color: #c7d2fe;
+}
+
+/* Performance Cards Grid */
+.performance-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 1.25rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 0 0 10px 10px;
+  border: 1px solid #e2e8f0;
+  border-top: none;
+}
+
+/* Performance Card */
+.performance-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 2px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.performance-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  border-color: #cbd5e1;
+}
+
+.performance-card.top-performer {
+  border-color: #fbbf24;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2);
+}
+
+.performance-card.top-performer:hover {
+  box-shadow: 0 8px 24px rgba(251, 191, 36, 0.3);
+}
+
+/* Card Header */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.referral-name-section {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex: 1;
+}
+
+.referral-icon {
+  color: #6366f1;
+  font-size: 1.5rem;
+}
+
+.referral-name {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.top-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  border-radius: 12px;
+  color: #78350f;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 2px 4px rgba(251, 191, 36, 0.3);
+}
+
+.top-badge i {
+  font-size: 0.875rem;
+  color: #78350f;
+}
+
+/* Conversion Badge */
+.conversion-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+}
+
+.conversion-badge.excellent {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.conversion-badge.good {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.conversion-badge.average {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.conversion-badge.low {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(100, 116, 139, 0.3);
+}
+
+/* Card Metrics */
+.card-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.metric {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.metric:hover {
+  background: #f1f5f9;
+  transform: scale(1.02);
+}
+
+.metric-icon-wrapper {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.metric-icon-wrapper i {
+  font-size: 1.25rem;
+  color: #ffffff;
+}
+
+.metric-icon-wrapper.blue {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.metric-icon-wrapper.purple {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.metric-icon-wrapper.green {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.metric-icon-wrapper.orange {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+}
+
+.metric-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.metric-label {
+  font-size: 0.8125rem;
+  color: #64748b;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metric-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* Empty State */
+.empty-state {
+  padding: 3rem 1.5rem;
+  background: #ffffff;
+  border-radius: 0 0 10px 10px;
+  border: 1px solid #e2e8f0;
+  border-top: none;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  color: #cbd5e1;
+  margin-bottom: 0.75rem;
+}
+
+.empty-text {
+  font-size: 1rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .performance-cards {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+
+  .performance-card {
+    padding: 1.25rem;
+  }
+
+  .report-title {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .report-header {
+    padding: 1.5rem;
+  }
+
+  .report-header-content {
+    gap: 1rem;
+  }
+
+  .header-icon-wrapper {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .header-icon {
+    font-size: 1.5rem;
+  }
+
+  .report-title {
+    font-size: 1.25rem;
+  }
+
+  .report-subtitle {
+    font-size: 0.875rem;
+  }
+
+  .month-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+  }
+
+  .month-stats {
+    width: 100%;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .performance-cards {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .card-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-label {
+    font-size: 0.75rem;
+  }
+
+  .metric-value {
+    font-size: 1.125rem;
+  }
+}
+
+/* Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.month-section {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+.performance-card {
+  animation: fadeInUp 0.5s ease-out backwards;
+}
+
+.performance-card:nth-child(1) { animation-delay: 0.1s; }
+.performance-card:nth-child(2) { animation-delay: 0.2s; }
+.performance-card:nth-child(3) { animation-delay: 0.3s; }
+.performance-card:nth-child(4) { animation-delay: 0.4s; }
+</style>
+
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">

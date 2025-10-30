@@ -292,6 +292,7 @@ module ClinicManagement
     
         referral_data = month_invitations.group_by(&:referral).map do |referral, invitations|
           converted_leads = invitations.select { |invitation| invitation.lead&.converted? }.size
+          conversion_rate = converted_leads.to_f / invitations.size * 100
     
           delivered_orders = referral.commissions.where(created_at: month_start..month_end)
                                                   .joins(:order)
@@ -303,7 +304,8 @@ module ClinicManagement
             days_worked: invitations.map(&:date).uniq.size,
             invited: invitations.size,
             conversions: converted_leads,
-            conversion_rate: converted_leads.to_f / invitations.size * 100,
+            conversion_rate: conversion_rate,
+            conversion_class: calculate_conversion_class(conversion_rate),
             delivered_orders: delivered_orders
           }
         end
@@ -800,6 +802,18 @@ module ClinicManagement
         lead_params = params[:lead_attributes].dup
         lead_params[:phone] = clean_phone if lead_params[:phone].present?
         Lead.create!(lead_params)
+      end
+    end
+
+    def calculate_conversion_class(rate)
+      if rate >= 40
+        'excellent'
+      elsif rate >= 30
+        'good'
+      elsif rate >= 20
+        'average'
+      else
+        'low'
       end
     end
   end
