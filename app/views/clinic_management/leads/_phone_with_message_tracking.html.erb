@@ -19,7 +19,7 @@
                     },
                     class: "whatsapp-link #{'opacity-50' unless lead.has_whatsapp?}" %>
         
-        <% if current_account&.nvoip_configured? %>
+        <% if current_account&.directcall_configured? %>
           <div class="flex items-center gap-2">
             <%# Botão Ligar %>
             <button type="button"
@@ -27,7 +27,7 @@
                     title="Ligar para <%= lead.phone %>"
                     data-phone="<%= current_user&.phone_prefix.present? ? current_user.phone_prefix : '' %><%= lead.phone %>"
                     data-context="<%= local_assigns[:persist_hint] ? 'absent' : 'other' %>"
-                    data-action="click->message-tracking#makeNvoipCall">
+                    data-action="click->message-tracking#makeDirectcallCall">
               <i class="fas fa-phone" style="margin-right: 4px;"></i>
               <span style="font-size: 15px;">Ligar</span>
             </button>

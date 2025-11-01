@@ -7,9 +7,9 @@
     } %>
 
 <%# Wrapper para o sistema de fila de ligações - ENVOLVE TODA A PÁGINA %>
-<div data-controller="call-queue" data-call-queue-nvoip-configured-value="<%= current_account&.nvoip_configured? %>">
+<div data-controller="call-queue" data-call-queue-directcall-configured-value="<%= current_account&.directcall_configured? %>">
   <%# O dropdown flutuante será renderizado aqui %>
-  <%= render partial: "clinic_management/leads/call_queue_dropdown" if current_account&.nvoip_configured? %>
+  <%= render partial: "clinic_management/leads/call_queue_dropdown" if current_account&.directcall_configured? %>
 
 <% if referral?(current_user) %>
 <h5 class="text-xl font-semibold text-gray-800">Lista dos pacientes ausentes mais antigos que 120 dias</h5>
@@ -247,7 +247,7 @@
     </div>
     
     <%# Botão para adicionar todos os leads da página à fila de ligações %>
-    <% if current_account&.nvoip_configured? && @rows.any? %>
+    <% if current_account&.directcall_configured? && @rows.any? %>
       <% 
         # Preparar dados dos leads de forma eficiente
         leads_data = @leads.map do |lead| 

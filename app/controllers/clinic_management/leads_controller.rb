@@ -61,44 +61,44 @@ module ClinicManagement
     end
     
     # POST /leads/:id/make_call
-    # Inicia uma chamada telefônica através da API nVoip
+    # Inicia uma chamada telefônica através da API Direct Call
     def make_call
       @lead = Lead.find(params[:id])
       @appointment = @lead.appointments.find(params[:appointment_id])
       @context = params[:context] || 'other'  # 'absent' ou 'other'
       
-      # Verificar se nVoip está configurado para a conta
-      unless current_account.nvoip_configured?
+      # Verificar se Direct Call está configurado para a conta
+      unless current_account.directcall_configured?
         return render json: { 
           success: false, 
-          error: 'nVoip não está configurado para esta conta' 
+          error: 'Direct Call não está configurado para esta conta' 
         }, status: :unprocessable_entity
       end
       
-      # Verificar se o usuário atual tem Usuário SIP configurado
-      unless current_user.nvoip_enabled && current_user.nvoip_sip_user.present?
+      # Verificar se o usuário atual tem número de origem configurado
+      unless current_user.directcall_enabled && current_user.directcall_origem_user.present?
         return render json: { 
           success: false, 
-          error: 'Você não tem um Usuário SIP (ramal) configurado. Contate o administrador.' 
+          error: 'Você não tem um número de origem configurado. Contate o administrador.' 
         }, status: :unprocessable_entity
       end
       
-      # Iniciar chamada via nVoip com contexto e ramal do usuário
-      service = NvoipService.new(current_account)
+      # Iniciar chamada via Direct Call com contexto e número do usuário
+      service = DirectcallService.new(current_account)
       
-      Rails.logger.info "📞 nVoip: Iniciando ligação manual para #{@lead.name}"
+      Rails.logger.info "📞 Direct Call: Iniciando ligação manual para #{@lead.name}"
       
       result = service.make_call(
         @lead.phone,
         lead_id: @lead.id,
         appointment_id: @appointment.id,
         context: @context,
-        user_sip_ramal: current_user.nvoip_sip_user
+        user_origem: current_user.directcall_origem_user
       )
       
       if result[:success]
         # NÃO registrar interação aqui - será registrada pelo webhook quando confirmar que foi atendida
-        Rails.logger.info "📞 nVoip: Chamada iniciada - Call ID: #{result[:data]['id']} - aguardando confirmação via webhook"
+        Rails.logger.info "📞 Direct Call: Chamada iniciada - Call ID: #{result[:call_id]} - aguardando confirmação via webhook"
         
         # Manter compatibilidade com sistema antigo (marca que tentou contato)
         @appointment.update(
@@ -109,7 +109,7 @@ module ClinicManagement
         render json: {
           success: true,
           message: 'Chamada iniciada com sucesso',
-          call_id: result[:data]['id']
+          call_id: result[:call_id]
         }
       else
         render json: {
