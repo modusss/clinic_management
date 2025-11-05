@@ -75,13 +75,17 @@ module ClinicManagement
         }, status: :unprocessable_entity
       end
       
-      # Verificar se o usuário atual tem número de origem configurado
-      unless current_user.directcall_enabled && current_user.directcall_origem_user.present?
+      # Verificar se o usuário está habilitado para usar Direct Call
+      unless current_user.directcall_enabled
         return render json: { 
           success: false, 
-          error: 'Você não tem um número de origem configurado. Contate o administrador.' 
+          error: 'Você não está habilitado para fazer chamadas. Contate o administrador.' 
         }, status: :unprocessable_entity
       end
+      
+      # Nota: directcall_origem_user é opcional
+      # Se o usuário não tiver número próprio, o service usará o número padrão da conta
+      # (validado em directcall_configured?)
       
       # Iniciar chamada via Direct Call com contexto e número do usuário
       service = DirectcallService.new(current_account)
