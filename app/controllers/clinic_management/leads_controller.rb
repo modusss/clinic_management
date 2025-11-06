@@ -101,8 +101,17 @@ module ClinicManagement
       )
       
       if result[:success]
-        # NÃO registrar interação aqui - será registrada pelo webhook quando confirmar que foi atendida
-        Rails.logger.info "📞 Direct Call: Chamada iniciada - Call ID: #{result[:call_id]} - aguardando confirmação via webhook"
+        # Registrar TENTATIVA de contato imediatamente (não espera webhook)
+        Rails.logger.info "📞 Direct Call: Chamada iniciada - Call ID: #{result[:call_id]}"
+        
+        # Criar lead_interaction para registrar a tentativa
+        @lead.lead_interactions.create!(
+          user: current_user,
+          interaction_type: 'phone_call',
+          occurred_at: Time.current,
+          appointment: @appointment
+        )
+        Rails.logger.info "✅ Lead interaction registrada para Lead #{@lead.id}"
         
         # Manter compatibilidade com sistema antigo (marca que tentou contato)
         @appointment.update(
