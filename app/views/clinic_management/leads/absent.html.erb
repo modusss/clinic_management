@@ -203,6 +203,9 @@
         
         <%= f.radio_button :hidden_status, "no_interest", checked: (params[:hidden_status] == "no_interest"), class: "sr-only", id: "hidden_status_no_interest" %>
         <label for="hidden_status_no_interest" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:hidden_status] == 'no_interest' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Sem interesse</label>
+        
+        <%= f.radio_button :hidden_status, "wrong_phone", checked: (params[:hidden_status] == "wrong_phone"), class: "sr-only", id: "hidden_status_wrong_phone" %>
+        <label for="hidden_status_wrong_phone" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:hidden_status] == 'wrong_phone' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Telefone errado</label>
       </div>
     </div>
     

@@ -29,7 +29,7 @@
           Status do Lead
         </dt>
         <dd class="mt-1 sm:mt-0 sm:col-span-2">
-          <% if lead.hidden_from_absent || lead.no_interest %>
+          <% if lead.hidden_from_absent || lead.no_interest || lead.wrong_phone %>
             <!-- Mostrar status atual e botão restaurar -->
             <div class="flex flex-wrap items-center gap-3 mb-3">
               <% if lead.hidden_from_absent %>
@@ -40,6 +40,11 @@
               <% if lead.no_interest %>
                 <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
                   <i class="fas fa-times mr-1"></i> Sem Interesse
+                </span>
+              <% end %>
+              <% if lead.wrong_phone %>
+                <span class="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+                  <i class="fas fa-phone-slash mr-1"></i> Telefone errado
                 </span>
               <% end %>
             </div>
@@ -81,6 +86,17 @@
                   class: "w-full sm:w-auto bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white text-sm px-3 py-2 rounded-lg shadow-md flex items-center justify-center gap-2 transition-all duration-200 transform hover:scale-105",
                   title: "Sem interesse" do %>
                 <i class="fas fa-times"></i> Sem Interesse
+              <% end %>
+              
+              <%= button_to clinic_management.mark_wrong_phone_lead_path(lead), 
+                  method: :patch,
+                  data: { 
+                    turbo_method: :patch,
+                    confirm: "Marcar este lead como 'Telefone errado'?"
+                  },
+                  class: "w-full sm:w-auto bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white text-sm px-3 py-2 rounded-lg shadow-md flex items-center justify-center gap-2 transition-all duration-200 transform hover:scale-105",
+                  title: "Telefone errado" do %>
+                <i class="fas fa-phone-slash"></i> Telefone errado
               <% end %>
             </div>
           <% end %>

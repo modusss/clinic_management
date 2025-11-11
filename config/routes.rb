@@ -75,6 +75,7 @@ ClinicManagement::Engine.routes.draw do
       patch :hide_from_absent
       patch :mark_no_whatsapp
       patch :mark_no_interest
+      patch :mark_wrong_phone
       patch :restore_lead
       patch :toggle_whatsapp_status
     end

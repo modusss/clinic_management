@@ -359,6 +359,27 @@ module ClinicManagement
       end
     end
 
+    def mark_wrong_phone
+      @lead = ClinicManagement::Lead.find(params[:id])
+      @lead.update!(wrong_phone: true)
+      
+      respond_to do |format|
+        format.turbo_stream do
+          # Se vier da página show, redirecionar para atualizar a interface
+          if request.referer&.include?("/leads/#{@lead.id}")
+            redirect_to lead_path(@lead), notice: "Lead marcado como 'telefone errado'"
+          else
+            # Se vier da listagem, apenas remover o card
+            render turbo_stream: turbo_stream.remove("lead-card-#{@lead.id}")
+          end
+        end
+        format.html do
+          redirect_to lead_path(@lead), notice: "Lead marcado como 'telefone errado'"
+        end
+        format.json { render json: { success: true, message: "Lead marcado como 'telefone errado'" } }
+      end
+    end
+
     def toggle_whatsapp_status
       @lead = ClinicManagement::Lead.find(params[:id])
       Rails.logger.info "Before toggle: no_whatsapp = #{@lead.no_whatsapp}"
@@ -380,7 +401,8 @@ module ClinicManagement
       @lead.update!(
         hidden_from_absent: false,
         no_whatsapp: false,
-        no_interest: false
+        no_interest: false,
+        wrong_phone: false
       )
       
       respond_to do |format|
@@ -511,16 +533,20 @@ module ClinicManagement
         scope.where(hidden_from_absent: true)
       when "no_interest"
         scope.where(no_interest: true)
+      when "wrong_phone"
+        scope.where(wrong_phone: true)
       when "visible"
         scope.where(
           hidden_from_absent: [false, nil],
-          no_interest: [false, nil]
+          no_interest: [false, nil],
+          wrong_phone: [false, nil]
         )
       else
         # Default: sempre excluir leads com status especial da listagem principal
         scope.where(
           hidden_from_absent: [false, nil],
-          no_interest: [false, nil]
+          no_interest: [false, nil],
+          wrong_phone: [false, nil]
         )
       end
     end
