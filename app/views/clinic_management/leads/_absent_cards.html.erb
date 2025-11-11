@@ -1,8 +1,41 @@
 <%# Cards view for absent leads, using the same data as the table (rows) %>
-<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-  <% rows.each_with_index do |row, index| %>
+
+<!-- Container com setas de navegação para mobile -->
+<div class="relative">
+  <!-- Setas de navegação posicionadas acima dos cards (apenas mobile) -->
+  <div class="md:hidden flex justify-between items-center mb-4 px-2">
+    <!-- Seta Esquerda -->
+    <button 
+      type="button"
+      class="bg-gray-800 bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-3 shadow-lg transition-all duration-200"
+      onclick="scrollCardsLeft()"
+      id="scroll-left-btn"
+      style="display: none;">
+      <i class="fas fa-chevron-left text-xl"></i>
+    </button>
+
+    <!-- Espaço vazio no meio -->
+    <div class="flex-1"></div>
+
+    <!-- Seta Direita -->
+    <button 
+      type="button"
+      class="bg-gray-800 bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-3 shadow-lg transition-all duration-200"
+      onclick="scrollCardsRight()"
+      id="scroll-right-btn">
+      <i class="fas fa-chevron-right text-xl"></i>
+    </button>
+  </div>
+
+  <!-- Container de cards com scroll horizontal no mobile -->
+  <div 
+    id="cards-container"
+    class="overflow-x-auto snap-x snap-mandatory md:overflow-visible md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4"
+    onscroll="updateNavigationButtons()">
+    <div class="flex md:contents md:gap-0">
+    <% rows.each_with_index do |row, index| %>
     <% lead = leads[index] %>
-    <div class="bg-white rounded shadow p-4 mb-4 relative" id="lead-card-<%= lead.id %>">
+    <div class="bg-white rounded shadow p-4 mb-4 relative flex-shrink-0 w-screen md:w-auto snap-start" id="lead-card-<%= lead.id %>">
       <% if rows.any? %>
         <%# Botões de ação no topo do card - Enfileirados horizontalmente %>
         <% if params[:hidden_status] == "visible" || params[:hidden_status].blank? %>
@@ -85,16 +118,95 @@
       <% end %>
     </div>
   <% end %>
-</div>
+    </div><!-- Fecha flex container -->
+  </div><!-- Fecha cards-container -->
+</div><!-- Fecha relative container -->
 
 <%# Add pagination for cards view, just like the table view %>
 <% if defined?(leads) && leads.size > 10 %>
   <%= paginate leads %>
 <% end %> 
 
-<style>
-@media (max-width: 768px) {
+<script>
+// Funções de navegação do carrossel mobile
+function scrollCardsLeft() {
+  const container = document.getElementById('cards-container');
+  const card = container.querySelector('.bg-white');
+  if (!card) return;
+  
+  // Pegar a largura exata do card (100vw no mobile)
+  const cardWidth = card.offsetWidth;
+  
+  // Scroll instantâneo (sem behavior: 'smooth')
+  container.scrollBy({
+    left: -cardWidth,
+    behavior: 'auto'
+  });
+}
 
+function scrollCardsRight() {
+  const container = document.getElementById('cards-container');
+  const card = container.querySelector('.bg-white');
+  if (!card) return;
+  
+  // Pegar a largura exata do card (100vw no mobile)
+  const cardWidth = card.offsetWidth;
+  
+  // Scroll instantâneo (sem behavior: 'smooth')
+  container.scrollBy({
+    left: cardWidth,
+    behavior: 'auto'
+  });
+}
+
+function updateNavigationButtons() {
+  const container = document.getElementById('cards-container');
+  const leftBtn = document.getElementById('scroll-left-btn');
+  const rightBtn = document.getElementById('scroll-right-btn');
+  
+  if (!container || !leftBtn || !rightBtn) return;
+  
+  // Mostrar/ocultar seta esquerda
+  if (container.scrollLeft <= 10) {
+    leftBtn.style.display = 'none';
+  } else {
+    leftBtn.style.display = 'block';
+  }
+  
+  // Mostrar/ocultar seta direita
+  const isAtEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 10;
+  if (isAtEnd) {
+    rightBtn.style.display = 'none';
+  } else {
+    rightBtn.style.display = 'block';
+  }
+}
+
+// Inicializar ao carregar a página
+document.addEventListener('DOMContentLoaded', function() {
+  updateNavigationButtons();
+  
+  // Atualizar ao redimensionar
+  window.addEventListener('resize', updateNavigationButtons);
+});
+
+// Atualizar imediatamente (para Turbo)
+updateNavigationButtons();
+</script>
+
+<style>
+/* Estilo para scroll horizontal no mobile */
+#cards-container {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+#cards-container::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+@media (max-width: 768px) {
   .pagination {
     flex-direction: column;
   }
