@@ -56,35 +56,14 @@
     (function() {
       'use strict';
       
-      // Prevenir zoom por pinch (dois dedos)
+      // Prevenir zoom por pinch (dois dedos) - funciona em Android e iOS
       document.addEventListener('touchmove', function(event) {
-        if (event.scale !== 1) {
+        if (event.touches && event.touches.length > 1) {
           event.preventDefault();
         }
       }, { passive: false });
 
-      // Prevenir zoom por duplo toque APENAS em áreas que não são botões
-      let lastTouchEnd = 0;
-      let lastTouchTarget = null;
-      document.addEventListener('touchend', function(event) {
-        const now = Date.now();
-        const target = event.target;
-        
-        // Permitir cliques rápidos em botões e links
-        const isInteractive = target.closest('button') || 
-                             target.closest('a') || 
-                             target.closest('[role="button"]') ||
-                             target.closest('.carousel-nav');
-        
-        if (!isInteractive && now - lastTouchEnd <= 300) {
-          event.preventDefault();
-        }
-        
-        lastTouchEnd = now;
-        lastTouchTarget = target;
-      }, { passive: false });
-
-      // Prevenir zoom por gestos (iOS Safari)
+      // Prevenir zoom por gestos (iOS Safari apenas)
       document.addEventListener('gesturestart', function(event) {
         event.preventDefault();
       }, { passive: false });
@@ -97,16 +76,11 @@
         event.preventDefault();
       }, { passive: false });
 
-      // Forçar zoom level 1 constantemente
-      window.addEventListener('resize', function() {
-        if (window.visualViewport && window.visualViewport.scale !== 1) {
-          window.scrollTo(0, 0);
-        }
+      // Aplicar CSS touch-action para prevenir zoom
+      document.addEventListener('DOMContentLoaded', function() {
+        document.body.style.touchAction = 'pan-x pan-y';
+        document.documentElement.style.touchAction = 'pan-x pan-y';
       });
-
-      // Prevenir zoom via CSS touch-action
-      document.body.style.touchAction = 'pan-x pan-y';
-      document.documentElement.style.touchAction = 'pan-x pan-y';
     })();
   </script>
 </head>
