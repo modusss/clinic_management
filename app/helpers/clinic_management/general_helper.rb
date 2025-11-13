@@ -63,19 +63,15 @@ module ClinicManagement
       "Content-Type" => "application/json",
       "apikey" => api_key
       }
-      # Montando o corpo da mensagem para envio de PDF
+      # v2: Estrutura simplificada - campos diretos no body
       body = {
       number: "55" + phone,
-      options: {
-          delay: 10,
-          presence: "composing",
-          linkPreview: false
-      },
-      mediaMessage: {
-          mediatype: "document",
-          caption: caption,
-          media: pdf_url
-      }
+      mediatype: "document",  # v2: campo direto
+      mimetype: "application/pdf",
+      caption: caption,
+      media: pdf_url,
+      delay: 1200,
+      linkPreview: false
       }.to_json
       # Montando o endpoint com o nome da instância codificado corretamente
       endpoint = "#{base_url}/message/sendMedia/#{encoded_instance_name}"
