@@ -1,5 +1,5 @@
-<!-- Renderizar o modal de remarcação se for uma remarcação -->
-<% if old_appointment.present? %>
+<!-- Renderizar o modal de remarcação se for uma remarcação (exceto para referrals e managers) -->
+<% if old_appointment.present? && !(referral?(current_user) || is_manager_above?) %>
   <% 
     # Obter lead da variável local ou do old_appointment
     modal_lead = defined?(lead) && lead.present? ? lead : old_appointment.lead
@@ -75,6 +75,16 @@
     
     if (!serviceSelect.value) {
       alert('Por favor, escolha um dia para a remarcação');
+      return false;
+    }
+    
+    // Verificar se o usuário é referral ou manager/owner
+    const isReferralOrManager = <%= referral?(current_user) || is_manager_above? %>;
+    
+    if (isReferralOrManager) {
+      // Para referrals e managers, fazer submit direto sem modal
+      form.removeAttribute('onsubmit'); // Remover interceptação
+      form.submit(); // Submit direto
       return false;
     }
     

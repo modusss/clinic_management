@@ -61,6 +61,14 @@ module ClinicManagement
       @next_service = Service.find_by(id: service_id)
       
       if before_appointment&.present? && @lead&.present? && @next_service&.present?
+        # Determinar origem da remarcação
+        recapture_origin = params.dig(:appointment, :recapture_origin)
+        
+        # Se não houver origem especificada e o usuário for referral ou manager/owner, definir como 'organic'
+        if recapture_origin.blank? && (helpers.referral?(current_user) || helpers.is_manager_above?)
+          recapture_origin = 'organic'
+        end
+        
         # Construir appointment com dados de recapture
         @appointment = @lead.appointments.build(
           invitation: invitation,
@@ -68,7 +76,7 @@ module ClinicManagement
           status: "agendado",
           referral_code: invitation&.referral&.code,
           registered_by_user_id: current_user&.id,
-          recapture_origin: params.dig(:appointment, :recapture_origin),
+          recapture_origin: recapture_origin,
           recapture_actions: params.dig(:appointment, :recapture_actions)&.reject(&:blank?) || [],
           recapture_description: build_recapture_description(params),
           recapture_by_user_id: current_user&.id
