@@ -52,8 +52,7 @@
   <% if referral?(current_user) %>
     <%= f.submit "Remarcação de " + (referral?(current_user) ? user_referral.name : old_appointment&.invitation&.referral&.name), class: "bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded" %>
   <% else %> 
-
-    <% if (controller_name == "leads") && (action_name == "absent") && (old_appointment.created_at > 6.month.ago) %>
+    <% if (controller_name == "leads") && (action_name == "absent") && (old_appointment.created_at > 1.month.ago) %>
       <%= f.submit "Remarcação de " + (referral?(current_user) ? user_referral.name : old_appointment&.invitation&.referral&.name), class: "bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded" %>
     <% elsif controller_name == "leads"%>
       <%= f.submit old_appointment.present? ? "Remarcar" : "Marcar", class: "bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded" %>
