@@ -361,7 +361,7 @@ module ClinicManagement
           {
             header: "Data do exame",
             content: render_to_string(partial: "clinic_management/appointments/reschedule_service_date", 
-                                    locals: { service: service }),
+                                    locals: { service: service, appointment: appointment }),
             class: "nowrap"
           },
           {
