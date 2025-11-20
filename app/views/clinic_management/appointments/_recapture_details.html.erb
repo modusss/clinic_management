@@ -1,0 +1,238 @@
+<!-- Detalhes de Remarcação para Auditoria -->
+<% if appointment.is_reschedule? && appointment.recapture_origin.present? %>
+  <div class="bg-white rounded-lg shadow-md p-4 mt-4">
+    <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center">
+      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+      </svg>
+      Informações da Remarcação
+    </h3>
+
+    <div class="space-y-3">
+      <!-- Origem da Remarcação -->
+      <div class="flex items-start">
+        <span class="font-medium text-gray-700 w-40">Origem:</span>
+        <% if appointment.recapture_origin == 'organic' %>
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+            Orgânica
+          </span>
+        <% elsif appointment.recapture_origin == 'active_effort' %>
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
+              <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
+            </svg>
+            Esforço Ativo
+          </span>
+        <% end %>
+      </div>
+
+      <!-- Responsável pela Remarcação -->
+      <% if appointment.recapture_by_user.present? %>
+        <div class="flex items-start">
+          <span class="font-medium text-gray-700 w-40">Remarcado por:</span>
+          <span class="text-gray-600"><%= appointment.recapture_by_user.name %></span>
+        </div>
+      <% end %>
+
+      <!-- Ações Realizadas (apenas se esforço ativo) -->
+      <% if appointment.recapture_origin == 'active_effort' && appointment.recapture_actions.present? %>
+        <div class="flex items-start">
+          <span class="font-medium text-gray-700 w-40">Ações realizadas:</span>
+          <div class="flex-1">
+            <ul class="space-y-1">
+              <% appointment.recapture_actions.each do |action| %>
+                <li class="flex items-center text-gray-600">
+                  <svg class="w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                  </svg>
+                  <%= case action
+                      when 'called_patient' then 'Liguei para o paciente'
+                      when 'sent_personalized_message' then 'Mandei mensagem personalizada'
+                      when 'sent_audio_or_voice_call' then 'Mandei áudio ou fiz chamada de voz/WhatsApp'
+                      when 'other' then 'Outros'
+                      else action
+                      end %>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Descrição -->
+      <% if appointment.recapture_description.present? %>
+        <div class="flex items-start">
+          <span class="font-medium text-gray-700 w-40">Detalhes:</span>
+          <div class="flex-1 text-gray-600 whitespace-pre-wrap"><%= appointment.recapture_description %></div>
+        </div>
+      <% end %>
+
+      <!-- Screenshots -->
+      <% if appointment.recapture_screenshots.attached? %>
+        <div class="flex items-start">
+          <span class="font-medium text-gray-700 w-40">Comprovantes:</span>
+          <div class="flex-1">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              <% appointment.recapture_screenshots.each_with_index do |screenshot, index| %>
+                <%
+                  # Tentar diferentes métodos para obter URL
+                  screenshot_url = begin
+                    if screenshot.blob.service_name == :local
+                      Rails.application.routes.url_helpers.rails_blob_path(screenshot, only_path: true)
+                    else
+                      screenshot.blob.url
+                    end
+                  rescue => e
+                    Rails.logger.error "Erro ao gerar URL do screenshot #{screenshot.id}: #{e.message}"
+                    nil
+                  end
+                %>
+                
+                <% if screenshot_url.present? %>
+                  <div class="relative group cursor-pointer" onclick="openScreenshotModalDirect('<%= screenshot_url %>', <%= index + 1 %>)">
+                    <img src="<%= screenshot_url %>" 
+                         class="w-full h-24 object-cover rounded border border-gray-300 group-hover:border-blue-500 transition-colors"
+                         loading="lazy"
+                         alt="Comprovante <%= index + 1 %>">
+                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded flex items-center justify-center">
+                      <svg class="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path>
+                      </svg>
+                    </div>
+                    <span class="absolute top-1 right-1 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                      <%= index + 1 %>
+                    </span>
+                  </div>
+                <% else %>
+                  <div class="bg-red-50 border border-red-200 rounded p-2">
+                    <p class="text-xs text-red-600 text-center">Erro</p>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">
+              <%= pluralize(appointment.recapture_screenshots.count, 'comprovante anexado', 'comprovantes anexados') %> 
+              • Clique para ampliar
+            </p>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Status de Auditoria -->
+      <div class="flex items-start pt-3 border-t border-gray-200">
+        <span class="font-medium text-gray-700 w-40">Auditoria:</span>
+        <div class="flex-1">
+          <% if appointment.recapture_audited? %>
+            <div class="flex items-center">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                Auditado
+              </span>
+              <% if appointment.recapture_audited_by.present? %>
+                <span class="ml-3 text-sm text-gray-600">
+                  por <%= appointment.recapture_audited_by.name %>
+                  <% if appointment.recapture_audited_at.present? %>
+                    em <%= l(appointment.recapture_audited_at, format: :short) %>
+                  <% end %>
+                </span>
+              <% end %>
+            </div>
+          <% else %>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+              <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+              </svg>
+              Pendente de Auditoria
+            </span>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Elegibilidade para Comissão -->
+      <% if appointment.recapture_origin == 'active_effort' %>
+        <div class="flex items-start pt-3 border-t border-gray-200">
+          <span class="font-medium text-gray-700 w-40">Comissão:</span>
+          <div class="flex-1">
+            <% if appointment.recapture_screenshots.attached? && appointment.recapture_actions.present? %>
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                Elegível
+              </span>
+              <p class="text-xs text-gray-500 mt-1">
+                Possui comprovantes e ações registradas
+              </p>
+            <% else %>
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                </svg>
+                Não Elegível
+              </span>
+              <p class="text-xs text-red-600 mt-1">
+                Faltam comprovantes ou ações não registradas
+              </p>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Modal para visualizar screenshot em tamanho grande -->
+  <div id="screenshot-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4" onclick="closeScreenshotModal()">
+    <div class="relative max-w-4xl max-h-full" onclick="event.stopPropagation()">
+      <button onclick="closeScreenshotModal()" class="absolute top-2 right-2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+      <img id="screenshot-modal-img" src="" class="max-w-full max-h-screen rounded" alt="Screenshot ampliado">
+      <div id="screenshot-modal-caption" class="text-white text-center mt-2 text-sm"></div>
+    </div>
+  </div>
+
+  <script>
+    // Abrir modal com URL direta
+    function openScreenshotModalDirect(imageUrl, index) {
+      document.getElementById('screenshot-modal').classList.remove('hidden');
+      document.getElementById('screenshot-modal-img').src = imageUrl;
+      document.getElementById('screenshot-modal-caption').textContent = 'Comprovante ' + index;
+      document.body.style.overflow = 'hidden';
+    }
+    
+    // Abrir modal capturando URL do elemento img
+    function openScreenshotModalFromImg(containerElement, index) {
+      // Pegar URL da imagem do src do elemento img dentro do container
+      const imgElement = containerElement.querySelector('img[data-screenshot]');
+      if (!imgElement) return;
+      
+      const imageUrl = imgElement.src;
+      openScreenshotModalDirect(imageUrl, index);
+    }
+    
+    // Função alternativa mantida para compatibilidade
+    function openScreenshotModal(imageUrl, index) {
+      openScreenshotModalDirect(imageUrl, index);
+    }
+
+    function closeScreenshotModal() {
+      document.getElementById('screenshot-modal').classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    }
+
+    // Fechar modal com ESC
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        closeScreenshotModal();
+      }
+    });
+  </script>
+<% end %>

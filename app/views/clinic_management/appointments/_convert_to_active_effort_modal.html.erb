@@ -1,0 +1,232 @@
+<!-- Modal de Conversão para Esforço Ativo -->
+<div id="convert-modal-<%= appointment.id %>" 
+     class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50"
+     onclick="closeConvertModal(<%= appointment.id %>)">
+  
+  <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 max-w-3xl shadow-lg rounded-lg bg-white"
+       onclick="event.stopPropagation()">
+    
+    <!-- Header -->
+    <div class="flex justify-between items-center border-b pb-3 mb-4">
+      <div>
+        <h3 class="text-2xl font-bold text-gray-900">Converter para Esforço Ativo</h3>
+        <p class="text-sm text-gray-600 mt-1"><%= appointment.lead.name %></p>
+      </div>
+      <button type="button" 
+              onclick="closeConvertModal(<%= appointment.id %>)" 
+              class="text-gray-400 hover:text-gray-600 transition-colors">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Formulário -->
+    <%= form_with model: appointment, 
+                  url: convert_to_active_effort_appointment_path(appointment),
+                  method: :patch,
+                  scope: :appointment,
+                  id: "convert-form-#{appointment.id}",
+                  local: true,
+                  multipart: true,
+                  data: { turbo: false },
+                  class: "space-y-5" do |f| %>
+      
+      <!-- Alerta informativo -->
+      <div class="bg-blue-50 border-l-4 border-blue-400 p-4">
+        <div class="flex">
+          <svg class="w-5 h-5 text-blue-400 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+          </svg>
+          <div>
+            <p class="text-sm font-medium text-blue-800">
+              Preencha os dados abaixo para comprovar que esta remarcação foi resultado de esforço ativo
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ações Realizadas -->
+      <div class="space-y-3">
+        <label class="block text-sm font-bold text-gray-700">
+          Ações que você realizou: <span class="text-red-500">*</span>
+        </label>
+        
+        <!-- Hidden field para garantir que o array seja enviado -->
+        <%= f.hidden_field :recapture_actions, value: '', multiple: true %>
+        
+        <div class="space-y-2">
+          <div class="flex items-start">
+            <%= check_box_tag 'appointment[recapture_actions][]', 
+                             'called_patient', 
+                             false,
+                             id: "convert_called_patient_#{appointment.id}",
+                             class: "mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" %>
+            <label for="convert_called_patient_<%= appointment.id %>" class="ml-2 text-sm text-gray-700 cursor-pointer">
+              Liguei para o paciente
+            </label>
+          </div>
+
+          <div class="flex items-start">
+            <%= check_box_tag 'appointment[recapture_actions][]', 
+                             'sent_personalized_message', 
+                             false,
+                             id: "convert_sent_personalized_message_#{appointment.id}",
+                             class: "mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" %>
+            <label for="convert_sent_personalized_message_<%= appointment.id %>" class="ml-2 text-sm text-gray-700 cursor-pointer">
+              Mandei mensagem personalizada (não automática)
+            </label>
+          </div>
+
+          <div class="flex items-start">
+            <%= check_box_tag 'appointment[recapture_actions][]', 
+                             'sent_audio_or_voice_call', 
+                             false,
+                             id: "convert_sent_audio_or_voice_call_#{appointment.id}",
+                             class: "mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" %>
+            <label for="convert_sent_audio_or_voice_call_<%= appointment.id %>" class="ml-2 text-sm text-gray-700 cursor-pointer">
+              Mandei áudio ou fiz chamada de voz/WhatsApp
+            </label>
+          </div>
+
+          <div class="flex items-start">
+            <%= check_box_tag 'appointment[recapture_actions][]', 
+                             'other', 
+                             false,
+                             id: "convert_other_action_#{appointment.id}",
+                             onchange: "toggleOtherFieldConvert(#{appointment.id})",
+                             class: "mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" %>
+            <label for="convert_other_action_<%= appointment.id %>" class="ml-2 text-sm text-gray-700 cursor-pointer">
+              Outros
+            </label>
+          </div>
+
+          <!-- Campo "Outros" (oculto por padrão) -->
+          <div id="other-action-field-convert-<%= appointment.id %>" class="hidden ml-6 mt-2">
+            <%= f.text_field :recapture_description, 
+                           placeholder: "Descreva a ação realizada...",
+                           class: "w-full shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload de Screenshots -->
+      <div class="space-y-2">
+        <label class="block text-sm font-bold text-gray-700">
+          Print da conversa no WhatsApp: <span class="text-red-500">*</span>
+          <span class="text-xs font-normal text-gray-500">(obrigatório para comissão)</span>
+        </label>
+        
+        <div class="mt-1">
+          <%= f.file_field :recapture_screenshots, 
+                          multiple: true,
+                          name: "appointment[recapture_screenshots][]",
+                          accept: "image/*",
+                          class: "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100",
+                          onchange: "previewConvertScreenshots(this, #{appointment.id})" %>
+          <p class="mt-1 text-xs text-gray-500">
+            Aceita múltiplos arquivos (JPG, PNG, etc.)
+          </p>
+        </div>
+        
+        <!-- Preview dos screenshots -->
+        <div id="convert-screenshots-preview-<%= appointment.id %>" class="mt-3 grid grid-cols-3 gap-2"></div>
+      </div>
+
+      <!-- Observação Opcional -->
+      <div class="space-y-2">
+        <label class="block text-sm font-bold text-gray-700">
+          Observação (opcional):
+        </label>
+        <%= f.text_area :recapture_description_extra, 
+                       rows: 3,
+                       placeholder: "Adicione qualquer observação adicional sobre a remarcação...",
+                       class: "w-full shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+      </div>
+
+      <!-- Botões -->
+      <div class="flex justify-end space-x-3 pt-4 border-t">
+        <button type="button"
+                onclick="closeConvertModal(<%= appointment.id %>)"
+                class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition-colors">
+          Cancelar
+        </button>
+        <%= f.submit "Converter para Esforço Ativo", 
+                    class: "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors" %>
+      </div>
+    <% end %>
+
+  </div>
+</div>
+
+<script>
+  // Abrir modal de conversão
+  function openConvertModal(appointmentId) {
+    const modal = document.getElementById('convert-modal-' + appointmentId);
+    if (modal) {
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  // Fechar modal de conversão
+  function closeConvertModal(appointmentId) {
+    const modal = document.getElementById('convert-modal-' + appointmentId);
+    if (modal) {
+      modal.classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    }
+  }
+
+  // Toggle campo "Outros"
+  function toggleOtherFieldConvert(appointmentId) {
+    const checkbox = document.getElementById('convert_other_action_' + appointmentId);
+    const field = document.getElementById('other-action-field-convert-' + appointmentId);
+    
+    if (checkbox.checked) {
+      field.classList.remove('hidden');
+    } else {
+      field.classList.add('hidden');
+    }
+  }
+
+  // Preview de screenshots
+  function previewConvertScreenshots(input, appointmentId) {
+    const preview = document.getElementById('convert-screenshots-preview-' + appointmentId);
+    if (!preview) return;
+    
+    preview.innerHTML = '';
+    
+    if (input.files) {
+      Array.from(input.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const div = document.createElement('div');
+          div.className = 'relative';
+          div.innerHTML = `
+            <img src="${e.target.result}" 
+                 class="w-full h-24 object-cover rounded border border-gray-300"
+                 alt="Preview">
+            <span class="absolute top-0 right-0 bg-green-500 text-white text-xs px-1 rounded-bl">
+              ✓
+            </span>
+          `;
+          preview.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  }
+
+  // Fechar modal com ESC
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      document.querySelectorAll('[id^="convert-modal-"]').forEach(modal => {
+        if (!modal.classList.contains('hidden')) {
+          const appointmentId = modal.id.replace('convert-modal-', '');
+          closeConvertModal(appointmentId);
+        }
+      });
+    }
+  });
+</script>

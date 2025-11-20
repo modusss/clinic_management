@@ -13,8 +13,81 @@
     <p class="text-gray-600 px-4">Lista de pacientes que você remarcou.</p>
   </div>
 
-  <div class="px-4">
-    <p class="text-lg text-gray-700 mb-4">Número de remarcações: <%= @appointments.total_count %></p>
+  <!-- Abas de Filtro -->
+  <div class="px-4 mb-6">
+    <div class="border-b border-gray-200">
+      <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+        <!-- Aba: Todas -->
+        <%= link_to my_reschedules_appointments_path(filter: 'all'), 
+                    class: "whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors #{@filter == 'all' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}" do %>
+          Todas
+          <span class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium <%= @filter == 'all' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-900' %>">
+            <%= @total_count %>
+          </span>
+        <% end %>
+        
+        <!-- Aba: Orgânicas -->
+        <%= link_to my_reschedules_appointments_path(filter: 'organic'), 
+                    class: "whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors #{@filter == 'organic' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}" do %>
+          <span class="flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+            Orgânicas
+          </span>
+          <span class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium <%= @filter == 'organic' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-900' %>">
+            <%= @organic_count %>
+          </span>
+        <% end %>
+        
+        <!-- Aba: Esforço Pessoal -->
+        <%= link_to my_reschedules_appointments_path(filter: 'active_effort'), 
+                    class: "whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors #{@filter == 'active_effort' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}" do %>
+          <span class="flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
+              <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
+            </svg>
+            Esforço Pessoal
+          </span>
+          <span class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium <%= @filter == 'active_effort' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-900' %>">
+            <%= @active_effort_count %>
+          </span>
+        <% end %>
+        
+        <!-- Aba: Sem Origem (antigas) -->
+        <% if @undefined_count > 0 %>
+          <%= link_to my_reschedules_appointments_path(filter: 'undefined'), 
+                      class: "whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors #{@filter == 'undefined' ? 'border-gray-500 text-gray-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}" do %>
+            <span class="flex items-center">
+              <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+              </svg>
+              Sem Origem
+            </span>
+            <span class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium <%= @filter == 'undefined' ? 'bg-gray-200 text-gray-700' : 'bg-gray-100 text-gray-900' %>">
+              <%= @undefined_count %>
+            </span>
+          <% end %>
+        <% end %>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Informação do filtro ativo -->
+  <div class="px-4 mb-4">
+    <p class="text-sm text-gray-600">
+      <% case @filter %>
+      <% when 'organic' %>
+        Mostrando <span class="font-semibold text-green-600"><%= @appointments.total_count %></span> remarcações orgânicas
+      <% when 'active_effort' %>
+        Mostrando <span class="font-semibold text-blue-600"><%= @appointments.total_count %></span> remarcações por esforço pessoal
+      <% when 'undefined' %>
+        Mostrando <span class="font-semibold text-gray-600"><%= @appointments.total_count %></span> remarcações sem origem definida
+      <% else %>
+        Mostrando <span class="font-semibold"><%= @appointments.total_count %></span> remarcações no total
+      <% end %>
+    </p>
   </div>
 
   <%# Render table or cards view based on @view_type %>
@@ -49,6 +122,16 @@
 </div>
 
 <style>
+/* Abas responsivas */
+nav[aria-label="Tabs"] {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+nav[aria-label="Tabs"]::-webkit-scrollbar {
+    display: none;
+}
+
 @media screen and (max-width: 767px) {
     .patient-name.nowrap{
         white-space: normal;
@@ -58,6 +141,15 @@
         white-space: normal;
         max-width: 200px;
         word-wrap: break-word;
+    }
+    
+    /* Abas em mobile */
+    nav[aria-label="Tabs"] {
+        flex-wrap: nowrap;
+    }
+    
+    nav[aria-label="Tabs"] a {
+        flex-shrink: 0;
     }
 }
 

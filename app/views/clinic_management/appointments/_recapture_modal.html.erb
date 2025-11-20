@@ -1,0 +1,271 @@
+<!-- Modal de Controle de Remarcação -->
+<div id="recapture-modal-<%= old_appointment.id %>" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+    
+    <!-- Header -->
+    <div class="flex justify-between items-center border-b pb-3 mb-4">
+      <h3 class="text-xl font-bold text-gray-900">
+        Remarcação de <%= lead.name %>
+      </h3>
+      <button type="button" onclick="closeRecaptureModal(<%= old_appointment.id %>)" class="text-gray-400 hover:text-gray-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <%= form_with url: reschedule_appointment_path(old_appointment), 
+                  scope: :appointment,
+                  method: :post, 
+                  local: true,
+                  multipart: true,
+                  id: "recapture-form-#{old_appointment.id}",
+                  html: { class: "space-y-4" } do |f| %>
+      
+      <!-- Campo hidden para service_id -->
+      <%= f.hidden_field :service_id, id: "modal_service_id_#{old_appointment.id}" %>
+      
+      <!-- Campo hidden para referral_id (se aplicável) -->
+      <% if defined?(referral_id) && referral_id.present? %>
+        <%= f.hidden_field :referral_id, value: referral_id %>
+      <% end %>
+      
+      <!-- Informações do Atendimento -->
+      <div class="bg-blue-50 p-4 rounded-md">
+        <p class="text-sm font-medium text-gray-700">
+          <span class="font-bold">Dia do próximo atendimento:</span>
+          <span id="modal-service-date-<%= old_appointment.id %>" class="text-blue-600">Selecione um dia</span>
+        </p>
+      </div>
+
+      <!-- Origem da Remarcação -->
+      <div class="space-y-2">
+        <label class="block text-sm font-bold text-gray-700">
+          Origem da remarcação: <span class="text-red-500">*</span>
+        </label>
+        
+        <div class="space-y-2">
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <%= f.radio_button :recapture_origin, 'organic', 
+                              class: "form-radio text-blue-600",
+                              onclick: "toggleActiveEffortFields(false)" %>
+            <span class="text-gray-700">Orgânica</span>
+          </label>
+          
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <%= f.radio_button :recapture_origin, 'active_effort', 
+                              class: "form-radio text-blue-600",
+                              onclick: "toggleActiveEffortFields(true)",
+                              checked: true %>
+            <span class="text-gray-700 font-medium">Meu esforço pessoal</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Campos de Esforço Ativo (visíveis apenas se 'active_effort' selecionado) -->
+      <div id="active-effort-fields" class="space-y-4 p-4 bg-gray-50 rounded-md">
+        
+        <!-- Ações Realizadas -->
+        <div class="space-y-2">
+          <label class="block text-sm font-bold text-gray-700">
+            Ação realizada: <span class="text-red-500">*</span>
+            <span class="text-xs font-normal text-gray-500">(obrigatório escolher pelo menos uma)</span>
+          </label>
+          
+          <!-- Campo hidden para garantir que o parâmetro seja enviado -->
+          <%= hidden_field_tag 'appointment[recapture_actions][]', '', id: nil %>
+          
+          <div class="space-y-2">
+            <label class="flex items-center space-x-2">
+              <%= check_box_tag 'appointment[recapture_actions][]', 'called_patient', false, 
+                                class: "form-checkbox text-blue-600 rounded",
+                                id: 'action_called_patient' %>
+              <span class="text-gray-700">Liguei para o paciente</span>
+            </label>
+            
+            <label class="flex items-center space-x-2">
+              <%= check_box_tag 'appointment[recapture_actions][]', 'sent_personalized_message', false, 
+                                class: "form-checkbox text-blue-600 rounded",
+                                id: 'action_sent_personalized_message' %>
+              <span class="text-gray-700">Mandei mensagem personalizada (não automática)</span>
+            </label>
+            
+            <label class="flex items-center space-x-2">
+              <%= check_box_tag 'appointment[recapture_actions][]', 'sent_audio_or_voice_call', false, 
+                                class: "form-checkbox text-blue-600 rounded",
+                                id: 'action_sent_audio_or_voice_call' %>
+              <span class="text-gray-700">Mandei áudio ou fiz chamada de voz/WhatsApp</span>
+            </label>
+            
+            <label class="flex items-center space-x-2">
+              <%= check_box_tag 'appointment[recapture_actions][]', 'other', false, 
+                                class: "form-checkbox text-blue-600 rounded",
+                                id: "action_other_checkbox",
+                                onclick: "toggleOtherActionField()" %>
+              <span class="text-gray-700">Outros</span>
+            </label>
+            
+            <!-- Campo de texto para "Outros" -->
+            <div id="other-action-field" class="hidden ml-6 mt-2">
+              <%= f.text_field :recapture_description, 
+                              placeholder: "Descreva a ação realizada",
+                              class: "w-full shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upload de Screenshots -->
+        <div class="space-y-2">
+          <label class="block text-sm font-bold text-gray-700">
+            Print da conversa no WhatsApp: <span class="text-red-500">*</span>
+            <span class="text-xs font-normal text-gray-500">(obrigatório para comissão)</span>
+          </label>
+          
+          <div class="mt-1">
+            <%= f.file_field :recapture_screenshots, 
+                            multiple: true,
+                            name: "appointment[recapture_screenshots][]",
+                            accept: "image/*",
+                            class: "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100",
+                            onchange: "previewScreenshots(this, #{old_appointment.id})" %>
+            <p class="mt-1 text-xs text-gray-500">
+              Aceita múltiplos arquivos (JPG, PNG, etc.)
+            </p>
+          </div>
+          
+          <!-- Preview dos screenshots -->
+          <div id="screenshots-preview-<%= old_appointment.id %>" class="mt-3 grid grid-cols-3 gap-2"></div>
+        </div>
+
+        <!-- Observação Opcional -->
+        <div class="space-y-2">
+          <label class="block text-sm font-bold text-gray-700">
+            Observação (opcional):
+          </label>
+          <%= f.text_area :recapture_description_extra, 
+                         rows: 3,
+                         placeholder: "Adicione qualquer observação adicional sobre a remarcação...",
+                         class: "w-full shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+        </div>
+      </div>
+
+      <!-- Botões de Ação -->
+      <div class="flex justify-end space-x-3 pt-4 border-t">
+        <button type="button" 
+                onclick="closeRecaptureModal()"
+                class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 font-medium">
+          Cancelar
+        </button>
+        
+        <button type="submit" 
+                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">
+          Confirmar Remarcação
+        </button>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+  // Abrir modal
+  function openRecaptureModal(serviceId, serviceName, appointmentId) {
+    const modalId = appointmentId || '<%= old_appointment.id %>';
+    document.getElementById('modal_service_id_' + modalId).value = serviceId;
+    document.getElementById('modal-service-date-' + modalId).textContent = serviceName;
+    document.getElementById('recapture-modal-' + modalId).classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // Prevenir scroll do body
+  }
+
+  // Fechar modal
+  function closeRecaptureModal(appointmentId) {
+    const modalId = appointmentId || '<%= old_appointment.id %>';
+    document.getElementById('recapture-modal-' + modalId).classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    const form = document.getElementById('recapture-form-' + modalId);
+    if (form) form.reset();
+    const preview = document.getElementById('screenshots-preview-' + modalId);
+    if (preview) preview.innerHTML = '';
+  }
+
+  // Toggle campos de esforço ativo
+  function toggleActiveEffortFields(show) {
+    const fields = document.getElementById('active-effort-fields');
+    if (show) {
+      fields.classList.remove('hidden');
+    } else {
+      fields.classList.add('hidden');
+      // Limpar campos quando não é esforço ativo
+      document.querySelectorAll('#active-effort-fields input[type="checkbox"]').forEach(cb => cb.checked = false);
+      document.getElementById('other-action-field').classList.add('hidden');
+    }
+  }
+
+  // Toggle campo "Outros"
+  function toggleOtherActionField() {
+    const checkbox = document.getElementById('action-other-checkbox');
+    const field = document.getElementById('other-action-field');
+    
+    if (checkbox.checked) {
+      field.classList.remove('hidden');
+    } else {
+      field.classList.add('hidden');
+    }
+  }
+
+  // Preview de screenshots
+  function previewScreenshots(input, appointmentId) {
+    const modalId = appointmentId || '<%= old_appointment.id %>';
+    const preview = document.getElementById('screenshots-preview-' + modalId);
+    if (!preview) return;
+    
+    preview.innerHTML = '';
+    
+    if (input.files) {
+      Array.from(input.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const div = document.createElement('div');
+          div.className = 'relative';
+          div.innerHTML = `
+            <img src="${e.target.result}" 
+                 class="w-full h-24 object-cover rounded border border-gray-300"
+                 alt="Preview">
+            <span class="absolute top-0 right-0 bg-green-500 text-white text-xs px-1 rounded-bl">
+              ✓
+            </span>
+          `;
+          preview.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  }
+
+  // Fechar modal com ESC
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      closeRecaptureModal();
+    }
+  });
+
+  // Inicializar com active_effort visível
+  document.addEventListener('DOMContentLoaded', function() {
+    toggleActiveEffortFields(true);
+  });
+</script>
+
+<style>
+  /* Animação suave para o modal */
+  #recapture-modal {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+</style>

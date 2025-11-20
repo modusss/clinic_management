@@ -1,11 +1,33 @@
-<%= form_with model: new_appointment, url: old_appointment.present? ? reschedule_appointment_path(old_appointment) : appointments_path, method: :post, local: true, html: { class: "items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full"} do |f| %>
+<!-- Renderizar o modal de remarcação se for uma remarcação -->
+<% if old_appointment.present? %>
+  <% 
+    # Obter lead da variável local ou do old_appointment
+    modal_lead = defined?(lead) && lead.present? ? lead : old_appointment.lead
+  %>
+  <%= render 'clinic_management/appointments/recapture_modal', 
+             lead: modal_lead, 
+             old_appointment: old_appointment,
+             available_services: available_services,
+             referral_id: defined?(user_referral) ? user_referral&.id : old_appointment&.invitation&.referral&.id %>
+<% end %>
+
+<%= form_with model: new_appointment, 
+              url: old_appointment.present? ? reschedule_appointment_path(old_appointment) : appointments_path, 
+              method: :post, 
+              local: true, 
+              html: { 
+                class: "items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full",
+                id: old_appointment.present? ? "reschedule-trigger-form-#{old_appointment.id}" : nil,
+                onsubmit: old_appointment.present? ? "return handleRescheduleSubmit(event, this)" : nil
+              } do |f| %>
   
   <div class="w-full sm:w-auto">
     <%= f.label :service_id, "Escolha o dia:", class: "block text-gray-700 text-sm font-bold mb-1" %>
     <%= f.select :service_id, 
                  options_from_collection_for_select(available_services, :id, -> (service) { display_service_name(service) }), 
                  { include_blank: true }, 
-                 { class: "w-full shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" } %>
+                 { class: "w-full shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline",
+                   onchange: old_appointment.present? ? "updateModalServiceInfo(this)" : nil } %>
   </div>
 
   <% if (controller_name == "leads") && (action_name == "show") %>
@@ -40,4 +62,44 @@
     <% end %>
   <% end %>
 
+<% end %>
+
+<% if old_appointment.present? %>
+<script>
+  // Interceptar submit do formulário de remarcação
+  function handleRescheduleSubmit(event, form) {
+    event.preventDefault();
+    
+    const serviceSelect = form.querySelector('select[name="appointment[service_id]"]');
+    const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+    
+    if (!serviceSelect.value) {
+      alert('Por favor, escolha um dia para a remarcação');
+      return false;
+    }
+    
+    // Extrair appointment ID do form ID
+    const formId = form.id;
+    const appointmentId = formId.replace('reschedule-trigger-form-', '');
+    
+    // Abrir modal com informações do serviço selecionado
+    openRecaptureModal(serviceSelect.value, selectedOption.text, appointmentId);
+    
+    return false;
+  }
+  
+  // Atualizar informações no modal quando mudar o select
+  function updateModalServiceInfo(select) {
+    const form = select.closest('form');
+    const formId = form.id;
+    const appointmentId = formId.replace('reschedule-trigger-form-', '');
+    
+    const selectedOption = select.options[select.selectedIndex];
+    const modalServiceDate = document.getElementById('modal-service-date-' + appointmentId);
+    
+    if (modalServiceDate && select.value) {
+      modalServiceDate.textContent = selectedOption.text;
+    }
+  }
+</script>
 <% end %>

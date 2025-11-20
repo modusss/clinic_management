@@ -68,10 +68,21 @@
             %>
             
             <% if last_appointment.present? %>
+              <!-- Renderizar modal de remarcação -->
+              <%= render 'clinic_management/appointments/recapture_modal', 
+                         lead: lead, 
+                         old_appointment: last_appointment,
+                         available_services: available_services,
+                         referral_id: default_referral_id %>
+              
               <%= form_with url: reschedule_appointment_path(last_appointment), 
                            method: :post, 
                            local: true, 
-                           html: { class: "flex flex-col space-y-2" } do |f| %>
+                           html: { 
+                             class: "flex flex-col space-y-2",
+                             id: "reschedule-shortcut-form-#{last_appointment.id}",
+                             onsubmit: "return handleRescheduleShortcutSubmit(event, this, #{last_appointment.id})"
+                           } do |f| %>
                 
                 <div class="w-full">
                   <%= f.label :service_id, "Escolha o dia:", class: "block text-gray-700 text-sm font-bold mb-1" %>
@@ -145,3 +156,23 @@
     </ul>
   </div>
 <% end %>
+
+<script>
+  // Interceptar submit dos formulários shortcut de remarcação
+  function handleRescheduleShortcutSubmit(event, form, appointmentId) {
+    event.preventDefault();
+    
+    const serviceSelect = form.querySelector('select[name="appointment[service_id]"]');
+    const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+    
+    if (!serviceSelect.value) {
+      alert('Por favor, escolha um dia para a remarcação');
+      return false;
+    }
+    
+    // Abrir modal com informações do serviço selecionado
+    openRecaptureModal(serviceSelect.value, selectedOption.text, appointmentId);
+    
+    return false;
+  }
+</script>
