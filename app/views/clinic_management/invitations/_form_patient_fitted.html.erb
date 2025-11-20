@@ -1,4 +1,4 @@
-<%= form_for(invitation, url: create_patient_fitted_invitations_path, method: :post, html: {class: "w-full max-w-lg mx-auto mt-6", id: "new_invitation"}) do |form| %>
+<%= form_for(invitation, url: create_patient_fitted_invitations_path, method: :post, html: {multipart: true, class: "w-full max-w-lg mx-auto mt-6", id: "new_invitation"}) do |form| %>
   <% if invitation.errors.any? %>
     <div class="bg-red-200 border-red-600 border-l-4 p-4 mb-6">
       <h2 class="text-red-800 font-bold"><%= pluralize(invitation.errors.count, "erro") %> impediram que o convite fosse salvo:</h2>
@@ -118,6 +118,127 @@
       <%= form.text_area :notes, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
     </div>
 
+    <!-- Campo opcional de rastreamento de origem (apenas para não-referrals e não-managers) -->
+    <% unless referral?(current_user) || is_manager_above? %>
+      <div class="mb-6 border-t pt-4">
+        <!-- Botão para revelar campos opcionais -->
+        <button type="button" 
+                onclick="toggleRecaptureFields()"
+                id="toggle-recapture-btn"
+                class="flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors">
+          <svg id="recapture-chevron" class="w-4 h-4 mr-1 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+          <span id="recapture-toggle-text">Adicionar comprovante de esforço ativo (opcional)</span>
+        </button>
+
+        <!-- Campos de recaptura (ocultos por padrão) -->
+        <div id="recapture-fields" class="hidden mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
+          
+          <!-- Origem do Encaixe -->
+          <div class="space-y-2">
+            <label class="block text-sm font-bold text-gray-700">
+              Como conseguiu este encaixe?
+            </label>
+            
+            <div class="space-y-2">
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <%= radio_button_tag 'invitation[recapture_origin]', 'organic', false,
+                                     class: "form-radio text-blue-600",
+                                     onclick: "toggleEncaixeActiveEffortFields(false)" %>
+                <span class="text-gray-700">Orgânico (paciente procurou espontaneamente)</span>
+              </label>
+              
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <%= radio_button_tag 'invitation[recapture_origin]', 'active_effort', false,
+                                     class: "form-radio text-blue-600",
+                                     onclick: "toggleEncaixeActiveEffortFields(true)" %>
+                <span class="text-gray-700 font-medium">Meu esforço ativo (liguei/mensagem)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Campos de Esforço Ativo (visíveis apenas se 'active_effort' selecionado) -->
+          <div id="encaixe-active-effort-fields" class="hidden space-y-4">
+            
+            <!-- Ações Realizadas -->
+            <div class="space-y-2">
+              <label class="block text-sm font-bold text-gray-700">
+                Ações realizadas:
+              </label>
+              
+              <div class="space-y-2">
+                <label class="flex items-center space-x-2">
+                  <%= check_box_tag 'invitation[recapture_actions][]', 'called_patient', false, 
+                                    class: "form-checkbox text-blue-600 rounded" %>
+                  <span class="text-gray-700 text-sm">Liguei para o paciente</span>
+                </label>
+                
+                <label class="flex items-center space-x-2">
+                  <%= check_box_tag 'invitation[recapture_actions][]', 'sent_personalized_message', false, 
+                                    class: "form-checkbox text-blue-600 rounded" %>
+                  <span class="text-gray-700 text-sm">Mandei mensagem personalizada</span>
+                </label>
+                
+                <label class="flex items-center space-x-2">
+                  <%= check_box_tag 'invitation[recapture_actions][]', 'sent_audio_or_voice_call', false, 
+                                    class: "form-checkbox text-blue-600 rounded" %>
+                  <span class="text-gray-700 text-sm">Mandei áudio ou fiz chamada de voz</span>
+                </label>
+                
+                <label class="flex items-center space-x-2">
+                  <%= check_box_tag 'invitation[recapture_actions][]', 'other', false, 
+                                    class: "form-checkbox text-blue-600 rounded",
+                                    id: "encaixe-action-other-checkbox",
+                                    onclick: "toggleEncaixeOtherActionField()" %>
+                  <span class="text-gray-700 text-sm">Outros</span>
+                </label>
+                
+                <!-- Campo de texto para "Outros" -->
+                <div id="encaixe-other-action-field" class="hidden ml-6 mt-2">
+                  <%= text_field_tag 'invitation[recapture_description]', nil,
+                                     placeholder: "Descreva a ação realizada",
+                                     class: "w-full px-3 py-2 border rounded shadow text-sm" %>
+                </div>
+              </div>
+            </div>
+
+            <!-- Upload de Screenshots -->
+            <div class="space-y-2">
+              <label class="block text-sm font-bold text-gray-700">
+                Print da conversa:
+                <span class="text-xs font-normal text-gray-500">(recomendado para comissão)</span>
+              </label>
+              
+              <%= file_field_tag 'invitation[recapture_screenshots][]',
+                                 multiple: true,
+                                 accept: "image/*",
+                                 class: "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100",
+                                 onchange: "previewEncaixeScreenshots(this)" %>
+              
+              <!-- Preview dos screenshots -->
+              <div id="encaixe-screenshots-preview" class="mt-2 grid grid-cols-3 gap-2"></div>
+            </div>
+
+            <!-- Observação adicional -->
+            <div class="space-y-2">
+              <label class="block text-sm font-bold text-gray-700">
+                Observação adicional (opcional):
+              </label>
+              <%= text_area_tag 'invitation[recapture_description_extra]', nil,
+                                rows: 2,
+                                placeholder: "Detalhes sobre o esforço realizado...",
+                                class: "w-full px-3 py-2 border rounded shadow text-sm" %>
+            </div>
+          </div>
+
+          <p class="text-xs text-gray-500 italic">
+            💡 Estes dados são opcionais e ajudam a rastrear a origem dos encaixes.
+          </p>
+        </div>
+      </div>
+    <% end %>
+
     <div class="my-4">
       <%= form.submit "Adicionar novo paciente", 
           class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline",
@@ -129,6 +250,78 @@
 
   </div>
 <% end %>
+
+<script>
+  // Toggle campos de recaptura
+  function toggleRecaptureFields() {
+    const fields = document.getElementById('recapture-fields');
+    const chevron = document.getElementById('recapture-chevron');
+    const text = document.getElementById('recapture-toggle-text');
+    
+    if (fields.classList.contains('hidden')) {
+      fields.classList.remove('hidden');
+      chevron.classList.add('rotate-90');
+      text.textContent = 'Ocultar campos de comprovante';
+    } else {
+      fields.classList.add('hidden');
+      chevron.classList.remove('rotate-90');
+      text.textContent = 'Adicionar comprovante de esforço ativo (opcional)';
+    }
+  }
+
+  // Toggle campos de esforço ativo
+  function toggleEncaixeActiveEffortFields(show) {
+    const fields = document.getElementById('encaixe-active-effort-fields');
+    if (show) {
+      fields.classList.remove('hidden');
+    } else {
+      fields.classList.add('hidden');
+      // Limpar campos quando não é esforço ativo
+      document.querySelectorAll('#encaixe-active-effort-fields input[type="checkbox"]').forEach(cb => cb.checked = false);
+      document.getElementById('encaixe-other-action-field').classList.add('hidden');
+    }
+  }
+
+  // Toggle campo "Outros"
+  function toggleEncaixeOtherActionField() {
+    const checkbox = document.getElementById('encaixe-action-other-checkbox');
+    const field = document.getElementById('encaixe-other-action-field');
+    
+    if (checkbox.checked) {
+      field.classList.remove('hidden');
+    } else {
+      field.classList.add('hidden');
+    }
+  }
+
+  // Preview de screenshots
+  function previewEncaixeScreenshots(input) {
+    const preview = document.getElementById('encaixe-screenshots-preview');
+    if (!preview) return;
+    
+    preview.innerHTML = '';
+    
+    if (input.files) {
+      Array.from(input.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const div = document.createElement('div');
+          div.className = 'relative';
+          div.innerHTML = `
+            <img src="${e.target.result}" 
+                 class="w-full h-20 object-cover rounded border border-gray-300"
+                 alt="Preview">
+            <span class="absolute top-0 right-0 bg-green-500 text-white text-xs px-1 rounded-bl">
+              ✓
+            </span>
+          `;
+          preview.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  }
+</script>
 
 <style>
   .selected-action {

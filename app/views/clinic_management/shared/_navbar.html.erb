@@ -118,7 +118,7 @@
            <%= link_to "Tipos de serviço", clinic_management.service_types_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'service_types'}" %>
          <% end %>
          <%= link_to "Atendimentos", clinic_management.services_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'services'}" %>
-         <%= link_to "Minhas Remarcações", clinic_management.my_reschedules_appointments_path, class: "text-white hover:text-emerald-300 #{'active' if action_name == 'my_reschedules'}" %>
+         <%= link_to "Meus Agendamentos", clinic_management.my_reschedules_appointments_path, class: "text-white hover:text-emerald-300 #{'active' if action_name == 'my_reschedules'}" %>
          <% unless clinical_assistant?(current_user) %>
          <%= link_to "Regiões", clinic_management.regions_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'regions'}" %>
          <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'time_slots'}" %>
@@ -188,7 +188,7 @@
       <%= link_to "Tipos de serviço", clinic_management.service_types_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'service_types'}" %>
     <% end %>
     <%= link_to "Atendimentos", clinic_management.services_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'services'}" %>
-    <%= link_to "Minhas Remarcações", clinic_management.my_reschedules_appointments_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if action_name == 'my_reschedules'}" %>
+    <%= link_to "Meus Agendamentos", clinic_management.my_reschedules_appointments_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if action_name == 'my_reschedules'}" %>
     <% unless clinical_assistant?(current_user) %>
     <%= link_to "Regiões", clinic_management.regions_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'regions'}" %>
     <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'time_slots'}" %>

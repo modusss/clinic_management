@@ -326,16 +326,8 @@ module ClinicManagement
       @filter = params[:filter] || 'all'
       
       # Query base: appointments criados pelo usuário atual onde o status é "agendado"
-      # e existe um appointment anterior com status "remarcado" do mesmo lead
       base_query = Appointment.joins(:lead)
                                .where(registered_by_user_id: current_user&.id, status: 'agendado')
-                               .where(
-                                 'EXISTS (SELECT 1 FROM clinic_management_appointments ca2 
-                                  WHERE ca2.lead_id = clinic_management_appointments.lead_id 
-                                  AND ca2.status = ? 
-                                  AND ca2.created_at < clinic_management_appointments.created_at)',
-                                 'remarcado'
-                               )
       
       # Contadores para as abas
       @total_count = base_query.count

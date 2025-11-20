@@ -1,4 +1,4 @@
-<%= breadcrumb({title: "Minhas remarcações", path: nil}) %>
+<%= breadcrumb({title: "Meus Agendamentos", path: nil}) %>
 
 <%# Toggle for table/cards view. Stores preference in a cookie. %>
 <%= render partial: "clinic_management/shared/toggle_cards_table", locals: { 
@@ -9,8 +9,8 @@
 
 <div class="container py-8">
   <div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 mb-2 px-4">Minhas remarcações</h1>
-    <p class="text-gray-600 px-4">Lista de pacientes que você remarcou.</p>
+    <h1 class="text-3xl font-bold text-gray-900 mb-2 px-4">Meus Agendamentos</h1>
+    <p class="text-gray-600 px-4">Lista de agendamentos realizados por você.</p>
   </div>
 
   <!-- Abas de Filtro -->
@@ -79,13 +79,13 @@
     <p class="text-sm text-gray-600">
       <% case @filter %>
       <% when 'organic' %>
-        Mostrando <span class="font-semibold text-green-600"><%= @appointments.total_count %></span> remarcações orgânicas
+        Mostrando <span class="font-semibold text-green-600"><%= @appointments.total_count %></span> agendamentos orgânicos
       <% when 'active_effort' %>
-        Mostrando <span class="font-semibold text-blue-600"><%= @appointments.total_count %></span> remarcações por esforço pessoal
+        Mostrando <span class="font-semibold text-blue-600"><%= @appointments.total_count %></span> agendamentos por esforço pessoal
       <% when 'undefined' %>
-        Mostrando <span class="font-semibold text-gray-600"><%= @appointments.total_count %></span> remarcações sem origem definida
+        Mostrando <span class="font-semibold text-gray-600"><%= @appointments.total_count %></span> agendamentos sem origem definida
       <% else %>
-        Mostrando <span class="font-semibold"><%= @appointments.total_count %></span> remarcações no total
+        Mostrando <span class="font-semibold"><%= @appointments.total_count %></span> agendamentos no total
       <% end %>
     </p>
   </div>
@@ -103,8 +103,8 @@
   <% else %>
     <div class="bg-white shadow sm:rounded-lg">
       <div class="px-4 py-5 sm:p-6">
-        <h2 class="text-xl font-medium text-gray-900">Nenhuma remarcação encontrada.</h2>
-        <p class="mt-2 text-sm text-gray-600">Você ainda não fez nenhuma remarcação de pacientes.</p>
+        <h2 class="text-xl font-medium text-gray-900">Nenhum agendamento encontrado.</h2>
+        <p class="mt-2 text-sm text-gray-600">Você ainda não fez nenhum agendamento.</p>
       </div>
     </div>
   <% end %>
