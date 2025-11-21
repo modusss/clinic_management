@@ -440,18 +440,19 @@ module ClinicManagement
     def my_reschedules
       # Filtro de origem (all, organic, active_effort)
       @filter = params[:filter] || 'all'
+      @conversion_filter = params[:conversion_filter] # purchased, not_purchased
       
       # Query base: appointments criados pelo usuário atual onde o status é "agendado"
       base_query = Appointment.joins(:lead)
                                .where(registered_by_user_id: current_user&.id, status: 'agendado')
       
-      # Contadores para as abas
+      # Contadores para as abas de origem
       @total_count = base_query.count
       @organic_count = base_query.where(recapture_origin: 'organic').count
       @active_effort_count = base_query.where(recapture_origin: 'active_effort').count
       @undefined_count = base_query.where(recapture_origin: [nil, '']).count
       
-      # Aplicar filtro baseado na aba selecionada
+      # Aplicar filtro de origem
       @appointments = case @filter
                       when 'organic'
                         base_query.where(recapture_origin: 'organic')
@@ -463,9 +464,49 @@ module ClinicManagement
                         base_query
                       end
       
+      # Carregar appointments com includes
       @appointments = @appointments.includes(:service, :invitation, :lead, :recapture_by_user)
                                    .order(created_at: :desc)
-                                   .page(params[:page]).per(50)
+      
+      # Aplicar filtro de conversão (comprou/não comprou) ANTES da paginação
+      if @conversion_filter.present?
+        all_appointments = @appointments.to_a
+        
+        filtered_appointments = all_appointments.select do |appointment|
+          purchased = appointment_lead_purchased?(appointment)
+          
+          case @conversion_filter
+          when 'purchased'
+            purchased
+          when 'not_purchased'
+            !purchased
+          else
+            true
+          end
+        end
+        
+        # Calcular contadores de conversão (para badges)
+        @purchased_count = all_appointments.count { |apt| appointment_lead_purchased?(apt) }
+        @not_purchased_count = all_appointments.count { |apt| !appointment_lead_purchased?(apt) }
+        
+        # Paginar manualmente os resultados filtrados
+        page = (params[:page] || 1).to_i
+        per_page = 50
+        start_index = (page - 1) * per_page
+        
+        @appointments = Kaminari.paginate_array(
+          filtered_appointments,
+          total_count: filtered_appointments.size
+        ).page(page).per(per_page)
+      else
+        # Calcular contadores sem filtro de conversão
+        all_for_count = @appointments.to_a
+        @purchased_count = all_for_count.count { |apt| appointment_lead_purchased?(apt) }
+        @not_purchased_count = all_for_count.count { |apt| !appointment_lead_purchased?(apt) }
+        
+        # Paginar normalmente
+        @appointments = @appointments.page(params[:page]).per(50)
+      end
 
       # Prepara os dados para a tabela usando partials
       @rows = @appointments.map do |appointment|
@@ -527,7 +568,7 @@ module ClinicManagement
           {
             header: "Cliente",
             content: render_to_string(partial: "clinic_management/appointments/reschedule_customer_link",
-                                    locals: { lead: lead }).html_safe,
+                                    locals: { lead: lead, appointment: appointment }).html_safe,
             class: "nowrap"
           }
         ]
@@ -558,6 +599,33 @@ module ClinicManagement
         end
         
         description_parts.join("\n\n")
+      end
+      
+      # Verifica se o lead comprou após o appointment (até 4 meses depois)
+      def appointment_lead_purchased?(appointment)
+        return false unless appointment.lead.present?
+        
+        lead = appointment.lead
+        
+        # Verificar se o lead tem conversão (é cliente)
+        return false unless lead.leads_conversion.present?
+        return false unless lead.customer.present?
+        
+        # Pegar o último pedido do cliente
+        last_order = lead.customer.orders.last
+        return false unless last_order.present?
+        
+        # Data do appointment (service date)
+        appointment_date = appointment.service.date.to_date
+        
+        # Data do pedido
+        order_date = last_order.created_at.to_date
+        
+        # Calcular 4 meses após o appointment
+        four_months_after = appointment_date + 4.months
+        
+        # Verificar se o pedido foi feito entre a data do appointment e 4 meses depois
+        order_date >= appointment_date && order_date <= four_months_after
       end
     
       # Use callbacks to share common setup or constraints between actions.

@@ -13,12 +13,46 @@
     <p class="text-gray-600 px-4">Lista de agendamentos realizados por você.</p>
   </div>
 
-  <!-- Abas de Filtro -->
+  <!-- Filtros de Conversão (Comprou/Não Comprou) -->
+  <div class="px-4 mb-4">
+    <div class="flex items-center gap-3">
+      <span class="text-sm font-medium text-gray-700">Conversão:</span>
+      
+      <%= link_to my_reschedules_appointments_path(filter: @filter),
+                  class: "inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium transition-colors #{@conversion_filter.nil? ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" do %>
+        Todos
+      <% end %>
+      
+      <%= link_to my_reschedules_appointments_path(filter: @filter, conversion_filter: 'purchased'),
+                  class: "inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium transition-colors #{@conversion_filter == 'purchased' ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 hover:bg-green-100'}" do %>
+        <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"></path>
+        </svg>
+        Compraram
+        <span class="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-green-200 text-green-800">
+          <%= @purchased_count %>
+        </span>
+      <% end %>
+      
+      <%= link_to my_reschedules_appointments_path(filter: @filter, conversion_filter: 'not_purchased'),
+                  class: "inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium transition-colors #{@conversion_filter == 'not_purchased' ? 'bg-red-600 text-white' : 'bg-red-50 text-red-700 hover:bg-red-100'}" do %>
+        <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd"></path>
+        </svg>
+        Não Compraram
+        <span class="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-red-200 text-red-800">
+          <%= @not_purchased_count %>
+        </span>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Abas de Filtro de Origem -->
   <div class="px-4 mb-6">
     <div class="border-b border-gray-200">
       <nav class="-mb-px flex space-x-8" aria-label="Tabs">
         <!-- Aba: Todas -->
-        <%= link_to my_reschedules_appointments_path(filter: 'all'), 
+        <%= link_to my_reschedules_appointments_path(filter: 'all', conversion_filter: @conversion_filter), 
                     class: "whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors #{@filter == 'all' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}" do %>
           Todas
           <span class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium <%= @filter == 'all' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-900' %>">
@@ -27,7 +61,7 @@
         <% end %>
         
         <!-- Aba: Orgânicas -->
-        <%= link_to my_reschedules_appointments_path(filter: 'organic'), 
+        <%= link_to my_reschedules_appointments_path(filter: 'organic', conversion_filter: @conversion_filter), 
                     class: "whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors #{@filter == 'organic' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}" do %>
           <span class="flex items-center">
             <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -41,7 +75,7 @@
         <% end %>
         
         <!-- Aba: Esforço Pessoal -->
-        <%= link_to my_reschedules_appointments_path(filter: 'active_effort'), 
+        <%= link_to my_reschedules_appointments_path(filter: 'active_effort', conversion_filter: @conversion_filter), 
                     class: "whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors #{@filter == 'active_effort' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}" do %>
           <span class="flex items-center">
             <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -57,7 +91,7 @@
         
         <!-- Aba: Sem Origem (antigas) -->
         <% if @undefined_count > 0 %>
-          <%= link_to my_reschedules_appointments_path(filter: 'undefined'), 
+          <%= link_to my_reschedules_appointments_path(filter: 'undefined', conversion_filter: @conversion_filter), 
                       class: "whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors #{@filter == 'undefined' ? 'border-gray-500 text-gray-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}" do %>
             <span class="flex items-center">
               <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">

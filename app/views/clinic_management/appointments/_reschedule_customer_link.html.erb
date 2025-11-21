@@ -1,12 +1,48 @@
-<% if lead.leads_conversion.present? %>
-  <%= link_to "Página do cliente", 
-              main_app.customer_orders_path(lead.customer), 
-              class: "text-blue-500 hover:text-blue-700 hover:underline text-sm font-medium inline-flex items-center",
-              target: "_blank" %>
-<% else %>
-  <%= link_to "Converter para cliente", 
-              main_app.new_conversion_path(lead_id: lead.id), 
-              class: "text-red-500 hover:text-red-700 hover:underline text-sm font-medium inline-flex items-center",
-              target: "_blank" %>
-<% end %>
+<div class="flex flex-col gap-1">
+  <% if lead.leads_conversion.present? %>
+    <%= link_to "Página do cliente", 
+                main_app.customer_orders_path(lead.customer), 
+                class: "text-blue-500 hover:text-blue-700 hover:underline text-sm font-medium inline-flex items-center",
+                target: "_blank" %>
+    
+    <%# Verificar se comprou após o appointment %>
+    <% 
+      last_order = lead.customer.orders.last
+      appointment_date = appointment.service.date.to_date
+      
+      if last_order.present?
+        order_date = last_order.created_at.to_date
+        four_months_after = appointment_date + 4.months
+        purchased = order_date >= appointment_date && order_date <= four_months_after
+      else
+        purchased = false
+      end
+    %>
+    
+    <% if purchased %>
+      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"></path>
+        </svg>
+        Comprou
+      </span>
+    <% else %>
+      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd"></path>
+        </svg>
+        Não comprou
+      </span>
+    <% end %>
+  <% else %>
+    <%= link_to "Converter para cliente", 
+                main_app.new_conversion_path(lead_id: lead.id), 
+                class: "text-red-500 hover:text-red-700 hover:underline text-sm font-medium inline-flex items-center",
+                target: "_blank" %>
+    
+    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+      Ainda não é cliente
+    </span>
+  <% end %>
+</div>
 
