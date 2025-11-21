@@ -53,8 +53,11 @@ module ClinicManagement
       # Prepare available months/years for the filter
       @available_dates = prepare_available_months_years(@is_referral_user ? @current_user_referral&.id : nil)
       
+      # Fetch interactions for the period
+      @interactions = LeadInteraction.where(occurred_at: start_date.beginning_of_day..end_date.end_of_day)
+
       # Prepare data for the new elegant table
-      @invitations_data = prepare_invitations_reschedules_data(@invitations, @appointments)
+      @invitations_data = prepare_invitations_reschedules_data(@invitations, @appointments, @interactions)
       
       # Calculate period totals for display
       @total_invitations = @invitations.count
@@ -677,39 +680,68 @@ module ClinicManagement
         available_dates.reverse
       end
 
-      def prepare_invitations_reschedules_data(invitations, appointments)
-        # Estrutura: { date => { referral => { invitations: [], reschedules: [] } } }
+      def prepare_invitations_reschedules_data(invitations, appointments, interactions)
+        # Estrutura: { date => { referral => { invitations: [], reschedules: [], whatsapp_count: 0, phone_count: 0 } } }
         data = {}
         
-        # Get all unique dates from both invitations and appointments
+        # Build map of User ID -> Referral
+        user_referral_map = build_user_referral_map
+
+        # Get all unique dates from invitations, appointments, and interactions
         invitation_dates = invitations.where.not(date: nil).map(&:date).compact
         appointment_dates = appointments.map { |apt| apt.created_at&.to_date }.compact
-        all_dates = (invitation_dates + appointment_dates).uniq.sort.reverse
+        interaction_dates = interactions.map { |i| i.occurred_at&.to_date }.compact
+        
+        all_dates = (invitation_dates + appointment_dates + interaction_dates).uniq.sort.reverse
         
         all_dates.each do |date|
-          # Get invitations and appointments for this date
+          # Get data for this date
           date_invitations = invitations.select { |inv| inv.date == date }
           date_appointments = appointments.select { |apt| apt.created_at&.to_date == date }
+          date_interactions = interactions.select { |i| i.occurred_at&.to_date == date }
           
           # Group by referral
           referral_data = {}
           
           # Process invitations
           date_invitations.group_by(&:referral).each do |referral, invites|
-            referral_data[referral] ||= { invitations: [], reschedules: [] }
+            referral_data[referral] ||= init_referral_data
             referral_data[referral][:invitations] = invites
           end
           
           # Process appointments (reschedules)
           date_appointments.group_by { |apt| apt.invitation&.referral }.each do |referral, apts|
-            referral_data[referral] ||= { invitations: [], reschedules: [] }
+            referral_data[referral] ||= init_referral_data
             referral_data[referral][:reschedules] = apts
+          end
+
+          # Process interactions
+          date_interactions.group_by(&:user_id).each do |user_id, user_ints|
+            referral = user_referral_map[user_id]
+            next unless referral
+            
+            referral_data[referral] ||= init_referral_data
+            referral_data[referral][:whatsapp_count] += user_ints.count { |i| i.interaction_type == 'whatsapp_click' }
+            referral_data[referral][:phone_count] += user_ints.count { |i| i.interaction_type == 'phone_call' }
           end
           
           data[date] = referral_data unless referral_data.empty?
         end
         
         data
+      end
+
+      def init_referral_data
+        { invitations: [], reschedules: [], whatsapp_count: 0, phone_count: 0 }
+      end
+
+      def build_user_referral_map
+        referrals_by_code = Referral.all.index_by(&:code)
+        Membership.where(role: 'referral').where.not(code: nil).each_with_object({}) do |membership, map|
+          if (referral = referrals_by_code[membership.code])
+            map[membership.user_id] = referral
+          end
+        end
       end
 
       def get_referral_from_user(user_id)

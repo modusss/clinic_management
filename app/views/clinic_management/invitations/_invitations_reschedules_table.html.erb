@@ -73,6 +73,7 @@
               <tr>
                 <th class="col-referral">Indicador</th>
                 <th class="col-count">Total</th>
+                <th class="col-count" style="width: 100px; min-width: 100px">Interações</th>
                 <th class="col-count">Qtd Convites</th>
                 <th class="col-names">Convites</th>
                 <th class="col-count">Qtd Remarcações</th>
@@ -80,9 +81,9 @@
               </tr>
             </thead>
             <tbody>
-              <% if referrals_data.blank? || referrals_data.all? { |_, data| data[:invitations].blank? && data[:reschedules].blank? } %>
+              <% if referrals_data.blank? || referrals_data.all? { |_, data| data[:invitations].blank? && data[:reschedules].blank? && data[:whatsapp_count] == 0 && data[:phone_count] == 0 } %>
                 <tr class="empty-row">
-                  <td colspan="6">
+                  <td colspan="7">
                     <span class="empty-message">Sem lançamentos</span>
                   </td>
                 </tr>
@@ -102,6 +103,20 @@
                       <span class="count-badge total-badge">
                         <%= data[:invitations].size + data[:reschedules].size %>
                       </span>
+                    </td>
+
+                    <!-- Interactions Count (WhatsApp / Phone) -->
+                    <td class="count-cell">
+                      <div class="interactions-cell">
+                         <div class="interaction-item whatsapp" title="WhatsApp">
+                           <i class="material-icons">chat</i>
+                           <span><%= data[:whatsapp_count] %></span>
+                         </div>
+                         <div class="interaction-item phone" title="Ligação">
+                           <i class="material-icons">phone</i>
+                           <span><%= data[:phone_count] %></span>
+                         </div>
+                      </div>
                     </td>
 
                     <!-- Invitations Count -->
@@ -428,6 +443,41 @@
   background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
   color: #7e22ce;
   border: 1px solid #d8b4fe;
+}
+
+/* Interactions Cell */
+.interactions-cell {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.interaction-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.interaction-item i {
+  font-size: 16px;
+}
+
+.interaction-item.whatsapp {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.interaction-item.phone {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
 }
 
 /* Names Cell */
