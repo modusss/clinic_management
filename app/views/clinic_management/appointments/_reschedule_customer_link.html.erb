@@ -1,0 +1,12 @@
+<% if lead.leads_conversion.present? %>
+  <%= link_to "Página do cliente", 
+              main_app.customer_orders_path(lead.customer), 
+              class: "text-blue-500 hover:text-blue-700 hover:underline text-sm font-medium inline-flex items-center",
+              target: "_blank" %>
+<% else %>
+  <%= link_to "Converter para cliente", 
+              main_app.new_conversion_path(lead_id: lead.id), 
+              class: "text-red-500 hover:text-red-700 hover:underline text-sm font-medium inline-flex items-center",
+              target: "_blank" %>
+<% end %>
+

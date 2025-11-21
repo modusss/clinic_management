@@ -523,6 +523,12 @@ module ClinicManagement
             header: "Indicação",
             content: invitation.referral.name.upcase,
             class: "nowrap"
+          },
+          {
+            header: "Cliente",
+            content: render_to_string(partial: "clinic_management/appointments/reschedule_customer_link",
+                                    locals: { lead: lead }).html_safe,
+            class: "nowrap"
           }
         ]
       end
