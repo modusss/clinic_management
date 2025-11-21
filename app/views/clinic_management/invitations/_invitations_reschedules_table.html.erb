@@ -28,6 +28,7 @@
         <% 
           total_invitations = referrals_data.sum { |_, data| data[:invitations].size }
           total_reschedules = referrals_data.sum { |_, data| data[:reschedules].size }
+          total_general = total_invitations + total_reschedules
           show_totals = referrals_data.size > 1 && (total_invitations > 0 || total_reschedules > 0)
         %>
         
@@ -51,6 +52,16 @@
                   <span class="total-value"><%= total_reschedules %></span>
                 </div>
               </div>
+
+              <div class="total-separator"></div>
+
+              <div class="total-item total-general">
+                <i class="material-icons">functions</i>
+                <div class="total-info">
+                  <span class="total-label">Total Geral</span>
+                  <span class="total-value"><%= total_general %></span>
+                </div>
+              </div>
             </div>
           </div>
         <% end %>
@@ -61,6 +72,7 @@
             <thead>
               <tr>
                 <th class="col-referral">Indicador</th>
+                <th class="col-count">Total</th>
                 <th class="col-count">Qtd Convites</th>
                 <th class="col-names">Convites</th>
                 <th class="col-count">Qtd Remarcações</th>
@@ -70,7 +82,7 @@
             <tbody>
               <% if referrals_data.blank? || referrals_data.all? { |_, data| data[:invitations].blank? && data[:reschedules].blank? } %>
                 <tr class="empty-row">
-                  <td colspan="5">
+                  <td colspan="6">
                     <span class="empty-message">Sem lançamentos</span>
                   </td>
                 </tr>
@@ -83,6 +95,13 @@
                         <i class="material-icons referral-icon">person</i>
                         <%= referral&.name || "Sem indicador" %>
                       </div>
+                    </td>
+
+                    <!-- Total Row Count -->
+                    <td class="count-cell">
+                      <span class="count-badge total-badge">
+                        <%= data[:invitations].size + data[:reschedules].size %>
+                      </span>
                     </td>
 
                     <!-- Invitations Count -->
@@ -259,6 +278,10 @@
   color: #db2777;
 }
 
+.total-item.total-general i {
+  color: #7c3aed; /* Violet for General Total */
+}
+
 .total-info {
   display: flex;
   flex-direction: column;
@@ -399,6 +422,12 @@
   background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
   color: #be185d;
   border: 1px solid #f9a8d4;
+}
+
+.total-badge {
+  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+  color: #7e22ce;
+  border: 1px solid #d8b4fe;
 }
 
 /* Names Cell */
