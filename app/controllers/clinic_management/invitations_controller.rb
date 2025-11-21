@@ -46,6 +46,10 @@ module ClinicManagement
         end
       end
       
+      # Exclude invitations that are actually reschedules to avoid duplication
+      reschedule_invitation_ids = @appointments.pluck(:invitation_id)
+      @invitations = @invitations.where.not(id: reschedule_invitation_ids)
+
       # Prepare available months/years for the filter
       @available_dates = prepare_available_months_years(@is_referral_user ? @current_user_referral&.id : nil)
       
