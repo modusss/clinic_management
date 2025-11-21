@@ -1,0 +1,163 @@
+<div class="space-y-5 max-h-[70vh] overflow-y-auto px-2">
+  
+  <!-- Informações Básicas -->
+  <div class="bg-blue-50 p-4 rounded-lg">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div>
+        <p class="text-xs font-medium text-gray-600">Data do Atendimento</p>
+        <p class="text-sm font-semibold text-gray-900">
+          <%= appointment.service.date.strftime('%d/%m/%Y') %> às <%= appointment.service.date.strftime('%H:%M') %>
+        </p>
+      </div>
+      <div>
+        <p class="text-xs font-medium text-gray-600">Remarcado em</p>
+        <p class="text-sm font-semibold text-gray-900">
+          <%= l(appointment.created_at, format: :long) %>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Origem -->
+  <div class="border-b pb-4">
+    <h4 class="text-sm font-bold text-gray-700 mb-2">Origem da Remarcação</h4>
+    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+      <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
+        <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
+      </svg>
+      <%= appointment.recapture_origin == 'active_effort' ? 'Esforço Pessoal' : 'Orgânica' %>
+    </span>
+    <% if appointment.recapture_by_user.present? %>
+      <p class="text-xs text-gray-600 mt-2">
+        Remarcado por: <span class="font-medium"><%= appointment.recapture_by_user.name %></span>
+      </p>
+    <% end %>
+  </div>
+
+  <!-- Ações Realizadas -->
+  <% if appointment.recapture_actions.present? && !appointment.recapture_actions.empty? %>
+    <div class="border-b pb-4">
+      <h4 class="text-sm font-bold text-gray-700 mb-3">Ações Realizadas</h4>
+      <div class="space-y-2">
+        <% appointment.recapture_actions.reject(&:blank?).each do |action| %>
+          <div class="flex items-start space-x-2">
+            <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+            <span class="text-sm text-gray-700">
+              <%= case action
+                  when 'called_patient' then 'Liguei para o paciente'
+                  when 'sent_personalized_message' then 'Mandei mensagem personalizada (não automática)'
+                  when 'sent_audio_or_voice_call' then 'Mandei áudio ou fiz chamada de voz/WhatsApp'
+                  when 'other' then 'Outros'
+                  else action
+                  end %>
+            </span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Descrição/Observações -->
+  <% if appointment.recapture_description.present? %>
+    <div class="border-b pb-4">
+      <h4 class="text-sm font-bold text-gray-700 mb-2">Observações</h4>
+      <div class="bg-gray-50 p-3 rounded-md">
+        <p class="text-sm text-gray-700 whitespace-pre-wrap"><%= appointment.recapture_description %></p>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Screenshots/Comprovantes -->
+  <% if appointment.recapture_screenshots.attached? %>
+    <div class="pb-4">
+      <h4 class="text-sm font-bold text-gray-700 mb-3">
+        Comprovantes Anexados
+        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+          <%= pluralize(appointment.recapture_screenshots.count, 'arquivo', 'arquivos') %>
+        </span>
+      </h4>
+      
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+        <% appointment.recapture_screenshots.each_with_index do |screenshot, index| %>
+          <%
+            screenshot_url = begin
+              main_app.url_for(screenshot)
+            rescue => e
+              "error: #{e.message}"
+            end
+            
+            is_error = screenshot_url.to_s.start_with?('error:')
+          %>
+          
+          <% unless is_error %>
+            <div class="relative group cursor-pointer"
+                 onclick="openScreenshotFullscreenDirect('<%= screenshot_url %>', <%= index + 1 %>)">
+              <img src="<%= screenshot_url %>" 
+                   class="w-full h-32 object-cover rounded-lg border-2 border-gray-200 group-hover:border-blue-400 transition-all shadow-sm"
+                   loading="lazy"
+                   alt="Comprovante <%= index + 1 %>">
+              <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
+                <svg class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path>
+                </svg>
+              </div>
+              <span class="absolute top-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full shadow">
+                <%= index + 1 %>
+              </span>
+            </div>
+          <% else %>
+            <div class="bg-red-50 border-2 border-red-200 rounded-lg p-2 flex flex-col items-center justify-center h-32 overflow-hidden" title="<%= screenshot_url %>">
+              <svg class="w-6 h-6 text-red-500 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+              <p class="text-[10px] text-red-600 text-center leading-tight break-words w-full px-1">
+                <%= screenshot_url.gsub('error:', '') %>
+              </p>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+      
+      <p class="text-xs text-gray-500 mt-3">
+        💡 Clique nas imagens para ampliar
+      </p>
+    </div>
+  <% else %>
+    <div class="pb-4">
+      <h4 class="text-sm font-bold text-gray-700 mb-2">Comprovantes Anexados</h4>
+      <div class="bg-red-50 border border-red-200 rounded-md p-4 flex items-start space-x-2">
+        <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+        </svg>
+        <div>
+          <p class="text-sm font-medium text-red-800">Sem comprovantes anexados</p>
+          <p class="text-xs text-red-600 mt-1">Esta remarcação não possui prints do WhatsApp anexados</p>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Status de Auditoria (se implementado no futuro) -->
+  <% if appointment.recapture_audited? %>
+    <div class="bg-green-50 border border-green-200 rounded-md p-3">
+      <div class="flex items-center space-x-2">
+        <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+        </svg>
+        <div>
+          <p class="text-sm font-medium text-green-800">Remarcação Auditada</p>
+          <% if appointment.recapture_audited_by.present? && appointment.recapture_audited_at.present? %>
+            <p class="text-xs text-green-600">
+              Por <%= appointment.recapture_audited_by.name %> em <%= l(appointment.recapture_audited_at, format: :short) %>
+            </p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+</div>
+

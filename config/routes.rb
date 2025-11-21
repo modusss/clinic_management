@@ -38,6 +38,9 @@ ClinicManagement::Engine.routes.draw do
       patch :toggle_confirmation
       patch :convert_to_organic
       patch :convert_to_active_effort
+      get :edit_recapture_details
+      patch :update_recapture_details
+      get :view_recapture_details
     end
     resources :prescriptions do
       collection do

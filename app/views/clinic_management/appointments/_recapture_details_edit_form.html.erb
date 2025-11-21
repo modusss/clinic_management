@@ -1,0 +1,308 @@
+<!-- Formulário Editável de Detalhes da Remarcação -->
+<%= form_with model: appointment,
+              url: update_recapture_details_appointment_path(appointment),
+              method: :patch,
+              id: "edit-recapture-form-#{appointment.id}",
+              local: false,
+              multipart: true,
+              data: { turbo: true },
+              class: "space-y-5" do |f| %>
+  
+  <!-- Informações Básicas (não editáveis) -->
+  <div class="bg-blue-50 p-4 rounded-lg">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div>
+        <p class="text-xs font-medium text-gray-600">Data do Atendimento</p>
+        <p class="text-sm font-semibold text-gray-900">
+          <%= appointment.service.date.strftime('%d/%m/%Y') %> às <%= appointment.service.date.strftime('%H:%M') %>
+        </p>
+      </div>
+      <div>
+        <p class="text-xs font-medium text-gray-600">Remarcado em</p>
+        <p class="text-sm font-semibold text-gray-900">
+          <%= l(appointment.created_at, format: :long) %>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Origem da Remarcação -->
+  <div class="border-b pb-4">
+    <h4 class="text-sm font-bold text-gray-700 mb-3">Origem da Remarcação</h4>
+    
+    <div class="space-y-2">
+      <label class="flex items-center space-x-2 cursor-pointer">
+        <%= f.radio_button :recapture_origin, 'organic',
+                          id: "edit_origin_organic_#{appointment.id}",
+                          class: "form-radio text-blue-600",
+                          onchange: "toggleEditActiveEffortFields(#{appointment.id}, false)" %>
+        <span class="text-gray-700">Orgânica (paciente procurou espontaneamente)</span>
+      </label>
+      
+      <label class="flex items-center space-x-2 cursor-pointer">
+        <%= f.radio_button :recapture_origin, 'active_effort',
+                          id: "edit_origin_active_#{appointment.id}",
+                          class: "form-radio text-blue-600",
+                          onchange: "toggleEditActiveEffortFields(#{appointment.id}, true)" %>
+        <span class="text-gray-700 font-medium">Meu esforço ativo (liguei/mensagem)</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Campos de Esforço Ativo -->
+  <div id="edit-active-effort-fields-<%= appointment.id %>" 
+       class="<%= appointment.recapture_origin == 'active_effort' ? '' : 'hidden' %> space-y-4 p-4 bg-gray-50 rounded-md">
+    
+    <!-- Ações Realizadas -->
+    <div class="space-y-3">
+      <h4 class="text-sm font-bold text-gray-700">
+        Ações Realizadas: <span class="text-red-500">*</span>
+      </h4>
+      
+      <%= f.hidden_field :recapture_actions, value: '', multiple: true %>
+      
+      <div class="space-y-2">
+        <label class="flex items-center space-x-2 cursor-pointer">
+          <%= check_box_tag 'appointment[recapture_actions][]',
+                           'called_patient',
+                           appointment.recapture_actions&.include?('called_patient'),
+                           id: "edit_action_called_#{appointment.id}",
+                           class: "form-checkbox text-blue-600 rounded" %>
+          <span class="text-gray-700 text-sm">Liguei para o paciente</span>
+        </label>
+        
+        <label class="flex items-center space-x-2 cursor-pointer">
+          <%= check_box_tag 'appointment[recapture_actions][]',
+                           'sent_personalized_message',
+                           appointment.recapture_actions&.include?('sent_personalized_message'),
+                           id: "edit_action_message_#{appointment.id}",
+                           class: "form-checkbox text-blue-600 rounded" %>
+          <span class="text-gray-700 text-sm">Mandei mensagem personalizada (não automática)</span>
+        </label>
+        
+        <label class="flex items-center space-x-2 cursor-pointer">
+          <%= check_box_tag 'appointment[recapture_actions][]',
+                           'sent_audio_or_voice_call',
+                           appointment.recapture_actions&.include?('sent_audio_or_voice_call'),
+                           id: "edit_action_audio_#{appointment.id}",
+                           class: "form-checkbox text-blue-600 rounded" %>
+          <span class="text-gray-700 text-sm">Mandei áudio ou fiz chamada de voz/WhatsApp</span>
+        </label>
+        
+        <label class="flex items-center space-x-2 cursor-pointer">
+          <%= check_box_tag 'appointment[recapture_actions][]',
+                           'other',
+                           appointment.recapture_actions&.include?('other'),
+                           id: "edit_action_other_#{appointment.id}",
+                           onchange: "toggleEditOtherField(#{appointment.id})",
+                           class: "form-checkbox text-blue-600 rounded" %>
+          <span class="text-gray-700 text-sm">Outros</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Descrição/Observações -->
+    <div class="space-y-2">
+      <h4 class="text-sm font-bold text-gray-700">Observações:</h4>
+      <%= f.text_area :recapture_description,
+                     rows: 3,
+                     placeholder: "Descreva as ações realizadas e observações...",
+                     class: "w-full px-3 py-2 border rounded shadow text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" %>
+    </div>
+
+    <!-- Screenshots Existentes -->
+    <% if appointment.recapture_screenshots.attached? %>
+      <div class="space-y-2">
+        <h4 class="text-sm font-bold text-gray-700">
+          Comprovantes Atuais
+          <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+            <%= pluralize(appointment.recapture_screenshots.count, 'arquivo', 'arquivos') %>
+          </span>
+        </h4>
+        
+        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+          <% appointment.recapture_screenshots.each_with_index do |screenshot, index| %>
+            <%
+              screenshot_url = begin
+                main_app.url_for(screenshot)
+              rescue => e
+                nil
+              end
+            %>
+            
+            <% if screenshot_url %>
+              <div class="relative group">
+                <img src="<%= screenshot_url %>" 
+                     class="w-full h-20 object-cover rounded border-2 border-gray-200"
+                     loading="lazy"
+                     alt="Comprovante <%= index + 1 %>">
+                
+                <!-- Botão de remover -->
+                <button type="button"
+                        onclick="removeScreenshot(this, '<%= screenshot.id %>', <%= appointment.id %>)"
+                        class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-600"
+                        data-screenshot-id="<%= screenshot.id %>"
+                        title="Remover este arquivo">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+                
+                <span class="absolute bottom-1 right-1 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded-full shadow">
+                  <%= index + 1 %>
+                </span>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+        
+        <!-- Hidden field para armazenar IDs de screenshots a serem removidos -->
+        <input type="hidden" 
+               name="appointment[remove_screenshot_ids][]" 
+               value="" 
+               id="remove-screenshots-field-<%= appointment.id %>">
+      </div>
+    <% end %>
+
+    <!-- Upload de Novos Screenshots -->
+    <div class="space-y-2">
+      <h4 class="text-sm font-bold text-gray-700">
+        Adicionar Novos Comprovantes:
+        <span class="text-xs font-normal text-gray-500">(opcional)</span>
+      </h4>
+      
+      <%= f.file_field :recapture_screenshots,
+                      multiple: true,
+                      name: "appointment[recapture_screenshots][]",
+                      accept: "image/*",
+                      id: "edit_screenshots_#{appointment.id}",
+                      class: "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100",
+                      onchange: "previewEditScreenshots(this, #{appointment.id})" %>
+      
+      <!-- Preview de novos uploads -->
+      <div id="edit-screenshots-preview-<%= appointment.id %>" class="mt-2 grid grid-cols-3 gap-2"></div>
+    </div>
+
+  </div>
+
+  <!-- Botões de Ação -->
+  <div class="flex justify-end space-x-3 pt-4 border-t">
+    <button type="button"
+            onclick="cancelEditMode(<%= appointment.id %>)"
+            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition-colors">
+      Cancelar
+    </button>
+    
+    <%= f.submit "Salvar Alterações",
+                class: "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-sm" %>
+  </div>
+<% end %>
+
+<script>
+  // Toggle campos de esforço ativo no modo de edição
+  function toggleEditActiveEffortFields(appointmentId, show) {
+    const fields = document.getElementById('edit-active-effort-fields-' + appointmentId);
+    if (fields) {
+      if (show) {
+        fields.classList.remove('hidden');
+      } else {
+        fields.classList.add('hidden');
+      }
+    }
+  }
+
+  // Toggle campo "Outros"
+  function toggleEditOtherField(appointmentId) {
+    const checkbox = document.getElementById('edit_action_other_' + appointmentId);
+    const field = document.getElementById('edit-other-field-' + appointmentId);
+    
+    if (checkbox && field) {
+      if (checkbox.checked) {
+        field.classList.remove('hidden');
+      } else {
+        field.classList.add('hidden');
+      }
+    }
+  }
+
+  // Preview de novos screenshots
+  function previewEditScreenshots(input, appointmentId) {
+    const preview = document.getElementById('edit-screenshots-preview-' + appointmentId);
+    if (!preview) return;
+    
+    preview.innerHTML = '';
+    
+    if (input.files && input.files.length > 0) {
+      Array.from(input.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const div = document.createElement('div');
+          div.className = 'relative';
+          div.innerHTML = `
+            <img src="${e.target.result}" 
+                 class="w-full h-20 object-cover rounded border-2 border-green-300"
+                 alt="Novo comprovante">
+            <span class="absolute top-1 right-1 bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full shadow">
+              NOVO
+            </span>
+          `;
+          preview.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  }
+
+  // Remover screenshot existente
+  function removeScreenshot(button, screenshotId, appointmentId) {
+    event.preventDefault();
+    
+    if (!confirm('❌ Tem certeza que deseja remover este comprovante?')) {
+      return;
+    }
+    
+    // Adicionar ID ao campo hidden
+    const hiddenField = document.getElementById('remove-screenshots-field-' + appointmentId);
+    if (hiddenField) {
+      // Criar um novo input hidden para cada ID
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'appointment[remove_screenshot_ids][]';
+      input.value = screenshotId;
+      hiddenField.parentNode.insertBefore(input, hiddenField);
+    }
+    
+    // Remover visualmente o elemento
+    const container = button.closest('.relative');
+    if (container) {
+      container.style.opacity = '0.3';
+      container.style.filter = 'grayscale(100%)';
+      button.remove(); // Remove o botão de excluir para evitar clicks duplos
+      
+      // Adicionar indicador de "será removido"
+      const indicator = document.createElement('div');
+      indicator.className = 'absolute inset-0 bg-red-500 bg-opacity-50 flex items-center justify-center rounded';
+      indicator.innerHTML = `
+        <span class="text-white text-xs font-bold">SERÁ REMOVIDO</span>
+      `;
+      container.appendChild(indicator);
+    }
+  }
+
+  // Cancelar modo de edição
+  function cancelEditMode(appointmentId) {
+    // Recarregar o modal em modo de visualização via Turbo
+    const url = `/clinic_management/appointments/${appointmentId}/view_recapture_details`;
+    
+    fetch(url, {
+      headers: {
+        'Accept': 'text/vnd.turbo-stream.html'
+      }
+    })
+    .then(response => response.text())
+    .then(html => {
+      Turbo.renderStreamMessage(html);
+    });
+  }
+</script>
+

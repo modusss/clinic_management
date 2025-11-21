@@ -321,6 +321,122 @@ module ClinicManagement
       end
     end
 
+    def edit_recapture_details
+      @appointment = Appointment.find(params[:id])
+      
+      # Verificar permissão
+      unless @appointment.registered_by_user_id == current_user&.id
+        render turbo_stream: turbo_stream.update(
+          "recapture-details-content-#{@appointment.id}",
+          partial: "clinic_management/shared/unauthorized_message"
+        )
+        return
+      end
+      
+      # Renderizar formulário de edição
+      render turbo_stream: turbo_stream.update(
+        "recapture-details-content-#{@appointment.id}",
+        partial: "clinic_management/appointments/recapture_details_edit_form",
+        locals: { appointment: @appointment }
+      )
+    end
+
+    def update_recapture_details
+      @appointment = Appointment.find(params[:id])
+      
+      # Verificar permissão
+      unless @appointment.registered_by_user_id == current_user&.id
+        respond_to do |format|
+          format.turbo_stream {
+            render turbo_stream: turbo_stream.update(
+              "recapture-details-content-#{@appointment.id}",
+              partial: "clinic_management/shared/unauthorized_message"
+            ), status: :forbidden
+          }
+          format.html { 
+            redirect_back fallback_location: root_path, alert: "Você não tem permissão para editar esta remarcação."
+          }
+        end
+        return
+      end
+      
+      # Processar remoção de screenshots
+      if params.dig(:appointment, :remove_screenshot_ids).present?
+        params[:appointment][:remove_screenshot_ids].reject(&:blank?).each do |screenshot_id|
+          screenshot = @appointment.recapture_screenshots.find_by(id: screenshot_id)
+          screenshot&.purge
+        end
+      end
+      
+      # Anexar novos screenshots se fornecidos
+      if params.dig(:appointment, :recapture_screenshots).present?
+        @appointment.recapture_screenshots.attach(params[:appointment][:recapture_screenshots])
+      end
+      
+      # Atualizar dados do appointment
+      update_params = params.require(:appointment).permit(
+        :recapture_origin,
+        :recapture_description,
+        recapture_actions: []
+      )
+      
+      # Se mudar para orgânico, limpar dados de esforço ativo
+      if update_params[:recapture_origin] == 'organic'
+        update_params[:recapture_actions] = []
+        update_params[:recapture_description] = nil
+        @appointment.recapture_screenshots.purge
+      end
+      
+      if @appointment.update(update_params)
+        respond_to do |format|
+          format.turbo_stream {
+            render turbo_stream: [
+              turbo_stream.update(
+                "recapture-details-content-#{@appointment.id}",
+                partial: "clinic_management/appointments/recapture_details_view",
+                locals: { appointment: @appointment }
+              ),
+              turbo_stream.prepend("flash", partial: "shared/flash_message", 
+                locals: { type: :notice, message: "✅ Detalhes da remarcação atualizados com sucesso!" })
+            ]
+          }
+          format.html {
+            redirect_back fallback_location: my_reschedules_appointments_path, 
+                         notice: "✅ Detalhes da remarcação atualizados com sucesso!"
+          }
+        end
+      else
+        respond_to do |format|
+          format.turbo_stream {
+            render turbo_stream: [
+              turbo_stream.update(
+                "recapture-details-content-#{@appointment.id}",
+                partial: "clinic_management/appointments/recapture_details_edit_form",
+                locals: { appointment: @appointment }
+              ),
+              turbo_stream.prepend("flash", partial: "shared/flash_message",
+                locals: { type: :alert, message: "❌ Erro: #{@appointment.errors.full_messages.join(', ')}" })
+            ]
+          }
+          format.html {
+            redirect_back fallback_location: my_reschedules_appointments_path,
+                         alert: "Erro: #{@appointment.errors.full_messages.join(', ')}"
+          }
+        end
+      end
+    end
+
+    def view_recapture_details
+      @appointment = Appointment.find(params[:id])
+      
+      # Renderizar visualização
+      render turbo_stream: turbo_stream.update(
+        "recapture-details-content-#{@appointment.id}",
+        partial: "clinic_management/appointments/recapture_details_view",
+        locals: { appointment: @appointment }
+      )
+    end
+
     def my_reschedules
       # Filtro de origem (all, organic, active_effort)
       @filter = params[:filter] || 'all'
