@@ -14,7 +14,6 @@ module ClinicManagement
     # Validações para remarcação com esforço ativo
     validates :recapture_actions, presence: true, if: -> { recapture_origin == 'active_effort' }
     validate :at_least_one_action_selected, if: -> { recapture_origin == 'active_effort' }
-    validate :screenshots_required_for_commission, if: -> { recapture_origin == 'active_effort' }
     
     # Callback para definir o usuário atual se não foi especificado
     before_save :set_registered_by_user_fallback, if: -> { registered_by_user_id.blank? && read_attribute(:registered_by_user).blank? }
@@ -59,12 +58,6 @@ module ClinicManagement
     def at_least_one_action_selected
       if recapture_actions.blank? || recapture_actions.reject(&:blank?).empty?
         errors.add(:recapture_actions, "deve ter pelo menos uma ação selecionada")
-      end
-    end
-    
-    def screenshots_required_for_commission
-      if recapture_screenshots.blank? || !recapture_screenshots.attached?
-        errors.add(:recapture_screenshots, "são obrigatórios para comissão por esforço ativo")
       end
     end
   end

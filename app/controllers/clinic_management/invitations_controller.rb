@@ -209,14 +209,9 @@ module ClinicManagement
                 raise ActiveRecord::RecordInvalid.new(@appointment)
               end
               
-              # Verificar screenshots
-              unless has_attachments
-                @appointment.errors.add(:recapture_screenshots, "são obrigatórios para comissão por esforço ativo")
-                raise ActiveRecord::RecordInvalid.new(@appointment)
-              end
+              # Screenshots agora são opcionais - não validar mais
               
               # Para active_effort, NÃO chamar .valid? pois já validamos tudo manualmente
-              # O .valid? executaria screenshots_required_for_commission que falharia dentro da transaction
             else
               # Para orgânico ou sem origem, validar normalmente
               unless @appointment.valid?
