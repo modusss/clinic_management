@@ -333,10 +333,19 @@ module ClinicManagement
           { header: "Início", content: ser.start_time.strftime("%H:%M") },
           { header: "Fim", content: ser.end_time.strftime("%H:%M") },
           { header: "Pacientes", content: total_appointments },
-          { header: "Compareceram", content: scheduled, class: "text-blue-700" },
-          { header: "Remarcados", content: rescheduled, class: "text-green-700" },
-          { header: "Cancelados", content: canceleds, class: "text-red-600" }
+          { header: "Compareceram", content: scheduled, class: "text-blue-700" }
         ]
+
+        if helpers.is_manager_above?
+          sales = sales_count(ser)
+          sales_amt = sales_amount(ser)
+          row << { header: "Vendas", content: sales, class: "text-purple-700 font-bold" }
+          row << { header: "Montante de vendas", content: helpers.number_to_currency(sales_amt), class: "text-green-700 font-bold" }
+        end
+
+        row << { header: "Remarcados", content: rescheduled, class: "text-green-700" }
+        row << { header: "Cancelados", content: canceleds, class: "text-red-600" }
+        
         if helpers.is_manager_above?
           row << { header: "Ação", content: should_edit_service?(ser) }
         end
@@ -359,6 +368,51 @@ module ClinicManagement
       else
         helpers.button_to('Marcar como presente', set_attendance_appointment_path(ap), method: :patch, remote: true, class: "py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-700")
       end
+    end
+
+    def sales_amount(service)
+      # Get all attended appointments for this service
+      attended_appointments = service.appointments.where(attendance: true)
+      
+      # Filter by referral if needed
+      if action_name == "index_by_referral"
+        attended_appointments = attended_appointments.select { |a| a&.invitation&.referral == @referral }
+      end
+      
+      # Get customer IDs from attended appointments through leads
+      customer_ids = attended_appointments.map { |app| 
+        app.lead.leads_conversion&.customer_id 
+      }.compact
+      
+      return 0 if customer_ids.empty?
+      
+      # Sum total amount of orders made by customers within 30 days of the service date
+      Order.where(customer_id: customer_ids)
+           .where(created_at: service.date.beginning_of_day..(service.date + 30.days).end_of_day)
+           .sum(:total_amount)
+    end
+
+    def sales_count(service)
+      # Get all attended appointments for this service
+      attended_appointments = service.appointments.where(attendance: true)
+      
+      # Filter by referral if needed
+      if action_name == "index_by_referral"
+        attended_appointments = attended_appointments.select { |a| a&.invitation&.referral == @referral }
+      end
+      
+      # Get customer IDs from attended appointments through leads
+      customer_ids = attended_appointments.map { |app| 
+        app.lead.leads_conversion&.customer_id 
+      }.compact
+      
+      return 0 if customer_ids.empty?
+      
+      # Count customers who made orders within 30 days of the service date
+      Order.where(customer_id: customer_ids)
+           .where(created_at: service.date.beginning_of_day..(service.date + 30.days).end_of_day)
+           .distinct
+           .count(:customer_id)
     end
 
     def appointment_counts(service)
@@ -396,6 +450,8 @@ module ClinicManagement
         total_scheduled = 0
         total_rescheduled = 0
         total_canceled = 0
+        total_sales = 0
+        total_sales_amount = 0
         
         week_services.each do |service|
           appointments, scheduled, rescheduled, canceled = appointment_counts(service)
@@ -403,17 +459,32 @@ module ClinicManagement
           total_scheduled += scheduled
           total_rescheduled += rescheduled
           total_canceled += canceled
+          
+          if helpers.is_manager_above?
+            sales = sales_count(service)
+            sales_amt = sales_amount(service)
+            total_sales += sales
+            total_sales_amount += sales_amt
+          end
         end
         
-        [
+        row = [
           { header: "Período", content: "#{week_start.strftime('%d/%m/%Y')} - #{week_end.strftime('%d/%m/%Y')}" },
           { header: "Serviços", content: week_services.count },
           { header: "Total de Pacientes", content: total_appointments },
-          { header: "Compareceram", content: total_scheduled, class: "text-blue-700" },
-          { header: "Remarcados", content: total_rescheduled, class: "text-green-700" },
-          { header: "Cancelados", content: total_canceled, class: "text-red-600" },
-          { header: "Taxa de Comparecimento", content: total_appointments > 0 ? "#{percentage(total_scheduled, total_appointments)}%" : "0%", class: "text-blue-700" }
+          { header: "Compareceram", content: total_scheduled, class: "text-blue-700" }
         ]
+
+        if helpers.is_manager_above?
+          row << { header: "Vendas", content: total_sales, class: "text-purple-700 font-bold" }
+          row << { header: "Montante de vendas", content: helpers.number_to_currency(total_sales_amount), class: "text-green-700 font-bold" }
+        end
+
+        row << { header: "Remarcados", content: total_rescheduled, class: "text-green-700" }
+        row << { header: "Cancelados", content: total_canceled, class: "text-red-600" }
+        row << { header: "Taxa de Comparecimento", content: total_appointments > 0 ? "#{percentage(total_scheduled, total_appointments)}%" : "0%", class: "text-blue-700" }
+        
+        row
       end
     end
 
@@ -427,6 +498,8 @@ module ClinicManagement
         total_scheduled = 0
         total_rescheduled = 0
         total_canceled = 0
+        total_sales = 0
+        total_sales_amount = 0
         
         month_services.each do |service|
           appointments, scheduled, rescheduled, canceled = appointment_counts(service)
@@ -434,17 +507,32 @@ module ClinicManagement
           total_scheduled += scheduled
           total_rescheduled += rescheduled
           total_canceled += canceled
+          
+          if helpers.is_manager_above?
+            sales = sales_count(service)
+            sales_amt = sales_amount(service)
+            total_sales += sales
+            total_sales_amount += sales_amt
+          end
         end
         
-        [
+        row = [
           { header: "Mês", content: I18n.l(month_start, format: "%B de %Y").capitalize },
           { header: "Serviços", content: month_services.count },
           { header: "Total de Pacientes", content: total_appointments },
-          { header: "Compareceram", content: total_scheduled, class: "text-blue-700" },
-          { header: "Remarcados", content: total_rescheduled, class: "text-green-700" },
-          { header: "Cancelados", content: total_canceled, class: "text-red-600" },
-          { header: "Taxa de Comparecimento", content: total_appointments > 0 ? "#{percentage(total_scheduled, total_appointments)}%" : "0%", class: "text-blue-700" }
+          { header: "Compareceram", content: total_scheduled, class: "text-blue-700" }
         ]
+
+        if helpers.is_manager_above?
+          row << { header: "Vendas", content: total_sales, class: "text-purple-700 font-bold" }
+          row << { header: "Montante de vendas", content: helpers.number_to_currency(total_sales_amount), class: "text-green-700 font-bold" }
+        end
+
+        row << { header: "Remarcados", content: total_rescheduled, class: "text-green-700" }
+        row << { header: "Cancelados", content: total_canceled, class: "text-red-600" }
+        row << { header: "Taxa de Comparecimento", content: total_appointments > 0 ? "#{percentage(total_scheduled, total_appointments)}%" : "0%", class: "text-blue-700" }
+        
+        row
       end
     end
 
@@ -456,6 +544,7 @@ module ClinicManagement
       scheduled_data = []
       rescheduled_data = []
       canceled_data = []
+      sales_data = []
       
       weekly_groups.each do |week_start, week_services|
         week_end = week_start.end_of_week
@@ -465,6 +554,7 @@ module ClinicManagement
         total_scheduled = 0
         total_rescheduled = 0
         total_canceled = 0
+        total_sales = 0
         
         week_services.each do |service|
           appointments, scheduled, rescheduled, canceled = appointment_counts(service)
@@ -472,46 +562,67 @@ module ClinicManagement
           total_scheduled += scheduled
           total_rescheduled += rescheduled
           total_canceled += canceled
+          
+          if helpers.is_manager_above?
+            sales = sales_count(service)
+            total_sales += sales
+          end
         end
         
         appointments_data << total_appointments
         scheduled_data << total_scheduled
         rescheduled_data << total_rescheduled
         canceled_data << total_canceled
+        sales_data << total_sales
       end
       
+      datasets = [
+        {
+          label: 'Total de Pacientes',
+          data: appointments_data,
+          backgroundColor: 'rgba(59, 130, 246, 0.5)',
+          borderColor: 'rgb(59, 130, 246)',
+          borderWidth: 2
+        },
+        {
+          label: 'Compareceram',
+          data: scheduled_data,
+          backgroundColor: 'rgba(34, 197, 94, 0.5)',
+          borderColor: 'rgb(34, 197, 94)',
+          borderWidth: 2
+        }
+      ]
+
+      if helpers.is_manager_above?
+        datasets << {
+          label: 'Vendas',
+          data: sales_data,
+          backgroundColor: 'rgba(147, 51, 234, 0.5)',
+          borderColor: 'rgb(147, 51, 234)',
+          borderWidth: 2
+        }
+      end
+
+      datasets += [
+        {
+          label: 'Remarcados',
+          data: rescheduled_data,
+          backgroundColor: 'rgba(251, 191, 36, 0.5)',
+          borderColor: 'rgb(251, 191, 36)',
+          borderWidth: 2
+        },
+        {
+          label: 'Cancelados',
+          data: canceled_data,
+          backgroundColor: 'rgba(239, 68, 68, 0.5)',
+          borderColor: 'rgb(239, 68, 68)',
+          borderWidth: 2
+        }
+      ]
+
       {
         labels: labels,
-        datasets: [
-          {
-            label: 'Total de Pacientes',
-            data: appointments_data,
-            backgroundColor: 'rgba(59, 130, 246, 0.5)',
-            borderColor: 'rgb(59, 130, 246)',
-            borderWidth: 2
-          },
-          {
-            label: 'Compareceram',
-            data: scheduled_data,
-            backgroundColor: 'rgba(34, 197, 94, 0.5)',
-            borderColor: 'rgb(34, 197, 94)',
-            borderWidth: 2
-          },
-          {
-            label: 'Remarcados',
-            data: rescheduled_data,
-            backgroundColor: 'rgba(251, 191, 36, 0.5)',
-            borderColor: 'rgb(251, 191, 36)',
-            borderWidth: 2
-          },
-          {
-            label: 'Cancelados',
-            data: canceled_data,
-            backgroundColor: 'rgba(239, 68, 68, 0.5)',
-            borderColor: 'rgb(239, 68, 68)',
-            borderWidth: 2
-          }
-        ]
+        datasets: datasets
       }
     end
 
@@ -523,6 +634,7 @@ module ClinicManagement
       scheduled_data = []
       rescheduled_data = []
       canceled_data = []
+      sales_data = []
       
       monthly_groups.each do |month_start, month_services|
         labels << I18n.l(month_start, format: "%B %Y").capitalize
@@ -531,6 +643,7 @@ module ClinicManagement
         total_scheduled = 0
         total_rescheduled = 0
         total_canceled = 0
+        total_sales = 0
         
         month_services.each do |service|
           appointments, scheduled, rescheduled, canceled = appointment_counts(service)
@@ -538,46 +651,67 @@ module ClinicManagement
           total_scheduled += scheduled
           total_rescheduled += rescheduled
           total_canceled += canceled
+          
+          if helpers.is_manager_above?
+            sales = sales_count(service)
+            total_sales += sales
+          end
         end
         
         appointments_data << total_appointments
         scheduled_data << total_scheduled
         rescheduled_data << total_rescheduled
         canceled_data << total_canceled
+        sales_data << total_sales
       end
       
+      datasets = [
+        {
+          label: 'Total de Pacientes',
+          data: appointments_data,
+          backgroundColor: 'rgba(59, 130, 246, 0.5)',
+          borderColor: 'rgb(59, 130, 246)',
+          borderWidth: 2
+        },
+        {
+          label: 'Compareceram',
+          data: scheduled_data,
+          backgroundColor: 'rgba(34, 197, 94, 0.5)',
+          borderColor: 'rgb(34, 197, 94)',
+          borderWidth: 2
+        }
+      ]
+
+      if helpers.is_manager_above?
+        datasets << {
+          label: 'Vendas',
+          data: sales_data,
+          backgroundColor: 'rgba(147, 51, 234, 0.5)',
+          borderColor: 'rgb(147, 51, 234)',
+          borderWidth: 2
+        }
+      end
+
+      datasets += [
+        {
+          label: 'Remarcados',
+          data: rescheduled_data,
+          backgroundColor: 'rgba(251, 191, 36, 0.5)',
+          borderColor: 'rgb(251, 191, 36)',
+          borderWidth: 2
+        },
+        {
+          label: 'Cancelados',
+          data: canceled_data,
+          backgroundColor: 'rgba(239, 68, 68, 0.5)',
+          borderColor: 'rgb(239, 68, 68)',
+          borderWidth: 2
+        }
+      ]
+
       {
         labels: labels,
-        datasets: [
-          {
-            label: 'Total de Pacientes',
-            data: appointments_data,
-            backgroundColor: 'rgba(59, 130, 246, 0.5)',
-            borderColor: 'rgb(59, 130, 246)',
-            borderWidth: 2
-          },
-          {
-            label: 'Compareceram',
-            data: scheduled_data,
-            backgroundColor: 'rgba(34, 197, 94, 0.5)',
-            borderColor: 'rgb(34, 197, 94)',
-            borderWidth: 2
-          },
-          {
-            label: 'Remarcados',
-            data: rescheduled_data,
-            backgroundColor: 'rgba(251, 191, 36, 0.5)',
-            borderColor: 'rgb(251, 191, 36)',
-            borderWidth: 2
-          },
-          {
-            label: 'Cancelados',
-            data: canceled_data,
-            backgroundColor: 'rgba(239, 68, 68, 0.5)',
-            borderColor: 'rgb(239, 68, 68)',
-            borderWidth: 2
-          }
-        ]
+        datasets: datasets
       }
     end
 
@@ -590,13 +724,19 @@ module ClinicManagement
         total_scheduled = 0
         total_rescheduled = 0
         total_canceled = 0
+        total_sales = 0
+        total_sales_amount = 0
         
         week_services.each do |service|
           appointments, scheduled, rescheduled, canceled = appointment_counts(service)
+          sales = sales_count(service)
+          sales_amt = sales_amount(service)
           total_appointments += appointments
           total_scheduled += scheduled
           total_rescheduled += rescheduled
           total_canceled += canceled
+          total_sales += sales
+          total_sales_amount += sales_amt
         end
         
         [
@@ -604,6 +744,8 @@ module ClinicManagement
           { header: "Serviços", content: week_services.count },
           { header: "Total de Pacientes", content: total_appointments },
           { header: "Compareceram", content: total_scheduled, class: "text-blue-700" },
+          { header: "Vendas", content: total_sales, class: "text-purple-700 font-bold" },
+          { header: "Montante de vendas", content: helpers.number_to_currency(total_sales_amount), class: "text-green-700 font-bold" },
           { header: "Remarcados", content: total_rescheduled, class: "text-green-700" },
           { header: "Cancelados", content: total_canceled, class: "text-red-600" },
           { header: "Taxa de Comparecimento", content: total_appointments > 0 ? "#{percentage(total_scheduled, total_appointments)}%" : "0%", class: "text-blue-700" }
@@ -620,13 +762,19 @@ module ClinicManagement
         total_scheduled = 0
         total_rescheduled = 0
         total_canceled = 0
+        total_sales = 0
+        total_sales_amount = 0
         
         month_services.each do |service|
           appointments, scheduled, rescheduled, canceled = appointment_counts(service)
+          sales = sales_count(service)
+          sales_amt = sales_amount(service)
           total_appointments += appointments
           total_scheduled += scheduled
           total_rescheduled += rescheduled
           total_canceled += canceled
+          total_sales += sales
+          total_sales_amount += sales_amt
         end
         
         [
@@ -634,6 +782,8 @@ module ClinicManagement
           { header: "Serviços", content: month_services.count },
           { header: "Total de Pacientes", content: total_appointments },
           { header: "Compareceram", content: total_scheduled, class: "text-blue-700" },
+          { header: "Vendas", content: total_sales, class: "text-purple-700 font-bold" },
+          { header: "Montante de vendas", content: helpers.number_to_currency(total_sales_amount), class: "text-green-700 font-bold" },
           { header: "Remarcados", content: total_rescheduled, class: "text-green-700" },
           { header: "Cancelados", content: total_canceled, class: "text-red-600" },
           { header: "Taxa de Comparecimento", content: total_appointments > 0 ? "#{percentage(total_scheduled, total_appointments)}%" : "0%", class: "text-blue-700" }
@@ -649,6 +799,7 @@ module ClinicManagement
       scheduled_data = []
       rescheduled_data = []
       canceled_data = []
+      sales_data = []
       
       weekly_groups.each do |week_start, week_services|
         week_end = week_start.end_of_week
@@ -658,6 +809,7 @@ module ClinicManagement
         total_scheduled = 0
         total_rescheduled = 0
         total_canceled = 0
+        total_sales = 0
         
         week_services.each do |service|
           appointments, scheduled, rescheduled, canceled = appointment_counts(service)
@@ -665,46 +817,67 @@ module ClinicManagement
           total_scheduled += scheduled
           total_rescheduled += rescheduled
           total_canceled += canceled
+          
+          if helpers.is_manager_above?
+            sales = sales_count(service)
+            total_sales += sales
+          end
         end
         
         appointments_data << total_appointments
         scheduled_data << total_scheduled
         rescheduled_data << total_rescheduled
         canceled_data << total_canceled
+        sales_data << total_sales
       end
       
+      datasets = [
+        {
+          label: 'Total de Pacientes',
+          data: appointments_data,
+          backgroundColor: 'rgba(59, 130, 246, 0.5)',
+          borderColor: 'rgb(59, 130, 246)',
+          borderWidth: 2
+        },
+        {
+          label: 'Compareceram',
+          data: scheduled_data,
+          backgroundColor: 'rgba(34, 197, 94, 0.5)',
+          borderColor: 'rgb(34, 197, 94)',
+          borderWidth: 2
+        }
+      ]
+
+      if helpers.is_manager_above?
+        datasets << {
+          label: 'Vendas',
+          data: sales_data,
+          backgroundColor: 'rgba(147, 51, 234, 0.5)',
+          borderColor: 'rgb(147, 51, 234)',
+          borderWidth: 2
+        }
+      end
+
+      datasets += [
+        {
+          label: 'Remarcados',
+          data: rescheduled_data,
+          backgroundColor: 'rgba(251, 191, 36, 0.5)',
+          borderColor: 'rgb(251, 191, 36)',
+          borderWidth: 2
+        },
+        {
+          label: 'Cancelados',
+          data: canceled_data,
+          backgroundColor: 'rgba(239, 68, 68, 0.5)',
+          borderColor: 'rgb(239, 68, 68)',
+          borderWidth: 2
+        }
+      ]
+
       {
         labels: labels,
-        datasets: [
-          {
-            label: 'Total de Pacientes',
-            data: appointments_data,
-            backgroundColor: 'rgba(59, 130, 246, 0.5)',
-            borderColor: 'rgb(59, 130, 246)',
-            borderWidth: 2
-          },
-          {
-            label: 'Compareceram',
-            data: scheduled_data,
-            backgroundColor: 'rgba(34, 197, 94, 0.5)',
-            borderColor: 'rgb(34, 197, 94)',
-            borderWidth: 2
-          },
-          {
-            label: 'Remarcados',
-            data: rescheduled_data,
-            backgroundColor: 'rgba(251, 191, 36, 0.5)',
-            borderColor: 'rgb(251, 191, 36)',
-            borderWidth: 2
-          },
-          {
-            label: 'Cancelados',
-            data: canceled_data,
-            backgroundColor: 'rgba(239, 68, 68, 0.5)',
-            borderColor: 'rgb(239, 68, 68)',
-            borderWidth: 2
-          }
-        ]
+        datasets: datasets
       }
     end
 
@@ -716,6 +889,7 @@ module ClinicManagement
       scheduled_data = []
       rescheduled_data = []
       canceled_data = []
+      sales_data = []
       
       monthly_groups.each do |month_start, month_services|
         labels << I18n.l(month_start, format: "%B %Y").capitalize
@@ -724,6 +898,7 @@ module ClinicManagement
         total_scheduled = 0
         total_rescheduled = 0
         total_canceled = 0
+        total_sales = 0
         
         month_services.each do |service|
           appointments, scheduled, rescheduled, canceled = appointment_counts(service)
@@ -731,46 +906,67 @@ module ClinicManagement
           total_scheduled += scheduled
           total_rescheduled += rescheduled
           total_canceled += canceled
+          
+          if helpers.is_manager_above?
+            sales = sales_count(service)
+            total_sales += sales
+          end
         end
         
         appointments_data << total_appointments
         scheduled_data << total_scheduled
         rescheduled_data << total_rescheduled
         canceled_data << total_canceled
+        sales_data << total_sales
       end
       
+      datasets = [
+        {
+          label: 'Total de Pacientes',
+          data: appointments_data,
+          backgroundColor: 'rgba(59, 130, 246, 0.5)',
+          borderColor: 'rgb(59, 130, 246)',
+          borderWidth: 2
+        },
+        {
+          label: 'Compareceram',
+          data: scheduled_data,
+          backgroundColor: 'rgba(34, 197, 94, 0.5)',
+          borderColor: 'rgb(34, 197, 94)',
+          borderWidth: 2
+        }
+      ]
+
+      if helpers.is_manager_above?
+        datasets << {
+          label: 'Vendas',
+          data: sales_data,
+          backgroundColor: 'rgba(147, 51, 234, 0.5)',
+          borderColor: 'rgb(147, 51, 234)',
+          borderWidth: 2
+        }
+      end
+
+      datasets += [
+        {
+          label: 'Remarcados',
+          data: rescheduled_data,
+          backgroundColor: 'rgba(251, 191, 36, 0.5)',
+          borderColor: 'rgb(251, 191, 36)',
+          borderWidth: 2
+        },
+        {
+          label: 'Cancelados',
+          data: canceled_data,
+          backgroundColor: 'rgba(239, 68, 68, 0.5)',
+          borderColor: 'rgb(239, 68, 68)',
+          borderWidth: 2
+        }
+      ]
+
       {
         labels: labels,
-        datasets: [
-          {
-            label: 'Total de Pacientes',
-            data: appointments_data,
-            backgroundColor: 'rgba(59, 130, 246, 0.5)',
-            borderColor: 'rgb(59, 130, 246)',
-            borderWidth: 2
-          },
-          {
-            label: 'Compareceram',
-            data: scheduled_data,
-            backgroundColor: 'rgba(34, 197, 94, 0.5)',
-            borderColor: 'rgb(34, 197, 94)',
-            borderWidth: 2
-          },
-          {
-            label: 'Remarcados',
-            data: rescheduled_data,
-            backgroundColor: 'rgba(251, 191, 36, 0.5)',
-            borderColor: 'rgb(251, 191, 36)',
-            borderWidth: 2
-          },
-          {
-            label: 'Cancelados',
-            data: canceled_data,
-            backgroundColor: 'rgba(239, 68, 68, 0.5)',
-            borderColor: 'rgb(239, 68, 68)',
-            borderWidth: 2
-          }
-        ]
+        datasets: datasets
       }
     end
 
