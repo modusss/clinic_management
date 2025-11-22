@@ -1034,7 +1034,7 @@ module ClinicManagement
             lead_id,
             current_user.id,
             context: 'absent',
-            duration_hours: 3
+            duration_hours: 8
           )
         end
         
