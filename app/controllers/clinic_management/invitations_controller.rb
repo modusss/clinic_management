@@ -721,8 +721,13 @@ module ClinicManagement
             next unless referral
             
             referral_data[referral] ||= init_referral_data
-            referral_data[referral][:whatsapp_count] += user_ints.count { |i| i.interaction_type == 'whatsapp_click' }
-            referral_data[referral][:phone_count] += user_ints.count { |i| i.interaction_type == 'phone_call' }
+            
+            # Count unique leads per interaction type (1 per lead/day limit)
+            whatsapp_leads = user_ints.select { |i| i.interaction_type == 'whatsapp_click' }.map(&:lead_id).uniq
+            phone_leads = user_ints.select { |i| i.interaction_type == 'phone_call' }.map(&:lead_id).uniq
+            
+            referral_data[referral][:whatsapp_count] += whatsapp_leads.count
+            referral_data[referral][:phone_count] += phone_leads.count
           end
           
           data[date] = referral_data unless referral_data.empty?
