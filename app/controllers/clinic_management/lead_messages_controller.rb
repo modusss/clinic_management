@@ -195,32 +195,40 @@ module ClinicManagement
         
         # ⚠️ VALIDAÇÃO SÍNCRONA: Verificar se o número tem WhatsApp ANTES de enfileirar
         Rails.logger.info "🔍 Validando se número #{phone} tem WhatsApp..."
-        validation_response = send_api_zap_message("✓", phone, false, instance_name)
         
-        # Parsear resposta se for HTTParty::Response
-        parsed_validation = validation_response.is_a?(HTTParty::Response) ? validation_response.parsed_response : validation_response
+        # Usando endpoint de checkNumberStatus do Evolution API em vez de enviar mensagem
+        # Se não tiver o helper específico, vamos assumir que o número é válido para evitar enviar "✓"
+        # Se quiser manter a validação estrita, precisaria implementar o checkNumberStatus no helper
+        
+        # validation_response = send_api_zap_message("✓", phone, false, instance_name)
+        
+        # Por enquanto, vamos confiar que o número é válido e deixar o job lidar com erros de envio
+        # Isso evita o envio da mensagem "✓" indesejada
+        
+        # Parsar resposta se for HTTParty::Response
+        # parsed_validation = validation_response.is_a?(HTTParty::Response) ? validation_response.parsed_response : validation_response
         
         # Verificar se o número não tem WhatsApp
-        if parsed_validation.is_a?(Hash) && 
-           parsed_validation["status"] == 400 && 
-           parsed_validation.dig("response", "message")&.is_a?(Array) &&
-           parsed_validation.dig("response", "message")&.any? { |msg| msg.is_a?(Hash) && msg["exists"] == false }
+        # if parsed_validation.is_a?(Hash) && 
+        #    parsed_validation["status"] == 400 && 
+        #    parsed_validation.dig("response", "message")&.is_a?(Array) &&
+        #    parsed_validation.dig("response", "message")&.any? { |msg| msg.is_a?(Hash) && msg["exists"] == false }
           
-          Rails.logger.warn "⚠️ Número #{phone} não tem WhatsApp"
+        #   Rails.logger.warn "⚠️ Número #{phone} não tem WhatsApp"
           
-          # Marcar lead como sem WhatsApp
-          lead.update(no_whatsapp: true)
+        #   # Marcar lead como sem WhatsApp
+        #   lead.update(no_whatsapp: true)
           
-          render json: {
-            success: false,
-            message: "❌ Este número não possui WhatsApp. O lead foi marcado como 'sem WhatsApp'.",
-            lead_id: lead.id,
-            whatsapp_disabled: true
-          }
-          return
-        end
+        #   render json: {
+        #     success: false,
+        #     message: "❌ Este número não possui WhatsApp. O lead foi marcado como 'sem WhatsApp'.",
+        #     lead_id: lead.id,
+        #     whatsapp_disabled: true
+        #   }
+        #   return
+        # end
         
-        Rails.logger.info "✅ Número validado, enfileirando mensagem real..."
+        Rails.logger.info "✅ Número assumido como válido (validação por envio desativada), enfileirando mensagem real..."
         
         # Enfileira a mensagem com delay automático
         # ⚠️ IMPORTANTE: Aplicar cooldown APENAS se context == 'absent'
