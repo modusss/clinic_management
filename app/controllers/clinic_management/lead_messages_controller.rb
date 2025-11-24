@@ -204,7 +204,7 @@ module ClinicManagement
         if parsed_validation.is_a?(Hash) && 
            parsed_validation["status"] == 400 && 
            parsed_validation.dig("response", "message")&.is_a?(Array) &&
-           parsed_validation.dig("response", "message")&.any? { |msg| msg["exists"] == false }
+           parsed_validation.dig("response", "message")&.any? { |msg| msg.is_a?(Hash) && msg["exists"] == false }
           
           Rails.logger.warn "⚠️ Número #{phone} não tem WhatsApp"
           
