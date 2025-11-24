@@ -48,44 +48,6 @@ module ClinicManagement
         color_map.dig(color_name, shade) || '#000000'
       end
 
-    def send_api_zap_pdf(pdf_url, caption, phone, delay, instance_name = nil)
-      instance_name = instance_name || Account.first.evolution_instance_name
-
-      if delay.present?
-          custom_delay
-      end
-      base_url = Account.last.evolution_base_url
-      api_key = Account.last.evolution_api_key
-      # Codifica o nome da instância para ser usado na URL
-      encoded_instance_name = url_encode(instance_name)
-      # Preparando o cabeçalho com a chave da API
-      headers = {
-      "Content-Type" => "application/json",
-      "apikey" => api_key
-      }
-      # v2: Estrutura simplificada - campos diretos no body
-      body = {
-      number: "55" + phone,
-      mediatype: "document",  # v2: campo direto
-      mimetype: "application/pdf",
-      caption: caption,
-      media: pdf_url,
-      delay: 1200,
-      linkPreview: false
-      }.to_json
-      # Montando o endpoint com o nome da instância codificado corretamente
-      endpoint = "#{base_url}/message/sendMedia/#{encoded_instance_name}"
-      # Fazendo a solicitação POST
-      response = HTTParty.post(
-      endpoint,
-      body: body,
-      headers: headers
-      )
-      # Retorna a resposta da API
-      response
-    end
-
-
       def is_operator_above?
         if current_user.present?
             if ["operator", "manager", "owner"].include? current_user.memberships.first.role
@@ -397,11 +359,10 @@ module ClinicManagement
             "apikey" => api_key
           }
           
+          # v2: Estrutura simplificada - campos diretos no body
           body = {
             number: "55" + phone.to_s,
-            textMessage: {
-              text: message
-            },
+            text: message,
             options: {
               delay: 10,
               presence: "composing",
@@ -436,17 +397,16 @@ module ClinicManagement
             "apikey" => api_key
           }
           
+          # v2: Estrutura simplificada
           body = {
             number: "55" + phone,
+            mediatype: "image",
+            caption: caption,
+            media: media_url,
             options: {
               delay: 10,
               presence: "composing",
               linkPreview: false
-            },
-            mediaMessage: {
-              mediatype: "image",
-              caption: caption,
-              media: media_url
             }
           }.to_json
           
@@ -477,16 +437,15 @@ module ClinicManagement
             "apikey" => api_key
           }
           
+          # v2: Estrutura simplificada
           body = {
             number: "55" + phone,
+            mediatype: "video",
+            caption: caption,
+            media: video_url,
             options: {
               delay: 10,
               presence: "composing"
-            },
-            mediaMessage: {
-              mediatype: "video",
-              caption: caption,
-              media: video_url
             }
           }.to_json
           
@@ -517,16 +476,15 @@ module ClinicManagement
             "apikey" => api_key
           }
           
+          # v2: Estrutura simplificada
           body = {
             number: "55" + phone,
+            mediatype: "audio",
+            media: audio_url,
             options: {
               delay: 10,
               presence: "composing",
               linkPreview: false
-            },
-            mediaMessage: {
-              mediatype: "audio",
-              media: audio_url
             }
           }.to_json
           
@@ -557,17 +515,17 @@ module ClinicManagement
             "apikey" => api_key
           }
           
+          # v2: Estrutura simplificada
           body = {
             number: "55" + phone,
+            mediatype: "document",
+            mimetype: "application/pdf",
+            caption: caption,
+            media: pdf_url,
+            fileName: "documento.pdf",
             options: {
               delay: 10,
               presence: "composing"
-            },
-            mediaMessage: {
-              mediatype: "document",
-              caption: caption,
-              media: pdf_url,
-              fileName: "documento.pdf"
             }
           }.to_json
           
