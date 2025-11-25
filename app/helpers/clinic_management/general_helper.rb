@@ -359,15 +359,12 @@ module ClinicManagement
             "apikey" => api_key
           }
           
-          # v2: Estrutura simplificada - campos diretos no body
+          # v2: Estrutura simplificada - text direto no body
           body = {
             number: "55" + phone.to_s,
             text: message,
-            options: {
-              delay: 10,
-              presence: "composing",
-              linkPreview: false
-            }
+            delay: 1200,
+            linkPreview: false
           }.to_json
           
           endpoint = "#{base_url}/message/sendText/#{encoded_instance_name}"
@@ -397,17 +394,14 @@ module ClinicManagement
             "apikey" => api_key
           }
           
-          # v2: Estrutura simplificada
+          # v2: Estrutura simplificada - campos diretos no body
           body = {
             number: "55" + phone,
             mediatype: "image",
             caption: caption,
             media: media_url,
-            options: {
-              delay: 10,
-              presence: "composing",
-              linkPreview: false
-            }
+            delay: 1200,
+            linkPreview: false
           }.to_json
           
           endpoint = "#{base_url}/message/sendMedia/#{encoded_instance_name}"
@@ -437,16 +431,14 @@ module ClinicManagement
             "apikey" => api_key
           }
           
-          # v2: Estrutura simplificada
+          # v2: Estrutura simplificada - campos diretos no body
           body = {
             number: "55" + phone,
             mediatype: "video",
             caption: caption,
             media: video_url,
-            options: {
-              delay: 10,
-              presence: "composing"
-            }
+            delay: 1200,
+            linkPreview: false
           }.to_json
           
           endpoint = "#{base_url}/message/sendMedia/#{encoded_instance_name}"
@@ -476,19 +468,16 @@ module ClinicManagement
             "apikey" => api_key
           }
           
-          # v2: Estrutura simplificada
+          # v2: Endpoint mudou para sendWhatsAppAudio e estrutura simplificada
           body = {
             number: "55" + phone,
-            mediatype: "audio",
-            media: audio_url,
-            options: {
-              delay: 10,
-              presence: "composing",
-              linkPreview: false
-            }
+            audio: audio_url,
+            delay: 1200,
+            linkPreview: false
           }.to_json
           
-          endpoint = "#{base_url}/message/sendMedia/#{encoded_instance_name}"
+          # v2: Endpoint específico para áudio do WhatsApp
+          endpoint = "#{base_url}/message/sendWhatsAppAudio/#{encoded_instance_name}"
           
           response = HTTParty.post(
             endpoint,
@@ -515,18 +504,15 @@ module ClinicManagement
             "apikey" => api_key
           }
           
-          # v2: Estrutura simplificada
+          # v2: Estrutura simplificada - campos diretos no body
           body = {
             number: "55" + phone,
             mediatype: "document",
             mimetype: "application/pdf",
             caption: caption,
             media: pdf_url,
-            fileName: "documento.pdf",
-            options: {
-              delay: 10,
-              presence: "composing"
-            }
+            delay: 1200,
+            linkPreview: false
           }.to_json
           
           endpoint = "#{base_url}/message/sendMedia/#{encoded_instance_name}"
