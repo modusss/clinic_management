@@ -384,6 +384,9 @@
     </div>
     
     <%# Área de Logs de Envio em Tempo Real %>
+    <%# Inscrição no canal Turbo Stream para atualizações em tempo real do backend %>
+    <%= turbo_stream_from "bulk_message_logs" %>
+    
     <div class="mt-6 hidden" data-bulk-message-target="logsContainer">
       <div class="bg-gray-900 rounded-lg shadow-lg overflow-hidden">
         <%# Cabeçalho dos logs %>
@@ -401,6 +404,10 @@
               <span class="text-gray-400">
                 <i class="fas fa-clock mr-1"></i>
                 <span data-bulk-message-target="pendingCount">0</span> na fila
+              </span>
+              <span class="text-yellow-400" title="Leads sem WhatsApp (pulados automaticamente)">
+                <i class="fab fa-whatsapp mr-1"></i>
+                <span data-bulk-message-target="skippedCount">0</span> sem zap
               </span>
               <span class="text-gray-400">
                 <i class="fas fa-exclamation-triangle mr-1"></i>
@@ -439,7 +446,8 @@
         </div>
         
         <%# Console de logs com altura automática %>
-        <div class="bg-black p-4 font-mono text-sm text-green-400 max-h-[600px] overflow-y-auto" 
+        <div id="bulk-logs-content"
+             class="bg-black p-4 font-mono text-sm text-green-400 max-h-[600px] overflow-y-auto" 
              data-bulk-message-target="logsContent"
              style="min-height: 400px;">
           <div class="text-gray-500">

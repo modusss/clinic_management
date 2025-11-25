@@ -20,10 +20,49 @@ module ClinicManagement
     def record_message_sent
       @lead = Lead.find(params[:id])
       @appointment = @lead.appointments.find(params[:appointment_id])
+      interaction_type = params[:interaction_type] || 'whatsapp_click'
+      
+      # =======================================================
+      # VERIFICAÇÃO DE WHATSAPP ANTES DE REGISTRAR INTERAÇÃO
+      # Se for whatsapp_click, verifica se o número tem WhatsApp
+      # =======================================================
+      @no_whatsapp_detected = false
+      
+      if interaction_type == 'whatsapp_click' && can_use_evolution_api?
+        Rails.logger.info "[RECORD MSG] Verificando WhatsApp para Lead ##{@lead.id}: #{@lead.phone}"
+        
+        # Obter nome da instância do usuário atual
+        instance_name = get_evolution_instance_name
+        
+        # Verificar se o número tem WhatsApp
+        whatsapp_check = helpers.check_whatsapp_number(@lead.phone, instance_name)
+        
+        if whatsapp_check[:exists] == false
+          Rails.logger.warn "[RECORD MSG] ⚠️ Número sem WhatsApp: #{@lead.phone}"
+          
+          # Marcar lead como sem WhatsApp
+          @lead.update(no_whatsapp: true)
+          @no_whatsapp_detected = true
+          
+          # NÃO registrar interação - número não tem WhatsApp
+          respond_to do |format|
+            format.turbo_stream do
+              render turbo_stream: turbo_stream.update(
+                "phone-container-#{@lead.id}",
+                partial: "clinic_management/leads/phone_with_message_tracking",
+                locals: { lead: @lead.reload, appointment: @appointment, no_whatsapp_alert: true }
+              )
+            end
+          end
+          return
+        end
+        
+        Rails.logger.info "[RECORD MSG] ✅ Número tem WhatsApp: #{@lead.phone}"
+      end
       
       # Verificar se já existe uma interação recente (última hora) para evitar duplicações
       last_interaction = @lead.lead_interactions
-        .where(appointment: @appointment, interaction_type: params[:interaction_type] || 'whatsapp_click')
+        .where(appointment: @appointment, interaction_type: interaction_type)
         .where('occurred_at > ?', 1.hour.ago)
         .order(occurred_at: :desc)
         .first
@@ -37,7 +76,7 @@ module ClinicManagement
           lead: @lead,
           appointment: @appointment,
           user: current_user,
-          interaction_type: params[:interaction_type] || 'whatsapp_click',
+          interaction_type: interaction_type,
           occurred_at: Time.current
         )
         
@@ -532,16 +571,13 @@ module ClinicManagement
         # Contadores e dados de resultado
         success_count = 0
         error_count = 0
+        skipped_no_whatsapp = 0  # Contador de leads sem WhatsApp (pulados)
         errors_details = []
         queued_messages = []  # Array para armazenar dados de cada mensagem enfileirada
+        skipped_leads = []    # Array para leads pulados (sem WhatsApp)
         
         # Determinar instância (mesma lógica do LeadMessagesController)
-        instance_name = if referral?(current_user)
-          referral = user_referral
-          referral&.evolution_instance_name
-        else
-          Account.first&.evolution_instance_name_2
-        end
+        instance_name = get_evolution_instance_name
         
         Rails.logger.info "📤 [BULK] Instância utilizada: #{instance_name}"
         
@@ -557,14 +593,6 @@ module ClinicManagement
               next
             end
             
-            # Gerar mensagem personalizada
-            message_data = get_message(message, lead, appointment.service)
-            message_text = message_data[:text]
-            media_details = message_data[:media]
-            
-            # Remove URL encoding
-            message_text = CGI.unescape(message_text)
-            
             # Preparar telefone
             phone = lead.phone.to_s.sub(/^55/, '')
             
@@ -574,6 +602,42 @@ module ClinicManagement
               errors_details << "Lead #{lead.name}: Instância WhatsApp não configurada"
               next
             end
+            
+            # ============================================================
+            # VERIFICAÇÃO DE WHATSAPP ANTES DE ENFILEIRAR
+            # Economiza tempo pulando leads sem WhatsApp
+            # ============================================================
+            Rails.logger.info "🔍 [BULK] Verificando WhatsApp para #{lead.name} (#{phone})..."
+            
+            whatsapp_check = helpers.check_whatsapp_number(phone, instance_name)
+            
+            if whatsapp_check[:exists] == false
+              Rails.logger.warn "⚠️ [BULK] #{lead.name} (#{phone}): SEM WHATSAPP - Pulando!"
+              
+              # Marcar lead como sem WhatsApp
+              lead.update(no_whatsapp: true)
+              
+              skipped_no_whatsapp += 1
+              skipped_leads << {
+                lead_id: lead.id,
+                lead_name: lead.name,
+                phone: phone,
+                reason: 'no_whatsapp'
+              }
+              
+              # Pular para o próximo lead
+              next
+            end
+            
+            Rails.logger.info "✅ [BULK] #{lead.name} (#{phone}): TEM WHATSAPP - Enfileirando..."
+            
+            # Gerar mensagem personalizada
+            message_data = get_message(message, lead, appointment.service)
+            message_text = message_data[:text]
+            media_details = message_data[:media]
+            
+            # Remove URL encoding
+            message_text = CGI.unescape(message_text)
             
             # Enfileirar mensagem usando o serviço de fila (igual ao send_evolution_message)
             Rails.logger.info "📤 [BULK] Enfileirando mensagem para #{lead.name} (#{phone})"
@@ -621,7 +685,7 @@ module ClinicManagement
           end
         end
         
-        Rails.logger.info "✅ [BULK] Processamento concluído: #{success_count} sucessos, #{error_count} erros"
+        Rails.logger.info "✅ [BULK] Processamento concluído: #{success_count} sucessos, #{error_count} erros, #{skipped_no_whatsapp} sem WhatsApp"
         
         # Calcular estimativa total de envio
         last_message = queued_messages.max_by { |m| m[:delay_seconds] || 0 }
@@ -631,11 +695,13 @@ module ClinicManagement
           success: true,
           success_count: success_count,
           error_count: error_count,
+          skipped_no_whatsapp: skipped_no_whatsapp,  # Quantidade de leads pulados por não ter WhatsApp
+          skipped_leads: skipped_leads,              # Detalhes dos leads pulados
           errors_details: errors_details,
           queued_messages: queued_messages,
           total_estimated_seconds: total_estimated_seconds,
           estimated_completion_time: (Time.current + total_estimated_seconds.seconds).iso8601,
-          message: "Processamento concluído: #{success_count} mensagens enviadas#{error_count > 0 ? ", #{error_count} erros" : ""}"
+          message: "Processamento concluído: #{success_count} mensagens enfileiradas#{skipped_no_whatsapp > 0 ? ", #{skipped_no_whatsapp} sem WhatsApp" : ""}#{error_count > 0 ? ", #{error_count} erros" : ""}"
         }
         
       rescue StandardError => e
@@ -892,6 +958,17 @@ module ClinicManagement
     end
 
     private
+    
+    # Retorna o nome da instância Evolution API para o usuário atual
+    # Referrals usam sua própria instância, outros usam a instância 2 da Account
+    def get_evolution_instance_name
+      if referral?(current_user)
+        referral = user_referral
+        referral&.evolution_instance_name
+      else
+        Account.first&.evolution_instance_name_2
+      end
+    end
 
     # Armazena o estado da URL de ausentes na sessão, SEMPRE removendo 'page' para sempre começar na página 1
     def store_absent_leads_state_in_session

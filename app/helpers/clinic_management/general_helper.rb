@@ -295,6 +295,90 @@ module ClinicManagement
           current_membership.role == "clinical_assistant"
         end
 
+        # =======================================================
+        # VERIFICAÇÃO DE WHATSAPP - Evolution API v2
+        # Endpoint: POST /chat/whatsappNumbers/{instance}
+        # =======================================================
+        def check_whatsapp_number(phone, instance_name = nil)
+          return { exists: false, error: "Telefone inválido" } if phone.blank?
+          
+          instance_name ||= Account.first.evolution_instance_name
+          base_url = Account.last.evolution_base_url
+          api_key = Account.last.evolution_api_key
+          
+          encoded_instance_name = ERB::Util.url_encode(instance_name)
+          
+          headers = {
+            "Content-Type" => "application/json",
+            "apikey" => api_key
+          }
+          
+          # Formato: array de números com código do país
+          formatted_phone = "55#{phone.to_s.gsub(/[^0-9]/, '')}"
+          
+          body = {
+            numbers: [formatted_phone]
+          }.to_json
+          
+          endpoint = "#{base_url}/chat/whatsappNumbers/#{encoded_instance_name}"
+          
+          Rails.logger.info "[CHECK WHATSAPP] Verificando número: #{formatted_phone}"
+          Rails.logger.info "[CHECK WHATSAPP] Endpoint: #{endpoint}"
+          
+          begin
+            response = HTTParty.post(
+              endpoint,
+              body: body,
+              headers: headers,
+              timeout: 10
+            )
+            
+            Rails.logger.info "[CHECK WHATSAPP] Response code: #{response.code}"
+            Rails.logger.info "[CHECK WHATSAPP] Response body: #{response.body[0..300]}"
+            
+            if response.code == 200 || response.code == 201
+              parsed = response.parsed_response
+              
+              # A API retorna um array com os resultados
+              if parsed.is_a?(Array) && parsed.first.is_a?(Hash)
+                result = parsed.first
+                exists = result['exists'] == true
+                jid = result['jid']
+                
+                Rails.logger.info "[CHECK WHATSAPP] Número #{formatted_phone}: exists=#{exists}, jid=#{jid}"
+                
+                return {
+                  exists: exists,
+                  jid: jid,
+                  number: formatted_phone
+                }
+              elsif parsed.is_a?(Hash) && parsed['data'].is_a?(Array)
+                # Formato alternativo: { data: [...] }
+                result = parsed['data'].first
+                exists = result['exists'] == true
+                jid = result['jid']
+                
+                Rails.logger.info "[CHECK WHATSAPP] Número #{formatted_phone}: exists=#{exists}, jid=#{jid}"
+                
+                return {
+                  exists: exists,
+                  jid: jid,
+                  number: formatted_phone
+                }
+              else
+                Rails.logger.warn "[CHECK WHATSAPP] Formato de resposta inesperado: #{parsed.class}"
+                return { exists: false, error: "Formato de resposta inesperado", raw: parsed }
+              end
+            else
+              Rails.logger.error "[CHECK WHATSAPP] Erro HTTP #{response.code}: #{response.body[0..200]}"
+              return { exists: false, error: "HTTP #{response.code}" }
+            end
+          rescue => e
+            Rails.logger.error "[CHECK WHATSAPP] Exceção: #{e.message}"
+            return { exists: false, error: e.message }
+          end
+        end
+
         # Evolution API message sending helpers
         def send_evolution_message_with_media(phone, message_text, media_details, instance_name = nil)
           # Use the main helper functions from GeneralHelper
