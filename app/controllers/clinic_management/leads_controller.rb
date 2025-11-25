@@ -1266,14 +1266,14 @@ module ClinicManagement
           "<span class='font-semibold'>#{index + 1}</span>" \
           "</div>"
         else
-          # Apenas o número
-          index + 1
+          # Apenas o número (convertido para string)
+          (index + 1).to_s
         end
         
         [
           {
             header: "Ordem", 
-            content: ordem_content.html_safe, 
+            content: ordem_content.to_s.html_safe, 
             row_id: "lead-row-#{lead.id}",  # ID único para highlight
             row_class: ""  # Classe será manipulada via JS para highlight
           },
