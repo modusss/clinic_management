@@ -649,6 +649,248 @@ module ClinicManagement
       end
     end
 
+    # POST /leads/cancel_scheduled_message
+    # Cancela uma mensagem programada específica
+    def cancel_scheduled_message
+      begin
+        # Validar permissões
+        unless can_use_evolution_api?
+          render json: {
+            success: false,
+            error: 'Você não tem permissão para cancelar mensagens'
+          }, status: :forbidden
+          return
+        end
+        
+        job_id = params[:job_id]
+        lead_name = params[:lead_name] || 'Desconhecido'
+        
+        if job_id.blank?
+          render json: {
+            success: false,
+            error: 'ID do job não informado'
+          }, status: :unprocessable_entity
+          return
+        end
+        
+        Rails.logger.info "🚫 [CANCEL] Tentando cancelar job #{job_id} para #{lead_name}"
+        
+        # Buscar o job no GoodJob
+        job = GoodJob::Job.find_by(id: job_id)
+        
+        if job.nil?
+          render json: {
+            success: false,
+            error: 'Mensagem não encontrada na fila'
+          }, status: :not_found
+          return
+        end
+        
+        # Verificar se o job já foi executado
+        if job.finished_at.present?
+          render json: {
+            success: false,
+            error: 'Esta mensagem já foi processada e não pode ser cancelada'
+          }, status: :unprocessable_entity
+          return
+        end
+        
+        # Verificar se ainda está no futuro
+        if job.scheduled_at.present? && job.scheduled_at <= Time.current
+          render json: {
+            success: false,
+            error: 'Esta mensagem está sendo processada agora e não pode ser cancelada'
+          }, status: :unprocessable_entity
+          return
+        end
+        
+        # Cancelar o job (deletar da fila)
+        job.destroy!
+        
+        Rails.logger.info "✅ [CANCEL] Job #{job_id} cancelado com sucesso para #{lead_name}"
+        
+        render json: {
+          success: true,
+          message: "Mensagem para #{lead_name} cancelada com sucesso",
+          job_id: job_id
+        }
+        
+      rescue StandardError => e
+        Rails.logger.error "❌ [CANCEL] Erro ao cancelar job: #{e.message}"
+        render json: {
+          success: false,
+          error: "Erro ao cancelar mensagem: #{e.message}"
+        }, status: :internal_server_error
+      end
+    end
+
+    # GET /leads/load_scheduled_messages
+    # Carrega mensagens já agendadas na fila (de envios anteriores)
+    def load_scheduled_messages
+      begin
+        # Validar permissões
+        unless can_use_evolution_api?
+          render json: {
+            success: false,
+            error: 'Você não tem permissão para visualizar a fila'
+          }, status: :forbidden
+          return
+        end
+        
+        # Determinar instância do usuário atual
+        instance_name = if referral?(current_user)
+          referral = user_referral
+          referral&.evolution_instance_name
+        else
+          Account.first&.evolution_instance_name_2
+        end
+        
+        if instance_name.blank?
+          render json: {
+            success: true,
+            scheduled_messages: [],
+            message: 'Nenhuma instância WhatsApp configurada'
+          }
+          return
+        end
+        
+        Rails.logger.info "📋 [LOAD] Buscando mensagens agendadas para instância: #{instance_name}"
+        
+        now = Time.current
+        
+        # Buscar jobs pendentes da fila para esta instância
+        jobs = GoodJob::Job.where(
+          queue_name: 'default'
+        ).where("serialized_params::text LIKE ?", "%SendEvolutionMessageJob%")
+         .where("serialized_params::text LIKE ?", "%#{instance_name}%")
+         .where("scheduled_at > ?", now)
+         .where(finished_at: nil)
+         .order(scheduled_at: :asc)
+         .limit(100)  # Limitar para performance
+        
+        scheduled_messages = []
+        
+        jobs.each do |job|
+          begin
+            # Extrair dados do job
+            params = job.serialized_params
+            arguments = params['arguments']&.first || {}
+            
+            phone = arguments['phone']
+            lead_id = arguments['lead_id']
+            
+            # Buscar nome do lead se possível
+            lead_name = 'Desconhecido'
+            if lead_id.present?
+              lead = Lead.find_by(id: lead_id)
+              lead_name = lead&.name || "Lead ##{lead_id}"
+            end
+            
+            scheduled_messages << {
+              job_id: job.id,
+              lead_id: lead_id,
+              lead_name: lead_name,
+              phone: phone || 'N/A',
+              estimated_send_time: job.scheduled_at&.iso8601,
+              delay_seconds: ((job.scheduled_at - now) rescue 0).to_i,
+              created_at: job.created_at&.iso8601
+            }
+          rescue => e
+            Rails.logger.warn "⚠️ [LOAD] Erro ao processar job #{job.id}: #{e.message}"
+          end
+        end
+        
+        Rails.logger.info "✅ [LOAD] Encontradas #{scheduled_messages.length} mensagens agendadas"
+        
+        render json: {
+          success: true,
+          scheduled_messages: scheduled_messages,
+          total_count: scheduled_messages.length,
+          instance_name: instance_name
+        }
+        
+      rescue StandardError => e
+        Rails.logger.error "❌ [LOAD] Erro ao carregar mensagens: #{e.message}"
+        render json: {
+          success: false,
+          error: "Erro ao carregar mensagens: #{e.message}"
+        }, status: :internal_server_error
+      end
+    end
+
+    # DELETE /leads/clear_all_scheduled_messages
+    # Limpa TODAS as mensagens agendadas na fila
+    def clear_all_scheduled_messages
+      begin
+        # Validar permissões
+        unless can_use_evolution_api?
+          render json: {
+            success: false,
+            error: 'Você não tem permissão para limpar a fila'
+          }, status: :forbidden
+          return
+        end
+        
+        # Determinar instância do usuário atual
+        instance_name = if referral?(current_user)
+          referral = user_referral
+          referral&.evolution_instance_name
+        else
+          Account.first&.evolution_instance_name_2
+        end
+        
+        if instance_name.blank?
+          render json: {
+            success: true,
+            cancelled_count: 0,
+            message: 'Nenhuma instância WhatsApp configurada'
+          }
+          return
+        end
+        
+        Rails.logger.info "🗑️ [CLEAR] Limpando TODAS as mensagens agendadas para instância: #{instance_name}"
+        
+        now = Time.current
+        
+        # Buscar TODOS os jobs pendentes da fila para esta instância
+        jobs = GoodJob::Job.where(
+          queue_name: 'default'
+        ).where("serialized_params::text LIKE ?", "%SendEvolutionMessageJob%")
+         .where("serialized_params::text LIKE ?", "%#{instance_name}%")
+         .where("scheduled_at > ?", now)
+         .where(finished_at: nil)
+        
+        total_count = jobs.count
+        
+        if total_count == 0
+          render json: {
+            success: true,
+            cancelled_count: 0,
+            message: 'Nenhuma mensagem na fila para cancelar'
+          }
+          return
+        end
+        
+        # Deletar todos os jobs
+        deleted_count = jobs.destroy_all.count
+        
+        Rails.logger.info "✅ [CLEAR] #{deleted_count} mensagens removidas da fila"
+        
+        render json: {
+          success: true,
+          cancelled_count: deleted_count,
+          message: "#{deleted_count} mensagens foram removidas da fila"
+        }
+        
+      rescue StandardError => e
+        Rails.logger.error "❌ [CLEAR] Erro ao limpar fila: #{e.message}"
+        render json: {
+          success: false,
+          error: "Erro ao limpar fila: #{e.message}"
+        }, status: :internal_server_error
+      end
+    end
+
     private
 
     # Armazena o estado da URL de ausentes na sessão, SEMPRE removendo 'page' para sempre começar na página 1
