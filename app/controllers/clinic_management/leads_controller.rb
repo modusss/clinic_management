@@ -9,6 +9,7 @@ module ClinicManagement
     before_action :set_view_type, only: [:absent]
 
     include GeneralHelper
+    include MessagesHelper
 
     # GET /leads
     # def index
@@ -481,6 +482,172 @@ module ClinicManagement
         format.html { render :absent_download if params[:view] == 'download' }
       end
     end
+    
+    # POST /leads/send_bulk_messages
+    # Envia mensagens em massa para múltiplos leads via Evolution API
+    def send_bulk_messages
+      begin
+        # Validar permissões
+        unless can_use_evolution_api?
+          render json: {
+            success: false,
+            error: 'Você não tem permissão para usar a API Evolution'
+          }, status: :forbidden
+          return
+        end
+        
+        # Obter parâmetros
+        lead_ids = params[:lead_ids] || []
+        message_id = params[:message_id]
+        
+        # Validações básicas
+        if lead_ids.blank?
+          render json: {
+            success: false,
+            error: 'Nenhum lead selecionado'
+          }, status: :unprocessable_entity
+          return
+        end
+        
+        if message_id.blank?
+          render json: {
+            success: false,
+            error: 'Nenhuma mensagem selecionada'
+          }, status: :unprocessable_entity
+          return
+        end
+        
+        # Buscar leads e message
+        leads = Lead.where(id: lead_ids)
+        message = ClinicManagement::LeadMessage.find_by(id: message_id)
+        
+        if message.nil?
+          render json: {
+            success: false,
+            error: 'Mensagem não encontrada'
+          }, status: :not_found
+          return
+        end
+        
+        # Contadores e dados de resultado
+        success_count = 0
+        error_count = 0
+        errors_details = []
+        queued_messages = []  # Array para armazenar dados de cada mensagem enfileirada
+        
+        # Determinar instância (mesma lógica do LeadMessagesController)
+        instance_name = if referral?(current_user)
+          referral = user_referral
+          referral&.evolution_instance_name
+        else
+          Account.first&.evolution_instance_name_2
+        end
+        
+        Rails.logger.info "📤 [BULK] Instância utilizada: #{instance_name}"
+        
+        # Processar cada lead
+        leads.each do |lead|
+          begin
+            # Buscar o último appointment do lead
+            appointment = lead.appointments.includes(:service).order('clinic_management_services.date DESC').first
+            
+            unless appointment
+              error_count += 1
+              errors_details << "Lead #{lead.name}: Sem appointment"
+              next
+            end
+            
+            # Gerar mensagem personalizada
+            message_data = get_message(message, lead, appointment.service)
+            message_text = message_data[:text]
+            media_details = message_data[:media]
+            
+            # Remove URL encoding
+            message_text = CGI.unescape(message_text)
+            
+            # Preparar telefone
+            phone = lead.phone.to_s.sub(/^55/, '')
+            
+            # Validar se instance_name está presente
+            if instance_name.blank?
+              error_count += 1
+              errors_details << "Lead #{lead.name}: Instância WhatsApp não configurada"
+              next
+            end
+            
+            # Enfileirar mensagem usando o serviço de fila (igual ao send_evolution_message)
+            Rails.logger.info "📤 [BULK] Enfileirando mensagem para #{lead.name} (#{phone})"
+            
+            # Usar o serviço de enfileiramento correto com todas as validações
+            result = EvolutionMessageQueueService.enqueue_message(
+              phone: phone,
+              message_text: message_text,
+              media_details: media_details&.stringify_keys,
+              instance_name: instance_name,
+              lead_id: lead.id,
+              user_id: current_user.id,
+              appointment_id: appointment.id,
+              skip_cooldown_check: false  # Respeitar cooldown para evitar spam em bulk
+            )
+            
+            # Verificar se enfileiramento foi bem-sucedido
+            unless result[:success]
+              error_count += 1
+              error_msg = result[:error] || result[:message] || 'Erro desconhecido'
+              errors_details << "Lead #{lead.name}: #{error_msg}"
+              Rails.logger.error "❌ [BULK] Erro ao enfileirar para #{lead.name}: #{error_msg}"
+              next
+            end
+            
+            Rails.logger.info "✅ [BULK] Mensagem enfileirada com sucesso para #{lead.name} - Job ID: #{result[:job_id]}"
+            
+            success_count += 1
+            
+            # Armazenar dados da mensagem enfileirada para o frontend
+            queued_messages << {
+              lead_id: lead.id,
+              lead_name: lead.name,
+              phone: phone,
+              job_id: result[:job_id],
+              delay_seconds: result[:delay_seconds],
+              estimated_send_time: result[:estimated_send_time]&.iso8601,
+              position_in_queue: result[:position_in_queue]
+            }
+            
+          rescue StandardError => e
+            error_count += 1
+            errors_details << "Lead #{lead.name}: #{e.message}"
+            Rails.logger.error "❌ [BULK] Erro ao processar lead #{lead.id}: #{e.message}"
+          end
+        end
+        
+        Rails.logger.info "✅ [BULK] Processamento concluído: #{success_count} sucessos, #{error_count} erros"
+        
+        # Calcular estimativa total de envio
+        last_message = queued_messages.max_by { |m| m[:delay_seconds] || 0 }
+        total_estimated_seconds = last_message ? last_message[:delay_seconds] : 0
+        
+        render json: {
+          success: true,
+          success_count: success_count,
+          error_count: error_count,
+          errors_details: errors_details,
+          queued_messages: queued_messages,
+          total_estimated_seconds: total_estimated_seconds,
+          estimated_completion_time: (Time.current + total_estimated_seconds.seconds).iso8601,
+          message: "Processamento concluído: #{success_count} mensagens enviadas#{error_count > 0 ? ", #{error_count} erros" : ""}"
+        }
+        
+      rescue StandardError => e
+        Rails.logger.error "❌ [BULK] Erro geral: #{e.message}"
+        Rails.logger.error e.backtrace.join("\n")
+        
+        render json: {
+          success: false,
+          error: "Erro ao processar envio em massa: #{e.message}"
+        }, status: :internal_server_error
+      end
+    end
 
     private
 
@@ -830,24 +997,51 @@ module ClinicManagement
         end
 
         # Removida a diferenciação - usar sempre a estrutura completa para todos
+        
+        # Construir conteúdo do paciente com responsável integrado
+        patient_content = render_to_string(
+          partial: "clinic_management/leads/patient_name_with_edit_button", 
+          locals: { invitation: last_invitation }
+        ).html_safe
+        
+        # Adicionar responsável se for diferente do paciente
+        responsible_name = responsible_content(last_invitation)
+        if responsible_name.present?
+          patient_content += "<div class='text-sm text-gray-600 mt-1'>Resp: #{responsible_name}</div>".html_safe
+        end
+        
+        # Construir conteúdo da primeira coluna (Ordem + Checkbox se Evolution API ativo)
+        ordem_content = if can_use_evolution_api?
+          # Checkbox + número da ordem
+          "<div class='flex items-center justify-center gap-2'>" \
+          "<input type='checkbox' " \
+          "class='w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer' " \
+          "data-bulk-message-target='leadCheckbox' " \
+          "data-lead-id='#{lead.id}' " \
+          "data-lead-phone='#{lead.phone}' " \
+          "data-lead-name='#{lead.name}' " \
+          "data-action='change->bulk-message#updateCounter' />" \
+          "<span class='font-semibold'>#{index + 1}</span>" \
+          "</div>"
+        else
+          # Apenas o número
+          index + 1
+        end
+        
         [
           {
             header: "Ordem", 
-            content: index + 1, 
+            content: ordem_content.html_safe, 
             row_id: "lead-row-#{lead.id}",  # ID único para highlight
             row_class: ""  # Classe será manipulada via JS para highlight
           },
           {
             header: "Paciente", 
-            content: render_to_string(
-              partial: "clinic_management/leads/patient_name_with_edit_button", 
-              locals: { invitation: last_invitation }
-            ).html_safe, 
+            content: patient_content, 
             class: "nowrap size_20 patient-name" 
           },
           # Status column with separated order information
           {header: "Status", content: status_content.html_safe, class: "!min-w-[300px] size_20 " + helpers.status_class(last_appointment)},
-          {header: "Responsável", content: responsible_content(last_invitation), class: "nowrap"},
           {
             header: "Telefone", 
             content: render_to_string(
@@ -1058,6 +1252,81 @@ module ClinicManagement
         Rails.logger.info "🧹 Limpeza: #{deleted_count} visualizações expiradas removidas"
       rescue StandardError => e
         Rails.logger.error "❌ Erro na limpeza: #{e.message}"
+      end
+      
+      # Gera mensagem personalizada com substituições de placeholders
+      # Copiado do LeadMessagesController para uso no envio em massa
+      def get_message(message, lead, service)
+        Rails.logger.debug "Entering get_message method"
+        Rails.logger.debug "Message: #{message.inspect}"
+        Rails.logger.debug "Lead: #{lead.inspect}"
+        Rails.logger.debug "Service: #{service.inspect}"
+
+        return { text: "", media: nil } if message.nil?
+        
+        result = message.text
+        Rails.logger.debug "Initial result: #{result.inspect}"
+
+        return { text: "", media: nil } if result.nil?
+
+        # Escolha aleatória de segmentos de texto
+        result = result.gsub(/\[.*?\]/) do |match|
+          options = match.tr('[]', '').split('|')
+          options.sample
+        end
+
+        # Substituições de texto padrão
+        result = result.gsub("{PRIMEIRO_NOME_PACIENTE}", lead.name.split(" ").first)
+                 .gsub("{NOME_COMPLETO_PACIENTE}", lead.name)
+                 .gsub("\n", "%0A")
+                 .gsub("\r\n", "%0A")
+
+        if service.present?
+          # Substituições relacionadas ao serviço
+          result = result.gsub("{DIA_SEMANA_ATENDIMENTO}", I18n.l(service&.date, format: "%A").to_s)
+                         .gsub("{MES_DO_ATENDIMENTO}", I18n.l(service.date, format: "%B").to_s)
+                         .gsub("{DIA_ATENDIMENTO_NUMERO}", service&.date&.strftime("%d").to_s)
+                         .gsub("{HORARIO_DE_INICIO}", service.start_time.strftime("%H:%M").to_s)
+                         .gsub("{HORARIO_DE_TERMINO}", service.end_time.strftime("%H:%M").to_s)
+                         .gsub("{DATA_DO_ATENDIMENTO}", service&.date&.strftime("%d/%m/%Y").to_s)
+        end
+
+        # Extract media details (both from attached files and URL-based media)
+        media_details = extract_media_details(message, result)
+        
+        # Remove URL-based media tags from final message if present
+        final_message = result.gsub(/\[url=".*?"\s+legenda=".*?"\s+tipo=".*?"\]/, '')
+
+        Rails.logger.debug "Final result: #{final_message.inspect}"
+        Rails.logger.debug "Media details: #{media_details.inspect}"
+        
+        { text: final_message.strip, media: media_details }
+      end
+      
+      # Extract media details from both attached files and URL-based media in text
+      def extract_media_details(message, text)
+        # Priority 1: Check for attached file
+        if message.has_media?
+          return {
+            url: message.media_url,
+            caption: message.media_caption.present? ? message.media_caption : '',
+            type: message.whatsapp_media_type
+          }
+        end
+        
+        # Priority 2: Check for URL-based media in text (legacy support)
+        media_regex = /\[url="(?<url>[^"]+)" legenda="(?<caption>[^"]*)" tipo="(?<type>[^"]+)"\]/
+        match = text.match(media_regex)
+        if match
+          return {
+            url: match[:url],
+            caption: match[:caption],
+            type: match[:type]
+          }
+        end
+        
+        # No media found
+        nil
       end
   end
 end

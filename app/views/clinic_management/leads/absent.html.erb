@@ -6,8 +6,10 @@
       view_type: @view_type 
     } %>
 
-<%# Wrapper para o sistema de fila de ligações - ENVOLVE TODA A PÁGINA %>
-<div data-controller="call-queue" data-call-queue-directcall-configured-value="<%= current_account&.directcall_configured? %>">
+<%# Wrapper para o sistema de fila de ligações E envio em massa - ENVOLVE TODA A PÁGINA %>
+<div data-controller="call-queue bulk-message" 
+     data-call-queue-directcall-configured-value="<%= current_account&.directcall_configured? %>"
+     data-bulk-message-leads-data-value="<%= @leads.map { |l| { id: l.id, phone: l.phone, name: l.name } }.to_json.gsub('"', '&quot;') %>">
   <%# O dropdown flutuante será renderizado aqui %>
   <%= render partial: "clinic_management/leads/call_queue_dropdown" if current_account&.directcall_configured? %>
 
@@ -238,6 +240,261 @@
 </div>
 
   <br>
+  
+  <%# Formulário de envio em massa - só aparece se Evolution API está ativo %>
+  <% if can_use_evolution_api? %>
+  <div class="my-4 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-md border border-blue-200">
+    
+    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+      <i class="fas fa-paper-plane text-blue-600"></i>
+      Envio em Massa de Mensagens
+    </h3>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <%# Seleção de mensagem %>
+      <div class="lg:col-span-2">
+        <%= label_tag :bulk_message_id, "Escolha a mensagem:", class: "block text-sm font-medium text-gray-700 mb-2" %>
+        <% 
+          # Buscar mensagens baseado no tipo de usuário (igual ao index de lead_messages)
+          bulk_messages = if referral?(current_user)
+            ClinicManagement::LeadMessage.where(referral_id: user_referral.id)
+          else
+            ClinicManagement::LeadMessage.where(referral_id: nil)
+          end
+        %>
+        <%= select_tag :bulk_message_id,
+              options_from_collection_for_select(
+                bulk_messages.order(:name),
+                :id,
+                :name
+              ),
+              { 
+                include_blank: "Selecione uma mensagem",
+                class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                data: { 
+                  action: "change->bulk-message#updatePreview",
+                  bulk_message_target: "messageSelect"
+                }
+              } %>
+        
+        <%# Preview da mensagem - renderizar previews para todas as mensagens (ocultos inicialmente) %>
+        <div class="mt-3 p-3 bg-white rounded border border-gray-200 min-h-[80px]" 
+             data-bulk-message-target="messagePreview">
+          <p class="text-sm text-gray-500 italic">Selecione uma mensagem para ver a prévia</p>
+        </div>
+        
+        <%# Previews ocultos para cada mensagem (serão mostrados via JS) %>
+        <% 
+          # Criar appointment de exemplo para preview
+          sample_lead = @leads.first
+          sample_appointment = sample_lead&.appointments&.includes(:service)&.order('clinic_management_services.date DESC')&.first
+        %>
+        
+        <% if sample_appointment.present? %>
+          <% bulk_messages.each do |msg| %>
+            <div id="preview-message-<%= msg.id %>" class="hidden" data-message-preview>
+              <p class="text-sm font-semibold text-gray-700 mb-2"><%= msg.name %></p>
+              
+              <% if msg.text.match(/\[([^\]]+\|[^\]]+)\]/) %>
+                <%# Mensagem tem variações aleatórias - mostrar 2 exemplos %>
+                <div class="space-y-3">
+                  <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <h6 class="text-xs font-semibold text-blue-800 mb-2">📱 Variação 1:</h6>
+                    <div class="text-sm text-gray-800 whitespace-pre-wrap">
+                      <%= generate_random_variation(msg.text, sample_appointment, 1).gsub("\n", "<br>").html_safe %>
+                    </div>
+                  </div>
+                  <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <h6 class="text-xs font-semibold text-green-800 mb-2">📱 Variação 2:</h6>
+                    <div class="text-sm text-gray-800 whitespace-pre-wrap">
+                      <%= generate_random_variation(msg.text, sample_appointment, 2).gsub("\n", "<br>").html_safe %>
+                    </div>
+                  </div>
+                  <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-2">
+                    <p class="text-xs text-yellow-800">
+                      <i class="fas fa-info-circle text-xs mr-1"></i>
+                      O sistema escolherá aleatoriamente uma das variações ao enviar.
+                    </p>
+                  </div>
+                </div>
+              <% else %>
+                <%# Mensagem simples - mostrar preview formatado %>
+                <div class="bg-green-50 p-3 rounded border border-green-200">
+                  <div class="text-sm text-gray-800 whitespace-pre-wrap">
+                    <%= format_placeholder_preview(msg.text, sample_appointment).gsub("\n", "<br>").html_safe %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+      
+      <%# Contador e ação %>
+      <div class="flex flex-col justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-700 mb-2">Leads selecionados:</p>
+          <div class="text-4xl font-bold text-blue-600 mb-4" data-bulk-message-target="counter">0</div>
+        </div>
+        
+        <%= button_tag type: "button",
+              class: "w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none",
+              disabled: true,
+              data: { 
+                action: "click->bulk-message#sendBulkMessages",
+                bulk_message_target: "sendButton"
+              } do %>
+          <i class="fas fa-paper-plane mr-2"></i>
+          Enviar para Selecionados
+        <% end %>
+        
+        <%# Botões auxiliares %>
+        <div class="mt-2 space-y-2">
+          <%= button_tag type: "button",
+                class: "w-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm py-2 px-4 rounded transition-all",
+                data: { action: "click->bulk-message#selectAll" } do %>
+            <i class="fas fa-check-double mr-1"></i> Selecionar Todos
+          <% end %>
+          
+          <%= button_tag type: "button",
+                class: "w-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm py-2 px-4 rounded transition-all",
+                data: { action: "click->bulk-message#deselectAll" } do %>
+            <i class="fas fa-times mr-1"></i> Desmarcar Todos
+          <% end %>
+        </div>
+      </div>
+    </div>
+    
+    <%# Área de Logs de Envio em Tempo Real %>
+    <div class="mt-6 hidden" data-bulk-message-target="logsContainer">
+      <div class="bg-gray-900 rounded-lg shadow-lg overflow-hidden">
+        <%# Cabeçalho dos logs %>
+        <div class="bg-gradient-to-r from-gray-800 to-gray-900 px-4 py-3 border-b border-gray-700">
+          <div class="flex items-center justify-between">
+            <h4 class="text-white font-semibold flex items-center gap-2">
+              <i class="fas fa-terminal text-green-400"></i>
+              Logs de Envio em Tempo Real
+            </h4>
+            <div class="flex items-center gap-4 text-sm">
+              <span class="text-gray-400">
+                <i class="fas fa-paper-plane mr-1"></i>
+                <span data-bulk-message-target="sentCount">0</span> enviados
+              </span>
+              <span class="text-gray-400">
+                <i class="fas fa-clock mr-1"></i>
+                <span data-bulk-message-target="pendingCount">0</span> na fila
+              </span>
+              <span class="text-gray-400">
+                <i class="fas fa-exclamation-triangle mr-1"></i>
+                <span data-bulk-message-target="errorCount">0</span> erros
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <%# Barra de progresso %>
+        <div class="bg-gray-800 px-4 py-2 border-b border-gray-700">
+          <div class="flex items-center gap-3">
+            <div class="flex-1 bg-gray-700 rounded-full h-3 overflow-hidden">
+              <div class="bg-gradient-to-r from-blue-500 to-green-500 h-full transition-all duration-500"
+                   data-bulk-message-target="progressBar"
+                   style="width: 0%"></div>
+            </div>
+            <span class="text-white text-sm font-mono" data-bulk-message-target="progressText">0%</span>
+          </div>
+        </div>
+        
+        <%# Timer do próximo envio - mais visível %>
+        <div class="bg-gradient-to-r from-yellow-900/50 to-orange-900/50 px-4 py-3 border-b border-yellow-600/30 hidden" data-bulk-message-target="timerContainer">
+          <div class="flex items-center justify-center gap-4">
+            <div class="flex items-center gap-2 text-yellow-400">
+              <i class="fas fa-clock text-2xl animate-pulse"></i>
+              <div class="text-left">
+                <div class="text-xs text-yellow-300/70">Próxima mensagem para:</div>
+                <div class="text-sm font-semibold timer-lead-name">--</div>
+              </div>
+            </div>
+            <div class="bg-black/30 px-4 py-2 rounded-lg">
+              <span class="font-mono text-3xl font-bold text-yellow-300" data-bulk-message-target="timer">--:--</span>
+            </div>
+          </div>
+        </div>
+        
+        <%# Console de logs com altura automática %>
+        <div class="bg-black p-4 font-mono text-sm text-green-400 max-h-[600px] overflow-y-auto" 
+             data-bulk-message-target="logsContent"
+             style="min-height: 400px;">
+          <div class="text-gray-500">
+            <i class="fas fa-info-circle mr-2"></i>Aguardando início do envio...
+          </div>
+        </div>
+        
+        <%# Rodapé com ações %>
+        <div class="bg-gray-800 px-4 py-3 border-t border-gray-700 flex justify-between items-center">
+          <div class="flex gap-3">
+            <button type="button"
+                    class="text-sm text-gray-400 hover:text-white transition-colors"
+                    data-action="click->bulk-message#clearLogs">
+              <i class="fas fa-trash mr-1"></i> Limpar Logs
+            </button>
+            <button type="button"
+                    class="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                    onclick="window.location.reload()">
+              <i class="fas fa-sync-alt mr-1"></i> Recarregar Página
+            </button>
+          </div>
+          <button type="button"
+                  class="text-sm text-gray-400 hover:text-white transition-colors"
+                  data-action="click->bulk-message#toggleAutoScroll">
+            <i class="fas fa-arrow-down mr-1"></i>
+            <span data-bulk-message-target="autoScrollText">Auto-scroll: ON</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% end %>
+  
+  <style>
+    /* Animação para novos logs */
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    [data-bulk-message-target="logsContent"] > div {
+      animation: slideIn 0.3s ease-out;
+    }
+    
+    /* Scrollbar customizada para os logs */
+    [data-bulk-message-target="logsContent"]::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    [data-bulk-message-target="logsContent"]::-webkit-scrollbar-track {
+      background: #1a1a1a;
+    }
+    
+    [data-bulk-message-target="logsContent"]::-webkit-scrollbar-thumb {
+      background: #4a5568;
+      border-radius: 4px;
+    }
+    
+    [data-bulk-message-target="logsContent"]::-webkit-scrollbar-thumb:hover {
+      background: #718096;
+    }
+    
+    /* Animação da barra de progresso */
+    [data-bulk-message-target="progressBar"] {
+      transition: width 0.5s ease-out;
+    }
+  </style>
   
   <!-- Add result count display -->
   <div class="my-4 px-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

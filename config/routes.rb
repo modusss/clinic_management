@@ -93,6 +93,7 @@ ClinicManagement::Engine.routes.draw do
       get 'download_leads'
       get 'absent_download'
       get 'check_phone'
+      post 'send_bulk_messages'
     end
   end
   post 'build_message/:lead_id', to: 'lead_messages#build_message', as: 'build_message'

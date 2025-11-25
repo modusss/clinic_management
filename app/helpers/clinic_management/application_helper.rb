@@ -61,7 +61,7 @@ module ClinicManagement
   def table_header(headers, fix_to)
     content_tag(:thead, class: "bg-white border-b border-gray-200 sticky top-0") do
       content_tag(:tr) do
-        headers.map.with_index do |header, index|
+        headers_html = headers.map.with_index do |header, index|
           # Classes base do TH
           header_class = "px-6 py-3 text-[16px] font-medium text-gray-700 uppercase tracking-wider text-center bg-white border-b border-gray-200"
           # Se for para fixar a coluna
@@ -71,6 +71,15 @@ module ClinicManagement
           
           content_tag(:th, header, class: header_class)
         end.join.html_safe
+        
+        # Adicionar cabeçalho "Ações" se estiver na view de ausentes
+        if controller_name == 'leads' && action_name == 'absent'
+          action_header = content_tag(:th, "Ações", 
+            class: "px-6 py-3 text-[16px] font-medium text-gray-700 uppercase tracking-wider text-center bg-white border-b border-gray-200")
+          headers_html + action_header
+        else
+          headers_html
+        end
       end
     end
   end
@@ -117,40 +126,72 @@ def table_body(rows, fix_to)
           content_tag(:td, cell[:content], id: cell[:id], class: cell_class)
         end.join.html_safe
         
-        # Adicionar botão de ocultar como última coluna se estiver na view de ausentes
+        # Adicionar botões de ação como última coluna se estiver na view de ausentes
         if controller_name == 'leads' && action_name == 'absent'
-          hide_button_cell = content_tag(:td, class: "px-6 py-4 text-center") do
-            if params[:hidden_status] != "hidden"
-              # Botão para ocultar
-              button_to clinic_management.hide_from_absent_lead_path(controller.instance_variable_get(:@leads)[row_index]), 
-                method: :patch,
-                remote: true,
-                data: { 
-                  turbo_method: :patch,
-                  turbo_stream: true,
-                  confirm: "Tem certeza que deseja ocultar este lead da listagem? Ele ficará disponível no filtro 'Ocultados da lista'."
-                },
-                class: "bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded",
-                title: "Não aparecer mais nesta lista" do
-                content_tag(:i, "", class: "fas fa-eye-slash") + " Ocultar"
+          action_buttons_cell = content_tag(:td, class: "px-6 py-4 text-center") do
+            lead = controller.instance_variable_get(:@leads)[row_index]
+            
+            if params[:hidden_status] == "visible" || params[:hidden_status].blank?
+              # Três botões horizontalmente
+              content_tag(:div, class: "flex flex-wrap gap-2 justify-center items-center") do
+                btn1 = button_to clinic_management.hide_from_absent_lead_path(lead), 
+                  method: :patch,
+                  remote: true,
+                  data: { 
+                    turbo_method: :patch,
+                    turbo_stream: true,
+                    confirm: "Tem certeza que deseja ocultar este lead da listagem?"
+                  },
+                  class: "bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-xs px-2 py-1 rounded shadow-sm flex items-center gap-1 whitespace-nowrap",
+                  title: "Ocultar da lista" do
+                  content_tag(:i, "", class: "fas fa-calendar-plus") + " Contato futuro"
+                end
+                
+                btn2 = button_to clinic_management.mark_no_interest_lead_path(lead), 
+                  method: :patch,
+                  remote: true,
+                  data: { 
+                    turbo_method: :patch,
+                    turbo_stream: true,
+                    confirm: "Marcar este lead como 'Sem interesse'?"
+                  },
+                  class: "bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-sm flex items-center gap-1 whitespace-nowrap",
+                  title: "Sem interesse" do
+                  content_tag(:i, "", class: "fas fa-times") + " Sem Interesse"
+                end
+                
+                btn3 = button_to clinic_management.mark_wrong_phone_lead_path(lead), 
+                  method: :patch,
+                  remote: true,
+                  data: { 
+                    turbo_method: :patch,
+                    turbo_stream: true,
+                    confirm: "Marcar este lead como 'Telefone errado'?"
+                  },
+                  class: "bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white text-xs px-2 py-1 rounded shadow-sm flex items-center gap-1 whitespace-nowrap",
+                  title: "Telefone errado" do
+                  content_tag(:i, "", class: "fas fa-phone-slash") + " Telefone errado"
+                end
+                
+                btn1 + btn2 + btn3
               end
             else
               # Botão para restaurar
-              button_to clinic_management.unhide_from_absent_lead_path(controller.instance_variable_get(:@leads)[row_index]), 
+              button_to clinic_management.restore_lead_lead_path(lead), 
                 method: :patch,
                 remote: true,
                 data: { 
                   turbo_method: :patch,
                   turbo_stream: true,
-                  confirm: "Tem certeza que deseja restaurar este lead na listagem?"
+                  confirm: "Tem certeza que deseja restaurar este lead na listagem principal?"
                 },
-                class: "bg-green-500 hover:bg-green-600 text-white text-xs px-2 py-1 rounded",
-                title: "Mostrar novamente na lista principal" do
-                content_tag(:i, "", class: "fas fa-eye") + " Restaurar"
+                class: "bg-green-500 hover:bg-green-600 active:bg-green-700 text-white text-xs px-3 py-1 rounded shadow-sm flex items-center gap-1 mx-auto",
+                title: "Restaurar na lista principal" do
+                content_tag(:i, "", class: "fas fa-undo") + " Restaurar"
               end
             end
           end
-          cells_html + hide_button_cell
+          cells_html + action_buttons_cell
         else
           cells_html
         end

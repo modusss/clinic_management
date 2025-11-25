@@ -37,6 +37,22 @@
     <% lead = leads[index] %>
     <div class="bg-white rounded shadow p-4 mb-4 relative flex-shrink-0 w-screen md:w-auto snap-start" id="lead-card-<%= lead.id %>">
       <% if rows.any? %>
+        <%# Checkbox de seleção (só aparece se Evolution API ativo) %>
+        <% if can_use_evolution_api? %>
+          <div class="absolute top-2 left-2 z-10">
+            <%= check_box_tag "lead_#{lead.id}", 
+                  lead.id, 
+                  false,
+                  class: "w-6 h-6 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer",
+                  data: { 
+                    bulk_message_target: "leadCheckbox",
+                    lead_id: lead.id,
+                    lead_phone: lead.phone,
+                    lead_name: lead.name,
+                    action: "change->bulk-message#updateCounter"
+                  } %>
+          </div>
+        <% end %>
         <%# Botões de ação no topo do card - Enfileirados horizontalmente %>
         <% if params[:hidden_status] == "visible" || params[:hidden_status].blank? %>
           <div class="mb-4">
