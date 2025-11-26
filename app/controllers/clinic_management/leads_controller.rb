@@ -642,6 +642,9 @@ module ClinicManagement
             # Enfileirar mensagem usando o serviço de fila (igual ao send_evolution_message)
             Rails.logger.info "📤 [BULK] Enfileirando mensagem para #{lead.name} (#{phone})"
             
+            # Get delay multiplier for referrals with multiple instances
+            delay_multiplier = get_evolution_delay_multiplier
+            
             # Usar o serviço de enfileiramento correto com todas as validações
             result = EvolutionMessageQueueService.enqueue_message(
               phone: phone,
@@ -651,7 +654,8 @@ module ClinicManagement
               lead_id: lead.id,
               user_id: current_user.id,
               appointment_id: appointment.id,
-              skip_cooldown_check: false  # Respeitar cooldown para evitar spam em bulk
+              skip_cooldown_check: false,  # Respeitar cooldown para evitar spam em bulk
+              delay_multiplier: delay_multiplier
             )
             
             # Verificar se enfileiramento foi bem-sucedido
@@ -960,13 +964,27 @@ module ClinicManagement
     private
     
     # Retorna o nome da instância Evolution API para o usuário atual
-    # Referrals usam sua própria instância, outros usam a instância 2 da Account
+    # Referrals usam rotação entre suas instâncias (round-robin), outros usam a instância 2 da Account
+    # Quando há múltiplas instâncias conectadas, o sistema alterna entre elas automaticamente
     def get_evolution_instance_name
       if referral?(current_user)
         referral = user_referral
-        referral&.evolution_instance_name
+        # Use round-robin instance selection if available
+        referral&.next_evolution_instance_name
       else
         Account.first&.evolution_instance_name_2
+      end
+    end
+    
+    # Retorna o multiplicador de delay baseado no número de instâncias conectadas
+    # Com 2 instâncias: delay é dividido por 2 (metade do tempo)
+    # Com 3 instâncias: delay é dividido por 3, etc.
+    def get_evolution_delay_multiplier
+      if referral?(current_user)
+        referral = user_referral
+        referral&.evolution_delay_multiplier || 1.0
+      else
+        1.0
       end
     end
 

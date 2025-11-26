@@ -230,6 +230,9 @@ module ClinicManagement
         
         Rails.logger.info "✅ Número assumido como válido (validação por envio desativada), enfileirando mensagem real..."
         
+        # Get delay multiplier for referrals with multiple instances
+        delay_multiplier = get_delay_multiplier
+        
         # Enfileira a mensagem com delay automático
         # ⚠️ IMPORTANTE: Aplicar cooldown APENAS se context == 'absent'
         result = EvolutionMessageQueueService.enqueue_message(
@@ -240,7 +243,8 @@ module ClinicManagement
           lead_id: lead.id,
           user_id: current_user.id,
           appointment_id: appointment.id,
-          skip_cooldown_check: (context != 'absent')  # Pular cooldown EXCETO se for da view absent
+          skip_cooldown_check: (context != 'absent'),  # Pular cooldown EXCETO se for da view absent
+          delay_multiplier: delay_multiplier
         )
         
         if result[:success]
@@ -432,18 +436,20 @@ module ClinicManagement
     end
 
     # Get the instance name to use for sending messages
+    # Uses round-robin for referrals with multiple instances
     def get_instance_name
       if respond_to?(:referral?) && referral?(current_user)
-        # Use referral's WhatsApp instance
+        # Use referral's WhatsApp instance with round-robin rotation
         referral = user_referral
-        instance = referral&.evolution_instance_name
+        instance = referral&.next_evolution_instance_name
         
         Rails.logger.info "🔍 Referral detected - ID: #{referral&.id}, Name: #{referral&.name}"
-        Rails.logger.info "🔍 Referral evolution_instance_name: #{instance.inspect}"
-        Rails.logger.info "🔍 Referral instance_connected: #{referral&.instance_connected}"
+        Rails.logger.info "🔍 Selected instance (round-robin): #{instance.inspect}"
+        Rails.logger.info "🔍 Connected instances: #{referral&.connected_instance_names&.join(', ')}"
+        Rails.logger.info "🔍 Delay multiplier: #{referral&.evolution_delay_multiplier}"
         
         if instance.blank?
-          Rails.logger.warn "⚠️ Referral #{referral&.id} não tem evolution_instance_name configurado!"
+          Rails.logger.warn "⚠️ Referral #{referral&.id} não tem nenhuma instância conectada!"
         end
         
         instance
@@ -463,14 +469,15 @@ module ClinicManagement
     end
 
     # Check if we can send via Evolution API
+    # Supports multiple instances for referrals
     def can_send_via_evolution?
       begin
         current_account = Account.first
         if respond_to?(:referral?) && referral?(current_user)
-          # For referrals, check if their WhatsApp instance is connected
+          # For referrals, check if they have any connected WhatsApp instance
           if respond_to?(:user_referral)
             referral = user_referral
-            return referral&.evolution_instance_name.present? && referral&.instance_connected
+            return referral&.has_connected_instances?
           else
             return false
           end
@@ -507,6 +514,18 @@ module ClinicManagement
       else
         error_message = response.parsed_response.dig('response', 'message')&.join(', ') || 'Erro desconhecido'
         { success: false, error: error_message }
+      end
+    end
+    
+    # Returns the delay multiplier based on number of connected instances
+    # With 2 instances: returns 0.5 (half the delay)
+    # With 3 instances: returns 0.33 (1/3 the delay)
+    def get_delay_multiplier
+      if respond_to?(:referral?) && referral?(current_user)
+        referral = user_referral
+        referral&.evolution_delay_multiplier || 1.0
+      else
+        1.0
       end
     end
   end

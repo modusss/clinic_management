@@ -100,15 +100,16 @@ module ClinicManagement
     end
 
     # Check if Evolution API can be used based on user type and instance connection status
+    # Supports multiple instances for referrals (new system)
     def can_use_evolution_api?
-      #return false unless message_id.present?
       if referral?(current_user)
-        # For referral users, check if their instance is connected
+        # For referral users, check if they have any connected instance
+        # Uses new has_connected_instances? method that supports multiple instances
         referral = user_referral
-        referral&.instance_connected == true
+        referral&.has_connected_instances? == true
       else
         # For non-referral users, check if instance 2 is connected
-        Account.first.instance_2_connected == true
+        Account.first&.instance_2_connected == true
       end
     end
 
