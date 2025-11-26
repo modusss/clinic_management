@@ -1378,7 +1378,7 @@ module ClinicManagement
             class: "nowrap size_20 patient-name" 
           },
           # Status column with separated order information
-          {header: "Status", content: status_content.html_safe, class: "!min-w-[300px] size_20 " + helpers.status_class(last_appointment)},
+          {header: "Status", content: status_content.to_s.html_safe, class: "!min-w-[300px] size_20 " + helpers.status_class(last_appointment)},
           {
             header: "Telefone", 
             content: render_to_string(
@@ -1415,7 +1415,7 @@ module ClinicManagement
     end
 
     def last_appointment_link(last_appointment)
-      last_appointment.present? ? helpers.link_to("#{invite_day(last_appointment).html_safe}", service_path(last_appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank").html_safe : ""
+      last_appointment.present? ? helpers.link_to("#{invite_day(last_appointment).to_s.html_safe}", service_path(last_appointment.service), class: "text-blue-500 hover:text-blue-700", target: "_blank").html_safe : ""
     end
     
     
