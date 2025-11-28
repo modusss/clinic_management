@@ -491,31 +491,6 @@ module ClinicManagement
       end
     end
 
-    # Send message via Evolution API (supports both text and media)
-    def send_via_evolution_api(message_text, phone, media_details = nil)        
-      instance_name = nil
-      if referral?(current_user)
-        # Use referral's WhatsApp instance
-        referral = user_referral
-        instance_name = referral&.evolution_instance_name
-      else
-        # Use account's instance 2
-        instance_name = Account.first.evolution_instance_name_2
-      end
-
-      Rails.logger.info "🚀 Calling send_evolution_message_with_media with phone: #{phone}, instance: #{instance_name}"
-      # Use the helper function to send the message
-      response = send_evolution_message_with_media(phone, message_text, media_details, instance_name)
-      
-      Rails.logger.info "📱 Evolution API response: #{response.inspect}"
-      
-      if response.success?
-        { success: true }
-      else
-        error_message = response.parsed_response.dig('response', 'message')&.join(', ') || 'Erro desconhecido'
-        { success: false, error: error_message }
-      end
-    end
     
     # Returns the delay multiplier based on number of connected instances
     # With 2 instances: returns 0.5 (half the delay)
