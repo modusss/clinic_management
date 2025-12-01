@@ -10,12 +10,14 @@ module ClinicManagement
 
     def index
       # Show only messages for the current referral, or global messages if not referral
+      # IMPORTANTE: Ordenar por created_at ASC para que a numeração (#1, #2, #3)
+      # corresponda à ordem de envio nos jobs
       if referral?(current_user)
-        @messages = LeadMessage.where(referral_id: user_referral.id)
+        @messages = LeadMessage.where(referral_id: user_referral.id).order(created_at: :asc)
       else
-        @messages = LeadMessage.where(referral_id: nil)
+        @messages = LeadMessage.where(referral_id: nil).order(created_at: :asc)
       end
-      @messages_by_type = @messages.order(created_at: :asc).group_by(&:message_type)
+      @messages_by_type = @messages.group_by(&:message_type)
     end
   
     def new

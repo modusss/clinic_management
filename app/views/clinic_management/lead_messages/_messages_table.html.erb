@@ -1,7 +1,8 @@
 <% service_types = ClinicManagement::ServiceType.where(removed: false).order(:name) %>
 
 <% service_types.each do |service_type| %>
-  <% filtered_messages = messages_to_show.select { |m| m.service_type == service_type }.sort_by(&:created_at) %>
+  <%# IMPORTANTE: Ordenar por created_at ASC para que a numeração (#1, #2, #3) corresponda à ordem de envio nos jobs %>
+  <% filtered_messages = messages_to_show.select { |m| m.service_type == service_type }.sort_by { |m| m.created_at || Time.at(0) } %>
   
   <% if filtered_messages.any? %>
     <h6 class="text-xl font-bold mt-6 mb-4"><%= "#{service_type.name} (#{filtered_messages.count})" %></h6>
@@ -100,7 +101,8 @@
 <% end %>
 
 <%# Section for messages not assigned to any ServiceType %>
-<% unassigned_messages = messages_to_show.select { |m| m.service_type.nil? }.sort_by(&:created_at) %>
+<%# IMPORTANTE: Ordenar por created_at ASC para consistência com a ordem de envio %>
+<% unassigned_messages = messages_to_show.select { |m| m.service_type.nil? }.sort_by { |m| m.created_at || Time.at(0) } %>
 <% if unassigned_messages.any? %>
   <h6 class="text-xl font-bold mt-6 mb-4">Mensagens Não Atribuídas (<%= unassigned_messages.count %>)</h6>
   <table class="w-full table-auto border-collapse border border-gray-300 text-left">
