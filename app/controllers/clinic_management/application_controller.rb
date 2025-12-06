@@ -4,11 +4,17 @@ module ClinicManagement
     before_action :redirect_referral_users
     before_action :redirect_doctor_users
     before_action :set_referral
+    before_action :set_company_info
 
     private
 
     def set_referral
       @current_referral = Referral.find_by(code: current_user.memberships.last.code)
+    end
+
+    def set_company_info
+      @company_contact = current_account&.account_contact_info
+      @company_name = @company_contact&.company_name
     end
     
     # Helper para acessar a conta do usuário atual

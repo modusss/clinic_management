@@ -34,9 +34,11 @@
     .logo {
       display: block; 
       margin: 20px auto; 
-      width: 200px; 
-      max-width: 100%; 
+      max-width: 200px; 
+      max-height: 120px;
+      width: auto;
       height: auto;
+      object-fit: contain;
     }
     .qr_code {
       text-align: center; 
@@ -116,17 +118,36 @@
     <br>
     <br>
   <div class="contact-info">
-    <!-- Logo da Ótica -->
+    <!-- Logo e informações da conta -->
     <div style="text-align: center;">
-      <%= image_tag wicked_pdf_asset_base64("otica_logo.jpg"), class: "logo" %>
+      <% if current_user&.accounts&.first&.logo&.attached? %>
+        <%= image_tag active_storage_image_base64(current_user.accounts.first.logo), class: "logo" %>
+      <% end %>
     </div>
 
-    <p style="text-align: center;">
-      Rua Joaquim Nabuco, 99B - Vitória da Conquista - BA<br>
-      Telefone: (77) 9.9836-7332 | (77) 9.8804-3621
-    </p>
-
-    
+    <div style="text-align: center;">
+      <% if @company_contact.present? %>
+        <div>
+          <strong>Tel:</strong> <%= @company_contact.phone1 %><%= " | #{@company_contact.phone2}" if @company_contact.phone2.present? %>
+        </div>
+        <div>
+          <%= @company_contact.street %><%= ", #{@company_contact.neighborhood}" if @company_contact.neighborhood.present? %>
+        </div>
+        <div>
+          <%= @company_contact.city %>/<%= @company_contact.state %>
+        </div>
+      <% else %>
+        <div>
+          <strong>Tel:</strong> (77) 9 9836-7332 | (77) 9 8804-3621
+        </div>
+        <div>
+          Rua Joaquim Nabuco, 99B, Centro
+        </div>
+        <div>
+          Vitória da Conquista/BA
+        </div>
+      <% end %>
+    </div>
   </div>
 </body>
 </html>

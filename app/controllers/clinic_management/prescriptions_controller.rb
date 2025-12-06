@@ -58,6 +58,7 @@
 
       def pdf
         @prescription = @appointment.prescription
+        @company_contact = current_account&.account_contact_info
         
         respond_to do |format|
           format.html
@@ -73,8 +74,6 @@
               orientation: "Portrait"
           end
         end  
-        # render pdf: "pdf",   # Nome do arquivo PDF
-        #        template: "clinic_management/prescriptions/pdf.html.erb"  # Caminho para a view
       end
 
       def search_index_today

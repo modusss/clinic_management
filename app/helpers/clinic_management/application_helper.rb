@@ -1,6 +1,21 @@
 module ClinicManagement
   module ApplicationHelper
 
+    # Converte imagem do Active Storage para base64 para uso em PDFs
+    def active_storage_image_base64(attachment)
+      return nil unless attachment.attached?
+      
+      begin
+        image_data = attachment.download
+        content_type = attachment.content_type
+        base64_data = Base64.strict_encode64(image_data)
+        
+        "data:#{content_type};base64,#{base64_data}"
+      rescue StandardError => e
+        Rails.logger.error "Erro ao converter imagem para base64: #{e.message}"
+        nil
+      end
+    end
 
     def breadcrumb(*crumbs)
       content_for :breadcrumb do
