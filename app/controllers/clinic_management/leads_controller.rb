@@ -47,7 +47,7 @@ module ClinicManagement
           # NÃO registrar interação - número não tem WhatsApp
           respond_to do |format|
             format.turbo_stream do
-              render turbo_stream: turbo_stream.update(
+              render turbo_stream: turbo_stream.replace(
                 "phone-container-#{@lead.id}",
                 partial: "clinic_management/leads/phone_with_message_tracking",
                 locals: { lead: @lead.reload, appointment: @appointment, no_whatsapp_alert: true }
@@ -90,7 +90,7 @@ module ClinicManagement
       #byebug
       respond_to do |format|
         format.turbo_stream do
-          render turbo_stream: turbo_stream.update(
+          render turbo_stream: turbo_stream.replace(
             "phone-container-#{@lead.id}",  # Usando o mesmo ID do partial
             partial: "clinic_management/leads/phone_with_message_tracking",
             locals: { lead: @lead, appointment: @appointment }
