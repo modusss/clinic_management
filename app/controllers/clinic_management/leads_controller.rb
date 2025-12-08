@@ -37,8 +37,10 @@ module ClinicManagement
         # Verificar se o número tem WhatsApp
         whatsapp_check = helpers.check_whatsapp_number(@lead.phone, instance_name)
         
-        if whatsapp_check[:exists] == false
-          Rails.logger.warn "[RECORD MSG] ⚠️ Número sem WhatsApp: #{@lead.phone}"
+        # IMPORTANTE: Só marcar como sem WhatsApp se a verificação foi bem-sucedida
+        # e o número realmente não existe. Se houve erro na API, não alterar o status.
+        if whatsapp_check[:exists] == false && whatsapp_check[:error].blank?
+          Rails.logger.warn "[RECORD MSG] ⚠️ Número confirmado sem WhatsApp: #{@lead.phone}"
           
           # Marcar lead como sem WhatsApp
           @lead.update(no_whatsapp: true)
@@ -55,9 +57,12 @@ module ClinicManagement
             end
           end
           return
+        elsif whatsapp_check[:error].present?
+          Rails.logger.warn "[RECORD MSG] ⚠️ Erro na verificação de WhatsApp (ignorando): #{whatsapp_check[:error]}"
+          # Continuar normalmente - não alterar status do lead quando há erro na API
+        else
+          Rails.logger.info "[RECORD MSG] ✅ Número tem WhatsApp: #{@lead.phone}"
         end
-        
-        Rails.logger.info "[RECORD MSG] ✅ Número tem WhatsApp: #{@lead.phone}"
       end
       
       # Verificar se já existe uma interação recente (última hora) para evitar duplicações
