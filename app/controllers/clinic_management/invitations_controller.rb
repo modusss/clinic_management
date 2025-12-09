@@ -8,63 +8,72 @@ module ClinicManagement
     def index
       @referrals = Referral.all
       
-      # Get month/year filter params (default to current month)
-      @selected_month = params[:month]&.to_i || Date.current.month
+      # Check if viewing annual summary
+      @view_mode = params[:view_mode] || 'monthly'
       @selected_year = params[:year]&.to_i || Date.current.year
-      
-      # Calculate date range for the selected month
-      start_date = Date.new(@selected_year, @selected_month, 1)
-      end_date = start_date.end_of_month
+      @selected_month = params[:month]&.to_i || Date.current.month
       
       # Check if current user is a referral (restrict to own data)
       @is_referral_user = referral?(current_user)
       @current_user_referral = nil
       
       if @is_referral_user
-        # Referral users can only see their own data
         user_referral = helpers.user_referral
         @current_user_referral = user_referral
-        
-        @invitations = Invitation.where(referral_id: user_referral.id)
-                                 .where(date: start_date..end_date)
-                                 .includes(:lead, :region, appointments: :service)
-                                 .order(created_at: :desc)
-        @appointments = fetch_reschedules_for_referral(user_referral.id, start_date, end_date)
-      else
-        # Managers and owners can see all or filter by referral
-        if params[:referral_id].present?
-          @invitations = Invitation.where(referral_id: params[:referral_id])
-                                   .where(date: start_date..end_date)
-                                   .includes(:lead, :region, appointments: :service)
-                                   .order(created_at: :desc)
-          @appointments = fetch_reschedules_for_referral(params[:referral_id], start_date, end_date)
-        else
-          @invitations = Invitation.where(date: start_date..end_date)
-                                   .includes(:lead, :region, appointments: :service)
-                                   .order(created_at: :desc)
-          @appointments = fetch_all_reschedules(start_date, end_date)
-        end
       end
       
-      # Exclude invitations that are actually reschedules to avoid duplication
-      reschedule_invitation_ids = @appointments.pluck(:invitation_id)
-      @invitations = @invitations.where.not(id: reschedule_invitation_ids)
-
       # Prepare available months/years for the filter
       @available_dates = prepare_available_months_years(@is_referral_user ? @current_user_referral&.id : nil)
       
-      # Fetch interactions for the period
-      @interactions = LeadInteraction.where(occurred_at: start_date.beginning_of_day..end_date.end_of_day)
+      if @view_mode == 'annual'
+        # Annual view: show monthly summaries for the selected year
+        @annual_monthly_data = prepare_annual_monthly_data(@selected_year, @current_user_referral&.id)
+        @total_invitations = @annual_monthly_data.sum { |m| m[:invitations] }
+        @total_reschedules = @annual_monthly_data.sum { |m| m[:reschedules] }
+        @referral_period_totals = calculate_annual_referral_totals(@selected_year, @current_user_referral&.id)
+      else
+        # Monthly view: show detailed daily data
+        start_date = Date.new(@selected_year, @selected_month, 1)
+        end_date = start_date.end_of_month
+        
+        if @is_referral_user
+          @invitations = Invitation.where(referral_id: @current_user_referral.id)
+                                   .where(date: start_date..end_date)
+                                   .includes(:lead, :region, appointments: :service)
+                                   .order(created_at: :desc)
+          @appointments = fetch_reschedules_for_referral(@current_user_referral.id, start_date, end_date)
+        else
+          if params[:referral_id].present?
+            @invitations = Invitation.where(referral_id: params[:referral_id])
+                                     .where(date: start_date..end_date)
+                                     .includes(:lead, :region, appointments: :service)
+                                     .order(created_at: :desc)
+            @appointments = fetch_reschedules_for_referral(params[:referral_id], start_date, end_date)
+          else
+            @invitations = Invitation.where(date: start_date..end_date)
+                                     .includes(:lead, :region, appointments: :service)
+                                     .order(created_at: :desc)
+            @appointments = fetch_all_reschedules(start_date, end_date)
+          end
+        end
+        
+        # Exclude invitations that are actually reschedules to avoid duplication
+        reschedule_invitation_ids = @appointments.pluck(:invitation_id)
+        @invitations = @invitations.where.not(id: reschedule_invitation_ids)
+        
+        # Fetch interactions for the period
+        @interactions = LeadInteraction.where(occurred_at: start_date.beginning_of_day..end_date.end_of_day)
 
-      # Prepare data for the new elegant table
-      @invitations_data = prepare_invitations_reschedules_data(@invitations, @appointments, @interactions)
-      
-      # Calculate period totals for display
-      @total_invitations = @invitations.count
-      @total_reschedules = @appointments.count
-      
-      # Calculate totals per referral for the period summary
-      @referral_period_totals = calculate_referral_period_totals(@invitations, @appointments)
+        # Prepare data for the new elegant table
+        @invitations_data = prepare_invitations_reschedules_data(@invitations, @appointments, @interactions)
+        
+        # Calculate period totals for display
+        @total_invitations = @invitations.count
+        @total_reschedules = @appointments.count
+        
+        # Calculate totals per referral for the period summary
+        @referral_period_totals = calculate_referral_period_totals(@invitations, @appointments)
+      end
     end
 
     def performance_report
@@ -787,6 +796,186 @@ module ClinicManagement
         return 0 if customer_ids.empty?
         
         # Sum total amount of orders made by customers within 30 days of each service date
+        total = 0
+        attended_appointments.each do |app|
+          service_date = app.service&.date
+          next unless service_date
+          
+          customer_id = app.lead&.leads_conversion&.customer_id
+          next unless customer_id
+          
+          total += Order.where(customer_id: customer_id)
+                        .where(created_at: service_date.beginning_of_day..(service_date + 30.days).end_of_day)
+                        .sum(:total_amount)
+        end
+        
+        total
+      end
+
+      def prepare_annual_monthly_data(year, referral_id = nil)
+        (1..12).map do |month|
+          start_date = Date.new(year, month, 1)
+          end_date = start_date.end_of_month
+          
+          # Skip future months
+          next nil if start_date > Date.current
+          
+          invitations_scope = Invitation.where(date: start_date..end_date)
+          invitations_scope = invitations_scope.where(referral_id: referral_id) if referral_id
+          
+          # Get reschedules
+          if referral_id
+            appointments = fetch_reschedules_for_referral(referral_id, start_date, end_date)
+          else
+            appointments = fetch_all_reschedules(start_date, end_date)
+          end
+          
+          # Exclude invitations that are reschedules
+          reschedule_invitation_ids = appointments.pluck(:invitation_id)
+          invitations = invitations_scope.where.not(id: reschedule_invitation_ids)
+          invitations_count = invitations.count
+          
+          # Calculate referral totals for this month
+          referral_totals = calculate_month_referral_totals(invitations, appointments, year, month)
+          
+          {
+            month: month,
+            year: year,
+            month_name: I18n.t('date.month_names')[month],
+            invitations: invitations_count,
+            reschedules: appointments.count,
+            total: invitations_count + appointments.count,
+            sales_amount: calculate_month_sales_amount(year, month, referral_id),
+            referral_totals: referral_totals
+          }
+        end.compact
+      end
+      
+      def calculate_month_referral_totals(invitations, appointments, year, month)
+        totals = {}
+        
+        # Count invitations per referral
+        invitations.group_by(&:referral).each do |referral, invites|
+          next unless referral
+          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0 }
+          totals[referral.id][:invitations] = invites.count
+        end
+        
+        # Count reschedules per referral
+        appointments.group_by { |apt| apt.invitation&.referral }.each do |referral, apts|
+          next unless referral
+          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0 }
+          totals[referral.id][:reschedules] = apts.count
+        end
+        
+        # Calculate sales amount per referral for this month
+        totals.each do |referral_id, data|
+          data[:sales_amount] = calculate_referral_sales_amount(data[:referral], month, year)
+        end
+        
+        # Sort by total (invitations + reschedules) descending
+        totals.values.sort_by { |t| -(t[:invitations] + t[:reschedules]) }
+      end
+
+      def calculate_month_sales_amount(year, month, referral_id = nil)
+        start_date = Date.new(year, month, 1)
+        end_date = start_date.end_of_month
+        
+        attended_appointments = Appointment.joins(:invitation, :service)
+          .where(clinic_management_services: { date: start_date..end_date })
+          .where(attendance: true)
+        
+        attended_appointments = attended_appointments.where(clinic_management_invitations: { referral_id: referral_id }) if referral_id
+        
+        total = 0
+        attended_appointments.each do |app|
+          service_date = app.service&.date
+          next unless service_date
+          
+          customer_id = app.lead&.leads_conversion&.customer_id
+          next unless customer_id
+          
+          total += Order.where(customer_id: customer_id)
+                        .where(created_at: service_date.beginning_of_day..(service_date + 30.days).end_of_day)
+                        .sum(:total_amount)
+        end
+        
+        total
+      end
+
+      def calculate_annual_referral_totals(year, current_referral_id = nil)
+        start_date = Date.new(year, 1, 1)
+        end_date = [Date.new(year, 12, 31), Date.current].min
+        
+        totals = {}
+        
+        # Get all invitations for the year
+        invitations_scope = Invitation.where(date: start_date..end_date)
+        invitations_scope = invitations_scope.where(referral_id: current_referral_id) if current_referral_id
+        
+        # Get all reschedules for the year
+        if current_referral_id
+          appointments = Appointment.joins(:invitation)
+            .where(clinic_management_invitations: { referral_id: current_referral_id })
+            .where(status: 'agendado')
+            .where('clinic_management_appointments.created_at >= ? AND clinic_management_appointments.created_at <= ?', 
+                   start_date.beginning_of_day, end_date.end_of_day)
+            .where(
+              'EXISTS (SELECT 1 FROM clinic_management_appointments ca2 
+               WHERE ca2.lead_id = clinic_management_appointments.lead_id 
+               AND ca2.status = ? 
+               AND ca2.created_at < clinic_management_appointments.created_at)',
+              'remarcado'
+            )
+        else
+          appointments = Appointment.joins(:invitation)
+            .where(status: 'agendado')
+            .where('clinic_management_appointments.created_at >= ? AND clinic_management_appointments.created_at <= ?', 
+                   start_date.beginning_of_day, end_date.end_of_day)
+            .where(
+              'EXISTS (SELECT 1 FROM clinic_management_appointments ca2 
+               WHERE ca2.lead_id = clinic_management_appointments.lead_id 
+               AND ca2.status = ? 
+               AND ca2.created_at < clinic_management_appointments.created_at)',
+              'remarcado'
+            )
+        end
+        
+        # Exclude invitations that are reschedules
+        reschedule_invitation_ids = appointments.pluck(:invitation_id)
+        invitations_scope = invitations_scope.where.not(id: reschedule_invitation_ids)
+        
+        # Count invitations per referral
+        invitations_scope.group_by(&:referral).each do |referral, invites|
+          next unless referral
+          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0 }
+          totals[referral.id][:invitations] = invites.count
+        end
+        
+        # Count reschedules per referral
+        appointments.group_by { |apt| apt.invitation&.referral }.each do |referral, apts|
+          next unless referral
+          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0 }
+          totals[referral.id][:reschedules] = apts.count
+        end
+        
+        # Calculate sales amount per referral for the year
+        totals.each do |referral_id, data|
+          data[:sales_amount] = calculate_annual_referral_sales(data[:referral], year)
+        end
+        
+        totals.values.sort_by { |t| -(t[:invitations] + t[:reschedules]) }
+      end
+
+      def calculate_annual_referral_sales(referral, year)
+        start_date = Date.new(year, 1, 1)
+        end_date = [Date.new(year, 12, 31), Date.current].min
+        
+        attended_appointments = Appointment.joins(:invitation, :service)
+          .where(clinic_management_invitations: { referral_id: referral.id })
+          .where(clinic_management_services: { date: start_date..end_date })
+          .where(attendance: true)
+        
         total = 0
         attended_appointments.each do |app|
           service_date = app.service&.date

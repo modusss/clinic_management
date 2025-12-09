@@ -114,7 +114,8 @@
                selected_month: @selected_month, 
                selected_year: @selected_year,
                available_dates: @available_dates,
-               current_path: invitations_path
+               current_path: invitations_path,
+               view_mode: @view_mode
              } %>
 </div>
 
@@ -202,10 +203,128 @@
   </div>
 <% end %>
 
-<!-- Invitations and Reschedules Table -->
-<div style="margin: 15px">
-  <%= render partial: "invitations_reschedules_table", locals: { invitations_data: @invitations_data } %>
-</div>
+<% if @view_mode == 'annual' %>
+  <!-- Annual Monthly Summary Cards -->
+  <div style="margin: 15px">
+    <div class="annual-monthly-grid">
+      <% @annual_monthly_data.reverse.each do |month_data| %>
+        <div class="monthly-summary-card">
+          <div class="monthly-card-header">
+            <i class="material-icons">calendar_month</i>
+            <span class="month-name"><%= month_data[:month_name] %></span>
+          </div>
+          <div class="monthly-card-stats">
+            <div class="monthly-stat">
+              <span class="stat-label">Convites</span>
+              <span class="stat-value invitations"><%= month_data[:invitations] %></span>
+            </div>
+            <div class="monthly-stat">
+              <span class="stat-label">Remarcações</span>
+              <span class="stat-value reschedules"><%= month_data[:reschedules] %></span>
+            </div>
+            <div class="monthly-stat">
+              <span class="stat-label">Total</span>
+              <span class="stat-value total"><%= month_data[:total] %></span>
+            </div>
+          </div>
+          <% if month_data[:sales_amount] > 0 %>
+            <div class="monthly-card-sales">
+              <i class="material-icons">payments</i>
+              <span><%= number_to_currency(month_data[:sales_amount]) %></span>
+            </div>
+          <% end %>
+          
+          <!-- Referral Performance for this Month (Always Visible) -->
+          <% if month_data[:referral_totals].present? && month_data[:referral_totals].any? %>
+            <% 
+              # Separate "Local" from regular referrals
+              regular_referrals = month_data[:referral_totals].reject { |r| r[:referral].name.downcase == 'local' }
+              local_referral = month_data[:referral_totals].find { |r| r[:referral].name.downcase == 'local' }
+            %>
+            <div class="monthly-referral-summary">
+              <!-- Regular Referrals (Competition) -->
+              <% if regular_referrals.any? %>
+                <div class="monthly-referral-list-visible">
+                  <% regular_referrals.each_with_index do |ref_data, idx| %>
+                    <div class="monthly-referral-item <%= 'top-performer' if idx == 0 %>">
+                      <div class="referral-rank">
+                        <% if idx == 0 %>
+                          <i class="material-icons" style="color: #f59e0b; font-size: 1rem;">emoji_events</i>
+                        <% else %>
+                          <span><%= idx + 1 %>º</span>
+                        <% end %>
+                      </div>
+                      <div class="referral-info">
+                        <span class="referral-name"><%= ref_data[:referral].name %></span>
+                        <div class="referral-mini-stats">
+                          <span class="mini-stat invitations" title="Convites">
+                            <i class="material-icons">event_available</i>
+                            <%= ref_data[:invitations] %>
+                          </span>
+                          <span class="mini-stat reschedules" title="Remarcações">
+                            <i class="material-icons">update</i>
+                            <%= ref_data[:reschedules] %>
+                          </span>
+                          <span class="mini-stat total" title="Total">
+                            <i class="material-icons">functions</i>
+                            <%= ref_data[:invitations] + ref_data[:reschedules] %>
+                          </span>
+                        </div>
+                      </div>
+                      <% if ref_data[:sales_amount] > 0 %>
+                        <div class="referral-sales">
+                          <%= number_to_currency(ref_data[:sales_amount]) %>
+                        </div>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+              
+              <!-- Local (Separate - Not in Competition) -->
+              <% if local_referral %>
+                <div class="local-referral-section">
+                  <div class="local-referral-item">
+                    <div class="local-icon">
+                      <i class="material-icons">store</i>
+                    </div>
+                    <div class="referral-info">
+                      <span class="referral-name">Local</span>
+                      <div class="referral-mini-stats">
+                        <span class="mini-stat reschedules" title="Remarcações">
+                          <i class="material-icons">update</i>
+                          <%= local_referral[:reschedules] %>
+                        </span>
+                      </div>
+                    </div>
+                    <% if local_referral[:sales_amount] > 0 %>
+                      <div class="local-sales">
+                        <%= number_to_currency(local_referral[:sales_amount]) %>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+          
+          <%= link_to invitations_path(view_mode: 'monthly', month: month_data[:month], year: month_data[:year], referral_id: params[:referral_id]),
+                      class: "monthly-card-action-link" do %>
+            <div class="monthly-card-action">
+              <span>Ver detalhes</span>
+              <i class="material-icons">arrow_forward</i>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% else %>
+  <!-- Invitations and Reschedules Table (Monthly View) -->
+  <div style="margin: 15px">
+    <%= render partial: "invitations_reschedules_table", locals: { invitations_data: @invitations_data } %>
+  </div>
+<% end %>
 
 <style>
 /* ========================================
@@ -945,6 +1064,318 @@
 .referral-sales-amount i {
   font-size: 1rem;
   color: #15803d;
+}
+
+/* ========================================
+   ANNUAL VIEW - MONTHLY SUMMARY CARDS
+   ======================================== */
+
+.annual-monthly-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.monthly-summary-card {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 2px solid #e2e8f0;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.monthly-summary-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #3b82f6;
+}
+
+.monthly-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.monthly-card-header i {
+  font-size: 1.75rem;
+  color: #6366f1;
+}
+
+.month-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  text-transform: capitalize;
+}
+
+.monthly-card-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.monthly-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.monthly-stat .stat-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.monthly-stat .stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.monthly-stat .stat-value.invitations {
+  color: #059669;
+}
+
+.monthly-stat .stat-value.reschedules {
+  color: #0284c7;
+}
+
+.monthly-stat .stat-value.total {
+  color: #7c3aed;
+}
+
+.monthly-card-sales {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.monthly-card-sales i {
+  font-size: 1.25rem;
+  color: #15803d;
+}
+
+.monthly-card-sales span {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #166534;
+}
+
+.monthly-card-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+  color: #3b82f6;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-top: auto;
+}
+
+.monthly-card-action i {
+  font-size: 1.125rem;
+  transition: transform 0.2s ease;
+}
+
+.monthly-summary-card:hover .monthly-card-action i {
+  transform: translateX(4px);
+}
+
+@media (max-width: 640px) {
+  .annual-monthly-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .monthly-card-stats {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .monthly-stat {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  
+  .monthly-stat:last-child {
+    border-bottom: none;
+  }
+}
+
+/* Monthly Referral Summary Styles */
+.monthly-referral-summary {
+  margin-top: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 0.75rem;
+}
+
+.monthly-referral-list-visible {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.monthly-referral-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  background: #fafafa;
+  transition: all 0.2s ease;
+}
+
+.monthly-referral-item:hover {
+  background: #f1f5f9;
+}
+
+.monthly-referral-item.top-performer {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.referral-rank {
+  min-width: 1.25rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.6875rem;
+  color: #64748b;
+}
+
+.referral-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.referral-info .referral-name {
+  display: block;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.referral-mini-stats {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.mini-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+.mini-stat i {
+  font-size: 0.75rem;
+}
+
+.mini-stat.invitations {
+  color: #059669;
+}
+
+.mini-stat.reschedules {
+  color: #0284c7;
+}
+
+.mini-stat.total {
+  color: #7c3aed;
+  font-weight: 700;
+}
+
+.referral-sales {
+  flex-shrink: 0;
+  padding: 0.125rem 0.375rem;
+  background: #dcfce7;
+  border-radius: 4px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: #166534;
+  white-space: nowrap;
+}
+
+.monthly-card-action-link {
+  text-decoration: none;
+  display: block;
+  margin-top: auto;
+}
+
+/* Ensure card has proper flex layout */
+.monthly-summary-card {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Local Referral Section - Distinct Style */
+.local-referral-section {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed #cbd5e1;
+}
+
+.local-referral-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+}
+
+.local-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+}
+
+.local-icon i {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.local-referral-item .referral-name {
+  color: #64748b;
+  font-size: 0.6875rem;
+}
+
+.local-referral-item .referral-mini-stats {
+  margin-top: 0;
+}
+
+.local-sales {
+  flex-shrink: 0;
+  padding: 0.125rem 0.375rem;
+  background: #e0f2fe;
+  border-radius: 4px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: #0369a1;
+  white-space: nowrap;
 }
 </style>
 

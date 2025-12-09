@@ -8,8 +8,25 @@
     - current_path: Path atual para manter outros filtros (como referral_id)
 %>
 
+<% view_mode = local_assigns[:view_mode] || 'monthly' %>
+
 <div class="month-year-filter-container">
+  <!-- View Mode Toggle -->
+  <div class="view-mode-toggle">
+    <%= link_to invitations_path(view_mode: 'monthly', month: selected_month, year: selected_year, referral_id: params[:referral_id]),
+                class: "view-mode-btn #{view_mode == 'monthly' ? 'active' : ''}" do %>
+      <i class="material-icons">calendar_today</i>
+      <span>Mensal</span>
+    <% end %>
+    <%= link_to invitations_path(view_mode: 'annual', year: selected_year, referral_id: params[:referral_id]),
+                class: "view-mode-btn #{view_mode == 'annual' ? 'active' : ''}" do %>
+      <i class="material-icons">calendar_view_month</i>
+      <span>Anual</span>
+    <% end %>
+  </div>
+
   <%= form_tag current_path, method: :get, class: "month-year-filter-form" do %>
+    <%= hidden_field_tag :view_mode, view_mode %>
     <div class="filter-wrapper">
       <!-- Filter Label -->
       <div class="filter-label-section">
@@ -19,20 +36,22 @@
 
       <!-- Month/Year Selects -->
       <div class="filter-selects">
-        <!-- Month Select -->
-        <div class="select-wrapper">
-          <%= select_tag :month, 
-                         options_for_select(
-                           [
-                             ['Janeiro', 1], ['Fevereiro', 2], ['Março', 3],
-                             ['Abril', 4], ['Maio', 5], ['Junho', 6],
-                             ['Julho', 7], ['Agosto', 8], ['Setembro', 9],
-                             ['Outubro', 10], ['Novembro', 11], ['Dezembro', 12]
-                           ],
-                           selected_month
-                         ),
-                         class: "month-select" %>
-        </div>
+        <% if view_mode == 'monthly' %>
+          <!-- Month Select (only for monthly view) -->
+          <div class="select-wrapper">
+            <%= select_tag :month, 
+                           options_for_select(
+                             [
+                               ['Janeiro', 1], ['Fevereiro', 2], ['Março', 3],
+                               ['Abril', 4], ['Maio', 5], ['Junho', 6],
+                               ['Julho', 7], ['Agosto', 8], ['Setembro', 9],
+                               ['Outubro', 10], ['Novembro', 11], ['Dezembro', 12]
+                             ],
+                             selected_month
+                           ),
+                           class: "month-select" %>
+          </div>
+        <% end %>
 
         <!-- Year Select -->
         <div class="select-wrapper">
@@ -47,34 +66,62 @@
 
       <!-- Navigation Buttons -->
       <div class="filter-navigation">
-        <!-- Previous Month -->
-        <%= link_to current_path_with_params(month: (selected_month == 1 ? 12 : selected_month - 1), 
-                                              year: (selected_month == 1 ? selected_year - 1 : selected_year)),
-                    class: "nav-button prev-button",
-                    title: "Mês anterior" do %>
-          <i class="material-icons">chevron_left</i>
-        <% end %>
+        <% if view_mode == 'monthly' %>
+          <!-- Previous Month -->
+          <%= link_to current_path_with_params(view_mode: 'monthly', month: (selected_month == 1 ? 12 : selected_month - 1), 
+                                                year: (selected_month == 1 ? selected_year - 1 : selected_year)),
+                      class: "nav-button prev-button",
+                      title: "Mês anterior" do %>
+            <i class="material-icons">chevron_left</i>
+          <% end %>
 
-        <!-- Current Month -->
-        <%= link_to current_path_with_params(month: Date.current.month, year: Date.current.year),
-                    class: "nav-button current-button",
-                    title: "Mês atual" do %>
-          <i class="material-icons">today</i>
-          <span class="current-text">Hoje</span>
-        <% end %>
+          <!-- Current Month -->
+          <%= link_to current_path_with_params(view_mode: 'monthly', month: Date.current.month, year: Date.current.year),
+                      class: "nav-button current-button",
+                      title: "Mês atual" do %>
+            <i class="material-icons">today</i>
+            <span class="current-text">Hoje</span>
+          <% end %>
 
-        <!-- Next Month -->
-        <% if Date.new(selected_year, selected_month, 1) < Date.current.beginning_of_month %>
-          <%= link_to current_path_with_params(month: (selected_month == 12 ? 1 : selected_month + 1), 
-                                                year: (selected_month == 12 ? selected_year + 1 : selected_year)),
-                      class: "nav-button next-button",
-                      title: "Próximo mês" do %>
-            <i class="material-icons">chevron_right</i>
+          <!-- Next Month -->
+          <% if Date.new(selected_year, selected_month, 1) < Date.current.beginning_of_month %>
+            <%= link_to current_path_with_params(view_mode: 'monthly', month: (selected_month == 12 ? 1 : selected_month + 1), 
+                                                  year: (selected_month == 12 ? selected_year + 1 : selected_year)),
+                        class: "nav-button next-button",
+                        title: "Próximo mês" do %>
+              <i class="material-icons">chevron_right</i>
+            <% end %>
+          <% else %>
+            <button type="button" class="nav-button next-button disabled" disabled title="Não há dados futuros">
+              <i class="material-icons">chevron_right</i>
+            </button>
           <% end %>
         <% else %>
-          <button type="button" class="nav-button next-button disabled" disabled title="Não há dados futuros">
-            <i class="material-icons">chevron_right</i>
-          </button>
+          <!-- Annual View Navigation -->
+          <%= link_to current_path_with_params(view_mode: 'annual', year: selected_year - 1),
+                      class: "nav-button prev-button",
+                      title: "Ano anterior" do %>
+            <i class="material-icons">chevron_left</i>
+          <% end %>
+
+          <%= link_to current_path_with_params(view_mode: 'annual', year: Date.current.year),
+                      class: "nav-button current-button",
+                      title: "Ano atual" do %>
+            <i class="material-icons">today</i>
+            <span class="current-text">Atual</span>
+          <% end %>
+
+          <% if selected_year < Date.current.year %>
+            <%= link_to current_path_with_params(view_mode: 'annual', year: selected_year + 1),
+                        class: "nav-button next-button",
+                        title: "Próximo ano" do %>
+              <i class="material-icons">chevron_right</i>
+            <% end %>
+          <% else %>
+            <button type="button" class="nav-button next-button disabled" disabled title="Não há dados futuros">
+              <i class="material-icons">chevron_right</i>
+            </button>
+          <% end %>
         <% end %>
       </div>
 
@@ -93,8 +140,12 @@
     <div class="summary-content">
       <i class="material-icons summary-icon">info</i>
       <span class="summary-text">
-        Exibindo dados de 
-        <strong><%= I18n.l(Date.new(selected_year, selected_month, 1), format: '%B de %Y') %></strong>
+        <% if view_mode == 'annual' %>
+          Exibindo resumo anual de <strong><%= selected_year %></strong>
+        <% else %>
+          Exibindo dados de 
+          <strong><%= I18n.l(Date.new(selected_year, selected_month, 1), format: '%B de %Y') %></strong>
+        <% end %>
       </span>
     </div>
   </div>
@@ -108,6 +159,45 @@
 
 .month-year-filter-container {
   margin-bottom: 2rem;
+}
+
+/* View Mode Toggle */
+.view-mode-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.view-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.view-mode-btn i {
+  font-size: 1.25rem;
+}
+
+.view-mode-btn:hover {
+  background: #f1f5f9;
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.view-mode-btn.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-color: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
 .month-year-filter-form {
