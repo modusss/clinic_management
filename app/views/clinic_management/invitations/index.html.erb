@@ -145,6 +145,46 @@
           </div>
         </div>
       </div>
+      
+      <!-- Referral Performance Summary -->
+      <% if @referral_period_totals.present? && @referral_period_totals.any? %>
+        <div class="referral-performance-summary">
+          <div class="referral-performance-header">
+            <i class="material-icons">leaderboard</i>
+            <span>Desempenho por Marcador</span>
+          </div>
+          <div class="referral-performance-grid">
+            <% @referral_period_totals.each_with_index do |data, index| %>
+              <div class="referral-performance-card <%= 'top-performer' if index == 0 %>">
+                <div class="referral-performance-rank">
+                  <% if index == 0 %>
+                    <i class="material-icons" style="color: #f59e0b;">emoji_events</i>
+                  <% else %>
+                    <span class="rank-number"><%= index + 1 %>º</span>
+                  <% end %>
+                </div>
+                <div class="referral-performance-info">
+                  <span class="referral-performance-name"><%= data[:referral].name %></span>
+                  <div class="referral-performance-stats">
+                    <span class="stat-invitations" title="Convites">
+                      <i class="material-icons">event_available</i>
+                      <%= data[:invitations] %>
+                    </span>
+                    <span class="stat-reschedules" title="Remarcações">
+                      <i class="material-icons">update</i>
+                      <%= data[:reschedules] %>
+                    </span>
+                    <span class="stat-total" title="Total">
+                      <i class="material-icons">functions</i>
+                      <%= data[:invitations] + data[:reschedules] %>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
     </div>
   </div>
 <% end %>
@@ -736,6 +776,124 @@
     height: 2px;
     background: linear-gradient(90deg, transparent 0%, #cbd5e1 20%, #cbd5e1 80%, transparent 100%);
   }
+
+  .referral-performance-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========================================
+   REFERRAL PERFORMANCE SUMMARY STYLES
+   ======================================== */
+
+.referral-performance-summary {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #e2e8f0;
+}
+
+.referral-performance-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.referral-performance-header i {
+  color: #6366f1;
+  font-size: 1.25rem;
+}
+
+.referral-performance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.referral-performance-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.referral-performance-card:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.referral-performance-card.top-performer {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-color: #fbbf24;
+}
+
+.referral-performance-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+}
+
+.referral-performance-rank .rank-number {
+  font-weight: 700;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.referral-performance-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.referral-performance-name {
+  display: block;
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.9375rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.25rem;
+}
+
+.referral-performance-stats {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.referral-performance-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.referral-performance-stats i {
+  font-size: 0.875rem;
+}
+
+.stat-invitations {
+  color: #059669;
+}
+
+.stat-reschedules {
+  color: #0284c7;
+}
+
+.stat-total {
+  color: #7c3aed;
+  font-weight: 700;
 }
 </style>
 

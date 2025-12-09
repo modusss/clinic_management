@@ -62,6 +62,9 @@ module ClinicManagement
       # Calculate period totals for display
       @total_invitations = @invitations.count
       @total_reschedules = @appointments.count
+      
+      # Calculate totals per referral for the period summary
+      @referral_period_totals = calculate_referral_period_totals(@invitations, @appointments)
     end
 
     def performance_report
@@ -738,6 +741,27 @@ module ClinicManagement
 
       def init_referral_data
         { invitations: [], reschedules: [], whatsapp_count: 0, phone_count: 0 }
+      end
+
+      def calculate_referral_period_totals(invitations, appointments)
+        totals = {}
+        
+        # Count invitations per referral
+        invitations.group_by(&:referral).each do |referral, invites|
+          next unless referral
+          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0 }
+          totals[referral.id][:invitations] = invites.count
+        end
+        
+        # Count reschedules per referral
+        appointments.group_by { |apt| apt.invitation&.referral }.each do |referral, apts|
+          next unless referral
+          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0 }
+          totals[referral.id][:reschedules] = apts.count
+        end
+        
+        # Sort by total (invitations + reschedules) descending
+        totals.values.sort_by { |t| -(t[:invitations] + t[:reschedules]) }
       end
 
       def build_user_referral_map
