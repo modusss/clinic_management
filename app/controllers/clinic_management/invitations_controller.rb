@@ -821,25 +821,15 @@ module ClinicManagement
         # Get customer IDs from attended appointments through leads
         customer_ids = attended_appointments.map { |app| 
           app.lead&.leads_conversion&.customer_id 
-        }.compact
+        }.compact.uniq
         
         return 0 if customer_ids.empty?
         
-        # Sum total amount of orders made by customers within 30 days of each service date
-        total = 0
-        attended_appointments.each do |app|
-          service_date = app.service&.date
-          next unless service_date
-          
-          customer_id = app.lead&.leads_conversion&.customer_id
-          next unless customer_id
-          
-          total += Order.where(customer_id: customer_id)
-                        .where(created_at: service_date.beginning_of_day..(service_date + 30.days).end_of_day)
-                        .sum(:total_amount)
-        end
-        
-        total
+        # Sum orders from these customers created within the same month
+        # This ensures referral sales never exceed total store sales for the month
+        Order.where(customer_id: customer_ids)
+             .where(created_at: start_date.beginning_of_day..end_date.end_of_day)
+             .sum(:total_amount)
       end
 
       def prepare_annual_monthly_data(year, referral_id = nil)
@@ -957,20 +947,18 @@ module ClinicManagement
         
         attended_appointments = attended_appointments.where(clinic_management_invitations: { referral_id: referral_id }) if referral_id
         
-        total = 0
-        attended_appointments.each do |app|
-          service_date = app.service&.date
-          next unless service_date
-          
-          customer_id = app.lead&.leads_conversion&.customer_id
-          next unless customer_id
-          
-          total += Order.where(customer_id: customer_id)
-                        .where(created_at: service_date.beginning_of_day..(service_date + 30.days).end_of_day)
-                        .sum(:total_amount)
-        end
+        # Get all customer IDs from attended appointments
+        customer_ids = attended_appointments.map { |app| 
+          app.lead&.leads_conversion&.customer_id 
+        }.compact.uniq
         
-        total
+        return 0 if customer_ids.empty?
+        
+        # Sum orders from these customers created within the same month
+        # This ensures clinic sales never exceed total store sales for the month
+        Order.where(customer_id: customer_ids)
+             .where(created_at: start_date.beginning_of_day..end_date.end_of_day)
+             .sum(:total_amount)
       end
 
       def calculate_annual_referral_totals(year, current_referral_id = nil)
@@ -1046,20 +1034,17 @@ module ClinicManagement
           .where(clinic_management_services: { date: start_date..end_date })
           .where(attendance: true)
         
-        total = 0
-        attended_appointments.each do |app|
-          service_date = app.service&.date
-          next unless service_date
-          
-          customer_id = app.lead&.leads_conversion&.customer_id
-          next unless customer_id
-          
-          total += Order.where(customer_id: customer_id)
-                        .where(created_at: service_date.beginning_of_day..(service_date + 30.days).end_of_day)
-                        .sum(:total_amount)
-        end
+        # Get customer IDs from attended appointments
+        customer_ids = attended_appointments.map { |app| 
+          app.lead&.leads_conversion&.customer_id 
+        }.compact.uniq
         
-        total
+        return 0 if customer_ids.empty?
+        
+        # Sum orders from these customers created within the same year
+        Order.where(customer_id: customer_ids)
+             .where(created_at: start_date.beginning_of_day..end_date.end_of_day)
+             .sum(:total_amount)
       end
 
       def build_user_referral_map
