@@ -18,10 +18,12 @@
       <i class="material-icons">calendar_today</i>
       <span>Mensal</span>
     <% end %>
-    <%= link_to invitations_path(view_mode: 'annual', year: selected_year, referral_id: params[:referral_id]),
-                class: "view-mode-btn #{view_mode == 'annual' ? 'active' : ''}" do %>
-      <i class="material-icons">calendar_view_month</i>
-      <span>Anual</span>
+    <% unless referral?(current_user) %>
+      <%= link_to invitations_path(view_mode: 'annual', year: selected_year, referral_id: params[:referral_id]),
+                  class: "view-mode-btn #{view_mode == 'annual' ? 'active' : ''}" do %>
+        <i class="material-icons">calendar_view_month</i>
+        <span>Anual</span>
+      <% end %>
     <% end %>
   </div>
 

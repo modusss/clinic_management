@@ -153,24 +153,28 @@
           <div class="referral-performance-header">
             <i class="material-icons">leaderboard</i>
             <span>Desempenho por Marcador</span>
-            <% total_sales_amount = @referral_period_totals.sum { |d| d[:sales_amount] } %>
-            <% if total_sales_amount > 0 %>
-              <span class="total-sales-badge">
-                <i class="material-icons">payments</i>
-                Total: <%= number_to_currency(total_sales_amount) %>
-              </span>
+            <% unless @is_referral_user %>
+              <% total_sales_amount = @referral_period_totals.sum { |d| d[:sales_amount] } %>
+              <% if total_sales_amount > 0 %>
+                <span class="total-sales-badge">
+                  <i class="material-icons">payments</i>
+                  Total: <%= number_to_currency(total_sales_amount) %>
+                </span>
+              <% end %>
             <% end %>
           </div>
           <div class="referral-performance-grid">
             <% @referral_period_totals.each_with_index do |data, index| %>
-              <div class="referral-performance-card <%= 'top-performer' if index == 0 %>">
-                <div class="referral-performance-rank">
-                  <% if index == 0 %>
-                    <i class="material-icons" style="color: #f59e0b;">emoji_events</i>
-                  <% else %>
-                    <span class="rank-number"><%= index + 1 %>º</span>
-                  <% end %>
-                </div>
+              <div class="referral-performance-card <%= 'top-performer' if index == 0 && !@is_referral_user %>">
+                <% unless @is_referral_user %>
+                  <div class="referral-performance-rank">
+                    <% if index == 0 %>
+                      <i class="material-icons" style="color: #f59e0b;">emoji_events</i>
+                    <% else %>
+                      <span class="rank-number"><%= index + 1 %>º</span>
+                    <% end %>
+                  </div>
+                <% end %>
                 <div class="referral-performance-info">
                   <span class="referral-performance-name"><%= data[:referral].name %></span>
                   <div class="referral-performance-stats">
@@ -187,7 +191,7 @@
                       <%= data[:invitations] + data[:reschedules] %>
                     </span>
                   </div>
-                  <% if data[:sales_amount] > 0 %>
+                  <% if data[:sales_amount] > 0 && !@is_referral_user %>
                     <div class="referral-sales-amount">
                       <i class="material-icons">payments</i>
                       <span><%= number_to_currency(data[:sales_amount]) %></span>
