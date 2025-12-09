@@ -152,6 +152,13 @@
           <div class="referral-performance-header">
             <i class="material-icons">leaderboard</i>
             <span>Desempenho por Marcador</span>
+            <% total_sales_amount = @referral_period_totals.sum { |d| d[:sales_amount] } %>
+            <% if total_sales_amount > 0 %>
+              <span class="total-sales-badge">
+                <i class="material-icons">payments</i>
+                Total: <%= number_to_currency(total_sales_amount) %>
+              </span>
+            <% end %>
           </div>
           <div class="referral-performance-grid">
             <% @referral_period_totals.each_with_index do |data, index| %>
@@ -179,6 +186,12 @@
                       <%= data[:invitations] + data[:reschedules] %>
                     </span>
                   </div>
+                  <% if data[:sales_amount] > 0 %>
+                    <div class="referral-sales-amount">
+                      <i class="material-icons">payments</i>
+                      <span><%= number_to_currency(data[:sales_amount]) %></span>
+                    </div>
+                  <% end %>
                 </div>
               </div>
             <% end %>
@@ -894,6 +907,44 @@
 .stat-total {
   color: #7c3aed;
   font-weight: 700;
+}
+
+/* Sales Amount Styles */
+.total-sales-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-left: auto;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  border: 1px solid #86efac;
+  border-radius: 20px;
+  color: #166534;
+  font-weight: 700;
+  font-size: 0.9375rem;
+}
+
+.total-sales-badge i {
+  font-size: 1.125rem;
+  color: #15803d;
+}
+
+.referral-sales-amount {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-radius: 8px;
+  color: #166534;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.referral-sales-amount i {
+  font-size: 1rem;
+  color: #15803d;
 }
 </style>
 

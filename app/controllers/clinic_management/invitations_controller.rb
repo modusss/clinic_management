@@ -749,19 +749,58 @@ module ClinicManagement
         # Count invitations per referral
         invitations.group_by(&:referral).each do |referral, invites|
           next unless referral
-          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0 }
+          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0 }
           totals[referral.id][:invitations] = invites.count
         end
         
         # Count reschedules per referral
         appointments.group_by { |apt| apt.invitation&.referral }.each do |referral, apts|
           next unless referral
-          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0 }
+          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0 }
           totals[referral.id][:reschedules] = apts.count
+        end
+        
+        # Calculate sales amount per referral for the period
+        totals.each do |referral_id, data|
+          data[:sales_amount] = calculate_referral_sales_amount(data[:referral], @selected_month, @selected_year)
         end
         
         # Sort by total (invitations + reschedules) descending
         totals.values.sort_by { |t| -(t[:invitations] + t[:reschedules]) }
+      end
+      
+      def calculate_referral_sales_amount(referral, month, year)
+        start_date = Date.new(year, month, 1)
+        end_date = start_date.end_of_month
+        
+        # Get all appointments from this referral in the period that had attendance
+        attended_appointments = Appointment.joins(:invitation, :service)
+          .where(clinic_management_invitations: { referral_id: referral.id })
+          .where(clinic_management_services: { date: start_date..end_date })
+          .where(attendance: true)
+        
+        # Get customer IDs from attended appointments through leads
+        customer_ids = attended_appointments.map { |app| 
+          app.lead&.leads_conversion&.customer_id 
+        }.compact
+        
+        return 0 if customer_ids.empty?
+        
+        # Sum total amount of orders made by customers within 30 days of each service date
+        total = 0
+        attended_appointments.each do |app|
+          service_date = app.service&.date
+          next unless service_date
+          
+          customer_id = app.lead&.leads_conversion&.customer_id
+          next unless customer_id
+          
+          total += Order.where(customer_id: customer_id)
+                        .where(created_at: service_date.beginning_of_day..(service_date + 30.days).end_of_day)
+                        .sum(:total_amount)
+        end
+        
+        total
       end
 
       def build_user_referral_map
