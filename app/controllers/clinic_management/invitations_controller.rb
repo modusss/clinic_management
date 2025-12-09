@@ -872,6 +872,10 @@ module ClinicManagement
           interactions = LeadInteraction.where(occurred_at: start_date.beginning_of_day..end_date.end_of_day)
           interaction_totals = calculate_period_interaction_totals(interactions)
           
+          # Calculate clinic sales and total store sales for comparison
+          clinic_sales = calculate_month_sales_amount(year, month, referral_id)
+          total_store_sales = calculate_month_total_store_sales(year, month)
+          
           {
             month: month,
             year: year,
@@ -881,10 +885,20 @@ module ClinicManagement
             total: invitations_count + appointments.count,
             whatsapp_count: interaction_totals[:whatsapp],
             phone_count: interaction_totals[:phone],
-            sales_amount: calculate_month_sales_amount(year, month, referral_id),
+            sales_amount: clinic_sales,
+            total_store_sales: total_store_sales,
             referral_totals: referral_totals
           }
         end.compact
+      end
+      
+      # Calculate total store sales for a given month (all orders, not just clinic-related)
+      def calculate_month_total_store_sales(year, month)
+        start_date = Date.new(year, month, 1)
+        end_date = start_date.end_of_month
+        
+        Order.where(created_at: start_date.beginning_of_day..end_date.end_of_day)
+             .sum(:total_amount)
       end
       
       def calculate_month_referral_totals(invitations, appointments, year, month)

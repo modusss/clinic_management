@@ -283,10 +283,29 @@
               </div>
             </div>
           <% end %>
-          <% if month_data[:sales_amount] > 0 %>
-            <div class="monthly-card-sales">
-              <i class="material-icons">payments</i>
-              <span><%= number_to_currency(month_data[:sales_amount]) %></span>
+          <% if month_data[:sales_amount] > 0 || (month_data[:total_store_sales] || 0) > 0 %>
+            <div class="monthly-card-sales-comparison">
+              <% if month_data[:sales_amount] > 0 %>
+                <div class="monthly-card-sales clinic-sales" title="Vendas da Clínica">
+                  <i class="material-icons">medical_services</i>
+                  <span><%= number_to_currency(month_data[:sales_amount]) %></span>
+                </div>
+              <% end %>
+              <% if (month_data[:total_store_sales] || 0) > 0 %>
+                <div class="monthly-card-sales total-sales" title="Total Geral da Loja">
+                  <i class="material-icons">store</i>
+                  <span><%= number_to_currency(month_data[:total_store_sales]) %></span>
+                </div>
+              <% end %>
+              <% if month_data[:sales_amount] > 0 && (month_data[:total_store_sales] || 0) > 0 %>
+                <% 
+                  participation = (month_data[:sales_amount].to_f / month_data[:total_store_sales].to_f * 100).round(1)
+                %>
+                <div class="clinic-participation" title="Participação da Clínica no Faturamento">
+                  <span class="participation-value"><%= participation %>%</span>
+                  <span class="participation-label">participação</span>
+                </div>
+              <% end %>
             </div>
           <% end %>
           
@@ -1360,26 +1379,79 @@
   color: #2563eb;
 }
 
+/* Sales Comparison Container */
+.monthly-card-sales-comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
 .monthly-card-sales {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem;
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  padding: 0.5rem 0.75rem;
   border-radius: 8px;
-  margin-bottom: 1rem;
 }
 
-.monthly-card-sales i {
-  font-size: 1.25rem;
+.monthly-card-sales.clinic-sales {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #86efac;
+}
+
+.monthly-card-sales.clinic-sales i {
+  font-size: 1.125rem;
   color: #15803d;
 }
 
-.monthly-card-sales span {
-  font-size: 1rem;
+.monthly-card-sales.clinic-sales span {
+  font-size: 0.9375rem;
   font-weight: 700;
   color: #166534;
+}
+
+.monthly-card-sales.total-sales {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 1px solid #cbd5e1;
+}
+
+.monthly-card-sales.total-sales i {
+  font-size: 1.125rem;
+  color: #64748b;
+}
+
+.monthly-card-sales.total-sales span {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+/* Clinic Participation Badge */
+.clinic-participation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #fcd34d;
+  border-radius: 20px;
+}
+
+.clinic-participation .participation-value {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.clinic-participation .participation-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #a16207;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
 .monthly-card-action {
