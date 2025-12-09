@@ -809,27 +809,32 @@ module ClinicManagement
       end
       
       def calculate_referral_sales_amount(referral, month, year)
-        start_date = Date.new(year, month, 1)
-        end_date = start_date.end_of_month
+        cache_key = "clinic_stats/referral_sales/#{referral.id}/#{year}/#{month}"
+        expires_in = cache_expiration_for(year, month)
         
-        # Get all appointments from this referral in the period that had attendance
-        attended_appointments = Appointment.joins(:invitation, :service)
-          .where(clinic_management_invitations: { referral_id: referral.id })
-          .where(clinic_management_services: { date: start_date..end_date })
-          .where(attendance: true)
-        
-        # Get customer IDs from attended appointments through leads
-        customer_ids = attended_appointments.map { |app| 
-          app.lead&.leads_conversion&.customer_id 
-        }.compact.uniq
-        
-        return 0 if customer_ids.empty?
-        
-        # Sum orders from these customers created within the same month
-        # This ensures referral sales never exceed total store sales for the month
-        Order.where(customer_id: customer_ids)
-             .where(created_at: start_date.beginning_of_day..end_date.end_of_day)
-             .sum(:total_amount)
+        Rails.cache.fetch(cache_key, expires_in: expires_in) do
+          start_date = Date.new(year, month, 1)
+          end_date = start_date.end_of_month
+          
+          # Get all appointments from this referral in the period that had attendance
+          attended_appointments = Appointment.joins(:invitation, :service)
+            .where(clinic_management_invitations: { referral_id: referral.id })
+            .where(clinic_management_services: { date: start_date..end_date })
+            .where(attendance: true)
+          
+          # Get customer IDs from attended appointments through leads
+          customer_ids = attended_appointments.map { |app| 
+            app.lead&.leads_conversion&.customer_id 
+          }.compact.uniq
+          
+          next 0 if customer_ids.empty?
+          
+          # Sum orders from these customers created within the same month
+          # This ensures referral sales never exceed total store sales for the month
+          Order.where(customer_id: customer_ids)
+               .where(created_at: start_date.beginning_of_day..end_date.end_of_day)
+               .sum(:total_amount)
+        end
       end
 
       def prepare_annual_monthly_data(year, referral_id = nil)
@@ -884,11 +889,16 @@ module ClinicManagement
       
       # Calculate total store sales for a given month (all orders, not just clinic-related)
       def calculate_month_total_store_sales(year, month)
-        start_date = Date.new(year, month, 1)
-        end_date = start_date.end_of_month
+        cache_key = "clinic_stats/store_sales/#{year}/#{month}"
+        expires_in = cache_expiration_for(year, month)
         
-        Order.where(created_at: start_date.beginning_of_day..end_date.end_of_day)
-             .sum(:total_amount)
+        Rails.cache.fetch(cache_key, expires_in: expires_in) do
+          start_date = Date.new(year, month, 1)
+          end_date = start_date.end_of_month
+          
+          Order.where(created_at: start_date.beginning_of_day..end_date.end_of_day)
+               .sum(:total_amount)
+        end
       end
       
       def calculate_month_referral_totals(invitations, appointments, year, month)
@@ -938,27 +948,32 @@ module ClinicManagement
       end
 
       def calculate_month_sales_amount(year, month, referral_id = nil)
-        start_date = Date.new(year, month, 1)
-        end_date = start_date.end_of_month
+        cache_key = "clinic_stats/month_sales/#{year}/#{month}/#{referral_id || 'all'}"
+        expires_in = cache_expiration_for(year, month)
         
-        attended_appointments = Appointment.joins(:invitation, :service)
-          .where(clinic_management_services: { date: start_date..end_date })
-          .where(attendance: true)
-        
-        attended_appointments = attended_appointments.where(clinic_management_invitations: { referral_id: referral_id }) if referral_id
-        
-        # Get all customer IDs from attended appointments
-        customer_ids = attended_appointments.map { |app| 
-          app.lead&.leads_conversion&.customer_id 
-        }.compact.uniq
-        
-        return 0 if customer_ids.empty?
-        
-        # Sum orders from these customers created within the same month
-        # This ensures clinic sales never exceed total store sales for the month
-        Order.where(customer_id: customer_ids)
-             .where(created_at: start_date.beginning_of_day..end_date.end_of_day)
-             .sum(:total_amount)
+        Rails.cache.fetch(cache_key, expires_in: expires_in) do
+          start_date = Date.new(year, month, 1)
+          end_date = start_date.end_of_month
+          
+          attended_appointments = Appointment.joins(:invitation, :service)
+            .where(clinic_management_services: { date: start_date..end_date })
+            .where(attendance: true)
+          
+          attended_appointments = attended_appointments.where(clinic_management_invitations: { referral_id: referral_id }) if referral_id
+          
+          # Get all customer IDs from attended appointments
+          customer_ids = attended_appointments.map { |app| 
+            app.lead&.leads_conversion&.customer_id 
+          }.compact.uniq
+          
+          next 0 if customer_ids.empty?
+          
+          # Sum orders from these customers created within the same month
+          # This ensures clinic sales never exceed total store sales for the month
+          Order.where(customer_id: customer_ids)
+               .where(created_at: start_date.beginning_of_day..end_date.end_of_day)
+               .sum(:total_amount)
+        end
       end
 
       def calculate_annual_referral_totals(year, current_referral_id = nil)
@@ -1026,25 +1041,46 @@ module ClinicManagement
       end
 
       def calculate_annual_referral_sales(referral, year)
-        start_date = Date.new(year, 1, 1)
-        end_date = [Date.new(year, 12, 31), Date.current].min
+        # Annual data: cache permanently if year is complete, otherwise 1 hour
+        cache_key = "clinic_stats/annual_referral_sales/#{referral.id}/#{year}"
+        expires_in = year < Date.current.year ? nil : 1.hour
         
-        attended_appointments = Appointment.joins(:invitation, :service)
-          .where(clinic_management_invitations: { referral_id: referral.id })
-          .where(clinic_management_services: { date: start_date..end_date })
-          .where(attendance: true)
+        Rails.cache.fetch(cache_key, expires_in: expires_in) do
+          start_date = Date.new(year, 1, 1)
+          end_date = [Date.new(year, 12, 31), Date.current].min
+          
+          attended_appointments = Appointment.joins(:invitation, :service)
+            .where(clinic_management_invitations: { referral_id: referral.id })
+            .where(clinic_management_services: { date: start_date..end_date })
+            .where(attendance: true)
+          
+          # Get customer IDs from attended appointments
+          customer_ids = attended_appointments.map { |app| 
+            app.lead&.leads_conversion&.customer_id 
+          }.compact.uniq
+          
+          next 0 if customer_ids.empty?
+          
+          # Sum orders from these customers created within the same year
+          Order.where(customer_id: customer_ids)
+               .where(created_at: start_date.beginning_of_day..end_date.end_of_day)
+               .sum(:total_amount)
+        end
+      end
+
+      # Determines cache expiration based on whether the month is in the past or current
+      # Past months: permanent cache (nil = never expires)
+      # Current month: 1 hour expiration (data may still change)
+      def cache_expiration_for(year, month)
+        target_date = Date.new(year, month, 1)
         
-        # Get customer IDs from attended appointments
-        customer_ids = attended_appointments.map { |app| 
-          app.lead&.leads_conversion&.customer_id 
-        }.compact.uniq
-        
-        return 0 if customer_ids.empty?
-        
-        # Sum orders from these customers created within the same year
-        Order.where(customer_id: customer_ids)
-             .where(created_at: start_date.beginning_of_day..end_date.end_of_day)
-             .sum(:total_amount)
+        if target_date.end_of_month < Date.current
+          # Past month: cache permanently
+          nil
+        else
+          # Current or future month: expire in 1 hour
+          1.hour
+        end
       end
 
       def build_user_referral_map
