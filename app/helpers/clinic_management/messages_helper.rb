@@ -102,6 +102,9 @@ module ClinicManagement
     # Check if Evolution API can be used based on user type and instance connection status
     # Supports multiple instances for referrals (new system)
     def can_use_evolution_api?
+      if Rails.env.development?
+        return true
+      end
       if referral?(current_user)
         # For referral users, check if they have any connected instance
         # Uses new has_connected_instances? method that supports multiple instances

@@ -10,6 +10,9 @@ module ClinicManagement
 
     include GeneralHelper
     include MessagesHelper
+    
+    # Make can_use_evolution_api? available in views
+    helper_method :can_use_evolution_api?
 
     # GET /leads
     # def index
@@ -103,6 +106,84 @@ module ClinicManagement
         end
         #format.json { head :no_content }
       end
+    end
+    
+    # POST /leads/:id/verify_whatsapp
+    # Verifica se o número do lead possui WhatsApp antes de abrir o link
+    # Usado para feedback visual ao usuário
+    def verify_whatsapp
+      @lead = Lead.find(params[:id])
+      
+      Rails.logger.info "[VERIFY WHATSAPP] Verificando Lead ##{@lead.id}: #{@lead.phone}"
+      
+      # SEMPRE verificar, mesmo que já esteja marcado como sem WhatsApp
+      # O número pode ter passado a ter WhatsApp depois
+      
+      # Verificar se Evolution API está disponível
+      unless can_use_evolution_api?
+        Rails.logger.warn "[VERIFY WHATSAPP] ⚠️ Evolution API não disponível, assumindo que tem WhatsApp"
+        return render json: {
+          has_whatsapp: true,
+          message: "Verificação não disponível, assumindo que tem WhatsApp"
+        }
+      end
+      
+      # Obter nome da instância do usuário atual
+      instance_name = get_evolution_instance_name
+      
+      # Verificar se o número tem WhatsApp via Evolution API
+      whatsapp_check = helpers.check_whatsapp_number(@lead.phone, instance_name)
+      
+      Rails.logger.info "[VERIFY WHATSAPP] Resultado: #{whatsapp_check.inspect}"
+      
+      if whatsapp_check[:exists] == true
+        Rails.logger.info "[VERIFY WHATSAPP] ✅ Número TEM WhatsApp: #{@lead.phone}"
+        
+        # Se estava marcado como sem WhatsApp, atualizar
+        if @lead.no_whatsapp?
+          @lead.update(no_whatsapp: false)
+          Rails.logger.info "[VERIFY WHATSAPP] 🔄 Lead atualizado: no_whatsapp = false"
+        end
+        
+        render json: {
+          has_whatsapp: true,
+          jid: whatsapp_check[:jid],
+          message: "Número possui WhatsApp"
+        }
+        
+      elsif whatsapp_check[:exists] == false && whatsapp_check[:error].blank?
+        Rails.logger.info "[VERIFY WHATSAPP] ❌ Número NÃO tem WhatsApp: #{@lead.phone}"
+        
+        # Marcar lead como sem WhatsApp
+        @lead.update(no_whatsapp: true)
+        
+        render json: {
+          has_whatsapp: false,
+          message: "Este número não possui WhatsApp"
+        }
+        
+      else
+        # Erro na verificação - NÃO abrir o link, mostrar erro ao usuário
+        Rails.logger.warn "[VERIFY WHATSAPP] ⚠️ Erro na verificação: #{whatsapp_check[:error]}"
+        
+        render json: {
+          has_whatsapp: false,
+          api_error: true,
+          message: "Erro ao verificar WhatsApp: #{whatsapp_check[:error]}",
+          error: whatsapp_check[:error]
+        }
+      end
+      
+    rescue => e
+      Rails.logger.error "[VERIFY WHATSAPP] ❌ Exceção: #{e.class} - #{e.message}"
+      
+      # Em caso de exceção, NÃO abrir o link
+      render json: {
+        has_whatsapp: false,
+        api_error: true,
+        message: "Erro na verificação: #{e.message}",
+        error: e.message
+      }
     end
     
     # POST /leads/:id/make_call

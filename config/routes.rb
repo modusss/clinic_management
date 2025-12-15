@@ -77,6 +77,7 @@ ClinicManagement::Engine.routes.draw do
     member do
       post :record_message_sent
       post :make_call
+      post :verify_whatsapp
       patch :hide_from_absent
       patch :mark_no_whatsapp
       patch :mark_no_interest

@@ -7,17 +7,28 @@
      data-message-tracking-appointment-id-value="<%= appointment.id %>"
      data-message-tracking-no-whatsapp-value="<%= lead.no_whatsapp || false %>"
      data-message-tracking-persist-hint-value="<%= local_assigns[:persist_hint] || false %>"
-     data-message-tracking-row-id-value="lead-row-<%= lead.id %>">
+     data-message-tracking-row-id-value="lead-row-<%= lead.id %>"
+     data-message-tracking-whatsapp-url-value="<%= whatsapp_link(lead.phone, "") %>"
+     data-message-tracking-can-verify-whatsapp-value="<%= can_use_evolution_api? %>">
   <div class="flex items-center">
     <% if lead.phone.present? %>
       <div class="flex items-center gap-2">
-        <%= link_to add_phone_mask(lead.phone), 
-                    whatsapp_link(lead.phone, ""), 
-                    target: '_blank',
-                    data: { 
-                      action: "click->message-tracking#recordMessageSent"
-                    },
-                    class: "whatsapp-link #{'opacity-50' unless lead.has_whatsapp?}" %>
+        <%# Link do WhatsApp - verifica antes de abrir se Evolution API está disponível %>
+        <% if can_use_evolution_api? %>
+          <a href="#"
+             data-action="click->message-tracking#verifyAndOpenWhatsapp"
+             data-message-tracking-target="whatsappLink"
+             class="whatsapp-link cursor-pointer <%= 'opacity-50' unless lead.has_whatsapp? %>">
+            <%= add_phone_mask(lead.phone) %>
+          </a>
+        <% else %>
+          <%# Fallback: link direto se não tiver Evolution API %>
+          <%= link_to add_phone_mask(lead.phone), 
+                      whatsapp_link(lead.phone, ""), 
+                      target: '_blank',
+                      data: { action: "click->message-tracking#recordMessageSent" },
+                      class: "whatsapp-link #{'opacity-50' unless lead.has_whatsapp?}" %>
+        <% end %>
         
         <% if current_account&.directcall_configured? %>
           <div class="flex items-center gap-2">
@@ -91,6 +102,13 @@
         </div>
       </div>
     <% end %>
+  </div>
+  
+  <!-- Hint de verificação de WhatsApp (aparece durante a verificação) -->
+  <div class="hidden mt-2" data-message-tracking-target="verificationHint">
+    <div class="flex items-center gap-2 text-xs bg-blue-50 text-blue-700 px-3 py-2 rounded-lg border border-blue-200">
+      <span data-message-tracking-target="verificationText">Verificando se o número possui WhatsApp...</span>
+    </div>
   </div>
   
   <!-- Estatísticas das interações com dropdown -->
