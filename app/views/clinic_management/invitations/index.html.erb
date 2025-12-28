@@ -292,6 +292,16 @@
                 </div>
               <% end %>
               <% if (month_data[:total_store_sales] || 0) > 0 %>
+                <% 
+                  # Calculate sales outside clinic (total - clinic sales)
+                  outside_clinic_sales = (month_data[:total_store_sales] || 0) - (month_data[:sales_amount] || 0)
+                %>
+                <% if outside_clinic_sales > 0 %>
+                  <div class="monthly-card-sales outside-clinic-sales" title="Vendas Fora da Clínica">
+                    <i class="material-icons">storefront</i>
+                    <span><%= number_to_currency(outside_clinic_sales) %></span>
+                  </div>
+                <% end %>
                 <div class="monthly-card-sales total-sales" title="Total Geral da Loja">
                   <i class="material-icons">store</i>
                   <span><%= number_to_currency(month_data[:total_store_sales]) %></span>
@@ -1410,6 +1420,23 @@
   font-size: 0.9375rem;
   font-weight: 700;
   color: #166534;
+}
+
+/* Outside Clinic Sales - Blue/Gray style to differentiate from clinic (green) */
+.monthly-card-sales.outside-clinic-sales {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #93c5fd;
+}
+
+.monthly-card-sales.outside-clinic-sales i {
+  font-size: 1.125rem;
+  color: #2563eb;
+}
+
+.monthly-card-sales.outside-clinic-sales span {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1d4ed8;
 }
 
 .monthly-card-sales.total-sales {
