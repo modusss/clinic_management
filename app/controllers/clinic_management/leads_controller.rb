@@ -1231,7 +1231,7 @@ module ClinicManagement
       end
       
       # Se tem permissão (can_access_leads = true), aplicar filtro antigo de referral
-      cutoff_date = 120.days.ago.to_date
+      cutoff_date = 180.days.ago.to_date
       
       # Obter IDs dos leads que têm appointments nos últimos 120 dias que NÃO são do referral atual
       excluded_lead_ids = ClinicManagement::Lead
