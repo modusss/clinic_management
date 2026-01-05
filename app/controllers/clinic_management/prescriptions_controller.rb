@@ -29,10 +29,11 @@
           redirect_to index_today_path and return
         end
         
-        # Execute the job synchronously without delay for today's appointments
-        ConfirmationAppointmentJob.new.perform(false, "today")
+        # Enqueue the job asynchronously (doesn't block the request)
+        # Parameters: with_delay=false (send immediately), target_date="today"
+        ConfirmationAppointmentJob.perform_later(false, "today")
         
-        flash[:notice] = "Mensagens de confirmação para hoje foram enviadas com sucesso!"
+        flash[:notice] = "Mensagens de confirmação para hoje foram enfileiradas! O envio está sendo processado em segundo plano."
         redirect_to index_today_path
       end
 
