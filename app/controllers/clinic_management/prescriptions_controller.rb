@@ -1,6 +1,6 @@
   module ClinicManagement
     class PrescriptionsController < ApplicationController
-      before_action :set_appointment, except: [:index_today, :generate_order_pdf, :search_index_today, :index_next, :index_before]
+      before_action :set_appointment, except: [:index_today, :generate_order_pdf, :search_index_today, :index_next, :index_before, :force_confirmation_today]
       skip_before_action :redirect_doctor_users, only: [:index_today, :show_today, :new_today, :edit_today, :update, :create, :search_index_today]
       skip_before_action :authenticate_user!, only: [:pdf]
       before_action :set_view_type, only: [:index_today, :index_next, :index_before]
@@ -13,9 +13,30 @@
       def index_today
         @services = Service.where(date: Date.current).order(:start_time)
         @rows = mapping_rows(@services)
+        
+        # Check if WhatsApp instance 2 (clinica) is connected for confirmation button
+        @instance_2_connected = Account.first&.instance_2_connected
       end
 
-          # GET /prescriptions/index_next
+      # POST /prescriptions/force_confirmation_today
+      # Forces execution of ConfirmationAppointmentJob for today's appointments
+      # Useful when the scheduled job failed to run or needs to be re-executed
+      def force_confirmation_today
+        account = Account.first
+        
+        unless account&.instance_2_connected
+          flash[:alert] = "Instância do WhatsApp não conectada. Conecte a instância 'Clínica' primeiro."
+          redirect_to index_today_path and return
+        end
+        
+        # Execute the job synchronously without delay for today's appointments
+        ConfirmationAppointmentJob.new.perform(false, "today")
+        
+        flash[:notice] = "Mensagens de confirmação para hoje foram enviadas com sucesso!"
+        redirect_to index_today_path
+      end
+
+      # GET /prescriptions/index_next
       # Shows all services scheduled for the next available day after today (not including today)
       def index_next
         next_date = Service.where('date > ?', Date.current).order(:date).pluck(:date).first

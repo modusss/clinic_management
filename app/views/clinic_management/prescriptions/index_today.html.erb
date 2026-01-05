@@ -37,6 +37,38 @@
         </div>
       </div>
 
+      <%# ============================================================ %>
+      <%# FORCE CONFIRMATION BUTTON %>
+      <%# ============================================================ %>
+      <%# Allows forcing the ConfirmationAppointmentJob for today's appointments %>
+      <%# Only shows if WhatsApp instance 2 (clinica) is connected %>
+      <%# ============================================================ %>
+      <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between">
+          <div>
+            <h3 class="text-lg font-medium text-gray-800">Enviar Confirmações de Hoje</h3>
+            <p class="text-sm text-gray-500">Força o envio das mensagens de confirmação para os agendamentos de hoje para os que não recebram</p>
+          </div>
+          
+          <div class="mt-2 sm:mt-0">
+            <% if @instance_2_connected %>
+              <%= button_to clinic_management.force_confirmation_today_path, 
+                  method: :post,
+                  class: "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm transition-colors duration-200 flex items-center gap-2",
+                  data: { confirm: "Tem certeza que deseja enviar as mensagens de confirmação para HOJE? Isso pode enviar mensagens duplicadas se já foram enviadas." } do %>
+                <i class="fas fa-paper-plane mr-2"></i>
+                Enviar Confirmações
+              <% end %>
+            <% else %>
+              <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-2 rounded text-sm flex items-center gap-2">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Instância do WhatsApp não conectada</span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
 <% end %>
 
 <%#= link_to 'Ver receita em PDF', pdf_appointment_prescription_path(@prescription.appointment, format: :pdf), class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
