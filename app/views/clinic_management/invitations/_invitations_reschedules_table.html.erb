@@ -66,8 +66,8 @@
           </div>
         <% end %>
 
-        <!-- Referrals Data Table -->
-        <div class="referrals-table-wrapper">
+        <!-- Referrals Data Table (Desktop) -->
+        <div class="referrals-table-wrapper desktop-only">
           <table class="referrals-table">
             <thead>
               <tr>
@@ -140,7 +140,7 @@
                             <% end %>
                           </div>
                         <% else %>
-                          <span class="empty-cell hidden-names" title="Nomes ocultos para privacidade">🔒 <%= data[:invitations].size %> paciente(s)</span>
+                          <span class="empty-cell hidden-names" title="Nomes ocultos para privacidade"><%= data[:invitations].size %> paciente(s)</span>
                         <% end %>
                       <% else %>
                         <span class="empty-cell">—</span>
@@ -169,7 +169,7 @@
                             <% end %>
                           </div>
                         <% else %>
-                          <span class="empty-cell hidden-names" title="Nomes ocultos para privacidade">🔒 <%= data[:reschedules].size %> paciente(s)</span>
+                          <span class="empty-cell hidden-names" title="Nomes ocultos para privacidade"><%= data[:reschedules].size %> paciente(s)</span>
                         <% end %>
                       <% else %>
                         <span class="empty-cell">—</span>
@@ -180,6 +180,95 @@
               <% end %>
             </tbody>
           </table>
+        </div>
+
+        <!-- Referrals Cards (Mobile) -->
+        <div class="referrals-cards-wrapper mobile-only">
+          <% if referrals_data.blank? || referrals_data.all? { |_, data| data[:invitations].blank? && data[:reschedules].blank? && data[:whatsapp_count] == 0 && data[:phone_count] == 0 } %>
+            <div class="empty-card">
+              <span class="empty-message">Sem lançamentos</span>
+            </div>
+          <% else %>
+            <% referrals_data.sort_by { |_, data| -(data[:invitations].size + data[:reschedules].size) }.each do |referral, data| %>
+              <div class="referral-card">
+                <!-- Card Header: Referral Name + Total -->
+                <div class="card-header">
+                  <div class="card-referral-name">
+                    <i class="material-icons">person</i>
+                    <span><%= referral&.name || "Sem indicador" %></span>
+                  </div>
+                  <span class="count-badge total-badge">
+                    <%= data[:invitations].size + data[:reschedules].size %>
+                  </span>
+                </div>
+
+                <!-- Card Stats Row -->
+                <div class="card-stats-row">
+                  <div class="card-stat">
+                    <div class="interaction-item whatsapp" title="WhatsApp">
+                      <i class="material-icons">chat</i>
+                      <span><%= data[:whatsapp_count] %></span>
+                    </div>
+                  </div>
+                  <div class="card-stat">
+                    <div class="interaction-item phone" title="Ligação">
+                      <i class="material-icons">phone</i>
+                      <span><%= data[:phone_count] %></span>
+                    </div>
+                  </div>
+                  <div class="card-stat">
+                    <span class="stat-label">Convites</span>
+                    <span class="count-badge invitations-badge"><%= data[:invitations].size %></span>
+                  </div>
+                  <div class="card-stat">
+                    <span class="stat-label">Remarc.</span>
+                    <span class="count-badge reschedules-badge"><%= data[:reschedules].size %></span>
+                  </div>
+                </div>
+
+                <!-- Card Details (Expandable) -->
+                <% show_patient_names = !@is_referral_user || (referral && @current_user_referral && referral.id == @current_user_referral.id) %>
+                <% if data[:invitations].any? || data[:reschedules].any? %>
+                  <div class="card-details">
+                    <% if data[:invitations].any? %>
+                      <div class="card-detail-section">
+                        <span class="detail-label">Convites:</span>
+                        <% if show_patient_names %>
+                          <div class="patient-links">
+                            <% data[:invitations].each_with_index do |invitation, index| %>
+                              <%= render partial: "patient_name_display", 
+                                         locals: { invitation: invitation, count: invitation.lead.appointments.count } %>
+                              <%= ", " unless index == data[:invitations].size - 1 %>
+                            <% end %>
+                          </div>
+                        <% else %>
+                          <span class="empty-cell hidden-names" title="Nomes ocultos para privacidade"><%= data[:invitations].size %> paciente(s)</span>
+                        <% end %>
+                      </div>
+                    <% end %>
+                    <% if data[:reschedules].any? %>
+                      <div class="card-detail-section">
+                        <span class="detail-label">Remarcações:</span>
+                        <% show_reschedule_names = !@is_referral_user || (referral && @current_user_referral && referral.id == @current_user_referral.id) %>
+                        <% if show_reschedule_names %>
+                          <div class="patient-links">
+                            <% data[:reschedules].each_with_index do |appointment, index| %>
+                              <% invitation = appointment.invitation %>
+                              <%= render partial: "patient_name_display", 
+                                         locals: { invitation: invitation, count: appointment.lead.appointments.count } %>
+                              <%= ", " unless index == data[:reschedules].size - 1 %>
+                            <% end %>
+                          </div>
+                        <% else %>
+                          <span class="empty-cell hidden-names" title="Nomes ocultos para privacidade"><%= data[:reschedules].size %> paciente(s)</span>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          <% end %>
         </div>
       </div>
     <% end %>
@@ -564,62 +653,252 @@
   }
 }
 
+/* ========================================
+   RESPONSIVE VISIBILITY CLASSES
+   ======================================== */
+
+/* Desktop (>768px): show table, hide cards */
+.desktop-only {
+  display: block !important;
+}
+
+.mobile-only {
+  display: none !important;
+}
+
+/* Mobile (<=768px): hide table, show cards - defined in @media query below */
+
+/* ========================================
+   MOBILE CARDS STYLES
+   Note: These styles only apply when mobile-only is visible (on mobile)
+   ======================================== */
+
+.referrals-cards-wrapper {
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #ffffff;
+  border-radius: 0 0 8px 8px;
+}
+
+.empty-card {
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+.referral-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.card-referral-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.9375rem;
+}
+
+.card-referral-name i {
+  color: #64748b;
+  font-size: 1.25rem;
+}
+
+.card-stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0.75rem 0.5rem;
+  background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.card-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.card-details {
+  padding: 0.75rem 1rem;
+  background: #fafbfc;
+}
+
+.card-detail-section {
+  margin-bottom: 0.625rem;
+}
+
+.card-detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.detail-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.375rem;
+}
+
+.card-details .patient-links {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+/* ========================================
+   MOBILE RESPONSIVE OVERRIDES
+   ======================================== */
+
 @media (max-width: 768px) {
+  /* Switch visibility: hide table, show cards */
+  .desktop-only {
+    display: none !important;
+  }
+
+  .mobile-only {
+    display: flex !important;
+    flex-direction: column;
+  }
+
   .date-header {
     padding: 0.75rem 1rem;
+    border-radius: 8px 8px 0 0;
   }
 
   .date-text {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
   }
 
   .totals-summary {
-    padding: 0.875rem 1rem;
+    padding: 0.75rem 1rem;
   }
 
   .totals-content {
-    gap: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: space-around;
+  }
+
+  .total-item {
+    flex: 0 0 auto;
   }
 
   .total-item i {
-    font-size: 1.5rem;
-  }
-
-  .total-label {
-    font-size: 0.75rem;
-  }
-
-  .total-value {
     font-size: 1.25rem;
   }
 
+  .total-label {
+    font-size: 0.625rem;
+  }
+
+  .total-value {
+    font-size: 1.125rem;
+  }
+
   .total-separator {
-    height: 2.5rem;
-  }
-
-  .referrals-table {
-    font-size: 0.8125rem;
-  }
-
-  .referrals-table thead th {
-    padding: 0.75rem 0.75rem;
-    font-size: 0.6875rem;
-  }
-
-  .referrals-table tbody td {
-    padding: 0.875rem 0.75rem;
-    font-size: 0.8125rem;
-  }
-
-  .referral-icon {
-    font-size: 1rem;
+    display: none;
   }
 
   .count-badge {
-    min-width: 1.75rem;
-    height: 1.75rem;
-    font-size: 0.8125rem;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    font-size: 0.75rem;
     padding: 0 0.5rem;
+  }
+
+  .interaction-item {
+    padding: 3px 6px;
+    font-size: 0.75rem;
+  }
+
+  .interaction-item i {
+    font-size: 14px;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .date-header {
+    padding: 0.625rem 0.75rem;
+  }
+
+  .date-text {
+    font-size: 0.75rem;
+  }
+
+  .totals-content {
+    gap: 0.5rem;
+  }
+
+  .total-item i {
+    font-size: 1rem;
+  }
+
+  .total-label {
+    font-size: 0.5625rem;
+  }
+
+  .total-value {
+    font-size: 1rem;
+  }
+
+  .card-header {
+    padding: 0.75rem;
+  }
+
+  .card-referral-name {
+    font-size: 0.875rem;
+  }
+
+  .card-referral-name i {
+    font-size: 1.125rem;
+  }
+
+  .card-stats-row {
+    padding: 0.625rem 0.25rem;
+  }
+
+  .stat-label {
+    font-size: 0.625rem;
+  }
+
+  .card-details {
+    padding: 0.625rem 0.75rem;
+  }
+
+  .detail-label {
+    font-size: 0.6875rem;
+  }
+
+  .card-details .patient-links {
+    font-size: 0.75rem;
   }
 }
 </style>
