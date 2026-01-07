@@ -23,27 +23,32 @@ module ClinicManagement
       end
       
       # Prepare available months/years for the filter
-      @available_dates = prepare_available_months_years(@is_referral_user ? @current_user_referral&.id : nil)
+      # For referral users: show ALL available months (pass nil to not filter by referral_id)
+      @available_dates = prepare_available_months_years(nil)
       
       if @view_mode == 'annual'
         # Annual view: show monthly summaries for the selected year
-        @annual_monthly_data = prepare_annual_monthly_data(@selected_year, @current_user_referral&.id)
+        # For referral users: show ALL referrals' data (pass nil to not filter by referral_id)
+        # This allows them to see other referrals' performance
+        referral_id_for_filter = @is_referral_user ? nil : @current_user_referral&.id
+        @annual_monthly_data = prepare_annual_monthly_data(@selected_year, referral_id_for_filter)
         @total_invitations = @annual_monthly_data.sum { |m| m[:invitations] }
         @total_reschedules = @annual_monthly_data.sum { |m| m[:reschedules] }
         @total_whatsapp = @annual_monthly_data.sum { |m| m[:whatsapp_count] || 0 }
         @total_phone = @annual_monthly_data.sum { |m| m[:phone_count] || 0 }
-        @referral_period_totals = calculate_annual_referral_totals(@selected_year, @current_user_referral&.id)
+        @referral_period_totals = calculate_annual_referral_totals(@selected_year, referral_id_for_filter)
       else
         # Monthly view: show detailed daily data
         start_date = Date.new(@selected_year, @selected_month, 1)
         end_date = start_date.end_of_month
         
         if @is_referral_user
-          @invitations = Invitation.where(referral_id: @current_user_referral.id)
-                                   .where(date: start_date..end_date)
-                                   .includes(:lead, :region, appointments: :service)
+          # Referrals see ALL invitations and reschedules from all referrals
+          # This allows them to see other referrals' performance in the daily table
+          @invitations = Invitation.where(date: start_date..end_date)
+                                   .includes(:lead, :region, :referral, appointments: :service)
                                    .order(created_at: :desc)
-          @appointments = fetch_reschedules_for_referral(@current_user_referral.id, start_date, end_date)
+          @appointments = fetch_all_reschedules(start_date, end_date)
         else
           if params[:referral_id].present?
             @invitations = Invitation.where(referral_id: params[:referral_id])
@@ -79,6 +84,8 @@ module ClinicManagement
         @total_phone = interaction_totals[:phone]
         
         # Calculate totals per referral for the period summary
+        # Note: For referral users, @invitations and @appointments already contain ALL data
+        # from all referrals (set above), so this will show complete referral performance
         @referral_period_totals = calculate_referral_period_totals(@invitations, @appointments)
       end
     end
