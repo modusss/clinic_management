@@ -40,7 +40,7 @@
   <% elsif (controller_name == "leads") && (action_name == "absent") %> 
     <% if referral?(current_user) %>
       <%= f.hidden_field :referral_id, value: user_referral.id %>
-    <% elsif old_appointment.created_at > 12.month.ago %>
+    <% elsif old_appointment.created_at > 6.months.ago %>
       <%= f.hidden_field :referral_id, value: old_appointment.invitation.referral.id %>
     <% end %>
   <% end %>
@@ -52,7 +52,7 @@
   <% if referral?(current_user) %>
     <%= f.submit "Remarcação de " + (referral?(current_user) ? user_referral.name : old_appointment&.invitation&.referral&.name), class: "bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded" %>
   <% else %> 
-    <% if (controller_name == "leads") && (action_name == "absent") && (old_appointment.created_at > 1.month.ago) %>
+    <% if (controller_name == "leads") && (action_name == "absent") && (old_appointment.created_at > 6.months.ago) %>
       <%= f.submit "Remarcação de " + (referral?(current_user) ? user_referral.name : old_appointment&.invitation&.referral&.name), class: "bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded" %>
     <% elsif controller_name == "leads"%>
       <%= f.submit old_appointment.present? ? "Remarcar" : "Marcar", class: "bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded" %>
