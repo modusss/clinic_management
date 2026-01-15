@@ -401,32 +401,52 @@ module ClinicManagement
     end
 
 
+    # ============================================================================
+    # ESSENTIAL: Check if a lead already exists by phone number
+    # If phone is blank/empty, ALWAYS creates a new lead (no merging)
+    # If phone exists, reuses the existing lead and merges information
+    # 
+    # @param params [ActionController::Parameters] - invitation params with lead_attributes
+    # @returns [Lead] - existing or newly created lead
+    # 
+    # CRITICAL: When phone is blank, we MUST create a new independent lead.
+    # Never search for leads with empty/nil phone as this would incorrectly
+    # merge unrelated patients into the same lead record.
+    # ============================================================================
     def check_existing_leads(params)
       phone = params.dig(:lead_attributes, :phone)
       patient_name = params[:patient_name]
       lead_name = params.dig(:lead_attributes, :name)
       
-      return Lead.create!(params[:lead_attributes]) if phone.blank?
+      # Sanitize phone: remove all non-digit characters (mask chars like (, ), -, space)
+      clean_phone = phone.present? ? phone.gsub(/\D/, '') : nil
       
-      # Sanitizar o telefone para busca (remover caracteres da máscara)
-      clean_phone = phone.gsub(/\D/, '')
+      # ESSENTIAL: If phone is blank OR sanitized phone is empty, 
+      # ALWAYS create a new independent lead. Never try to find/merge
+      # with existing leads when there's no phone to match against.
+      if clean_phone.blank?
+        Rails.logger.info "Creating new lead without phone (no merge possible)"
+        lead_params = params[:lead_attributes].dup
+        lead_params[:phone] = nil  # Explicitly set to nil for clarity
+        return Lead.create!(lead_params)
+      end
       
+      # Only search for existing lead when we have a valid phone number
       existing_lead = Lead.find_by(phone: clean_phone)
       
       if existing_lead.present?
-        Rails.logger.info "Usando lead existente (ID: #{existing_lead.id}) para telefone: #{phone}"
+        Rails.logger.info "Using existing lead (ID: #{existing_lead.id}) for phone: #{phone}"
         
-        # Auto-merge de informações
+        # Auto-merge information from new invitation into existing lead
         merge_lead_information(existing_lead, params, patient_name, lead_name)
         
-        # Log da ação para auditoria
-        Rails.logger.info "Lead #{existing_lead.id} atualizado com novas informações do convite"
+        Rails.logger.info "Lead #{existing_lead.id} updated with new invitation information"
         
         return existing_lead
       else
-        # Sanitizar os parâmetros do lead antes de criar
+        # No existing lead found, create new one with sanitized phone
         lead_params = params[:lead_attributes].dup
-        lead_params[:phone] = clean_phone if lead_params[:phone].present?
+        lead_params[:phone] = clean_phone
         
         Lead.create!(lead_params)
       end
@@ -1200,48 +1220,77 @@ module ClinicManagement
         )      
       end      
 
+    # ============================================================================
+    # Associate invitation with an existing lead by phone number
+    # Used when user explicitly chooses to associate with existing lead
+    # 
+    # @param params [ActionController::Parameters] - invitation params
+    # @returns [Lead] - existing or newly created lead
+    # ============================================================================
     def associate_with_existing_lead(params)
       phone = params.dig(:lead_attributes, :phone)
-      # Sanitizar o telefone para busca (remover caracteres da máscara)
-      clean_phone = phone.gsub(/\D/, '')
+      # Sanitize phone: remove all non-digit characters
+      clean_phone = phone.present? ? phone.gsub(/\D/, '') : nil
+      
+      # ESSENTIAL: If no valid phone, create new independent lead
+      if clean_phone.blank?
+        lead_params = params[:lead_attributes].dup
+        lead_params[:phone] = nil
+        return Lead.create!(lead_params)
+      end
+      
       existing_lead = ClinicManagement::Lead.find_by(phone: clean_phone)
       
       if existing_lead.present?
-        # Atualizar informações se necessário
+        # Update existing lead with new information
         merge_lead_information(existing_lead, params, params[:patient_name], params.dig(:lead_attributes, :name))
         existing_lead
       else
-        # Sanitizar os parâmetros do lead antes de criar
+        # No existing lead found, create new one
         lead_params = params[:lead_attributes].dup
-        lead_params[:phone] = clean_phone if lead_params[:phone].present?
+        lead_params[:phone] = clean_phone
         Lead.create!(lead_params)
       end
     end
 
+    # ============================================================================
+    # Transfer phone number from old lead to a new lead
+    # Used when user wants to create a new person with a phone that already exists
+    # The old lead loses the phone number (set to nil)
+    # 
+    # @param params [ActionController::Parameters] - invitation params
+    # @returns [Lead] - newly created lead with the transferred phone
+    # ============================================================================
     def transfer_phone_to_new_lead(params)
       phone = params.dig(:lead_attributes, :phone)
-      # Sanitizar o telefone para busca (remover caracteres da máscara)
-      clean_phone = phone.gsub(/\D/, '')
+      # Sanitize phone: remove all non-digit characters
+      clean_phone = phone.present? ? phone.gsub(/\D/, '') : nil
+      
+      # ESSENTIAL: If no valid phone, just create new independent lead
+      if clean_phone.blank?
+        lead_params = params[:lead_attributes].dup
+        lead_params[:phone] = nil
+        return Lead.create!(lead_params)
+      end
+      
       old_lead = ClinicManagement::Lead.find_by(phone: clean_phone)
       
       if old_lead.present?
-        # Sanitizar os parâmetros do lead antes de criar
+        # Create new lead with the phone
         lead_params = params[:lead_attributes].dup
-        lead_params[:phone] = clean_phone if lead_params[:phone].present?
-        
-        # Criar novo lead
+        lead_params[:phone] = clean_phone
         new_lead = Lead.create!(lead_params)
         
-        # Limpar telefone do lead antigo
+        # Remove phone from old lead (transfer complete)
         old_lead.update!(phone: nil)
         
-        Rails.logger.info "Telefone #{phone} transferido do lead #{old_lead.id} para o lead #{new_lead.id}"
+        Rails.logger.info "Phone #{phone} transferred from lead #{old_lead.id} to lead #{new_lead.id}"
         
         new_lead
       else
-        # Sanitizar os parâmetros do lead antes de criar
+        # No existing lead found, just create new one
         lead_params = params[:lead_attributes].dup
-        lead_params[:phone] = clean_phone if lead_params[:phone].present?
+        lead_params[:phone] = clean_phone
         Lead.create!(lead_params)
       end
     end

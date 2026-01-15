@@ -548,9 +548,23 @@ module ClinicManagement
       end
     end
 
+    # ============================================================================
+    # Check if a phone number already belongs to another lead
+    # Used for real-time validation in forms
+    # 
+    # @param phone [String] - phone number to check
+    # @param lead_id [Integer] - current lead ID to exclude from search
+    # @returns [JSON] - { exists: true/false, lead_name, lead_id }
+    # ============================================================================
     def check_phone
       phone = params[:phone]&.gsub(/\D/, '')
       lead_id = params[:lead_id].to_i
+      
+      # ESSENTIAL: Don't search for empty phone - would match leads without phone
+      if phone.blank?
+        render json: { exists: false }
+        return
+      end
       
       existing_lead = Lead.find_by(phone: phone)
       
