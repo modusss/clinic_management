@@ -101,7 +101,7 @@ module ClinicManagement
     # GET /invitations/new
     def new
       @services_list = next_services
-      @regions = Region.all.order(:name)
+      @regions = Region.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
       @invitation = Invitation.new
       @appointment = @invitation.appointments.build
       @lead = @invitation.build_lead
@@ -516,7 +516,7 @@ module ClinicManagement
       new_form_locals = { 
           invitation: @invitation, 
           referrals: Referral.all, 
-          regions: Region.all
+          regions: Region.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
       }
       respond_to do |format|
         format.turbo_stream do
@@ -538,7 +538,7 @@ module ClinicManagement
 
       def new_form_sets
         @services = Service.all    
-        @regions = Region.all
+        @regions = Region.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
         @invitation = Invitation.new
         @appointment = @invitation.appointments.build
         @lead = @invitation.build_lead
@@ -1166,7 +1166,7 @@ module ClinicManagement
 
       def set_lead_name
         @services = Service.all    
-        @regions = Region.all
+        @regions = Region.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
         @invitation = Invitation.new
         @appointment = @invitation.appointments.build
         @lead = @invitation.build_lead
