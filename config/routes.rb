@@ -9,8 +9,8 @@ ClinicManagement::Engine.routes.draw do
   # 
   # FLOW:
   # 1. GET  /self_booking/:token           -> show (welcome screen)
-  # 2. POST /self_booking/:token/change_name -> change_name form
-  # 3. POST /self_booking/:token/update_name -> saves new name
+  # 2. GET  /self_booking/:token/change_name -> change_name form (shows form)
+  # 3. POST /self_booking/:token/update_name -> saves new name + phone
   # 4. GET  /self_booking/:token/select_week -> choose this/next week
   # 5. GET  /self_booking/:token/select_day  -> choose day of week
   # 6. GET  /self_booking/:token/select_period -> choose morning/afternoon
@@ -20,7 +20,7 @@ ClinicManagement::Engine.routes.draw do
   # ============================================================================
   scope 'self_booking/:token', as: 'self_booking' do
     get '/', to: 'self_bookings#show', as: ''
-    post 'change_name', to: 'self_bookings#change_name'
+    get 'change_name', to: 'self_bookings#change_name'
     post 'update_name', to: 'self_bookings#update_name'
     get 'select_week', to: 'self_bookings#select_week'
     get 'select_day', to: 'self_bookings#select_day'

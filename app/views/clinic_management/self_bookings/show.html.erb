@@ -40,10 +40,9 @@
     Sim, sou eu! Agendar agora
   <% end %>
   
-  <!-- "Not me" button -->
+  <!-- "Not me" button - links to identity change form -->
   <%= link_to self_booking_change_name_path(@lead.self_booking_token), 
-              class: "btn-secondary",
-              data: { turbo_method: :post } do %>
+              class: "btn-secondary" do %>
     <i class="fas fa-user-edit mr-2"></i>
     Não sou <%= @patient_name %>
   <% end %>

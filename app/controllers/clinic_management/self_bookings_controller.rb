@@ -66,11 +66,41 @@ module ClinicManagement
     # ============================================================================
     # POST /self_booking/:token/update_name
     # 
-    # Updates the patient name for the booking.
-    # Stores in session to use when creating the invitation.
+    # Processes patient identity change with phone number logic.
+    # 
+    # LOGIC:
+    # - Same phone as original lead -> use original lead, save new name
+    # - Different phone that exists -> switch to that phone's lead owner
+    # - Different phone that's new -> create new lead with that phone
+    # 
+    # The actual lead to use is stored in session[:self_booking_lead_id]
+    # The patient name is stored in session[:self_booking_patient_name]
     # ============================================================================
     def update_name
-      session[:self_booking_patient_name] = params[:patient_name]
+      patient_name = params[:patient_name]&.strip
+      patient_phone = params[:patient_phone]&.gsub(/\D/, '') # Remove non-digits
+      
+      # Validate required fields
+      if patient_name.blank?
+        redirect_to self_booking_change_name_path(@lead.self_booking_token), 
+                    alert: "Por favor, informe o nome do paciente."
+        return
+      end
+      
+      if patient_phone.blank?
+        redirect_to self_booking_change_name_path(@lead.self_booking_token), 
+                    alert: "Por favor, informe o telefone."
+        return
+      end
+      
+      # Determine which lead to use based on phone
+      target_lead = determine_target_lead(patient_name, patient_phone)
+      
+      # Store booking context in session
+      session[:self_booking_patient_name] = patient_name
+      session[:self_booking_lead_id] = target_lead.id
+      
+      # Continue to week selection using the ORIGINAL token (for URL consistency)
       redirect_to self_booking_select_week_path(@lead.self_booking_token)
     end
 
@@ -163,11 +193,17 @@ module ClinicManagement
     # Creates the actual booking (invitation + appointment).
     # This is the final step in the self-booking flow.
     # 
+    # ESSENTIAL: Uses the target lead from session (may be different from URL token's lead)
+    # when patient indicated they are someone else with a different phone.
+    # 
     # Params:
     # - service_id: the selected service ID
     # ============================================================================
     def create_booking
-      @patient_name = session[:self_booking_patient_name] || @lead.patient_full_name
+      # Get the correct lead to use (may differ from @lead if patient changed identity)
+      target_lead = get_target_lead_for_booking
+      
+      @patient_name = session[:self_booking_patient_name] || target_lead.patient_full_name
       @service = Service.find_by(id: params[:service_id])
       
       unless @service
@@ -176,8 +212,8 @@ module ClinicManagement
         return
       end
       
-      # Check if already booked for this service
-      existing_appointment = @lead.appointments.joins(:service)
+      # Check if already booked for this service (on the TARGET lead)
+      existing_appointment = target_lead.appointments.joins(:service)
                                   .where(clinic_management_services: { id: @service.id })
                                   .where(status: 'agendado')
                                   .first
@@ -196,28 +232,29 @@ module ClinicManagement
           r.code = 'AUTO'
         end
         
-        # Create invitation
-        @invitation = @lead.invitations.create!(
+        # Create invitation linked to TARGET lead (the phone owner)
+        @invitation = target_lead.invitations.create!(
           patient_name: @patient_name,
           region: region,
           referral: referral,
           date: Date.current
         )
         
-        # Create appointment
+        # Create appointment linked to TARGET lead
         @appointment = @invitation.appointments.create!(
           service: @service,
-          lead: @lead,
+          lead: target_lead,
           status: 'agendado',
           referral_code: referral.code
         )
         
-        # Update lead's last appointment reference
-        @lead.update!(last_appointment_id: @appointment.id)
+        # Update target lead's last appointment reference
+        target_lead.update!(last_appointment_id: @appointment.id)
       end
       
       # Clear session data
       session.delete(:self_booking_patient_name)
+      session.delete(:self_booking_lead_id)
       
       redirect_to self_booking_success_path(@lead.self_booking_token)
     rescue ActiveRecord::RecordInvalid => e
@@ -231,18 +268,29 @@ module ClinicManagement
     # 
     # Shows booking confirmation with details.
     # Offers options to reschedule or add another booking.
+    # 
+    # ESSENTIAL: Uses target lead from session if patient changed identity
     # ============================================================================
     def success
-      @patient_name = @lead.patient_first_name
-      @already_booked = params[:already_booked].present?
+      # Get the correct lead (may be different if patient changed identity)
+      target_lead = get_target_lead_for_booking
       
-      # Get the most recent appointment
-      @appointment = @lead.appointments.includes(:service).order(created_at: :desc).first
+      # Get patient name - prioritize invitation name, then session, then lead
+      @appointment = target_lead.appointments.includes(:service, :invitation).order(created_at: :desc).first
+      @patient_name = @appointment&.invitation&.patient_name&.split&.first || 
+                      session[:self_booking_patient_name]&.split&.first || 
+                      target_lead.patient_first_name
+      
+      @already_booked = params[:already_booked].present?
       
       if @appointment&.service
         @formatted_date = I18n.l(@appointment.service.date, format: '%A, %d de %B')
         @formatted_time = "#{@appointment.service.start_time.strftime('%H:%M')} - #{@appointment.service.end_time.strftime('%H:%M')}"
       end
+      
+      # Clear session data after showing success
+      session.delete(:self_booking_patient_name)
+      session.delete(:self_booking_lead_id)
     end
 
     private
@@ -304,6 +352,76 @@ module ClinicManagement
       day_numbers.sort.map do |num|
         { number: num, name: day_names[num] }
       end
+    end
+
+    # ============================================================================
+    # LEAD RESOLUTION LOGIC
+    # 
+    # These methods handle the phone-based lead resolution when a patient
+    # indicates they are not the expected person.
+    # ============================================================================
+
+    # ============================================================================
+    # Determines which lead should own the appointment based on phone number.
+    # 
+    # LOGIC:
+    # 1. Same phone as current lead -> use current lead
+    # 2. Phone belongs to another lead -> use that lead (phone owner)
+    # 3. Phone is new -> create new lead with that phone
+    # 
+    # @param patient_name [String] the patient's name
+    # @param patient_phone [String] sanitized phone number (digits only)
+    # @return [Lead] the lead to link the appointment to
+    # ============================================================================
+    def determine_target_lead(patient_name, patient_phone)
+      original_phone = @lead.phone
+      
+      # Case 1: Same phone - use the original lead
+      if patient_phone == original_phone
+        Rails.logger.info "[SelfBooking] Same phone - using original lead ##{@lead.id}"
+        return @lead
+      end
+      
+      # Case 2: Check if phone belongs to another lead
+      existing_lead = Lead.find_by(phone: patient_phone)
+      
+      if existing_lead.present?
+        Rails.logger.info "[SelfBooking] Phone exists - using existing lead ##{existing_lead.id} (#{existing_lead.name})"
+        return existing_lead
+      end
+      
+      # Case 3: New phone - create new lead
+      Rails.logger.info "[SelfBooking] New phone #{patient_phone} - creating new lead for #{patient_name}"
+      
+      new_lead = Lead.create!(
+        name: patient_name,
+        phone: patient_phone
+      )
+      
+      # Generate self_booking_token for the new lead (for future use)
+      new_lead.generate_self_booking_token!
+      
+      Rails.logger.info "[SelfBooking] Created new lead ##{new_lead.id} with phone #{patient_phone}"
+      
+      new_lead
+    end
+
+    # ============================================================================
+    # Gets the target lead for booking from session or defaults to URL lead.
+    # 
+    # This allows the booking flow to use a different lead than the one
+    # from the URL token when the patient changed their identity.
+    # 
+    # @return [Lead] the lead to create the appointment for
+    # ============================================================================
+    def get_target_lead_for_booking
+      if session[:self_booking_lead_id].present?
+        target = Lead.find_by(id: session[:self_booking_lead_id])
+        return target if target.present?
+      end
+      
+      # Default to the lead from URL token
+      @lead
     end
   end
 end
