@@ -1,0 +1,144 @@
+<%# ============================================================================
+    Self-Booking: Select Period Screen (Step 4)
+    
+    Patient chooses morning or afternoon.
+    Shows available services for each period.
+    
+    FLOW: show -> select_week -> select_day -> select_period -> confirm -> success
+    ============================================================================ %>
+
+<!-- Step indicator -->
+<div class="step-indicator">
+  <div class="step-dot completed"></div>
+  <div class="step-dot completed"></div>
+  <div class="step-dot completed"></div>
+  <div class="step-dot active"></div>
+</div>
+
+<!-- Back button -->
+<%= link_to self_booking_select_day_path(@lead.self_booking_token, week: @week), class: "back-btn" do %>
+  <i class="fas fa-arrow-left"></i>
+  Voltar
+<% end %>
+
+<!-- Main card -->
+<div class="booking-card">
+  <h2 class="text-xl font-bold text-gray-900 text-center mb-2">
+    Qual horário?
+  </h2>
+  
+  <p class="text-gray-600 text-center mb-6">
+    <%= @day_name %>
+  </p>
+  
+  <% if @morning_services.any? || @afternoon_services.any? %>
+    <!-- Period selection cards -->
+    <div class="grid grid-cols-2 gap-4 mb-6">
+      <!-- Morning -->
+      <% if @morning_services.any? %>
+        <div class="period-card period-morning cursor-default opacity-100">
+          <div class="icon">
+            <i class="fas fa-sun"></i>
+          </div>
+          <div class="font-semibold text-gray-900">Manhã</div>
+          <div class="text-sm text-gray-500">
+            <%= @morning_services.count %> opção<%= @morning_services.count > 1 ? 'ões' : '' %>
+          </div>
+        </div>
+      <% else %>
+        <div class="period-card period-morning opacity-50 cursor-not-allowed">
+          <div class="icon">
+            <i class="fas fa-sun"></i>
+          </div>
+          <div class="font-semibold text-gray-400">Manhã</div>
+          <div class="text-sm text-gray-400">Indisponível</div>
+        </div>
+      <% end %>
+      
+      <!-- Afternoon -->
+      <% if @afternoon_services.any? %>
+        <div class="period-card period-afternoon cursor-default opacity-100">
+          <div class="icon">
+            <i class="fas fa-moon"></i>
+          </div>
+          <div class="font-semibold text-gray-900">Tarde</div>
+          <div class="text-sm text-gray-500">
+            <%= @afternoon_services.count %> opção<%= @afternoon_services.count > 1 ? 'ões' : '' %>
+          </div>
+        </div>
+      <% else %>
+        <div class="period-card period-afternoon opacity-50 cursor-not-allowed">
+          <div class="icon">
+            <i class="fas fa-moon"></i>
+          </div>
+          <div class="font-semibold text-gray-400">Tarde</div>
+          <div class="text-sm text-gray-400">Indisponível</div>
+        </div>
+      <% end %>
+    </div>
+    
+    <!-- Available time slots -->
+    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+      Horários disponíveis
+    </h3>
+    
+    <div class="space-y-3">
+      <% if @morning_services.any? %>
+        <% @morning_services.each do |service| %>
+          <%= link_to self_booking_confirm_path(@lead.self_booking_token, service_id: service.id), 
+                      class: "option-btn" do %>
+            <div class="flex items-center">
+              <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mr-3">
+                <i class="fas fa-sun text-amber-500"></i>
+              </div>
+              <div class="text-left">
+                <div class="font-semibold text-gray-900">
+                  <%= I18n.l(service.date, format: '%A, %d/%m') %>
+                </div>
+                <div class="text-sm text-gray-500">
+                  <%= service.start_time.strftime('%H:%M') %> - <%= service.end_time.strftime('%H:%M') %>
+                </div>
+              </div>
+            </div>
+            <i class="fas fa-chevron-right icon"></i>
+          <% end %>
+        <% end %>
+      <% end %>
+      
+      <% if @afternoon_services.any? %>
+        <% @afternoon_services.each do |service| %>
+          <%= link_to self_booking_confirm_path(@lead.self_booking_token, service_id: service.id), 
+                      class: "option-btn" do %>
+            <div class="flex items-center">
+              <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                <i class="fas fa-moon text-blue-500"></i>
+              </div>
+              <div class="text-left">
+                <div class="font-semibold text-gray-900">
+                  <%= I18n.l(service.date, format: '%A, %d/%m') %>
+                </div>
+                <div class="text-sm text-gray-500">
+                  <%= service.start_time.strftime('%H:%M') %> - <%= service.end_time.strftime('%H:%M') %>
+                </div>
+              </div>
+            </div>
+            <i class="fas fa-chevron-right icon"></i>
+          <% end %>
+        <% end %>
+      <% end %>
+    </div>
+  <% else %>
+    <!-- No services available -->
+    <div class="text-center py-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+        <i class="fas fa-clock text-gray-400 text-2xl"></i>
+      </div>
+      <h3 class="text-lg font-semibold text-gray-700 mb-2">
+        Sem horários disponíveis
+      </h3>
+      <p class="text-gray-500">
+        Não há horários disponíveis para este dia.
+      </p>
+    </div>
+  <% end %>
+</div>

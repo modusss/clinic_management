@@ -11,8 +11,80 @@ module ClinicManagement
     has_many :lead_interactions, dependent: :destroy
     has_many :lead_page_views, dependent: :destroy
     validates :phone, format: { with: /\A\d{10,11}\z/, message: "deve ter 10 ou 11 dígitos" }, allow_blank: true
+    validates :self_booking_token, uniqueness: true, allow_nil: true
 
     before_destroy :destroy_appointments
+
+    # ============================================================================
+    # SELF-BOOKING TOKEN METHODS
+    # 
+    # These methods enable the patient self-scheduling feature.
+    # The token is a secure, unique identifier that allows patients to access
+    # a simplified booking flow via a shareable link (e.g., sent via WhatsApp).
+    # 
+    # ESSENTIAL: Token generation is lazy (on-demand) to avoid generating tokens
+    # for leads that will never use the self-booking feature.
+    # ============================================================================
+
+    # Generates a new self-booking token if one doesn't exist
+    # Uses SecureRandom.urlsafe_base64 for cryptographically secure tokens
+    # 
+    # @return [String] the self-booking token (existing or newly generated)
+    # 
+    # @example
+    #   lead.generate_self_booking_token!
+    #   # => "xK9mN2pQ7vR1wY4z"
+    def generate_self_booking_token!
+      return self_booking_token if self_booking_token.present?
+      
+      loop do
+        token = SecureRandom.urlsafe_base64(12) # 16-character URL-safe token
+        unless ClinicManagement::Lead.exists?(self_booking_token: token)
+          update!(self_booking_token: token)
+          return token
+        end
+      end
+    end
+
+    # Returns the self-booking token, generating one if needed
+    # This is the preferred method for getting the token
+    # 
+    # @return [String] the self-booking token
+    def self_booking_token!
+      generate_self_booking_token!
+    end
+
+    # Finds a lead by their self-booking token
+    # 
+    # @param token [String] the self-booking token to search for
+    # @return [Lead, nil] the lead with the matching token, or nil if not found
+    # 
+    # @example
+    #   Lead.find_by_self_booking_token("xK9mN2pQ7vR1wY4z")
+    #   # => #<ClinicManagement::Lead id: 123, ...>
+    def self.find_by_self_booking_token(token)
+      return nil if token.blank?
+      find_by(self_booking_token: token)
+    end
+
+    # Returns the patient's first name (for personalized greetings)
+    # Extracts from the most recent invitation's patient_name if available,
+    # otherwise falls back to the lead's name
+    # 
+    # @return [String] the patient's first name
+    def patient_first_name
+      last_invitation = invitations.order(created_at: :desc).first
+      name_to_use = last_invitation&.patient_name || name
+      name_to_use&.split&.first || "Paciente"
+    end
+
+    # Returns the full patient name from the most recent invitation
+    # 
+    # @return [String] the patient's full name
+    def patient_full_name
+      last_invitation = invitations.order(created_at: :desc).first
+      last_invitation&.patient_name || name || "Paciente"
+    end
 
     # after_create :merge_with_duplicate_leads, if: :phone?
 

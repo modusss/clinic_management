@@ -20,3 +20,36 @@
     width: 20px;
     text-align: center;
   }
+
+/* ============================================================================
+   Copy Link Button Styles (Self-Booking Feature)
+   
+   Provides visual feedback when the self-booking link is copied.
+   Used in conjunction with the copy-link Stimulus controller.
+   ============================================================================ */
+
+/* Success state after copying */
+.copy-link-btn.copy-success {
+    background-color: #10b981 !important;
+    transform: scale(1.05);
+}
+
+.copy-link-btn.copy-success:hover {
+    background-color: #059669 !important;
+}
+
+/* Error state if copy fails */
+.copy-link-btn.copy-error {
+    background-color: #ef4444 !important;
+}
+
+/* Animation for success feedback */
+@keyframes copy-success-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.copy-success {
+    animation: copy-success-pulse 0.3s ease-out;
+}

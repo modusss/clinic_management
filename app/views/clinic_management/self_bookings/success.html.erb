@@ -1,0 +1,84 @@
+<%# ============================================================================
+    Self-Booking: Success Screen (Final Step)
+    
+    Shows booking confirmation with details.
+    Offers options to reschedule or add another booking.
+    
+    FLOW: show -> select_week -> select_day -> select_period -> confirm -> success
+    ============================================================================ %>
+
+<!-- Success card -->
+<div class="booking-card text-center">
+  <!-- Success icon with animation -->
+  <div class="success-icon inline-flex items-center justify-center w-20 h-20 bg-emerald-100 rounded-full mb-6">
+    <i class="fas fa-check text-emerald-600 text-4xl"></i>
+  </div>
+  
+  <% if @already_booked %>
+    <h2 class="text-2xl font-bold text-gray-900 mb-2">
+      Você já está agendado!
+    </h2>
+    
+    <p class="text-gray-600 mb-6">
+      <%= @patient_name %>, você já possui um agendamento para este horário.
+    </p>
+  <% else %>
+    <h2 class="text-2xl font-bold text-gray-900 mb-2">
+      Obrigado! Marcado <i class="fas fa-check text-emerald-500"></i>
+    </h2>
+    
+    <p class="text-gray-600 mb-6">
+      <%= @patient_name %>, sua consulta foi agendada com sucesso!
+    </p>
+  <% end %>
+  
+  <% if @appointment&.service %>
+    <!-- Booking details -->
+    <div class="bg-emerald-50 rounded-xl p-4 mb-6">
+      <div class="flex items-center justify-center mb-2">
+        <i class="fas fa-calendar-alt text-emerald-600 mr-2"></i>
+        <span class="font-semibold text-emerald-800 capitalize"><%= @formatted_date %></span>
+      </div>
+      <div class="flex items-center justify-center">
+        <i class="fas fa-clock text-emerald-600 mr-2"></i>
+        <span class="font-semibold text-emerald-800"><%= @formatted_time %></span>
+      </div>
+    </div>
+  <% end %>
+  
+  <!-- Next steps info -->
+  <div class="bg-blue-50 rounded-xl p-4 mb-6 text-left">
+    <h3 class="font-semibold text-blue-800 mb-2">
+      <i class="fas fa-info-circle mr-1"></i>
+      Próximos passos
+    </h3>
+    <ul class="text-sm text-blue-700 space-y-1">
+      <li><i class="fas fa-check text-blue-500 mr-2"></i>Você receberá um lembrete antes da consulta</li>
+      <li><i class="fas fa-check text-blue-500 mr-2"></i>Chegue com 10 minutos de antecedência</li>
+      <li><i class="fas fa-check text-blue-500 mr-2"></i>Traga documento com foto</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Action buttons -->
+<div class="space-y-3">
+  <!-- Reschedule button -->
+  <%= link_to self_booking_select_week_path(@lead.self_booking_token), 
+              class: "btn-secondary" do %>
+    <i class="fas fa-calendar-alt mr-2"></i>
+    Remarcar consulta
+  <% end %>
+  
+  <!-- Add another (starts fresh flow) -->
+  <%= link_to self_booking_path(@lead.self_booking_token), 
+              class: "btn-secondary" do %>
+    <i class="fas fa-plus mr-2"></i>
+    Adicionar outro agendamento
+  <% end %>
+</div>
+
+<!-- Thank you message -->
+<p class="text-center text-gray-500 text-sm mt-6">
+  <i class="fas fa-heart text-red-400 mr-1"></i>
+  Agradecemos pela preferência!
+</p>

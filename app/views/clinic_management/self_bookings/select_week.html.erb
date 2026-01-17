@@ -1,0 +1,95 @@
+<%# ============================================================================
+    Self-Booking: Select Week Screen (Step 2)
+    
+    Patient chooses between "this week" or "next weeks".
+    Only shows options that have available services.
+    
+    FLOW: show -> select_week -> select_day -> select_period -> confirm -> success
+    ============================================================================ %>
+
+<!-- Step indicator -->
+<div class="step-indicator">
+  <div class="step-dot completed"></div>
+  <div class="step-dot active"></div>
+  <div class="step-dot"></div>
+  <div class="step-dot"></div>
+</div>
+
+<!-- Back button -->
+<%= link_to self_booking_path(@lead.self_booking_token), class: "back-btn" do %>
+  <i class="fas fa-arrow-left"></i>
+  Voltar
+<% end %>
+
+<!-- Main card -->
+<div class="booking-card">
+  <h2 class="text-xl font-bold text-gray-900 text-center mb-2">
+    Olá, <span class="text-emerald-600"><%= @patient_name %></span>!
+  </h2>
+  
+  <p class="text-gray-600 text-center text-lg mb-6">
+    Quando você prefere ser atendido?
+  </p>
+  
+  <% if @has_services %>
+    <div class="space-y-3">
+      <!-- This week option -->
+      <% if @this_week_services.any? %>
+        <%= link_to self_booking_select_day_path(@lead.self_booking_token, week: 'this'), 
+                    class: "option-btn" do %>
+          <div class="flex items-center">
+            <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mr-4">
+              <i class="fas fa-calendar-day text-emerald-600 text-xl"></i>
+            </div>
+            <div class="text-left">
+              <div class="font-semibold text-gray-900">Esta semana</div>
+              <div class="text-sm text-gray-500">
+                <%= @this_week_services.count %> horário<%= @this_week_services.count > 1 ? 's' : '' %> disponível<%= @this_week_services.count > 1 ? 'is' : '' %>
+              </div>
+            </div>
+          </div>
+          <i class="fas fa-chevron-right icon"></i>
+        <% end %>
+      <% end %>
+      
+      <!-- Next weeks option -->
+      <% if @next_week_services.any? %>
+        <%= link_to self_booking_select_day_path(@lead.self_booking_token, week: 'next'), 
+                    class: "option-btn" do %>
+          <div class="flex items-center">
+            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+              <i class="fas fa-calendar-alt text-blue-600 text-xl"></i>
+            </div>
+            <div class="text-left">
+              <div class="font-semibold text-gray-900">Próximas semanas</div>
+              <div class="text-sm text-gray-500">
+                <%= @next_week_services.count %> horário<%= @next_week_services.count > 1 ? 's' : '' %> disponível<%= @next_week_services.count > 1 ? 'is' : '' %>
+              </div>
+            </div>
+          </div>
+          <i class="fas fa-chevron-right icon"></i>
+        <% end %>
+      <% end %>
+    </div>
+  <% else %>
+    <!-- No services available -->
+    <div class="text-center py-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+        <i class="fas fa-calendar-times text-gray-400 text-2xl"></i>
+      </div>
+      <h3 class="text-lg font-semibold text-gray-700 mb-2">
+        Sem horários disponíveis
+      </h3>
+      <p class="text-gray-500">
+        No momento não há horários disponíveis para agendamento.
+        Por favor, tente novamente mais tarde.
+      </p>
+    </div>
+  <% end %>
+</div>
+
+<!-- Help text -->
+<p class="text-center text-gray-500 text-sm mt-4">
+  <i class="fas fa-info-circle mr-1"></i>
+  Escolha o período mais conveniente para você
+</p>

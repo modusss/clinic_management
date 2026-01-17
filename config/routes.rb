@@ -1,5 +1,35 @@
 ClinicManagement::Engine.routes.draw do
   root 'invitations#new'
+  
+  # ============================================================================
+  # SELF-BOOKING ROUTES (PUBLIC - No authentication required)
+  # 
+  # These routes enable patients to self-schedule appointments via a unique link.
+  # The link is generated for each lead and can be shared via WhatsApp.
+  # 
+  # FLOW:
+  # 1. GET  /self_booking/:token           -> show (welcome screen)
+  # 2. POST /self_booking/:token/change_name -> change_name form
+  # 3. POST /self_booking/:token/update_name -> saves new name
+  # 4. GET  /self_booking/:token/select_week -> choose this/next week
+  # 5. GET  /self_booking/:token/select_day  -> choose day of week
+  # 6. GET  /self_booking/:token/select_period -> choose morning/afternoon
+  # 7. GET  /self_booking/:token/confirm    -> review booking
+  # 8. POST /self_booking/:token/create     -> create appointment
+  # 9. GET  /self_booking/:token/success    -> confirmation screen
+  # ============================================================================
+  scope 'self_booking/:token', as: 'self_booking' do
+    get '/', to: 'self_bookings#show', as: ''
+    post 'change_name', to: 'self_bookings#change_name'
+    post 'update_name', to: 'self_bookings#update_name'
+    get 'select_week', to: 'self_bookings#select_week'
+    get 'select_day', to: 'self_bookings#select_day'
+    get 'select_period', to: 'self_bookings#select_period'
+    get 'confirm', to: 'self_bookings#confirm'
+    post 'create', to: 'self_bookings#create_booking', as: 'create'
+    get 'success', to: 'self_bookings#success'
+  end
+  
   resources :invitations do
     member do
       get :edit_patient_name

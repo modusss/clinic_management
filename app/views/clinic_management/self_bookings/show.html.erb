@@ -1,0 +1,56 @@
+<%# ============================================================================
+    Self-Booking: Welcome Screen (Step 1)
+    
+    This is the first screen in the self-booking flow. The patient sees a
+    personalized greeting with their name and can either confirm it's them
+    or indicate they are someone else.
+    
+    FLOW: show -> select_week -> select_day -> select_period -> confirm -> success
+    ============================================================================ %>
+
+<!-- Step indicator -->
+<div class="step-indicator">
+  <div class="step-dot active"></div>
+  <div class="step-dot"></div>
+  <div class="step-dot"></div>
+  <div class="step-dot"></div>
+</div>
+
+<!-- Main card with greeting -->
+<div class="booking-card">
+  <!-- Logo/brand area (optional - can be customized) -->
+  <div class="text-center mb-6">
+    <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-4">
+      <i class="fas fa-calendar-check text-emerald-600 text-2xl"></i>
+    </div>
+  </div>
+  
+  <!-- Personalized greeting -->
+  <h1 class="greeting-text text-center mb-6">
+    Olá, <span class="patient-name"><%= @patient_name %></span>!
+  </h1>
+  
+  <p class="text-gray-600 text-center text-lg mb-8">
+    Vamos agendar sua consulta? É rápido e fácil.
+  </p>
+  
+  <!-- Confirmation button -->
+  <%= link_to self_booking_select_week_path(@lead.self_booking_token), class: "btn-primary mb-4" do %>
+    <i class="fas fa-check mr-2"></i>
+    Sim, sou eu! Agendar agora
+  <% end %>
+  
+  <!-- "Not me" button -->
+  <%= link_to self_booking_change_name_path(@lead.self_booking_token), 
+              class: "btn-secondary",
+              data: { turbo_method: :post } do %>
+    <i class="fas fa-user-edit mr-2"></i>
+    Não sou <%= @patient_name %>
+  <% end %>
+</div>
+
+<!-- Help text -->
+<p class="text-center text-gray-500 text-sm mt-4">
+  <i class="fas fa-lock mr-1"></i>
+  Seus dados estão seguros conosco
+</p>

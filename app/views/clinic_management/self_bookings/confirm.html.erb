@@ -1,0 +1,98 @@
+<%# ============================================================================
+    Self-Booking: Confirm Screen (Step 5)
+    
+    Shows booking summary and asks for final confirmation.
+    
+    FLOW: show -> select_week -> select_day -> select_period -> confirm -> success
+    ============================================================================ %>
+
+<!-- Step indicator -->
+<div class="step-indicator">
+  <div class="step-dot completed"></div>
+  <div class="step-dot completed"></div>
+  <div class="step-dot completed"></div>
+  <div class="step-dot active"></div>
+</div>
+
+<!-- Back button -->
+<%= link_to self_booking_select_period_path(@lead.self_booking_token, 
+                                             week: params[:week], 
+                                             day: params[:day]), 
+            class: "back-btn" do %>
+  <i class="fas fa-arrow-left"></i>
+  Voltar
+<% end %>
+
+<!-- Main card -->
+<div class="booking-card">
+  <div class="text-center mb-6">
+    <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-4">
+      <i class="fas fa-calendar-check text-emerald-600 text-2xl"></i>
+    </div>
+  </div>
+  
+  <h2 class="text-xl font-bold text-gray-900 text-center mb-2">
+    Confirmar agendamento
+  </h2>
+  
+  <p class="text-gray-600 text-center mb-6">
+    Verifique os dados abaixo
+  </p>
+  
+  <!-- Booking summary -->
+  <div class="bg-gray-50 rounded-xl p-4 mb-6 space-y-4">
+    <!-- Patient name -->
+    <div class="flex items-center">
+      <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+        <i class="fas fa-user text-blue-600"></i>
+      </div>
+      <div>
+        <div class="text-sm text-gray-500">Paciente</div>
+        <div class="font-semibold text-gray-900"><%= @patient_name %></div>
+      </div>
+    </div>
+    
+    <!-- Date -->
+    <div class="flex items-center">
+      <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+        <i class="fas fa-calendar text-purple-600"></i>
+      </div>
+      <div>
+        <div class="text-sm text-gray-500">Data</div>
+        <div class="font-semibold text-gray-900 capitalize"><%= @formatted_date %></div>
+      </div>
+    </div>
+    
+    <!-- Time -->
+    <div class="flex items-center">
+      <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mr-3">
+        <i class="fas fa-clock text-amber-600"></i>
+      </div>
+      <div>
+        <div class="text-sm text-gray-500">Horário</div>
+        <div class="font-semibold text-gray-900"><%= @formatted_time %></div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Confirm button -->
+  <%= button_to self_booking_create_path(@lead.self_booking_token, service_id: @service.id),
+                method: :post,
+                class: "btn-primary mb-4",
+                data: { turbo_confirm: "Confirmar agendamento para #{@formatted_date}?" } do %>
+    <i class="fas fa-check mr-2"></i>
+    Confirmar agendamento
+  <% end %>
+  
+  <!-- Cancel link -->
+  <%= link_to self_booking_path(@lead.self_booking_token), 
+              class: "block text-center text-gray-500 hover:text-gray-700" do %>
+    Cancelar e voltar ao início
+  <% end %>
+</div>
+
+<!-- Help text -->
+<p class="text-center text-gray-500 text-sm mt-4">
+  <i class="fas fa-info-circle mr-1"></i>
+  Você pode remarcar depois se precisar
+</p>

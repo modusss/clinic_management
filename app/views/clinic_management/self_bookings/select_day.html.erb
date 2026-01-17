@@ -1,0 +1,83 @@
+<%# ============================================================================
+    Self-Booking: Select Day Screen (Step 3)
+    
+    Patient chooses specific day of the week.
+    Shows only days that have available services.
+    
+    FLOW: show -> select_week -> select_day -> select_period -> confirm -> success
+    ============================================================================ %>
+
+<!-- Step indicator -->
+<div class="step-indicator">
+  <div class="step-dot completed"></div>
+  <div class="step-dot completed"></div>
+  <div class="step-dot active"></div>
+  <div class="step-dot"></div>
+</div>
+
+<!-- Back button -->
+<%= link_to self_booking_select_week_path(@lead.self_booking_token), class: "back-btn" do %>
+  <i class="fas fa-arrow-left"></i>
+  Voltar
+<% end %>
+
+<!-- Main card -->
+<div class="booking-card">
+  <h2 class="text-xl font-bold text-gray-900 text-center mb-2">
+    Qual dia da semana?
+  </h2>
+  
+  <p class="text-gray-600 text-center mb-6">
+    <%= @week == 'this' ? 'Esta semana' : 'Próximas semanas' %>
+  </p>
+  
+  <% if @days_of_week.any? %>
+    <div class="space-y-3">
+      <% @days_of_week.each do |day| %>
+        <% day_services = @available_days[day[:number]] %>
+        <%= link_to self_booking_select_period_path(@lead.self_booking_token, 
+                                                     week: @week, 
+                                                     day: day[:number]), 
+                    class: "option-btn" do %>
+          <div class="flex items-center">
+            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
+              <span class="text-purple-600 font-bold text-lg">
+                <%= day[:name][0..2].upcase %>
+              </span>
+            </div>
+            <div class="text-left">
+              <div class="font-semibold text-gray-900"><%= day[:name] %></div>
+              <div class="text-sm text-gray-500">
+                <% if day_services %>
+                  <%= day_services.count %> horário<%= day_services.count > 1 ? 's' : '' %>
+                <% end %>
+              </div>
+            </div>
+          </div>
+          <i class="fas fa-chevron-right icon"></i>
+        <% end %>
+      <% end %>
+    </div>
+  <% else %>
+    <!-- No days available -->
+    <div class="text-center py-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+        <i class="fas fa-calendar-times text-gray-400 text-2xl"></i>
+      </div>
+      <h3 class="text-lg font-semibold text-gray-700 mb-2">
+        Sem dias disponíveis
+      </h3>
+      <p class="text-gray-500">
+        Não há dias disponíveis neste período.
+      </p>
+    </div>
+  <% end %>
+</div>
+
+<!-- Legend -->
+<div class="mt-4 px-4">
+  <div class="flex items-center justify-center gap-4 text-sm text-gray-500">
+    <span><i class="fas fa-sun text-amber-500 mr-1"></i> Manhã</span>
+    <span><i class="fas fa-moon text-blue-500 mr-1"></i> Tarde</span>
+  </div>
+</div>

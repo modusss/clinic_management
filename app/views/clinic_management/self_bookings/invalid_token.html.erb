@@ -1,0 +1,44 @@
+<%# ============================================================================
+    Self-Booking: Invalid Token Screen
+    
+    Shown when the self_booking_token is invalid or not found.
+    This can happen if:
+    - The link was typed incorrectly
+    - The link has expired
+    - The lead was deleted
+    ============================================================================ %>
+
+<div class="booking-card text-center">
+  <!-- Error icon -->
+  <div class="inline-flex items-center justify-center w-20 h-20 bg-red-100 rounded-full mb-6">
+    <i class="fas fa-exclamation-triangle text-red-500 text-3xl"></i>
+  </div>
+  
+  <h2 class="text-2xl font-bold text-gray-900 mb-2">
+    Link inválido
+  </h2>
+  
+  <p class="text-gray-600 mb-6">
+    Este link de agendamento não é válido ou expirou.
+    Por favor, solicite um novo link.
+  </p>
+  
+  <!-- Help info -->
+  <div class="bg-gray-50 rounded-xl p-4 text-left">
+    <h3 class="font-semibold text-gray-700 mb-2">
+      <i class="fas fa-question-circle mr-1"></i>
+      O que fazer?
+    </h3>
+    <ul class="text-sm text-gray-600 space-y-2">
+      <li><i class="fas fa-check text-gray-400 mr-2"></i>Verifique se o link está completo</li>
+      <li><i class="fas fa-check text-gray-400 mr-2"></i>Solicite um novo link por WhatsApp</li>
+      <li><i class="fas fa-check text-gray-400 mr-2"></i>Entre em contato conosco</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Contact hint -->
+<p class="text-center text-gray-500 text-sm mt-6">
+  <i class="fas fa-phone mr-1"></i>
+  Em caso de dúvidas, entre em contato
+</p>
