@@ -88,7 +88,9 @@ module ClinicManagement
       begin
         message = LeadMessage.find_by(id: params[:custom_message_id])
         appointment = Appointment.find_by(id: params[:appointment_id])
-        add_message_sent(appointment, message.name)
+        # NOTE: add_message_sent was removed from here - it should only be called
+        # when the message is actually SENT (via send_evolution_message or manual send)
+        # not when the user just selects a message from the dropdown
         lead = Lead.find_by(id: params[:lead_id])
         message_data = get_message(message, lead, appointment.service)
         context = params[:context] || 'other'  # Capturar contexto
@@ -102,26 +104,23 @@ module ClinicManagement
           can_use_evolution = false
         end
         
-        render turbo_stream: [
-          turbo_stream.append(
-            "whatsapp-link-#{lead.id}", 
-            partial: "clinic_management/lead_messages/whatsapp_link", 
-            locals: { 
-              phone_number: lead.phone, 
-              message: message_data[:text],
-              media_details: message_data[:media],
-              lead_id: lead.id,
-              appointment_id: appointment.id,
-              can_use_evolution: can_use_evolution,
-              message_id: message.id,
-              context: context  # Passar contexto para o partial
-            }
-          ),
-          turbo_stream.update(
-            "messages-sent-#{appointment.id}", 
-            appointment.messages_sent.join(', ')
-          )
-        ]        
+        # NOTE: We no longer update messages-sent here because the message
+        # hasn't been sent yet - user just selected it from dropdown.
+        # The messages-sent will be updated when user actually sends the message.
+        render turbo_stream: turbo_stream.append(
+          "whatsapp-link-#{lead.id}", 
+          partial: "clinic_management/lead_messages/whatsapp_link", 
+          locals: { 
+            phone_number: lead.phone, 
+            message: message_data[:text],
+            media_details: message_data[:media],
+            lead_id: lead.id,
+            appointment_id: appointment.id,
+            can_use_evolution: can_use_evolution,
+            message_id: message.id,
+            context: context  # Passar contexto para o partial
+          }
+        )        
       rescue => e
         Rails.logger.error "Error in build_message: #{e.message}"
         Rails.logger.error e.backtrace.join("\n")
@@ -250,6 +249,10 @@ module ClinicManagement
         )
         
         if result[:success]
+          # Register that this message was sent to this appointment
+          # This is the correct place to do it - when the message is actually sent
+          add_message_sent(appointment, message.name)
+          
           # Formata mensagem de sucesso com informações do enfileiramento
           # Inclui nome da instância para debug/transparência
           instance_abbr = result[:instance_name]&.split('_')&.last || 'default'
@@ -270,7 +273,9 @@ module ClinicManagement
               estimated_send_time: result[:estimated_send_time]&.strftime('%H:%M:%S'),
               instance_name: result[:instance_name]
             },
-            lead_id: lead.id
+            lead_id: lead.id,
+            appointment_id: appointment.id,
+            messages_sent: appointment.reload.messages_sent.join(', ')  # Updated list for UI
           }
         else
           # Marcar lead como "sem WhatsApp" quando houver erro

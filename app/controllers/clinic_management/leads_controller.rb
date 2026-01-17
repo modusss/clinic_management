@@ -93,16 +93,39 @@ module ClinicManagement
           last_message_sent_at: Time.current, 
           last_message_sent_by: current_user.name
         )
+        
+        # Register the custom message name in messages_sent if message_id is provided
+        # This is called when user clicks "Enviar manualmente" or "Copiar mensagem"
+        if params[:message_id].present?
+          message = LeadMessage.find_by(id: params[:message_id])
+          if message.present? && !@appointment.messages_sent.include?(message.name)
+            @appointment.messages_sent << message.name
+            @appointment.save
+            Rails.logger.info "[RECORD MSG] Added '#{message.name}' to messages_sent for appointment ##{@appointment.id}"
+          end
+        end
       end
       
       #byebug
       respond_to do |format|
         format.turbo_stream do
-          render turbo_stream: turbo_stream.replace(
-            "phone-container-#{@lead.id}",  # Usando o mesmo ID do partial
-            partial: "clinic_management/leads/phone_with_message_tracking",
-            locals: { lead: @lead, appointment: @appointment }
-          )
+          streams = [
+            turbo_stream.replace(
+              "phone-container-#{@lead.id}",  # Usando o mesmo ID do partial
+              partial: "clinic_management/leads/phone_with_message_tracking",
+              locals: { lead: @lead, appointment: @appointment }
+            )
+          ]
+          
+          # Also update the messages-sent column if message was registered
+          if params[:message_id].present?
+            streams << turbo_stream.update(
+              "messages-sent-#{@appointment.id}",
+              @appointment.reload.messages_sent.join(', ')
+            )
+          end
+          
+          render turbo_stream: streams
         end
         #format.json { head :no_content }
       end
