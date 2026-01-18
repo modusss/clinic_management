@@ -77,6 +77,31 @@
   <% end %>
 </div>
 
+<%# ================================================================
+    SHARE WITH FRIENDS SECTION
+    Allows the patient to share the booking link with friends/family.
+    Friends who book through this link will have "Local" attribution.
+    ================================================================ %>
+<div class="share-section">
+  <div class="share-divider">
+    <span>Gostou? Indique!</span>
+  </div>
+  
+  <% share_url = "#{request.base_url}#{self_booking_share_invite_path(@lead.self_booking_token)}" %>
+  <% share_message = "Olá! 👋\n\nEstou indicando a clínica para você! Agende sua consulta de forma rápida e fácil:\n\n#{share_url}\n\nÉ só clicar no link acima! ✅" %>
+  
+  <a href="https://wa.me/?text=<%= ERB::Util.url_encode(share_message) %>" 
+     target="_blank"
+     class="btn-share-whatsapp">
+    <i class="fab fa-whatsapp mr-2"></i>
+    Compartilhar com amigos
+  </a>
+  
+  <p class="text-center text-xs text-gray-500 mt-2">
+    Envie para amigos e familiares pelo WhatsApp
+  </p>
+</div>
+
 <!-- Thank you message -->
 <p class="text-center text-gray-500 text-sm mt-6">
   <i class="fas fa-heart text-red-400 mr-1"></i>

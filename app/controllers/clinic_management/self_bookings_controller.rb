@@ -266,6 +266,80 @@ module ClinicManagement
     end
 
     # ============================================================================
+    # GET /self_booking/:token/share_invite
+    # 
+    # Shows a registration form for friends who received a shared link.
+    # This is the entry point when a patient shares the booking link with friends.
+    # 
+    # The user must provide their name and phone number to create their profile.
+    # 
+    # REFERRAL ATTRIBUTION: Always "Local" (patient shared, not referral)
+    # ============================================================================
+    def share_invite
+      @sharer_name = @lead.owner_first_name
+    end
+
+    # ============================================================================
+    # POST /self_booking/:token/create_shared_booking
+    # 
+    # Creates a new Lead for someone who received a shared link from a patient.
+    # 
+    # LOGIC:
+    # 1. If phone already exists -> redirect to that Lead's booking flow
+    # 2. If phone is new -> create new Lead and continue booking
+    # 
+    # REFERRAL ATTRIBUTION: Always "Local" (patient shared, not referral)
+    # ============================================================================
+    def create_shared_booking
+      patient_name = params[:patient_name]&.strip
+      patient_phone = params[:patient_phone]&.gsub(/\D/, '')
+      
+      if patient_name.blank?
+        redirect_to self_booking_share_invite_path(@lead.self_booking_token),
+                    alert: "Por favor, informe seu nome."
+        return
+      end
+      
+      if patient_phone.blank? || patient_phone.length < 10
+        redirect_to self_booking_share_invite_path(@lead.self_booking_token),
+                    alert: "Por favor, informe um telefone válido."
+        return
+      end
+      
+      # Check if phone already exists
+      existing_lead = Lead.find_by(phone: patient_phone)
+      
+      if existing_lead.present?
+        # Phone exists - redirect to that Lead's booking flow
+        Rails.logger.info "[SelfBooking] Shared invite: phone #{patient_phone} exists - using lead ##{existing_lead.id}"
+        
+        session[:self_booking_patient_name] = patient_name
+        session[:self_booking_lead_id] = existing_lead.id
+        session[:self_booking_force_local] = true
+        
+        redirect_to self_booking_select_week_path(existing_lead.self_booking_token!)
+        return
+      end
+      
+      # Create new lead
+      new_lead = Lead.create!(
+        name: patient_name,
+        phone: patient_phone
+      )
+      new_lead.generate_self_booking_token!
+      
+      Rails.logger.info "[SelfBooking] Shared invite: created new lead ##{new_lead.id} for #{patient_name}"
+      
+      # Store in session
+      session[:self_booking_patient_name] = patient_name
+      session[:self_booking_lead_id] = new_lead.id
+      session[:self_booking_force_local] = true
+      
+      # Redirect to booking flow
+      redirect_to self_booking_select_week_path(new_lead.self_booking_token!)
+    end
+
+    # ============================================================================
     # GET /self_booking/:token/select_week
     # 
     # Patient chooses between "this week" or "next weeks".

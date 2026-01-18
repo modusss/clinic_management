@@ -636,6 +636,67 @@
       display: none !important;
     }
     
+    /* ============================================================================
+     * Share Section Styles
+     * Used on the success page to share booking link with friends
+     * ============================================================================ */
+    .share-section {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+    }
+    
+    .share-divider {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .share-divider::before,
+    .share-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #d1d5db, transparent);
+    }
+    
+    .share-divider span {
+      padding: 0 1rem;
+      font-size: 0.875rem;
+      color: #6b7280;
+      font-weight: 500;
+    }
+    
+    .btn-share-whatsapp {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 1rem 1.5rem;
+      background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+      color: white;
+      font-weight: 600;
+      font-size: 1.0625rem;
+      border-radius: 1rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      box-shadow: 0 4px 14px -3px rgba(37, 211, 102, 0.4);
+    }
+    
+    .btn-share-whatsapp:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px -3px rgba(37, 211, 102, 0.5);
+    }
+    
+    .btn-share-whatsapp:active {
+      transform: translateY(0);
+    }
+    
+    .btn-share-whatsapp i {
+      font-size: 1.25rem;
+    }
+    
     /* Responsive adjustments */
     @media (max-height: 700px) {
       .booking-card {

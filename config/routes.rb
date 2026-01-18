@@ -27,6 +27,9 @@ ClinicManagement::Engine.routes.draw do
     # New registration flow (for users with different phone numbers)
     get 'new_registration', to: 'self_bookings#new_registration'
     post 'create_registration', to: 'self_bookings#create_registration'
+    # Share invite flow (patient sharing with friends)
+    get 'share_invite', to: 'self_bookings#share_invite'
+    post 'create_shared_booking', to: 'self_bookings#create_shared_booking'
     get 'select_week', to: 'self_bookings#select_week'
     get 'select_day', to: 'self_bookings#select_day'
     get 'select_period', to: 'self_bookings#select_period'
