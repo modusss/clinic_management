@@ -117,8 +117,25 @@
           Allows staff to generate and copy a unique self-booking link for the patient.
           The patient can use this link to self-schedule their appointment via WhatsApp.
           
+          REFERRAL ATTRIBUTION LOGIC:
+          - If shared by a referral user: link includes ref=REFERRAL_ID -> attributed to that referral
+          - If shared by clinic staff (non-referral): no ref param -> applies 180-day rule:
+            - Last appointment > 180 days ago: attributed to original referral
+            - Last appointment <= 180 days ago: attributed to "Local" (organic)
+          
           ESSENTIAL: This feature requires the self_booking_token migration to be run.
           ============================================================================ %>
+      <%
+        # Determine the self-booking link with referral attribution
+        # If current user is a referral, include their ID in the link
+        if referral?(current_user) && user_referral.present?
+          self_booking_link = clinic_management.self_booking_path(lead.self_booking_token!, ref: user_referral.id)
+        else
+          # Non-referral users (clinic staff) - no ref param, 180-day rule applies
+          self_booking_link = clinic_management.self_booking_path(lead.self_booking_token!)
+        end
+        full_link = "#{request.base_url}#{self_booking_link}"
+      %>
       <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 border-l-4 border-emerald-500">
         <dt class="text-gray-500 text-[18px] font-semibold">
           <i class="fas fa-calendar-check text-emerald-500 mr-2"></i>
@@ -129,10 +146,17 @@
             Envie este link para o paciente agendar sua própria consulta:
           </div>
           
+          <% if referral?(current_user) && user_referral.present? %>
+            <div class="mb-2 text-xs text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg inline-block">
+              <i class="fas fa-user-tag mr-1"></i>
+              Indicação atribuída a: <strong><%= user_referral.name %></strong>
+            </div>
+          <% end %>
+          
           <div data-controller="copy-link" class="flex flex-col sm:flex-row gap-2">
             <input type="text" 
                    data-copy-link-target="input"
-                   value="<%= request.base_url %><%= clinic_management.self_booking_path(lead.self_booking_token!) %>"
+                   value="<%= full_link %>"
                    readonly
                    class="flex-1 px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg 
                           text-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-200"
@@ -150,8 +174,8 @@
           </div>
           
           <div class="mt-3 flex flex-col sm:flex-row gap-2">
-            <%# Direct WhatsApp share button %>
-            <% whatsapp_message = "Olá! Segue o link para você agendar sua consulta: #{request.base_url}#{clinic_management.self_booking_path(lead.self_booking_token!)}" %>
+            <%# Direct WhatsApp share button with referral attribution %>
+            <% whatsapp_message = "Olá! Segue o link para você agendar sua consulta: #{full_link}" %>
             <% if lead.phone.present? %>
               <a href="https://wa.me/55<%= lead.phone %>?text=<%= ERB::Util.url_encode(whatsapp_message) %>"
                  target="_blank"

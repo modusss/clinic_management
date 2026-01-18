@@ -47,10 +47,21 @@ module ClinicManagement
     # 
     # Welcome screen with personalized greeting.
     # Patient can confirm their name or indicate they are someone else.
+    # 
+    # REFERRAL ATTRIBUTION:
+    # Captures the 'ref' parameter (referral_id) if present in the URL.
+    # This is used later to attribute the booking to the correct referral.
     # ============================================================================
     def show
       @patient_name = @lead.patient_first_name
       @full_name = @lead.patient_full_name
+      
+      # Capture referral attribution from URL (if link was shared by a referral)
+      # Store in session so it persists through the booking flow
+      if params[:ref].present?
+        session[:self_booking_referral_id] = params[:ref].to_i
+        Rails.logger.info "[SelfBooking] Referral ID #{params[:ref]} captured from URL"
+      end
     end
 
     # ============================================================================
@@ -227,10 +238,10 @@ module ClinicManagement
         # Find or create "Local" region for self-bookings
         region = Region.find_or_create_by!(name: 'Local')
         
-        # Find "Auto-Marcação" referral or create one
-        referral = Referral.find_or_create_by!(name: 'Auto-Marcação') do |r|
-          r.code = 'AUTO'
-        end
+        # Determine referral attribution based on who shared the link
+        referral = determine_referral_attribution(target_lead)
+        
+        Rails.logger.info "[SelfBooking] Referral attribution: #{referral.name} (ID: #{referral.id})"
         
         # Create invitation linked to TARGET lead (the phone owner)
         @invitation = target_lead.invitations.create!(
@@ -255,6 +266,7 @@ module ClinicManagement
       # Clear session data
       session.delete(:self_booking_patient_name)
       session.delete(:self_booking_lead_id)
+      session.delete(:self_booking_referral_id)
       
       redirect_to self_booking_success_path(@lead.self_booking_token)
     rescue ActiveRecord::RecordInvalid => e
@@ -291,6 +303,7 @@ module ClinicManagement
       # Clear session data after showing success
       session.delete(:self_booking_patient_name)
       session.delete(:self_booking_lead_id)
+      session.delete(:self_booking_referral_id)
     end
 
     private
@@ -422,6 +435,76 @@ module ClinicManagement
       
       # Default to the lead from URL token
       @lead
+    end
+
+    # ============================================================================
+    # REFERRAL ATTRIBUTION LOGIC
+    # 
+    # Determines which referral should be credited for this self-booking.
+    # 
+    # RULES:
+    # 1. If link was shared by a referral (ref param in URL):
+    #    -> Attribute to that referral (their effort brought the patient)
+    # 
+    # 2. If link was shared by clinic staff (no ref param):
+    #    -> Check the patient's last appointment date:
+    #    2.1 Last appointment <= 180 days ago (within grace period):
+    #        -> Attribute to the ORIGINAL referral from last appointment
+    #        (referral still gets credit during the 180-day grace period)
+    #    2.2 Last appointment > 180 days ago (grace period expired):
+    #        -> Attribute to "Local" (organic recapture by clinic)
+    #        (clinic's own effort to bring patient back)
+    # 
+    # ESSENTIAL: The 180-day grace period protects referral attribution.
+    # Within 180 days, the original referral still "owns" the patient.
+    # After 180 days, the patient is considered organic/local.
+    # 
+    # @param target_lead [Lead] the lead being booked
+    # @return [Referral] the referral to attribute the booking to
+    # ============================================================================
+    def determine_referral_attribution(target_lead)
+      # CASE 1: Link was shared by a referral (captured in session from URL param)
+      if session[:self_booking_referral_id].present?
+        referral = Referral.find_by(id: session[:self_booking_referral_id])
+        if referral.present?
+          Rails.logger.info "[SelfBooking] Attribution: Referral #{referral.name} (shared the link)"
+          return referral
+        end
+      end
+      
+      # CASE 2: Link was shared by clinic staff (no ref param)
+      # Apply the 180-day rule based on last appointment
+      last_appointment = target_lead.appointments
+                                    .includes(invitation: :referral)
+                                    .joins(:service)
+                                    .order('clinic_management_services.date DESC')
+                                    .first
+      
+      if last_appointment.present? && last_appointment.service.present?
+        days_since_last = (Date.current - last_appointment.service.date).to_i
+        original_referral = last_appointment.invitation&.referral
+        
+        Rails.logger.info "[SelfBooking] Last appointment was #{days_since_last} days ago"
+        
+        # CASE 2.1: Within 180-day grace period - attribute to original referral
+        # The referral still "owns" this patient during the grace period
+        if days_since_last <= 180 && original_referral.present?
+          Rails.logger.info "[SelfBooking] Attribution: Original referral #{original_referral.name} (within 180-day grace period)"
+          return original_referral
+        end
+        
+        # CASE 2.2: Grace period expired (> 180 days) - attribute to "Local"
+        Rails.logger.info "[SelfBooking] Attribution: Local (grace period expired, >180 days)"
+      else
+        Rails.logger.info "[SelfBooking] Attribution: Local (no previous appointment)"
+      end
+      
+      # Default to "Local" for organic/clinic recapture
+      local_referral = Referral.find_or_create_by!(name: 'Local') do |r|
+        r.code = 'LOCAL'
+      end
+      
+      local_referral
     end
   end
 end
