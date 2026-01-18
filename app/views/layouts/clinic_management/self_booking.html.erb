@@ -354,6 +354,134 @@
       color: #4b5563;
     }
     
+    /* ============================================================================
+     * Existing Appointment Card
+     * Displays when patient already has a future appointment scheduled.
+     * Provides clear visibility and option to keep or reschedule.
+     * ============================================================================ */
+    .existing-appointment-card {
+      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+      border: 2px solid #10b981;
+      border-radius: 1.5rem;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 14px -3px rgba(16, 185, 129, 0.2);
+    }
+    
+    .existing-appointment-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    
+    .existing-appointment-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 3rem;
+      height: 3rem;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      font-size: 1.25rem;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    
+    .existing-appointment-title {
+      font-weight: 700;
+      font-size: 1.125rem;
+      color: #065f46;
+      margin: 0;
+    }
+    
+    .existing-appointment-subtitle {
+      font-size: 0.875rem;
+      color: #047857;
+      margin: 0;
+    }
+    
+    .existing-appointment-details {
+      background: white;
+      border-radius: 1rem;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .existing-appointment-date,
+    .existing-appointment-time,
+    .existing-appointment-referral {
+      display: flex;
+      align-items: center;
+      font-size: 0.9375rem;
+      color: #374151;
+      margin-bottom: 0.5rem;
+    }
+    
+    .existing-appointment-date:last-child,
+    .existing-appointment-time:last-child,
+    .existing-appointment-referral:last-child {
+      margin-bottom: 0;
+    }
+    
+    .existing-appointment-date {
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+    
+    .existing-appointment-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .btn-keep-appointment {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 0.875rem 1.5rem;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      font-weight: 600;
+      font-size: 1rem;
+      border-radius: 0.75rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      box-shadow: 0 4px 14px -3px rgba(16, 185, 129, 0.4);
+    }
+    
+    .btn-keep-appointment:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px -3px rgba(16, 185, 129, 0.5);
+    }
+    
+    /* Reschedule divider */
+    .reschedule-divider {
+      display: flex;
+      align-items: center;
+      margin: 1rem 0;
+    }
+    
+    .reschedule-divider::before,
+    .reschedule-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #d1d5db, transparent);
+    }
+    
+    .reschedule-divider-text {
+      padding: 0 1rem;
+      font-size: 0.8125rem;
+      color: #9ca3af;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
     /* Responsive adjustments */
     @media (max-height: 700px) {
       .booking-card {

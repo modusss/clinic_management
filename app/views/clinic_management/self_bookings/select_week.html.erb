@@ -4,6 +4,9 @@
     Patient chooses between "this week" or "next weeks".
     Only shows options that have available services.
     
+    IMPORTANT: If patient has an existing future appointment, it's displayed
+    prominently to avoid confusion and allow rescheduling if needed.
+    
     FLOW: show -> select_week -> select_day -> select_period -> confirm -> success
     ============================================================================ %>
 
@@ -21,15 +24,71 @@
   Voltar
 <% end %>
 
+<% if @existing_appointment %>
+  <%# ================================================================
+      EXISTING APPOINTMENT CARD
+      Shows the patient's current scheduled appointment with options
+      to keep it or reschedule.
+      ================================================================ %>
+  <div class="existing-appointment-card">
+    <div class="existing-appointment-header">
+      <div class="existing-appointment-icon">
+        <i class="fas fa-calendar-check"></i>
+      </div>
+      <div>
+        <h3 class="existing-appointment-title">Você já tem um agendamento!</h3>
+        <p class="existing-appointment-subtitle"><%= @existing_appointment.invitation&.patient_name || @patient_name %></p>
+      </div>
+    </div>
+    
+    <div class="existing-appointment-details">
+      <div class="existing-appointment-date">
+        <i class="fas fa-calendar text-emerald-500 mr-2"></i>
+        <span><%= I18n.l(@existing_appointment.service.date, format: '%A, %d de %B') %></span>
+      </div>
+      <div class="existing-appointment-time">
+        <i class="fas fa-clock text-emerald-500 mr-2"></i>
+        <span><%= @existing_appointment.service.start_time.strftime('%H:%M') %> - <%= @existing_appointment.service.end_time.strftime('%H:%M') %></span>
+      </div>
+      <% if @existing_appointment.invitation&.referral&.name.present? %>
+        <div class="existing-appointment-referral">
+          <i class="fas fa-user-tag text-gray-400 mr-2"></i>
+          <span class="text-gray-500">Indicação: <%= @existing_appointment.invitation.referral.name %></span>
+        </div>
+      <% end %>
+    </div>
+    
+    <div class="existing-appointment-actions">
+      <%= link_to self_booking_success_path(@lead.self_booking_token, already_booked: true), 
+                  class: "btn-keep-appointment" do %>
+        <i class="fas fa-check-circle mr-2"></i>
+        Manter este horário
+      <% end %>
+    </div>
+  </div>
+  
+  <%# Separator with reschedule option %>
+  <div class="reschedule-divider">
+    <span class="reschedule-divider-text">ou escolha outro horário</span>
+  </div>
+<% end %>
+
 <!-- Main card -->
 <div class="booking-card">
-  <h2 class="text-xl font-bold text-gray-900 text-center mb-2">
-    Olá, <span class="text-emerald-600"><%= @patient_name %></span>!
-  </h2>
-  
-  <p class="text-gray-600 text-center text-lg mb-6">
-    Quando você prefere ser atendido?
-  </p>
+  <% unless @existing_appointment %>
+    <h2 class="text-xl font-bold text-gray-900 text-center mb-2">
+      Olá, <span class="text-emerald-600"><%= @patient_name %></span>!
+    </h2>
+    
+    <p class="text-gray-600 text-center text-lg mb-6">
+      Quando você prefere ser atendido?
+    </p>
+  <% else %>
+    <p class="text-gray-600 text-center text-base mb-4">
+      <i class="fas fa-sync-alt text-amber-500 mr-1"></i>
+      Selecione um novo horário para <strong>reagendar</strong>
+    </p>
+  <% end %>
   
   <% if @has_services %>
     <div class="space-y-3">
@@ -91,5 +150,5 @@
 <!-- Help text -->
 <p class="text-center text-gray-500 text-sm mt-4">
   <i class="fas fa-info-circle mr-1"></i>
-  Escolha o período mais conveniente para você
+  <%= @existing_appointment ? 'Escolha um novo horário ou mantenha o atual' : 'Escolha o período mais conveniente para você' %>
 </p>

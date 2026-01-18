@@ -157,14 +157,24 @@ module ClinicManagement
     # GET /self_booking/:token/select_week
     # 
     # Patient chooses between "this week" or "next weeks".
+    # 
+    # IMPORTANT: If the patient already has a future appointment scheduled,
+    # it will be displayed here so they don't get confused and can choose
+    # to keep it or reschedule.
     # ============================================================================
     def select_week
       @patient_name = session[:self_booking_patient_name] || @lead.patient_first_name
+      @full_patient_name = session[:self_booking_patient_name] || @lead.patient_full_name
       @this_week_services = services_this_week
       @next_week_services = services_next_weeks
       
       # If no services available at all, show message
       @has_services = @this_week_services.any? || @next_week_services.any?
+      
+      # Check for existing future appointments for this patient
+      # This helps prevent confusion and allows rescheduling
+      target_lead = get_target_lead_for_booking
+      @existing_appointment = find_existing_future_appointment(target_lead, @full_patient_name)
     end
 
     # ============================================================================
@@ -403,6 +413,57 @@ module ClinicManagement
       day_numbers.sort.map do |num|
         { number: num, name: day_names[num] }
       end
+    end
+
+    # ============================================================================
+    # EXISTING APPOINTMENT CHECK
+    # 
+    # Finds any future appointment for the patient to display on the booking screen.
+    # This prevents confusion and allows the patient to see their existing booking
+    # or choose to reschedule.
+    # ============================================================================
+
+    # ============================================================================
+    # Finds an existing future appointment for the given patient.
+    # 
+    # Searches by:
+    # 1. Appointments linked to the lead with status 'agendado'
+    # 2. Service date >= today
+    # 3. Optionally matches patient_name (for leads with multiple patients)
+    # 
+    # @param lead [Lead] the lead to search appointments for
+    # @param patient_name [String] optional patient name to filter by
+    # @return [Appointment, nil] the existing future appointment, if any
+    # ============================================================================
+    def find_existing_future_appointment(lead, patient_name = nil)
+      appointments = lead.appointments
+                         .includes(:service, invitation: :referral)
+                         .joins(:service)
+                         .where(status: 'agendado')
+                         .where('clinic_management_services.date >= ?', Date.current)
+                         .order('clinic_management_services.date ASC')
+      
+      # If patient_name is provided, try to find appointment with matching name
+      if patient_name.present?
+        # Normalize patient name for comparison
+        normalized_name = patient_name.downcase.strip
+        first_name = normalized_name.split.first
+        
+        # First try exact match on invitation patient_name
+        matching_appointment = appointments.find do |apt|
+          apt_name = apt.invitation&.patient_name&.downcase&.strip
+          next false unless apt_name
+          
+          # Match if same first name
+          apt_first_name = apt_name.split.first
+          apt_first_name == first_name
+        end
+        
+        return matching_appointment if matching_appointment
+      end
+      
+      # Return the earliest future appointment if no specific match
+      appointments.first
     end
 
     # ============================================================================
