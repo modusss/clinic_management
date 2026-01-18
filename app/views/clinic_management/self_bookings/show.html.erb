@@ -2,8 +2,11 @@
     Self-Booking: Welcome Screen (Step 1)
     
     This is the first screen in the self-booking flow. The patient sees a
-    personalized greeting with their name and can either confirm it's them
-    or indicate they are someone else.
+    personalized greeting and can select which patient they are (if multiple
+    patients are associated with this phone number).
+    
+    IMPORTANT: The greeting shows the Lead owner's name (phone owner).
+    A Lead can have multiple patients (e.g., Rafael=father/owner, Joana=daughter).
     
     FLOW: show -> select_week -> select_day -> select_period -> confirm -> success
     ============================================================================ %>
@@ -18,33 +21,82 @@
 
 <!-- Main card with greeting -->
 <div class="booking-card">
-  <!-- Logo/brand area (optional - can be customized) -->
+  <!-- Logo/brand area -->
   <div class="text-center mb-6">
     <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-4">
       <i class="fas fa-calendar-check text-emerald-600 text-2xl"></i>
     </div>
   </div>
   
-  <!-- Personalized greeting -->
+  <!-- Personalized greeting (shows Lead owner's name) -->
   <h1 class="greeting-text text-center mb-6">
-    Olá, <span class="patient-name"><%= @patient_name %></span>!
+    Olá, <span class="patient-name"><%= @lead_name %></span>!
   </h1>
   
-  <p class="text-gray-600 text-center text-lg mb-8">
+  <p class="text-gray-600 text-center text-lg mb-6">
     Vamos agendar sua consulta? É rápido e fácil.
   </p>
   
-  <!-- Confirmation button -->
-  <%= link_to self_booking_select_week_path(@lead.self_booking_token), class: "btn-primary mb-4" do %>
-    <i class="fas fa-check mr-2"></i>
-    Sim, sou eu! Agendar agora
-  <% end %>
-  
-  <!-- "Not me" button - links to identity change form -->
-  <%= link_to self_booking_change_name_path(@lead.self_booking_token), 
-              class: "btn-secondary" do %>
-    <i class="fas fa-user-edit mr-2"></i>
-    Não sou <%= @patient_name %>
+  <% if @has_multiple_patients %>
+    <%# ================================================================
+        MULTIPLE PATIENTS: Show patient cards
+        When multiple patients are associated with this phone number,
+        the user selects who they are booking for by clicking a card.
+        ================================================================ %>
+    
+    <p class="text-gray-600 text-center text-base mb-4">
+      Quem está agendando?
+    </p>
+    
+    <div class="space-y-3 mb-6">
+      <% @distinct_patients.each_with_index do |patient, index| %>
+        <%# Each patient is a clickable card that submits the form %>
+        <%= form_with url: self_booking_select_patient_path(@lead.self_booking_token), 
+                      method: :post, 
+                      local: true,
+                      class: "w-full" do %>
+          <input type="hidden" name="selected_patient" value="<%= patient[:full_name] %>">
+          
+          <button type="submit" class="patient-card w-full">
+            <div class="patient-card-avatar">
+              <%= patient[:first_name][0].upcase %>
+            </div>
+            <div class="patient-card-info">
+              <span class="patient-card-name"><%= patient[:first_name] %></span>
+              <span class="patient-card-fullname"><%= patient[:full_name] %></span>
+            </div>
+            <i class="fas fa-chevron-right text-gray-400"></i>
+          </button>
+        <% end %>
+      <% end %>
+    </div>
+    
+    <!-- "Not in the list" button -->
+    <%= link_to self_booking_change_name_path(@lead.self_booking_token), 
+                class: "btn-outline-secondary" do %>
+      <i class="fas fa-user-plus mr-2"></i>
+      Não estou na lista
+    <% end %>
+    
+  <% else %>
+    <%# ================================================================
+        SINGLE PATIENT: Simple confirmation flow
+        When only one patient is associated, show the simple confirm/deny.
+        ================================================================ %>
+    <% patient_name = @distinct_patients.first&.dig(:first_name) || @lead_name %>
+    
+    <!-- Confirmation button -->
+    <%= link_to self_booking_select_week_path(@lead.self_booking_token), class: "btn-primary mb-4" do %>
+      <i class="fas fa-check mr-2"></i>
+      Sim, sou eu! Agendar agora
+    <% end %>
+    
+    <!-- "Not me" button -->
+    <%= link_to self_booking_change_name_path(@lead.self_booking_token), 
+                class: "btn-secondary" do %>
+      <i class="fas fa-user-edit mr-2"></i>
+      Não sou <%= patient_name %>
+    <% end %>
   <% end %>
 </div>
 

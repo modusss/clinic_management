@@ -8,18 +8,20 @@ ClinicManagement::Engine.routes.draw do
   # The link is generated for each lead and can be shared via WhatsApp.
   # 
   # FLOW:
-  # 1. GET  /self_booking/:token           -> show (welcome screen)
-  # 2. GET  /self_booking/:token/change_name -> change_name form (shows form)
-  # 3. POST /self_booking/:token/update_name -> saves new name + phone
-  # 4. GET  /self_booking/:token/select_week -> choose this/next week
-  # 5. GET  /self_booking/:token/select_day  -> choose day of week
-  # 6. GET  /self_booking/:token/select_period -> choose morning/afternoon
-  # 7. GET  /self_booking/:token/confirm    -> review booking
-  # 8. POST /self_booking/:token/create     -> create appointment
-  # 9. GET  /self_booking/:token/success    -> confirmation screen
+  # 1.  GET  /self_booking/:token              -> show (welcome screen)
+  # 2a. POST /self_booking/:token/select_patient -> select patient (if multiple)
+  # 2b. GET  /self_booking/:token/change_name  -> change_name form (not in list)
+  # 3.  POST /self_booking/:token/update_name  -> saves new name + phone
+  # 4.  GET  /self_booking/:token/select_week  -> choose this/next week
+  # 5.  GET  /self_booking/:token/select_day   -> choose day of week
+  # 6.  GET  /self_booking/:token/select_period -> choose morning/afternoon
+  # 7.  GET  /self_booking/:token/confirm      -> review booking
+  # 8.  POST /self_booking/:token/create       -> create appointment
+  # 9.  GET  /self_booking/:token/success      -> confirmation screen
   # ============================================================================
   scope 'self_booking/:token', as: 'self_booking' do
     get '/', to: 'self_bookings#show', as: ''
+    post 'select_patient', to: 'self_bookings#select_patient'
     get 'change_name', to: 'self_bookings#change_name'
     post 'update_name', to: 'self_bookings#update_name'
     get 'select_week', to: 'self_bookings#select_week'

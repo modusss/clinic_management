@@ -254,6 +254,106 @@
       color: #059669;
     }
     
+    /* ============================================================================
+     * Patient Selection Cards
+     * Used when multiple patients are associated with the same phone number.
+     * Similar style to day selection cards for visual consistency.
+     * ============================================================================ */
+    .patient-card {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      width: 100%;
+      padding: 1rem 1.25rem;
+      background: white;
+      border-radius: 1rem;
+      border: 2px solid #e5e7eb;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      text-align: left;
+    }
+    
+    .patient-card:hover {
+      border-color: #059669;
+      background: #f0fdf4;
+      transform: translateX(4px);
+    }
+    
+    .patient-card:active {
+      transform: scale(0.98);
+    }
+    
+    .patient-card-avatar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 3rem;
+      height: 3rem;
+      background: linear-gradient(135deg, #e9d5ff 0%, #d8b4fe 100%);
+      color: #7c3aed;
+      font-weight: 700;
+      font-size: 1.25rem;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    
+    .patient-card-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+    }
+    
+    .patient-card-name {
+      font-weight: 600;
+      font-size: 1.125rem;
+      color: #1f2937;
+    }
+    
+    .patient-card-fullname {
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+    
+    .patient-card:hover .patient-card-avatar {
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      color: #059669;
+    }
+    
+    .patient-card:hover .fa-chevron-right {
+      color: #059669;
+      transform: translateX(2px);
+    }
+    
+    .patient-card .fa-chevron-right {
+      transition: all 0.2s ease;
+    }
+    
+    /* Outline secondary button (subtle, less prominent) */
+    .btn-outline-secondary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 0.875rem 1.5rem;
+      background: transparent;
+      color: #6b7280;
+      font-weight: 500;
+      font-size: 0.9375rem;
+      border-radius: 1rem;
+      border: 1.5px dashed #d1d5db;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+    
+    .btn-outline-secondary:hover {
+      background: #f9fafb;
+      border-color: #9ca3af;
+      color: #4b5563;
+    }
+    
     /* Responsive adjustments */
     @media (max-height: 700px) {
       .booking-card {
@@ -262,6 +362,16 @@
       
       .greeting-text {
         font-size: 1.5rem;
+      }
+      
+      .patient-card {
+        padding: 0.875rem 1rem;
+      }
+      
+      .patient-card-avatar {
+        width: 2.5rem;
+        height: 2.5rem;
+        font-size: 1rem;
       }
     }
   </style>

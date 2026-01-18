@@ -86,6 +86,88 @@ module ClinicManagement
       last_invitation&.patient_name || name || "Paciente"
     end
 
+    # ============================================================================
+    # DISTINCT PATIENTS ASSOCIATED WITH THIS LEAD (PHONE NUMBER)
+    # 
+    # A single Lead (phone owner) can have multiple patients associated through
+    # invitations. For example: Rafael (father, phone owner) with Joana (daughter).
+    # 
+    # This method returns distinct patients grouped by FIRST NAME (case-insensitive)
+    # to handle variations like "Caio da Silva Gomes" vs "Caio da silva".
+    # 
+    # DEDUPLICATION LOGIC:
+    # - "Caio da Silva Gomes" and "Caio da silva" -> same person (same first name)
+    # - "João" and "Maria" -> different people
+    # 
+    # @return [Array<Hash>] array of {first_name:, full_name:} hashes, unique by first_name
+    # 
+    # @example
+    #   lead.distinct_patients
+    #   # => [{first_name: "Rafael", full_name: "Rafael Paiva Santos"},
+    #   #     {first_name: "Joana", full_name: "Joana da Silva"}]
+    # ============================================================================
+    def distinct_patients
+      # Collect all patient names from invitations
+      patient_names = invitations.pluck(:patient_name).compact
+      
+      # Add the lead's own name if present
+      patient_names << name if name.present?
+      
+      # Deduplicate by first name (case-insensitive, accent-insensitive)
+      patients_by_first_name = {}
+      
+      patient_names.each do |full_name|
+        next if full_name.blank?
+        
+        # Extract first name and normalize
+        first_name = full_name.split.first&.strip
+        next if first_name.blank?
+        
+        # Use downcased first name as key for deduplication
+        key = normalize_name_for_comparison(first_name)
+        
+        # Keep the most complete version (longest full name)
+        if patients_by_first_name[key].nil? || full_name.length > patients_by_first_name[key][:full_name].length
+          patients_by_first_name[key] = {
+            first_name: first_name.capitalize,
+            full_name: full_name.strip
+          }
+        end
+      end
+      
+      # Return sorted by first name
+      patients_by_first_name.values.sort_by { |p| p[:first_name].downcase }
+    end
+
+    # Returns the lead owner's first name (the phone owner, not patients)
+    # This should be used for the initial greeting
+    # 
+    # @return [String] the lead owner's first name
+    def owner_first_name
+      name&.split&.first || "Paciente"
+    end
+
+    # Checks if this lead has multiple distinct patients
+    # 
+    # @return [Boolean] true if more than one patient is associated
+    def has_multiple_patients?
+      distinct_patients.count > 1
+    end
+
+    # Normalizes a name for comparison purposes
+    # Removes accents, converts to lowercase
+    # 
+    # @param name [String] the name to normalize
+    # @return [String] normalized name
+    def normalize_name_for_comparison(name)
+      return "" if name.blank?
+      
+      # Remove accents and downcase
+      I18n.transliterate(name.downcase)
+    rescue
+      name.downcase
+    end
+
     # after_create :merge_with_duplicate_leads, if: :phone?
 
     def destroy_appointments

@@ -46,15 +46,25 @@ module ClinicManagement
     # GET /self_booking/:token
     # 
     # Welcome screen with personalized greeting.
-    # Patient can confirm their name or indicate they are someone else.
+    # 
+    # IMPORTANT: The greeting shows the Lead owner's name (phone owner), not the
+    # last patient name. A Lead (phone) can have multiple patients associated
+    # (e.g., Rafael the father is the phone owner, Joana the daughter is a patient).
+    # 
+    # If multiple distinct patients exist, show a select dropdown for the user
+    # to choose which patient they are.
     # 
     # REFERRAL ATTRIBUTION:
     # Captures the 'ref' parameter (referral_id) if present in the URL.
     # This is used later to attribute the booking to the correct referral.
     # ============================================================================
     def show
-      @patient_name = @lead.patient_first_name
-      @full_name = @lead.patient_full_name
+      # Show the Lead owner's name (phone owner) in the greeting
+      @lead_name = @lead.owner_first_name
+      
+      # Get distinct patients associated with this phone number
+      @distinct_patients = @lead.distinct_patients
+      @has_multiple_patients = @lead.has_multiple_patients?
       
       # Capture referral attribution from URL (if link was shared by a referral)
       # Store in session so it persists through the booking flow
@@ -65,13 +75,41 @@ module ClinicManagement
     end
 
     # ============================================================================
-    # POST /self_booking/:token/change_name
+    # POST /self_booking/:token/select_patient
     # 
-    # Handles when patient indicates they are not the expected person.
-    # Shows a form to enter the correct name.
+    # Handles patient selection when multiple patients are associated with
+    # the same phone number (Lead). Stores the selected patient name in session.
+    # 
+    # Params:
+    # - selected_patient: the full name of the selected patient
+    # ============================================================================
+    def select_patient
+      selected_patient = params[:selected_patient]&.strip
+      
+      if selected_patient.blank?
+        redirect_to self_booking_path(@lead.self_booking_token), 
+                    alert: "Por favor, selecione um paciente."
+        return
+      end
+      
+      # Store the selected patient name in session
+      session[:self_booking_patient_name] = selected_patient
+      session[:self_booking_lead_id] = @lead.id
+      
+      Rails.logger.info "[SelfBooking] Patient selected: #{selected_patient} for lead ##{@lead.id}"
+      
+      # Continue to week selection
+      redirect_to self_booking_select_week_path(@lead.self_booking_token)
+    end
+
+    # ============================================================================
+    # GET /self_booking/:token/change_name
+    # 
+    # Handles when patient indicates they are not the expected person
+    # (or not in the list of patients). Shows a form to enter the correct name.
     # ============================================================================
     def change_name
-      @patient_name = @lead.patient_first_name
+      @patient_name = @lead.owner_first_name
     end
 
     # ============================================================================
