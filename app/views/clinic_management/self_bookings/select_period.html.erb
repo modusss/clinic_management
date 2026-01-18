@@ -1,8 +1,8 @@
 <%# ============================================================================
     Self-Booking: Select Period Screen (Step 4)
     
-    Patient chooses morning or afternoon.
-    Shows available services for each period.
+    Shows available time slots for the selected day.
+    Morning slots have sun icon, afternoon slots have moon icon.
     
     FLOW: show -> select_week -> select_day -> select_period -> confirm -> success
     ============================================================================ %>
@@ -32,56 +32,6 @@
   </p>
   
   <% if @morning_services.any? || @afternoon_services.any? %>
-    <!-- Period selection cards -->
-    <div class="grid grid-cols-2 gap-4 mb-6">
-      <!-- Morning -->
-      <% if @morning_services.any? %>
-        <div class="period-card period-morning cursor-default opacity-100">
-          <div class="icon">
-            <i class="fas fa-sun"></i>
-          </div>
-          <div class="font-semibold text-gray-900">Manhã</div>
-          <div class="text-sm text-gray-500">
-            <%= @morning_services.count %> opção<%= @morning_services.count > 1 ? 'ões' : '' %>
-          </div>
-        </div>
-      <% else %>
-        <div class="period-card period-morning opacity-50 cursor-not-allowed">
-          <div class="icon">
-            <i class="fas fa-sun"></i>
-          </div>
-          <div class="font-semibold text-gray-400">Manhã</div>
-          <div class="text-sm text-gray-400">Indisponível</div>
-        </div>
-      <% end %>
-      
-      <!-- Afternoon -->
-      <% if @afternoon_services.any? %>
-        <div class="period-card period-afternoon cursor-default opacity-100">
-          <div class="icon">
-            <i class="fas fa-moon"></i>
-          </div>
-          <div class="font-semibold text-gray-900">Tarde</div>
-          <div class="text-sm text-gray-500">
-            <%= @afternoon_services.count %> opção<%= @afternoon_services.count > 1 ? 'ões' : '' %>
-          </div>
-        </div>
-      <% else %>
-        <div class="period-card period-afternoon opacity-50 cursor-not-allowed">
-          <div class="icon">
-            <i class="fas fa-moon"></i>
-          </div>
-          <div class="font-semibold text-gray-400">Tarde</div>
-          <div class="text-sm text-gray-400">Indisponível</div>
-        </div>
-      <% end %>
-    </div>
-    
-    <!-- Available time slots -->
-    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-      Horários disponíveis
-    </h3>
-    
     <div class="space-y-3">
       <% if @morning_services.any? %>
         <% @morning_services.each do |service| %>
