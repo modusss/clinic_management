@@ -24,6 +24,9 @@ ClinicManagement::Engine.routes.draw do
     post 'select_patient', to: 'self_bookings#select_patient'
     get 'change_name', to: 'self_bookings#change_name'
     post 'update_name', to: 'self_bookings#update_name'
+    # New registration flow (for users with different phone numbers)
+    get 'new_registration', to: 'self_bookings#new_registration'
+    post 'create_registration', to: 'self_bookings#create_registration'
     get 'select_week', to: 'self_bookings#select_week'
     get 'select_day', to: 'self_bookings#select_day'
     get 'select_period', to: 'self_bookings#select_period'

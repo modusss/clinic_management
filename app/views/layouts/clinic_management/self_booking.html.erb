@@ -482,6 +482,160 @@
       letter-spacing: 0.05em;
     }
     
+    /* ============================================================================
+     * Phone Changed Alert
+     * Shown when user changes phone in the change_name form
+     * ============================================================================ */
+    .phone-changed-alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 1px solid #f59e0b;
+      border-radius: 1rem;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .phone-changed-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      background: #f59e0b;
+      color: white;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    
+    .phone-changed-content {
+      flex: 1;
+    }
+    
+    .phone-changed-title {
+      font-weight: 600;
+      font-size: 0.9375rem;
+      color: #92400e;
+      margin: 0 0 0.25rem 0;
+    }
+    
+    .phone-changed-text {
+      font-size: 0.8125rem;
+      color: #a16207;
+      margin: 0;
+      line-height: 1.4;
+    }
+    
+    /* WhatsApp button */
+    .btn-whatsapp {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 1rem 1.5rem;
+      background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+      color: white;
+      font-weight: 600;
+      font-size: 1.0625rem;
+      border-radius: 1rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      box-shadow: 0 4px 14px -3px rgba(37, 211, 102, 0.4);
+    }
+    
+    .btn-whatsapp:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px -3px rgba(37, 211, 102, 0.5);
+    }
+    
+    .btn-whatsapp:active {
+      transform: translateY(0);
+    }
+    
+    /* Link Sent Confirmation */
+    .link-sent-confirmation {
+      text-align: center;
+      padding: 1.5rem 1rem;
+    }
+    
+    .link-sent-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 4rem;
+      height: 4rem;
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      color: #059669;
+      font-size: 2rem;
+      border-radius: 50%;
+      margin-bottom: 1rem;
+      animation: checkmark-pop 0.5s ease-out;
+    }
+    
+    .link-sent-title {
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: #065f46;
+      margin: 0 0 0.5rem 0;
+    }
+    
+    .link-sent-text {
+      font-size: 0.9375rem;
+      color: #374151;
+      margin: 0 0 1rem 0;
+      line-height: 1.5;
+    }
+    
+    .link-sent-instruction {
+      font-size: 0.8125rem;
+      color: #6b7280;
+      margin: 0;
+      padding: 0.75rem;
+      background: #f3f4f6;
+      border-radius: 0.75rem;
+    }
+    
+    /* Phone Fixed Display (for new_registration) */
+    .phone-fixed-display {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 0.875rem 1rem;
+      background: #f0fdf4;
+      border: 2px solid #10b981;
+      border-radius: 0.75rem;
+      font-size: 1.125rem;
+      font-weight: 500;
+      color: #065f46;
+    }
+    
+    /* Existing Profile Notice */
+    .existing-profile-notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      padding: 0.875rem 1rem;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 0.75rem;
+      font-size: 0.875rem;
+      color: #1e40af;
+      line-height: 1.5;
+    }
+    
+    .existing-profile-notice i {
+      margin-top: 0.125rem;
+      flex-shrink: 0;
+    }
+    
+    /* Hidden utility class */
+    .hidden {
+      display: none !important;
+    }
+    
     /* Responsive adjustments */
     @media (max-height: 700px) {
       .booking-card {

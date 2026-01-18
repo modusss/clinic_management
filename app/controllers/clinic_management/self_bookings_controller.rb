@@ -154,6 +154,118 @@ module ClinicManagement
     end
 
     # ============================================================================
+    # GET /self_booking/:token/new_registration
+    # 
+    # Handles users who received a booking link via WhatsApp from another patient.
+    # 
+    # TWO SCENARIOS:
+    # 1. Phone ALREADY EXISTS in system (belongs to another Lead):
+    #    -> Redirect directly to that Lead's booking flow (no registration needed)
+    #    -> Store patient name in session for personalization
+    # 
+    # 2. Phone is NEW (doesn't exist in system):
+    #    -> Show registration form to create new Lead
+    #    -> Phone is FIXED (verified via WhatsApp)
+    # 
+    # REFERRAL ATTRIBUTION: Always "Local" since this is organic/shared by patient
+    # 
+    # Params:
+    # - phone: the user's phone number (required)
+    # - name: optional pre-filled name (from the share form)
+    # ============================================================================
+    def new_registration
+      @new_phone = params[:phone]&.gsub(/\D/, '')
+      @suggested_name = params[:name]
+      
+      if @new_phone.blank? || @new_phone.length < 10
+        redirect_to self_booking_path(@lead.self_booking_token), 
+                    alert: "Link inválido. Por favor, solicite um novo link."
+        return
+      end
+      
+      # Check if a lead with this phone already exists
+      existing_lead = Lead.find_by(phone: @new_phone)
+      
+      if existing_lead.present?
+        # CASE 1: Phone already exists - redirect to that Lead's booking flow
+        Rails.logger.info "[SelfBooking] Phone #{@new_phone} already exists - redirecting to lead ##{existing_lead.id}"
+        
+        # Store patient name if provided (for personalization)
+        session[:self_booking_patient_name] = @suggested_name if @suggested_name.present?
+        session[:self_booking_lead_id] = existing_lead.id
+        
+        # Force Local attribution since this was patient-shared
+        session[:self_booking_force_local] = true
+        
+        # Redirect to the existing Lead's booking page
+        redirect_to self_booking_select_week_path(existing_lead.self_booking_token!)
+        return
+      end
+      
+      # CASE 2: New phone - show registration form
+      @formatted_phone = @new_phone.gsub(/(\d{2})(\d{5})(\d{4})/, '(\1) \2-\3')
+    end
+
+    # ============================================================================
+    # POST /self_booking/:token/create_registration
+    # 
+    # Creates a new Lead for the user who received the link via WhatsApp.
+    # 
+    # LOGIC:
+    # 1. If phone already exists -> use existing lead, store patient name
+    # 2. If phone is new -> create new Lead with provided name and phone
+    # 
+    # REFERRAL ATTRIBUTION: Always "Local" (organic/shared by patient)
+    # 
+    # Params:
+    # - patient_name: the new user's name (required)
+    # - patient_phone: the phone number (from hidden field)
+    # ============================================================================
+    def create_registration
+      patient_name = params[:patient_name]&.strip
+      patient_phone = params[:patient_phone]&.gsub(/\D/, '')
+      
+      if patient_name.blank?
+        redirect_to self_booking_new_registration_path(@lead.self_booking_token, phone: patient_phone),
+                    alert: "Por favor, informe seu nome."
+        return
+      end
+      
+      if patient_phone.blank? || patient_phone.length < 10
+        redirect_to self_booking_path(@lead.self_booking_token),
+                    alert: "Telefone inválido. Por favor, solicite um novo link."
+        return
+      end
+      
+      # Find or create lead for this phone
+      target_lead = Lead.find_by(phone: patient_phone)
+      
+      if target_lead.nil?
+        # Create new lead with the provided information
+        target_lead = Lead.create!(
+          name: patient_name,
+          phone: patient_phone
+        )
+        target_lead.generate_self_booking_token!
+        Rails.logger.info "[SelfBooking] Created new lead ##{target_lead.id} via new_registration"
+      else
+        Rails.logger.info "[SelfBooking] Using existing lead ##{target_lead.id} for phone #{patient_phone}"
+      end
+      
+      # Store in session
+      session[:self_booking_patient_name] = patient_name
+      session[:self_booking_lead_id] = target_lead.id
+      
+      # IMPORTANT: Clear any referral attribution - this is always "Local"
+      # because it was shared by a patient, not by a referral
+      session[:self_booking_referral_id] = nil
+      session[:self_booking_force_local] = true
+      
+      # Redirect to week selection using the NEW lead's token
+      redirect_to self_booking_select_week_path(target_lead.self_booking_token!)
+    end
+
+    # ============================================================================
     # GET /self_booking/:token/select_week
     # 
     # Patient chooses between "this week" or "next weeks".
@@ -542,6 +654,9 @@ module ClinicManagement
     # Determines which referral should be credited for this self-booking.
     # 
     # RULES:
+    # 0. If force_local flag is set (patient shared with someone else):
+    #    -> Always "Local" (no referral effort involved)
+    # 
     # 1. If link was shared by a referral (ref param in URL):
     #    -> Attribute to that referral (their effort brought the patient)
     # 
@@ -562,6 +677,14 @@ module ClinicManagement
     # @return [Referral] the referral to attribute the booking to
     # ============================================================================
     def determine_referral_attribution(target_lead)
+      # CASE 0: Force Local - when a patient shared the link with someone else
+      # (new registration flow via WhatsApp to different phone)
+      if session[:self_booking_force_local].present?
+        Rails.logger.info "[SelfBooking] Attribution: Local (force_local flag - patient shared link)"
+        session.delete(:self_booking_force_local) # Clear the flag
+        return find_or_create_local_referral
+      end
+      
       # CASE 1: Link was shared by a referral (captured in session from URL param)
       if session[:self_booking_referral_id].present?
         referral = Referral.find_by(id: session[:self_booking_referral_id])
@@ -599,11 +722,19 @@ module ClinicManagement
       end
       
       # Default to "Local" for organic/clinic recapture
-      local_referral = Referral.find_or_create_by!(name: 'Local') do |r|
+      find_or_create_local_referral
+    end
+
+    # ============================================================================
+    # Helper method to find or create the "Local" referral
+    # Used for organic/patient-shared bookings
+    # 
+    # @return [Referral] the "Local" referral
+    # ============================================================================
+    def find_or_create_local_referral
+      Referral.find_or_create_by!(name: 'Local') do |r|
         r.code = 'LOCAL'
       end
-      
-      local_referral
     end
   end
 end

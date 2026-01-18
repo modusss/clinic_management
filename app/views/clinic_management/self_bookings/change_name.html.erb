@@ -2,12 +2,15 @@
     Self-Booking: Change Identity Screen
     
     Shown when the patient indicates they are not the expected person.
-    Allows them to enter their correct name and optionally a different phone.
     
-    LOGIC:
-    - Same phone as original lead -> appointment linked to original lead
-    - Different phone that exists -> appointment linked to that phone's lead
-    - Different phone that's new -> creates new lead with that phone
+    TWO SCENARIOS:
+    1. Same phone (different name): Continue in current flow, link to same lead
+    2. Different phone: Must receive link via WhatsApp to verify ownership
+       - User enters new phone
+       - System sends booking link to that phone
+       - New user opens link and registers (creates new Lead as "Local")
+    
+    This ensures phone verification and proper lead attribution.
     ============================================================================ %>
 
 <!-- Step indicator -->
@@ -24,8 +27,12 @@
   Voltar
 <% end %>
 
+<%# Store original phone for comparison %>
+<% original_phone = @lead.phone %>
+<% formatted_phone = @lead.phone.present? ? @lead.phone.gsub(/(\d{2})(\d{5})(\d{4})/, '(\1) \2-\3') : '' %>
+
 <!-- Main card -->
-<div class="booking-card">
+<div class="booking-card" id="change-name-card">
   <div class="text-center mb-6">
     <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
       <i class="fas fa-user-edit text-blue-600 text-2xl"></i>
@@ -40,11 +47,10 @@
     Informe os dados do paciente que será atendido
   </p>
   
-  <%= form_with url: self_booking_update_name_path(@lead.self_booking_token), 
-                method: :post, 
-                local: true,
-                class: "space-y-4" do |f| %>
-    
+  <%# ================================================================
+      FORM SECTION: Patient name (always visible)
+      ================================================================ %>
+  <div class="space-y-4">
     <%# Patient name field %>
     <div>
       <label for="patient_name" class="block text-sm font-medium text-gray-700 mb-2">
@@ -63,7 +69,7 @@
              value="">
     </div>
     
-    <%# Phone field - pre-filled with current lead's phone %>
+    <%# Phone field %>
     <div>
       <label for="patient_phone" class="block text-sm font-medium text-gray-700 mb-2">
         <i class="fas fa-phone text-gray-400 mr-1"></i>
@@ -75,43 +81,171 @@
              required
              placeholder="(99) 99999-9999"
              inputmode="numeric"
+             data-original-phone="<%= original_phone %>"
              class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-lg
                     focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 
                     focus:outline-none transition-all"
-             value="<%= @lead.phone.present? ? @lead.phone.gsub(/(\d{2})(\d{5})(\d{4})/, '(\1) \2-\3') : '' %>">
-      <p class="mt-1 text-xs text-gray-500">
+             value="<%= formatted_phone %>">
+      <p class="mt-1 text-xs text-gray-500" id="phone-help-same">
         <i class="fas fa-info-circle mr-1"></i>
         Mantenha o mesmo número ou informe outro
       </p>
     </div>
     
-    <button type="submit" class="btn-primary">
-      <i class="fas fa-arrow-right mr-2"></i>
-      Continuar
-    </button>
-  <% end %>
+    <%# ================================================================
+        SAME PHONE FLOW: Continue button (default)
+        Shows when phone is the same as original
+        ================================================================ %>
+    <div id="same-phone-section">
+      <%= form_with url: self_booking_update_name_path(@lead.self_booking_token), 
+                    method: :post, 
+                    local: true,
+                    id: "same-phone-form" do %>
+        <input type="hidden" name="patient_name" id="hidden_patient_name" value="">
+        <input type="hidden" name="patient_phone" id="hidden_patient_phone" value="<%= original_phone %>">
+        
+        <button type="submit" class="btn-primary">
+          <i class="fas fa-arrow-right mr-2"></i>
+          Continuar
+        </button>
+      <% end %>
+    </div>
+    
+    <%# ================================================================
+        DIFFERENT PHONE FLOW: Send link via WhatsApp
+        Shows when phone is different from original
+        ================================================================ %>
+    <div id="different-phone-section" class="hidden">
+      <div class="phone-changed-alert">
+        <div class="phone-changed-icon">
+          <i class="fas fa-mobile-alt"></i>
+        </div>
+        <div class="phone-changed-content">
+          <p class="phone-changed-title">Telefone diferente detectado</p>
+          <p class="phone-changed-text">
+            Para sua segurança, enviaremos o link de agendamento para o novo número informado.
+          </p>
+        </div>
+      </div>
+      
+      <button type="button" id="send-whatsapp-link" class="btn-whatsapp">
+        <i class="fab fa-whatsapp mr-2"></i>
+        Receber link no meu WhatsApp
+      </button>
+      
+      <p class="text-center text-xs text-gray-500 mt-3">
+        <i class="fas fa-shield-alt mr-1"></i>
+        Isso confirma que você é o dono do número
+      </p>
+    </div>
+  </div>
 </div>
 
-<%# Phone mask script %>
+<%# WhatsApp link generation - direct wa.me link (no API dependency) %>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const phoneInput = document.getElementById('patient_phone');
-    if (phoneInput) {
-      phoneInput.addEventListener('input', function(e) {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.length > 11) value = value.slice(0, 11);
-        
-        if (value.length > 0) {
-          if (value.length <= 2) {
-            value = '(' + value;
-          } else if (value.length <= 7) {
-            value = '(' + value.slice(0, 2) + ') ' + value.slice(2);
-          } else {
-            value = '(' + value.slice(0, 2) + ') ' + value.slice(2, 7) + '-' + value.slice(7);
-          }
+    const nameInput = document.getElementById('patient_name');
+    const hiddenNameInput = document.getElementById('hidden_patient_name');
+    const hiddenPhoneInput = document.getElementById('hidden_patient_phone');
+    const samePhoneSection = document.getElementById('same-phone-section');
+    const differentPhoneSection = document.getElementById('different-phone-section');
+    const sendWhatsAppBtn = document.getElementById('send-whatsapp-link');
+    const originalPhone = '<%= original_phone %>';
+    const baseUrl = '<%= request.base_url %>';
+    const newRegistrationPath = '<%= clinic_management.self_booking_new_registration_path(@lead.self_booking_token) %>';
+    
+    // Phone mask
+    phoneInput.addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value.length > 11) value = value.slice(0, 11);
+      
+      if (value.length > 0) {
+        if (value.length <= 2) {
+          value = '(' + value;
+        } else if (value.length <= 7) {
+          value = '(' + value.slice(0, 2) + ') ' + value.slice(2);
+        } else {
+          value = '(' + value.slice(0, 2) + ') ' + value.slice(2, 7) + '-' + value.slice(7);
         }
-        e.target.value = value;
-      });
+      }
+      e.target.value = value;
+      
+      // Check if phone changed
+      checkPhoneChange();
+    });
+    
+    // Sync name input with hidden field
+    nameInput.addEventListener('input', function() {
+      hiddenNameInput.value = nameInput.value;
+    });
+    
+    function checkPhoneChange() {
+      const currentPhone = phoneInput.value.replace(/\D/g, '');
+      const isPhoneChanged = currentPhone.length >= 10 && currentPhone !== originalPhone;
+      
+      if (isPhoneChanged) {
+        samePhoneSection.classList.add('hidden');
+        differentPhoneSection.classList.remove('hidden');
+      } else {
+        samePhoneSection.classList.remove('hidden');
+        differentPhoneSection.classList.add('hidden');
+        hiddenPhoneInput.value = currentPhone || originalPhone;
+      }
     }
+    
+    // Send WhatsApp link button - opens wa.me directly
+    sendWhatsAppBtn.addEventListener('click', function() {
+      const patientName = nameInput.value.trim();
+      const newPhone = phoneInput.value.replace(/\D/g, '');
+      
+      if (!patientName) {
+        alert('Por favor, informe o nome do paciente.');
+        nameInput.focus();
+        return;
+      }
+      
+      if (newPhone.length < 10) {
+        alert('Por favor, informe um telefone válido.');
+        phoneInput.focus();
+        return;
+      }
+      
+      // Build registration URL with phone parameter
+      const registrationUrl = baseUrl + newRegistrationPath + '?phone=' + encodeURIComponent(newPhone) + '&name=' + encodeURIComponent(patientName);
+      
+      // WhatsApp message
+      const message = 'Olá, ' + patientName + '! 👋\n\nAqui está seu link para agendar sua consulta:\n\n' + registrationUrl + '\n\nClique no link acima para continuar. ✅';
+      
+      // Open WhatsApp with the message
+      const whatsappUrl = 'https://wa.me/55' + newPhone + '?text=' + encodeURIComponent(message);
+      window.open(whatsappUrl, '_blank');
+      
+      // Show confirmation
+      showLinkSentConfirmation(newPhone);
+    });
+    
+    function showLinkSentConfirmation(phone) {
+      const formattedPhone = phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+      
+      differentPhoneSection.innerHTML = `
+        <div class="link-sent-confirmation">
+          <div class="link-sent-icon">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <h3 class="link-sent-title">WhatsApp aberto!</h3>
+          <p class="link-sent-text">
+            O link de agendamento está pronto para enviar para<br>
+            <strong>${formattedPhone}</strong>
+          </p>
+          <p class="link-sent-instruction">
+            Clique em "Enviar" no WhatsApp para concluir.
+          </p>
+        </div>
+      `;
+    }
+    
+    // Initial check
+    checkPhoneChange();
   });
 </script>
