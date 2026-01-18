@@ -35,7 +35,10 @@
     <div class="space-y-3">
       <% if @morning_services.any? %>
         <% @morning_services.each do |service| %>
-          <%= link_to self_booking_confirm_path(@lead.self_booking_token, service_id: service.id), 
+          <%= link_to self_booking_confirm_path(@lead.self_booking_token, 
+                                                 service_id: service.id,
+                                                 week: @week,
+                                                 day: @day), 
                       class: "option-btn" do %>
             <div class="flex items-center">
               <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mr-3">
@@ -57,7 +60,10 @@
       
       <% if @afternoon_services.any? %>
         <% @afternoon_services.each do |service| %>
-          <%= link_to self_booking_confirm_path(@lead.self_booking_token, service_id: service.id), 
+          <%= link_to self_booking_confirm_path(@lead.self_booking_token, 
+                                                 service_id: service.id,
+                                                 week: @week,
+                                                 day: @day), 
                       class: "option-btn" do %>
             <div class="flex items-center">
               <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
