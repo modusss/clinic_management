@@ -6,12 +6,9 @@
       view_type: @view_type 
     } %>
 
-<%# Wrapper para o sistema de fila de ligações E envio em massa - ENVOLVE TODA A PÁGINA %>
-<div data-controller="call-queue bulk-message" 
-     data-call-queue-directcall-configured-value="<%= current_account&.directcall_configured? %>"
+<%# Wrapper para o sistema de envio em massa - ENVOLVE TODA A PÁGINA %>
+<div data-controller="bulk-message" 
      data-bulk-message-leads-data-value="<%= @leads.map { |l| { id: l.id, phone: l.phone, name: l.name } }.to_json.gsub('"', '&quot;') %>">
-  <%# O dropdown flutuante será renderizado aqui %>
-  <%= render partial: "clinic_management/leads/call_queue_dropdown" if current_account&.directcall_configured? %>
 
 <% if referral?(current_user) %>
 <h5 class="text-xl font-semibold text-gray-800">Lista dos pacientes ausentes mais antigos que 180 dias</h5>
@@ -547,41 +544,6 @@
       <%= @leads.total_count == 1 ? 'resultado' : 'resultados' %> 
       encontrado(s).
     </div>
-    
-    <%# Botão para adicionar todos os leads da página à fila de ligações %>
-    <% if current_account&.directcall_configured? && @rows.any? %>
-      <% 
-        # Preparar dados dos leads de forma eficiente
-        leads_data = @leads.map do |lead| 
-          # Usar o appointment já carregado pela query complexa
-          appointment_id = lead.respond_to?(:current_appointment_id) ? lead.current_appointment_id : lead.appointments.last&.id
-          
-          # Buscar o appointment completo apenas se necessário
-          appointment = lead.appointments.find_by(id: appointment_id) if appointment_id
-          
-          next unless appointment
-          
-          {
-            id: lead.id,
-            appointment_id: appointment.id,
-            name: lead.name,
-            phone: lead.phone,
-            service_date: appointment.service.date.strftime('%d/%m/%Y'),
-            appointment_comments: appointment.comments || 'Sem observações',
-            status: lead.no_interest ? 'Sem interesse' : 
-                    (lead.respond_to?(:unified_last_contact_at) && lead.unified_last_contact_at.present? ? 'Contatado' : 'Ausente')
-          }
-        end.compact
-      %>
-      <button type="button"
-              class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-3 text-base"
-              data-action="click->call-queue#addAllToQueue"
-              data-leads="<%= leads_data.to_json.gsub('"', '&quot;') %>"
-              title="Adicionar todos os <%= leads_data.size %> leads desta página à fila de ligações">
-        <i class="fas fa-plus-circle text-lg"></i>
-        <span>Adicionar Todos à Fila (<%= leads_data.size %>)</span>
-      </button>
-    <% end %>
   </div>
   
   <div id="table-tab" class="tab-content">
@@ -598,7 +560,7 @@
 
 <% end %>
 
-</div><%# Fecha o wrapper do call-queue controller %>
+</div><%# Fecha o wrapper do bulk-message controller %>
 
 <style>
 .sr-only {
