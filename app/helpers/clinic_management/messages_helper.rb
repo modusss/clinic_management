@@ -88,6 +88,9 @@ module ClinicManagement
       start_hour = start_time.strftime('%H:%M')
       end_hour = end_time.strftime('%H:%M')
 
+      # Generate sample self-booking link for preview
+      sample_booking_link = generate_sample_self_booking_link(appointment)
+
       # Replace placeholders
       text.gsub('{NOME_COMPLETO_PACIENTE}', lead_name)
           .gsub('{PRIMEIRO_NOME_PACIENTE}', first_name)
@@ -97,6 +100,36 @@ module ClinicManagement
           .gsub('{DIA_ATENDIMENTO_NUMERO}', day_number)
           .gsub('{HORARIO_DE_INICIO}', start_hour)
           .gsub('{HORARIO_DE_TERMINO}', end_hour)
+          .gsub('{LINK_AUTO_MARCACAO}', sample_booking_link)
+    end
+
+    # ============================================================================
+    # Generate Sample Self-Booking Link for Preview
+    # 
+    # Creates a sample URL for the message preview. Uses actual lead data if available,
+    # otherwise generates a placeholder URL.
+    # 
+    # @param appointment [Appointment] The appointment to get lead from
+    # @return [String] Sample URL for preview
+    # ============================================================================
+    def generate_sample_self_booking_link(appointment)
+      lead = appointment&.invitation&.lead
+      # Use :: prefix to access the main app's ApplicationController, not the engine's
+      base_url = ::ApplicationController.app_url.chomp('/')
+      
+      if lead.present? && lead.respond_to?(:self_booking_token!)
+        begin
+          token = lead.self_booking_token!
+          # Build sample URL - in preview we don't include referral params
+          "#{base_url}/clinic_management/self_booking/#{token}"
+        rescue => e
+          # Fallback if token generation fails
+          "#{base_url}/clinic_management/self_booking/EXEMPLO_TOKEN"
+        end
+      else
+        # Fallback for sample data without real lead
+        "#{base_url}/clinic_management/self_booking/EXEMPLO_TOKEN"
+      end
     end
 
     # Check if Evolution API can be used based on user type and instance connection status

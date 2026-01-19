@@ -373,6 +373,7 @@ module ClinicManagement
       # Substituições de texto padrão
       result = result.gsub("{PRIMEIRO_NOME_PACIENTE}", lead.name.split(" ").first)
                .gsub("{NOME_COMPLETO_PACIENTE}", lead.name)
+               .gsub("{LINK_AUTO_MARCACAO}", generate_self_booking_link(lead))
                .gsub("\n", "%0A")
                .gsub("\r\n", "%0A")
 
@@ -508,6 +509,37 @@ module ClinicManagement
         referral&.evolution_delay_multiplier || 1.0
       else
         1.0
+      end
+    end
+
+    # ============================================================================
+    # Generate Self-Booking Link for Lead
+    # 
+    # Creates a unique self-booking URL that allows the patient to self-schedule.
+    # Includes referral attribution when the current user is a referral.
+    # 
+    # @param lead [Lead] The lead to generate the link for
+    # @return [String] Full URL for self-booking
+    # ============================================================================
+    def generate_self_booking_link(lead)
+      return "" unless lead.present?
+      
+      # Determine the self-booking link with referral attribution
+      # If current user is a referral, include their ID in the link
+      if respond_to?(:referral?) && referral?(current_user) && respond_to?(:user_referral) && user_referral.present?
+        self_booking_path = clinic_management.self_booking_path(lead.self_booking_token!, ref: user_referral.id)
+      else
+        # Non-referral users (clinic staff) - no ref param, 180-day rule applies
+        self_booking_path = clinic_management.self_booking_path(lead.self_booking_token!)
+      end
+      
+      # Build full URL using request if available, otherwise use main app's ApplicationController.app_url
+      if defined?(request) && request.present?
+        "#{request.base_url}#{self_booking_path}"
+      else
+        # Fallback using main app's ApplicationController (:: prefix for global namespace)
+        base_url = ::ApplicationController.app_url.chomp('/')
+        "#{base_url}#{self_booking_path}"
       end
     end
   end
