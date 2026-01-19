@@ -516,7 +516,14 @@ module ClinicManagement
     # Generate Self-Booking Link for Lead
     # 
     # Creates a unique self-booking URL that allows the patient to self-schedule.
-    # Includes referral attribution when the current user is a referral.
+    # Includes referral attribution based on:
+    # 1. If current user is a referral -> use their referral ID
+    # 2. If lead has an attributed referral (within 180-day grace period) -> use that referral ID
+    # 3. Otherwise -> no ref param (will be attributed to "Local")
+    # 
+    # ESSENTIAL BUSINESS RULE:
+    # The 180-day grace period ensures that referrals get credit for patients
+    # they brought in, even when clinic staff sends follow-up messages.
     # 
     # @param lead [Lead] The lead to generate the link for
     # @return [String] Full URL for self-booking
@@ -524,12 +531,13 @@ module ClinicManagement
     def generate_self_booking_link(lead)
       return "" unless lead.present?
       
-      # Determine the self-booking link with referral attribution
-      # If current user is a referral, include their ID in the link
-      if respond_to?(:referral?) && referral?(current_user) && respond_to?(:user_referral) && user_referral.present?
-        self_booking_path = clinic_management.self_booking_path(lead.self_booking_token!, ref: user_referral.id)
+      # Determine which referral (if any) should be attributed
+      referral_id = determine_referral_for_link(lead)
+      
+      # Build the self-booking path with or without referral attribution
+      if referral_id.present?
+        self_booking_path = clinic_management.self_booking_path(lead.self_booking_token!, ref: referral_id)
       else
-        # Non-referral users (clinic staff) - no ref param, 180-day rule applies
         self_booking_path = clinic_management.self_booking_path(lead.self_booking_token!)
       end
       
@@ -541,6 +549,37 @@ module ClinicManagement
         base_url = ::ApplicationController.app_url.chomp('/')
         "#{base_url}#{self_booking_path}"
       end
+    end
+
+    # ============================================================================
+    # Determine Referral ID for Self-Booking Link
+    # 
+    # Priority order for referral attribution:
+    # 1. Current user is a referral -> use their referral ID (they're sending the message)
+    # 2. Lead has attributed referral (within 180-day grace period) -> use that referral
+    # 3. No referral -> return nil (will be attributed to "Local" on booking)
+    # 
+    # @param lead [Lead] The lead to check for referral attribution
+    # @return [Integer, nil] The referral ID to include in the link, or nil
+    # ============================================================================
+    def determine_referral_for_link(lead)
+      # CASE 1: Current user is a referral - they get credit for their own messages
+      if respond_to?(:referral?) && referral?(current_user) && respond_to?(:user_referral) && user_referral.present?
+        Rails.logger.info "[SelfBookingLink] Using current user's referral: #{user_referral.name} (ID: #{user_referral.id})"
+        return user_referral.id
+      end
+      
+      # CASE 2: Check if lead has an attributed referral (180-day grace period)
+      # This ensures referrals get credit even when clinic staff sends messages
+      attributed_referral = lead.current_attributed_referral
+      if attributed_referral.present?
+        Rails.logger.info "[SelfBookingLink] Using lead's attributed referral: #{attributed_referral.name} (ID: #{attributed_referral.id}) - within 180-day grace period"
+        return attributed_referral.id
+      end
+      
+      # CASE 3: No referral attribution
+      Rails.logger.info "[SelfBookingLink] No referral attribution for lead #{lead.id} - will be Local"
+      nil
     end
   end
 end

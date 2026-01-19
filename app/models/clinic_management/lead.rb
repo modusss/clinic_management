@@ -196,6 +196,63 @@ module ClinicManagement
       update!(no_whatsapp: !no_whatsapp)
     end
 
+    # ============================================================================
+    # REFERRAL ATTRIBUTION METHODS
+    # 
+    # These methods determine which referral (if any) should be credited for
+    # this lead's future bookings based on the 180-day grace period rule.
+    # 
+    # ESSENTIAL BUSINESS RULE (180-DAY GRACE PERIOD):
+    # - If the lead had an appointment within the last 180 days with a referral,
+    #   that referral still "owns" this patient and should be credited.
+    # - After 180 days, the patient is considered "organic" (no referral attribution).
+    # 
+    # This is used when generating self-booking links to ensure proper referral
+    # attribution when patients book through automated messages.
+    # ============================================================================
+
+    # Returns the referral that should be attributed to this lead's next booking.
+    # Applies the 180-day grace period rule.
+    # 
+    # @return [Referral, nil] The referral to attribute, or nil if organic/local
+    # 
+    # @example
+    #   lead.current_attributed_referral
+    #   # => #<Referral id: 5, name: "Dr. João", ...> (if within 180 days)
+    #   # => nil (if no referral or >180 days since last appointment)
+    def current_attributed_referral
+      # Find the most recent appointment with service date
+      last_appointment = appointments
+                          .includes(invitation: :referral)
+                          .joins(:service)
+                          .order('clinic_management_services.date DESC')
+                          .first
+      
+      return nil unless last_appointment.present? && last_appointment.service.present?
+      
+      # Calculate days since last appointment
+      days_since_last = (Date.current - last_appointment.service.date).to_i
+      original_referral = last_appointment.invitation&.referral
+      
+      # ESSENTIAL: 180-day grace period rule
+      # Referral still "owns" this patient during the grace period
+      if days_since_last <= 180 && original_referral.present?
+        # Exclude "Local" referral from attribution (it's not a real referral)
+        return nil if original_referral.name == 'Local'
+        return original_referral
+      end
+      
+      # Grace period expired or no referral
+      nil
+    end
+
+    # Checks if this lead has an active referral attribution (within 180-day grace period)
+    # 
+    # @return [Boolean] true if lead has an attributed referral
+    def has_attributed_referral?
+      current_attributed_referral.present?
+    end
+
     private
 
     def sanitize_phone

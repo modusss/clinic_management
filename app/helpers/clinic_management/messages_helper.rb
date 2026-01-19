@@ -109,6 +109,10 @@ module ClinicManagement
     # Creates a sample URL for the message preview. Uses actual lead data if available,
     # otherwise generates a placeholder URL.
     # 
+    # ESSENTIAL: For preview purposes, we also show the referral attribution
+    # if the lead has an attributed referral (within 180-day grace period).
+    # This helps users understand how the final link will look.
+    # 
     # @param appointment [Appointment] The appointment to get lead from
     # @return [String] Sample URL for preview
     # ============================================================================
@@ -120,8 +124,16 @@ module ClinicManagement
       if lead.present? && lead.respond_to?(:self_booking_token!)
         begin
           token = lead.self_booking_token!
-          # Build sample URL - in preview we don't include referral params
-          "#{base_url}/clinic_management/self_booking/#{token}"
+          
+          # Check if lead has an attributed referral (within 180-day grace period)
+          # Show this in preview so users understand referral attribution
+          attributed_referral = lead.respond_to?(:current_attributed_referral) ? lead.current_attributed_referral : nil
+          
+          if attributed_referral.present?
+            "#{base_url}/clinic_management/self_booking/#{token}?ref=#{attributed_referral.id}"
+          else
+            "#{base_url}/clinic_management/self_booking/#{token}"
+          end
         rescue => e
           # Fallback if token generation fails
           "#{base_url}/clinic_management/self_booking/EXEMPLO_TOKEN"
