@@ -72,6 +72,15 @@ module ClinicManagement
         session[:self_booking_referral_id] = params[:ref].to_i
         Rails.logger.info "[SelfBooking] Referral ID #{params[:ref]} captured from URL"
       end
+      
+      # ESSENTIAL: Capture who shared/sent the link (reg_by parameter)
+      # This tracks the USER who sent the link, separate from referral commission attribution.
+      # Example: Assistant Jussara sends a link -> reg_by=jussara_user_id
+      #          But commission goes to the referral within 180-day grace period
+      if params[:reg_by].present?
+        session[:self_booking_registered_by_user_id] = params[:reg_by].to_i
+        Rails.logger.info "[SelfBooking] Registered by User ID #{params[:reg_by]} captured from URL"
+      end
     end
 
     # ============================================================================
@@ -477,6 +486,14 @@ module ClinicManagement
         
         Rails.logger.info "[SelfBooking] Referral attribution: #{referral.name} (ID: #{referral.id})"
         
+        # ESSENTIAL: Get the user who shared/sent the link (if captured from URL)
+        # This is separate from referral commission - tracks who did the work of sharing
+        registered_by_user_id = session[:self_booking_registered_by_user_id]
+        if registered_by_user_id.present?
+          registered_user = User.find_by(id: registered_by_user_id)
+          Rails.logger.info "[SelfBooking] Registered by: #{registered_user&.name} (User ID: #{registered_by_user_id})"
+        end
+        
         # Create invitation linked to TARGET lead (the phone owner)
         @invitation = target_lead.invitations.create!(
           patient_name: @patient_name,
@@ -486,11 +503,13 @@ module ClinicManagement
         )
         
         # Create appointment linked to TARGET lead
+        # ESSENTIAL: Include registered_by_user_id to track who shared the link
         @appointment = @invitation.appointments.create!(
           service: @service,
           lead: target_lead,
           status: 'agendado',
-          referral_code: referral.code
+          referral_code: referral.code,
+          registered_by_user_id: registered_by_user_id
         )
         
         # Update target lead's last appointment reference
@@ -501,6 +520,7 @@ module ClinicManagement
       session.delete(:self_booking_patient_name)
       session.delete(:self_booking_lead_id)
       session.delete(:self_booking_referral_id)
+      session.delete(:self_booking_registered_by_user_id)
       
       redirect_to self_booking_success_path(@lead.self_booking_token)
     rescue ActiveRecord::RecordInvalid => e
@@ -538,6 +558,7 @@ module ClinicManagement
       session.delete(:self_booking_patient_name)
       session.delete(:self_booking_lead_id)
       session.delete(:self_booking_referral_id)
+      session.delete(:self_booking_registered_by_user_id)
     end
 
     private

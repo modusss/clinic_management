@@ -516,14 +516,17 @@ module ClinicManagement
     # Generate Self-Booking Link for Lead
     # 
     # Creates a unique self-booking URL that allows the patient to self-schedule.
-    # Includes referral attribution based on:
-    # 1. If current user is a referral -> use their referral ID
-    # 2. If lead has an attributed referral (within 180-day grace period) -> use that referral ID
-    # 3. Otherwise -> no ref param (will be attributed to "Local")
     # 
-    # ESSENTIAL BUSINESS RULE:
-    # The 180-day grace period ensures that referrals get credit for patients
-    # they brought in, even when clinic staff sends follow-up messages.
+    # TWO SEPARATE TRACKING CONCEPTS:
+    # 1. ref (referral attribution) - WHO GETS THE COMMISSION
+    #    - Based on 180-day grace period rule
+    #    - Determines which referral gets credited for the booking
+    # 
+    # 2. reg_by (registered by) - WHO SHARED THE LINK (effort tracking)
+    #    - Tracks which user sent/shared the link
+    #    - Separate from commission - tracks work effort
+    #    - Example: Assistant Jussara sends link -> reg_by=jussara_user_id
+    #              But commission goes to the original referral (ref param)
     # 
     # @param lead [Lead] The lead to generate the link for
     # @return [String] Full URL for self-booking
@@ -531,15 +534,22 @@ module ClinicManagement
     def generate_self_booking_link(lead)
       return "" unless lead.present?
       
-      # Determine which referral (if any) should be attributed
-      referral_id = determine_referral_for_link(lead)
+      # Build URL parameters
+      url_params = {}
       
-      # Build the self-booking path with or without referral attribution
-      if referral_id.present?
-        self_booking_path = clinic_management.self_booking_path(lead.self_booking_token!, ref: referral_id)
-      else
-        self_booking_path = clinic_management.self_booking_path(lead.self_booking_token!)
+      # 1. Determine referral attribution (who gets commission)
+      referral_id = determine_referral_for_link(lead)
+      url_params[:ref] = referral_id if referral_id.present?
+      
+      # 2. ESSENTIAL: Track who shared/sent the link (effort tracking)
+      # If there's a logged-in user, include their ID so we know who did the work
+      if defined?(current_user) && current_user.present?
+        url_params[:reg_by] = current_user.id
+        Rails.logger.info "[SelfBookingLink] Link shared by user: #{current_user.name} (ID: #{current_user.id})"
       end
+      
+      # Build the self-booking path with parameters
+      self_booking_path = clinic_management.self_booking_path(lead.self_booking_token!, url_params)
       
       # Build full URL using request if available, otherwise use main app's ApplicationController.app_url
       if defined?(request) && request.present?
@@ -554,10 +564,14 @@ module ClinicManagement
     # ============================================================================
     # Determine Referral ID for Self-Booking Link
     # 
-    # Priority order for referral attribution:
+    # Priority order for referral attribution (COMMISSION):
     # 1. Current user is a referral -> use their referral ID (they're sending the message)
     # 2. Lead has attributed referral (within 180-day grace period) -> use that referral
     # 3. No referral -> return nil (will be attributed to "Local" on booking)
+    # 
+    # NOTE: This is separate from reg_by (who shared the link).
+    # ref = who gets paid (commission)
+    # reg_by = who did the work (effort tracking)
     # 
     # @param lead [Lead] The lead to check for referral attribution
     # @return [Integer, nil] The referral ID to include in the link, or nil

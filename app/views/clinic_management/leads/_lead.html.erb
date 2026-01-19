@@ -117,24 +117,42 @@
           Allows staff to generate and copy a unique self-booking link for the patient.
           The patient can use this link to self-schedule their appointment via WhatsApp.
           
-          REFERRAL ATTRIBUTION LOGIC:
-          - If shared by a referral user: link includes ref=REFERRAL_ID -> attributed to that referral
-          - If shared by clinic staff (non-referral): no ref param -> applies 180-day rule:
-            - Last appointment > 180 days ago: attributed to original referral
-            - Last appointment <= 180 days ago: attributed to "Local" (organic)
+          TWO SEPARATE TRACKING CONCEPTS:
+          1. ref (referral attribution) - WHO GETS THE COMMISSION
+             - If current user is a referral -> use their referral ID
+             - If lead has attributed referral (within 180-day grace period) -> use that referral
+             - Otherwise -> no ref param (will be attributed to "Local")
+          
+          2. reg_by (registered by) - WHO SHARED THE LINK (effort tracking)
+             - Always includes current_user.id when a user is logged in
+             - Tracks who did the work of sharing the link
+             - Example: Assistant Jussara sends link -> reg_by=jussara_user_id
           
           ESSENTIAL: This feature requires the self_booking_token migration to be run.
           ============================================================================ %>
       <%
-        # Determine the self-booking link with referral attribution
-        # If current user is a referral, include their ID in the link
+        # Build URL parameters for self-booking link
+        url_params = {}
+        
+        # 1. REFERRAL ATTRIBUTION (who gets commission)
         if referral?(current_user) && user_referral.present?
-          self_booking_link = clinic_management.self_booking_path(lead.self_booking_token!, ref: user_referral.id)
-        else
-          # Non-referral users (clinic staff) - no ref param, 180-day rule applies
-          self_booking_link = clinic_management.self_booking_path(lead.self_booking_token!)
+          # Current user is a referral - they get credit
+          url_params[:ref] = user_referral.id
+        elsif lead.respond_to?(:current_attributed_referral) && lead.current_attributed_referral.present?
+          # Lead has attributed referral within 180-day grace period
+          url_params[:ref] = lead.current_attributed_referral.id
         end
+        
+        # 2. REGISTERED BY (who shared the link - effort tracking)
+        # ESSENTIAL: Always include current_user.id so we know who shared the link
+        url_params[:reg_by] = current_user.id if current_user.present?
+        
+        # Build the self-booking link with all parameters
+        self_booking_link = clinic_management.self_booking_path(lead.self_booking_token!, url_params)
         full_link = "#{request.base_url}#{self_booking_link}"
+        
+        # Get attributed referral for display (if any)
+        attributed_referral = lead.respond_to?(:current_attributed_referral) ? lead.current_attributed_referral : nil
       %>
       <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 border-l-4 border-emerald-500">
         <dt class="text-gray-500 text-[18px] font-semibold">
@@ -146,12 +164,30 @@
             Envie este link para o paciente agendar sua própria consulta:
           </div>
           
-          <% if referral?(current_user) && user_referral.present? %>
-            <div class="mb-2 text-xs text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg inline-block">
-              <i class="fas fa-user-tag mr-1"></i>
-              Indicação atribuída a: <strong><%= user_referral.name %></strong>
-            </div>
-          <% end %>
+          <%# Show attribution info badges %>
+          <div class="flex flex-wrap gap-2 mb-2">
+            <%# Show referral attribution (who gets commission) %>
+            <% if referral?(current_user) && user_referral.present? %>
+              <div class="text-xs text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg inline-flex items-center">
+                <i class="fas fa-user-tag mr-1"></i>
+                Comissão: <strong class="ml-1"><%= user_referral.name %></strong>
+              </div>
+            <% elsif attributed_referral.present? %>
+              <div class="text-xs text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg inline-flex items-center">
+                <i class="fas fa-user-tag mr-1"></i>
+                Comissão: <strong class="ml-1"><%= attributed_referral.name %></strong>
+                <span class="ml-1 text-emerald-500">(180 dias)</span>
+              </div>
+            <% end %>
+            
+            <%# Show who is sharing the link (effort tracking) %>
+            <% if current_user.present? %>
+              <div class="text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-lg inline-flex items-center">
+                <i class="fas fa-share-alt mr-1"></i>
+                Compartilhado por: <strong class="ml-1"><%= current_user.name %></strong>
+              </div>
+            <% end %>
+          </div>
           
           <div data-controller="copy-link" class="flex flex-col sm:flex-row gap-2">
             <input type="text" 

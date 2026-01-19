@@ -109,9 +109,11 @@ module ClinicManagement
     # Creates a sample URL for the message preview. Uses actual lead data if available,
     # otherwise generates a placeholder URL.
     # 
-    # ESSENTIAL: For preview purposes, we also show the referral attribution
-    # if the lead has an attributed referral (within 180-day grace period).
-    # This helps users understand how the final link will look.
+    # ESSENTIAL: For preview purposes, we show both:
+    # 1. ref (referral attribution) - if lead has attributed referral (180-day grace period)
+    # 2. reg_by (registered by) - if there's a current_user logged in
+    # 
+    # This helps users understand how the final link will look with all parameters.
     # 
     # @param appointment [Appointment] The appointment to get lead from
     # @return [String] Sample URL for preview
@@ -125,12 +127,21 @@ module ClinicManagement
         begin
           token = lead.self_booking_token!
           
-          # Check if lead has an attributed referral (within 180-day grace period)
-          # Show this in preview so users understand referral attribution
-          attributed_referral = lead.respond_to?(:current_attributed_referral) ? lead.current_attributed_referral : nil
+          # Build URL parameters for preview
+          url_params = []
           
-          if attributed_referral.present?
-            "#{base_url}/clinic_management/self_booking/#{token}?ref=#{attributed_referral.id}"
+          # 1. Check if lead has an attributed referral (within 180-day grace period)
+          attributed_referral = lead.respond_to?(:current_attributed_referral) ? lead.current_attributed_referral : nil
+          url_params << "ref=#{attributed_referral.id}" if attributed_referral.present?
+          
+          # 2. Include reg_by if there's a current user (shows who shared the link)
+          if defined?(current_user) && current_user.present?
+            url_params << "reg_by=#{current_user.id}"
+          end
+          
+          # Build final URL
+          if url_params.any?
+            "#{base_url}/clinic_management/self_booking/#{token}?#{url_params.join('&')}"
           else
             "#{base_url}/clinic_management/self_booking/#{token}"
           end
