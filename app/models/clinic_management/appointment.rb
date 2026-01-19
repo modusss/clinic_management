@@ -1,4 +1,20 @@
 module ClinicManagement
+  # ============================================================================
+  # Appointment Model
+  # 
+  # Represents a scheduled appointment for a patient (Lead) at a specific Service.
+  # 
+  # TRACKING FIELDS:
+  # - registered_by_user_id: User who created/shared the link (effort tracking)
+  # - self_booked: Boolean indicating if created via self-booking flow (channel tracking)
+  # 
+  # SELF-BOOKING CHANNEL:
+  # When self_booked=true, the appointment was created by the patient themselves
+  # via the self-booking link (sent through WhatsApp). This enables:
+  # - Measuring efficiency of the self-booking channel
+  # - Tracking conversion rates from automated links
+  # - Analyzing patient engagement with the booking flow
+  # ============================================================================
   class Appointment < ApplicationRecord
     belongs_to :lead
     belongs_to :service
@@ -10,6 +26,12 @@ module ClinicManagement
     belongs_to :recapture_by_user, class_name: 'User', optional: true
     belongs_to :recapture_audited_by, class_name: 'User', optional: true
     has_many_attached :recapture_screenshots
+    
+    # ============================================================================
+    # SCOPES FOR SELF-BOOKING ANALYTICS
+    # ============================================================================
+    scope :self_booked, -> { where(self_booked: true) }
+    scope :manually_booked, -> { where(self_booked: [false, nil]) }
     
     # Validações para remarcação com esforço ativo
     validates :recapture_actions, presence: true, if: -> { recapture_origin == 'active_effort' }

@@ -503,13 +503,16 @@ module ClinicManagement
         )
         
         # Create appointment linked to TARGET lead
-        # ESSENTIAL: Include registered_by_user_id to track who shared the link
+        # ESSENTIAL: Include tracking fields:
+        # - registered_by_user_id: who shared the link (effort tracking)
+        # - self_booked: true to indicate this came from self-booking flow (channel tracking)
         @appointment = @invitation.appointments.create!(
           service: @service,
           lead: target_lead,
           status: 'agendado',
           referral_code: referral.code,
-          registered_by_user_id: registered_by_user_id
+          registered_by_user_id: registered_by_user_id,
+          self_booked: true  # ESSENTIAL: Marks this appointment as created via self-booking
         )
         
         # Update target lead's last appointment reference
