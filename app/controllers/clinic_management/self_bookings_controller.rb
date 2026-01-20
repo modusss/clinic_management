@@ -35,12 +35,92 @@ module ClinicManagement
     # Ensure CSRF protection for form submissions
     protect_from_forgery with: :exception
     
-    # Load lead for all actions except landing
-    before_action :set_lead_by_token, except: [:landing]
+    # Load lead for all actions except public routes
+    before_action :set_lead_by_token, except: [:landing, :public_registration, :create_public_registration]
     before_action :set_available_services
     
     # Layout specifically for public self-booking pages
     layout 'clinic_management/self_booking'
+
+    # ============================================================================
+    # GET /public_booking
+    # 
+    # Public registration page that doesn't require a lead token.
+    # Used by staff/referrals to share a generic booking link.
+    # 
+    # Params:
+    # - ref: referral_id (for commission attribution)
+    # - reg_by: user_id (who shared the link - effort tracking)
+    # ============================================================================
+    def public_registration
+      # Capture referral attribution from URL
+      if params[:ref].present?
+        session[:self_booking_referral_id] = params[:ref].to_i
+        Rails.logger.info "[SelfBooking] Public registration - Referral ID #{params[:ref]} captured"
+      end
+      
+      # Capture who shared the link
+      if params[:reg_by].present?
+        session[:self_booking_registered_by_user_id] = params[:reg_by].to_i
+        Rails.logger.info "[SelfBooking] Public registration - Registered by User ID #{params[:reg_by]} captured"
+      end
+      
+      # Get referral name for display (if present)
+      @referral = Referral.find_by(id: params[:ref]) if params[:ref].present?
+      @sharer = User.find_by(id: params[:reg_by]) if params[:reg_by].present?
+    end
+
+    # ============================================================================
+    # POST /public_booking/register
+    # 
+    # Creates a new Lead from public registration form.
+    # 
+    # LOGIC:
+    # 1. If phone exists -> use existing lead
+    # 2. If phone is new -> create new lead
+    # Then redirect to the booking flow with proper attribution.
+    # ============================================================================
+    def create_public_registration
+      patient_name = params[:patient_name]&.strip
+      patient_phone = params[:patient_phone]&.gsub(/\D/, '')
+      
+      if patient_name.blank?
+        redirect_to public_booking_path(ref: params[:ref], reg_by: params[:reg_by]),
+                    alert: "Por favor, informe seu nome."
+        return
+      end
+      
+      if patient_phone.blank? || patient_phone.length < 10
+        redirect_to public_booking_path(ref: params[:ref], reg_by: params[:reg_by]),
+                    alert: "Por favor, informe um telefone válido."
+        return
+      end
+      
+      # Find or create lead
+      target_lead = Lead.find_by(phone: patient_phone)
+      
+      if target_lead.nil?
+        target_lead = Lead.create!(
+          name: patient_name,
+          phone: patient_phone
+        )
+        target_lead.generate_self_booking_token!
+        Rails.logger.info "[SelfBooking] Public registration - Created new lead ##{target_lead.id}"
+      else
+        Rails.logger.info "[SelfBooking] Public registration - Using existing lead ##{target_lead.id}"
+      end
+      
+      # Store in session
+      session[:self_booking_patient_name] = patient_name
+      session[:self_booking_lead_id] = target_lead.id
+      
+      # Preserve referral/reg_by from URL params if present
+      session[:self_booking_referral_id] = params[:ref].to_i if params[:ref].present?
+      session[:self_booking_registered_by_user_id] = params[:reg_by].to_i if params[:reg_by].present?
+      
+      # Redirect to booking flow
+      redirect_to self_booking_select_week_path(target_lead.self_booking_token!)
+    end
 
     # ============================================================================
     # GET /self_booking/:token

@@ -1,0 +1,127 @@
+<%# ============================================================================
+    Self-Booking: Public Registration Screen
+    
+    This is a public registration page that doesn't require a lead token.
+    Used by staff/referrals to share a generic booking link.
+    
+    Anyone can access this page and register to book an appointment.
+    ============================================================================ %>
+
+<!-- Step indicator -->
+<div class="step-indicator">
+  <div class="step-dot active"></div>
+  <div class="step-dot"></div>
+  <div class="step-dot"></div>
+  <div class="step-dot"></div>
+</div>
+
+<!-- Main card -->
+<div class="booking-card">
+  <div class="text-center mb-6">
+    <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-4">
+      <i class="fas fa-calendar-plus text-emerald-600 text-2xl"></i>
+    </div>
+  </div>
+  
+  <h2 class="text-xl font-bold text-gray-900 text-center mb-2">
+    Agende sua consulta!
+  </h2>
+  
+  <p class="text-gray-600 text-center mb-6">
+    Preencha seus dados para continuar
+  </p>
+  
+  <% if @referral.present? %>
+    <div class="mb-4 text-center">
+      <span class="inline-flex items-center text-xs text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+        <i class="fas fa-user-tag mr-1"></i>
+        Indicação: <strong class="ml-1"><%= @referral.name %></strong>
+      </span>
+    </div>
+  <% end %>
+  
+  <%= form_with url: create_public_booking_path, 
+                method: :post, 
+                local: true,
+                class: "space-y-4" do %>
+    
+    <%# Preserve URL params %>
+    <% if params[:ref].present? %>
+      <input type="hidden" name="ref" value="<%= params[:ref] %>">
+    <% end %>
+    <% if params[:reg_by].present? %>
+      <input type="hidden" name="reg_by" value="<%= params[:reg_by] %>">
+    <% end %>
+    
+    <%# Patient name field %>
+    <div>
+      <label for="patient_name" class="block text-sm font-medium text-gray-700 mb-2">
+        <i class="fas fa-user text-gray-400 mr-1"></i>
+        Seu nome completo
+      </label>
+      <input type="text" 
+             name="patient_name" 
+             id="patient_name"
+             required
+             autofocus
+             placeholder="Ex: Maria Silva"
+             class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-lg
+                    focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 
+                    focus:outline-none transition-all"
+             value="">
+    </div>
+    
+    <%# Phone field %>
+    <div>
+      <label for="patient_phone" class="block text-sm font-medium text-gray-700 mb-2">
+        <i class="fas fa-phone text-gray-400 mr-1"></i>
+        Seu telefone (WhatsApp)
+      </label>
+      <input type="tel" 
+             name="patient_phone" 
+             id="patient_phone"
+             required
+             placeholder="(99) 99999-9999"
+             inputmode="numeric"
+             class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-lg
+                    focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 
+                    focus:outline-none transition-all"
+             value="">
+    </div>
+    
+    <button type="submit" class="btn-primary">
+      <i class="fas fa-arrow-right mr-2"></i>
+      Continuar para agendamento
+    </button>
+  <% end %>
+</div>
+
+<!-- Help text -->
+<p class="text-center text-gray-500 text-sm mt-4">
+  <i class="fas fa-lock mr-1"></i>
+  Seus dados estão seguros conosco
+</p>
+
+<%# Phone mask script %>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const phoneInput = document.getElementById('patient_phone');
+    if (phoneInput) {
+      phoneInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 11) value = value.slice(0, 11);
+        
+        if (value.length > 0) {
+          if (value.length <= 2) {
+            value = '(' + value;
+          } else if (value.length <= 7) {
+            value = '(' + value.slice(0, 2) + ') ' + value.slice(2);
+          } else {
+            value = '(' + value.slice(0, 2) + ') ' + value.slice(2, 7) + '-' + value.slice(7);
+          }
+        }
+        e.target.value = value;
+      });
+    }
+  });
+</script>

@@ -14,6 +14,13 @@
     </nav>
   </header>
 <% elsif (referral? current_user) %>
+  <%# Build share link for referral users %>
+  <%
+    referral_share_params = { reg_by: current_user.id }
+    referral_share_params[:ref] = user_referral.id if user_referral.present?
+    referral_share_url = "#{request.base_url}#{clinic_management.public_booking_path(referral_share_params)}"
+    referral_share_message = "Olá! 👋\n\nAgende sua consulta de forma rápida e fácil:\n\n#{referral_share_url}\n\nClique no link acima para continuar! ✅"
+  %>
   <header class="navbar-fixed relative bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 py-4 shadow-md md:pl-64 z-50" style="width:100%;">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex flex-wrap justify-between items-center">
@@ -94,9 +101,43 @@
         <%= link_to "Convites", clinic_management.invitations_path(referral_id: user_referral.id), class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'invitations'}" %>
         <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'lead_messages'}" %>
     </nav>
+    
+    <%# ================================================================
+        SHARE BOOKING LINK - Referral User
+        Allows referral to share a public booking link with their attribution
+        ================================================================ %>
+    <div class="mt-6 pt-4 border-t border-emerald-800">
+      <p class="text-emerald-300 text-xs uppercase tracking-wider mb-3 px-3">Compartilhar</p>
+      
+      <%# WhatsApp share button %>
+      <a href="https://wa.me/?text=<%= ERB::Util.url_encode(referral_share_message) %>" 
+         target="_blank"
+         class="navbar-share-btn flex items-center justify-center gap-2 w-full px-3 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl">
+        <i class="fab fa-whatsapp text-lg"></i>
+        <span class="font-medium">Enviar via WhatsApp</span>
+      </a>
+      
+      <%# Copy link button %>
+      <button type="button"
+              onclick="copyShareLink(this, '<%= referral_share_url %>')"
+              class="navbar-copy-btn flex items-center justify-center gap-2 w-full px-3 py-2 mt-2 bg-emerald-800 hover:bg-emerald-700 text-emerald-100 rounded-lg transition-all duration-200 text-sm">
+        <i class="fas fa-copy"></i>
+        <span>Copiar link</span>
+      </button>
+      
+      <p class="text-emerald-400 text-xs mt-2 px-3 opacity-75">
+        Compartilhe com pacientes para agendar
+      </p>
+    </div>
   </aside>
 
 <% else %>
+<%# Build share link for staff users (non-referral) %>
+<%
+  staff_share_params = { reg_by: current_user.id }
+  staff_share_url = "#{request.base_url}#{clinic_management.public_booking_path(staff_share_params)}"
+  staff_share_message = "Olá! 👋\n\nAgende sua consulta de forma rápida e fácil:\n\n#{staff_share_url}\n\nClique no link acima para continuar! ✅"
+%>
 <header class="navbar-fixed relative bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 py-4 shadow-md md:pl-64 z-50">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex flex-wrap justify-between items-center">
@@ -195,6 +236,34 @@
     <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'lead_messages'}"  %>
     <% end %>
   </nav>
+  
+  <%# ================================================================
+      SHARE BOOKING LINK - Staff User
+      Allows staff to share a public booking link (no referral attribution)
+      ================================================================ %>
+  <div class="mt-6 pt-4 border-t border-emerald-800">
+    <p class="text-emerald-300 text-xs uppercase tracking-wider mb-3 px-3">Compartilhar</p>
+    
+    <%# WhatsApp share button %>
+    <a href="https://wa.me/?text=<%= ERB::Util.url_encode(staff_share_message) %>" 
+       target="_blank"
+       class="navbar-share-btn flex items-center justify-center gap-2 w-full px-3 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl">
+      <i class="fab fa-whatsapp text-lg"></i>
+      <span class="font-medium">Enviar via WhatsApp</span>
+    </a>
+    
+    <%# Copy link button %>
+    <button type="button"
+            onclick="copyShareLink(this, '<%= staff_share_url %>')"
+            class="navbar-copy-btn flex items-center justify-center gap-2 w-full px-3 py-2 mt-2 bg-emerald-800 hover:bg-emerald-700 text-emerald-100 rounded-lg transition-all duration-200 text-sm">
+      <i class="fas fa-copy"></i>
+      <span>Copiar link</span>
+    </button>
+    
+    <p class="text-emerald-400 text-xs mt-2 px-3 opacity-75">
+      Compartilhe com pacientes para agendar
+    </p>
+  </div>
 </aside>
 
 <% end %>
@@ -255,4 +324,79 @@
       padding-right: 0.25rem;
     }
   }
+  
+  /* Navbar share button with subtle pulse animation */
+  .navbar-share-btn {
+    animation: navbar-pulse 3s ease-in-out infinite;
+  }
+  
+  .navbar-share-btn:hover {
+    animation: none;
+    transform: scale(1.02);
+  }
+  
+  @keyframes navbar-pulse {
+    0%, 100% {
+      box-shadow: 0 4px 14px -3px rgba(34, 197, 94, 0.4);
+    }
+    50% {
+      box-shadow: 0 4px 20px -3px rgba(34, 197, 94, 0.7);
+    }
+  }
+  
+  /* Navbar copy button states */
+  .navbar-copy-btn.copy-success {
+    background: linear-gradient(to right, #059669, #10b981) !important;
+  }
+  
+  .navbar-copy-btn.copy-error {
+    background: #dc2626 !important;
+  }
 </style>
+
+<script>
+  /**
+   * Copies the share link to clipboard and shows visual feedback.
+   * 
+   * @param {HTMLElement} button - The button element clicked
+   * @param {string} url - The URL to copy
+   */
+  function copyShareLink(button, url) {
+    const originalContent = button.innerHTML;
+    
+    navigator.clipboard.writeText(url).then(function() {
+      // Success feedback
+      button.innerHTML = '<i class="fas fa-check"></i><span>Link copiado!</span>';
+      button.classList.add('copy-success');
+      
+      setTimeout(function() {
+        button.innerHTML = originalContent;
+        button.classList.remove('copy-success');
+      }, 2000);
+    }).catch(function(err) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = url;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-9999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      
+      try {
+        document.execCommand('copy');
+        button.innerHTML = '<i class="fas fa-check"></i><span>Link copiado!</span>';
+        button.classList.add('copy-success');
+      } catch (e) {
+        button.innerHTML = '<i class="fas fa-times"></i><span>Erro ao copiar</span>';
+        button.classList.add('copy-error');
+      }
+      
+      document.body.removeChild(textArea);
+      
+      setTimeout(function() {
+        button.innerHTML = originalContent;
+        button.classList.remove('copy-success', 'copy-error');
+      }, 2000);
+    });
+  }
+</script>

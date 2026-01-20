@@ -2,6 +2,19 @@ ClinicManagement::Engine.routes.draw do
   root 'invitations#new'
   
   # ============================================================================
+  # PUBLIC REGISTRATION ROUTE (No token required)
+  # 
+  # This route allows anyone to register and book an appointment.
+  # Used by staff/referrals to share a generic booking link.
+  # 
+  # Params:
+  # - ref: referral_id (for commission attribution)
+  # - reg_by: user_id (who shared the link - effort tracking)
+  # ============================================================================
+  get 'public_booking', to: 'self_bookings#public_registration', as: 'public_booking'
+  post 'public_booking/register', to: 'self_bookings#create_public_registration', as: 'create_public_booking'
+  
+  # ============================================================================
   # SELF-BOOKING ROUTES (PUBLIC - No authentication required)
   # 
   # These routes enable patients to self-schedule appointments via a unique link.
