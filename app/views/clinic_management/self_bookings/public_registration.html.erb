@@ -5,6 +5,11 @@
     Used by staff/referrals to share a generic booking link.
     
     Anyone can access this page and register to book an appointment.
+    
+    MINOR PATIENT LOGIC:
+    - If patient is a minor (checkbox checked), show guardian name field
+    - Guardian name -> Lead.name (phone owner/responsible)
+    - Patient name -> Invitation.patient_name (the actual patient)
     ============================================================================ %>
 
 <!-- Step indicator -->
@@ -43,6 +48,7 @@
   <%= form_with url: create_public_booking_path, 
                 method: :post, 
                 local: true,
+                id: "registration-form",
                 class: "space-y-4" do %>
     
     <%# Preserve URL params %>
@@ -55,9 +61,9 @@
     
     <%# Patient name field %>
     <div>
-      <label for="patient_name" class="block text-sm font-medium text-gray-700 mb-2">
+      <label for="patient_name" id="patient_name_label" class="block text-sm font-medium text-gray-700 mb-2">
         <i class="fas fa-user text-gray-400 mr-1"></i>
-        Seu nome completo
+        <span id="patient_name_label_text">Seu nome completo</span>
       </label>
       <input type="text" 
              name="patient_name" 
@@ -71,11 +77,45 @@
              value="">
     </div>
     
+    <%# Minor patient checkbox %>
+    <div class="flex items-center p-3 bg-amber-50 border border-amber-200 rounded-xl">
+      <input type="checkbox" 
+             name="is_minor" 
+             id="is_minor"
+             value="1"
+             class="w-5 h-5 text-amber-600 border-2 border-amber-300 rounded 
+                    focus:ring-amber-500 focus:ring-2 cursor-pointer">
+      <label for="is_minor" class="ml-3 text-sm text-amber-800 cursor-pointer select-none">
+        <i class="fas fa-child mr-1"></i>
+        <strong>O paciente é menor de idade</strong>
+      </label>
+    </div>
+    
+    <%# Guardian name field (shown only when is_minor is checked) %>
+    <div id="guardian_field" class="hidden">
+      <label for="guardian_name" class="block text-sm font-medium text-gray-700 mb-2">
+        <i class="fas fa-user-shield text-amber-500 mr-1"></i>
+        Nome completo do responsável <span class="text-red-500">*</span>
+      </label>
+      <input type="text" 
+             name="guardian_name" 
+             id="guardian_name"
+             placeholder="Ex: João da Silva (pai/mãe/responsável)"
+             class="w-full px-4 py-3 border-2 border-amber-200 rounded-xl text-lg
+                    focus:border-amber-500 focus:ring-2 focus:ring-amber-200 
+                    focus:outline-none transition-all bg-amber-50"
+             value="">
+      <p class="mt-1 text-xs text-amber-600">
+        <i class="fas fa-info-circle mr-1"></i>
+        O responsável receberá as mensagens no WhatsApp
+      </p>
+    </div>
+    
     <%# Phone field %>
     <div>
-      <label for="patient_phone" class="block text-sm font-medium text-gray-700 mb-2">
+      <label for="patient_phone" id="phone_label" class="block text-sm font-medium text-gray-700 mb-2">
         <i class="fas fa-phone text-gray-400 mr-1"></i>
-        Seu telefone (WhatsApp)
+        <span id="phone_label_text">Seu telefone (WhatsApp)</span>
       </label>
       <input type="tel" 
              name="patient_phone" 
@@ -102,9 +142,12 @@
   Seus dados estão seguros conosco
 </p>
 
-<%# Phone mask script %>
+<%# Phone mask and minor toggle script %>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    // ============================================================================
+    // Phone mask
+    // ============================================================================
     const phoneInput = document.getElementById('patient_phone');
     if (phoneInput) {
       phoneInput.addEventListener('input', function(e) {
@@ -121,6 +164,68 @@
           }
         }
         e.target.value = value;
+      });
+    }
+    
+    // ============================================================================
+    // Minor patient toggle
+    // Shows/hides guardian field and updates labels accordingly
+    // ============================================================================
+    const isMinorCheckbox = document.getElementById('is_minor');
+    const guardianField = document.getElementById('guardian_field');
+    const guardianInput = document.getElementById('guardian_name');
+    const patientNameLabelText = document.getElementById('patient_name_label_text');
+    const phoneLabelText = document.getElementById('phone_label_text');
+    const patientNameInput = document.getElementById('patient_name');
+    
+    if (isMinorCheckbox && guardianField) {
+      isMinorCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+          // Show guardian field and make it required
+          guardianField.classList.remove('hidden');
+          guardianInput.required = true;
+          
+          // Update labels to reflect minor context
+          patientNameLabelText.innerHTML = 'Nome completo do <strong>paciente</strong> (menor)';
+          patientNameInput.placeholder = 'Ex: Ana Silva (criança/adolescente)';
+          phoneLabelText.innerHTML = 'Telefone do <strong>responsável</strong> (WhatsApp)';
+          
+          // Add visual indicator to patient name field
+          patientNameInput.classList.add('border-amber-200', 'bg-amber-50');
+          patientNameInput.classList.remove('border-gray-200');
+          
+          // Focus on guardian field for better UX
+          guardianInput.focus();
+        } else {
+          // Hide guardian field and remove required
+          guardianField.classList.add('hidden');
+          guardianInput.required = false;
+          guardianInput.value = '';
+          
+          // Reset labels to default
+          patientNameLabelText.textContent = 'Seu nome completo';
+          patientNameInput.placeholder = 'Ex: Maria Silva';
+          phoneLabelText.textContent = 'Seu telefone (WhatsApp)';
+          
+          // Remove visual indicator
+          patientNameInput.classList.remove('border-amber-200', 'bg-amber-50');
+          patientNameInput.classList.add('border-gray-200');
+        }
+      });
+    }
+    
+    // ============================================================================
+    // Form validation - ensure guardian name is filled when minor is checked
+    // ============================================================================
+    const form = document.getElementById('registration-form');
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        if (isMinorCheckbox.checked && guardianInput.value.trim() === '') {
+          e.preventDefault();
+          alert('Por favor, informe o nome do responsável pelo menor.');
+          guardianInput.focus();
+          return false;
+        }
       });
     }
   });

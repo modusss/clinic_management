@@ -79,47 +79,86 @@ module ClinicManagement
     # 1. If phone exists -> use existing lead
     # 2. If phone is new -> create new lead
     # Then redirect to the booking flow with proper attribution.
+    # 
+    # MINOR PATIENT LOGIC:
+    # When is_minor=1, the form includes guardian_name field:
+    # - guardian_name -> Lead.name (phone owner/responsible for WhatsApp messages)
+    # - patient_name -> Invitation.patient_name (the actual patient being treated)
+    # 
+    # This allows proper tracking: the Lead represents the phone owner (guardian),
+    # while the Invitation/Appointment tracks the actual patient (minor).
     # ============================================================================
     def create_public_registration
       patient_name = params[:patient_name]&.strip
       patient_phone = params[:patient_phone]&.gsub(/\D/, '')
+      is_minor = params[:is_minor] == "1"
+      guardian_name = params[:guardian_name]&.strip
       
+      # Validate patient name
       if patient_name.blank?
         redirect_to public_booking_path(ref: params[:ref], reg_by: params[:reg_by]),
-                    alert: "Por favor, informe seu nome."
+                    alert: "Por favor, informe o nome do paciente."
         return
       end
       
+      # Validate phone
       if patient_phone.blank? || patient_phone.length < 10
         redirect_to public_booking_path(ref: params[:ref], reg_by: params[:reg_by]),
                     alert: "Por favor, informe um telefone válido."
         return
       end
       
+      # ESSENTIAL: Validate guardian name when patient is a minor
+      if is_minor && guardian_name.blank?
+        redirect_to public_booking_path(ref: params[:ref], reg_by: params[:reg_by]),
+                    alert: "Por favor, informe o nome do responsável pelo menor."
+        return
+      end
+      
+      # Determine the lead name based on minor status
+      # - If minor: Lead.name = guardian (phone owner who receives messages)
+      # - If adult: Lead.name = patient (same person)
+      lead_name = is_minor ? guardian_name : patient_name
+      
       # Find or create lead
       target_lead = Lead.find_by(phone: patient_phone)
       
       if target_lead.nil?
         target_lead = Lead.create!(
-          name: patient_name,
+          name: lead_name,
           phone: patient_phone
         )
         target_lead.generate_self_booking_token!
-        Rails.logger.info "[SelfBooking] Public registration - Created new lead ##{target_lead.id}"
+        Rails.logger.info "[SelfBooking] Public registration - Created new lead ##{target_lead.id} (#{is_minor ? 'minor patient, guardian: ' + lead_name : 'adult patient'})"
       else
+        # Update lead name if it's a new guardian for an existing phone
+        if is_minor && target_lead.name != lead_name
+          Rails.logger.info "[SelfBooking] Public registration - Updating lead ##{target_lead.id} name to guardian: #{lead_name}"
+          target_lead.update!(name: lead_name)
+        end
         Rails.logger.info "[SelfBooking] Public registration - Using existing lead ##{target_lead.id}"
       end
       
       # Store in session
-      session[:self_booking_patient_name] = patient_name
       session[:self_booking_lead_id] = target_lead.id
+      session[:self_booking_is_minor] = is_minor
       
       # Preserve referral/reg_by from URL params if present
       session[:self_booking_referral_id] = params[:ref].to_i if params[:ref].present?
       session[:self_booking_registered_by_user_id] = params[:reg_by].to_i if params[:reg_by].present?
       
-      # Redirect to booking flow
-      redirect_to self_booking_select_week_path(target_lead.self_booking_token!)
+      # ESSENTIAL: Store the minor patient name temporarily so it can be added to distinct_patients
+      # This ensures both guardian and minor appear in the patient selection screen
+      if is_minor
+        session[:self_booking_pending_minor_name] = patient_name
+        Rails.logger.info "[SelfBooking] Public registration - Minor patient '#{patient_name}' stored, redirecting to patient selection"
+        # Redirect to show page where user can select between guardian and minor
+        redirect_to self_booking_path(target_lead.self_booking_token!)
+      else
+        # For adults, store patient_name and go directly to week selection
+        session[:self_booking_patient_name] = patient_name
+        redirect_to self_booking_select_week_path(target_lead.self_booking_token!)
+      end
     end
 
     # ============================================================================
@@ -144,7 +183,31 @@ module ClinicManagement
       
       # Get distinct patients associated with this phone number
       @distinct_patients = @lead.distinct_patients
-      @has_multiple_patients = @lead.has_multiple_patients?
+      
+      # ESSENTIAL: If there's a pending minor name from public_registration,
+      # add it to the patient list so the guardian can choose between themselves and the minor
+      if session[:self_booking_pending_minor_name].present?
+        pending_minor_name = session[:self_booking_pending_minor_name]
+        first_name = pending_minor_name.split.first&.strip&.capitalize
+        
+        # Check if this minor is not already in the list (by first name)
+        minor_key = @lead.normalize_name_for_comparison(first_name)
+        already_exists = @distinct_patients.any? do |p|
+          @lead.normalize_name_for_comparison(p[:first_name]) == minor_key
+        end
+        
+        unless already_exists
+          @distinct_patients << {
+            first_name: first_name,
+            full_name: pending_minor_name.strip
+          }
+          # Sort by first name
+          @distinct_patients.sort_by! { |p| p[:first_name].downcase }
+          Rails.logger.info "[SelfBooking] Added pending minor '#{pending_minor_name}' to patient selection"
+        end
+      end
+      
+      @has_multiple_patients = @distinct_patients.count > 1
       
       # Capture referral attribution from URL (if link was shared by a referral)
       # Store in session so it persists through the booking flow
@@ -184,6 +247,9 @@ module ClinicManagement
       # Store the selected patient name in session
       session[:self_booking_patient_name] = selected_patient
       session[:self_booking_lead_id] = @lead.id
+      
+      # Clear the pending minor name since a patient was selected
+      session.delete(:self_booking_pending_minor_name)
       
       Rails.logger.info "[SelfBooking] Patient selected: #{selected_patient} for lead ##{@lead.id}"
       
@@ -604,6 +670,8 @@ module ClinicManagement
       session.delete(:self_booking_lead_id)
       session.delete(:self_booking_referral_id)
       session.delete(:self_booking_registered_by_user_id)
+      session.delete(:self_booking_is_minor)
+      session.delete(:self_booking_pending_minor_name)
       
       redirect_to self_booking_success_path(@lead.self_booking_token)
     rescue ActiveRecord::RecordInvalid => e
@@ -642,6 +710,8 @@ module ClinicManagement
       session.delete(:self_booking_lead_id)
       session.delete(:self_booking_referral_id)
       session.delete(:self_booking_registered_by_user_id)
+      session.delete(:self_booking_is_minor)
+      session.delete(:self_booking_pending_minor_name)
     end
 
     private
