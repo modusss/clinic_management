@@ -4,7 +4,7 @@
 <div id="phone-container-<%= lead.id %>" 
      data-controller="message-tracking"
      data-message-tracking-lead-id-value="<%= lead.id %>"
-     data-message-tracking-appointment-id-value="<%= appointment.id %>"
+     data-message-tracking-appointment-id-value="<%= appointment&.id %>"
      data-message-tracking-no-whatsapp-value="<%= lead.no_whatsapp || false %>"
      data-message-tracking-persist-hint-value="<%= local_assigns[:persist_hint] || false %>"
      data-message-tracking-row-id-value="lead-row-<%= lead.id %>"
@@ -148,7 +148,7 @@
         </div>
       </div>
     </div>
-  <% elsif appointment.last_message_sent_at.present? %>
+  <% elsif appointment&.last_message_sent_at.present? %>
     <!-- Fallback para dados antigos -->
     <div class="text-xs text-gray-500 mt-1">
       Última mensagem: <%= time_ago_in_words(appointment.last_message_sent_at) %> atrás 

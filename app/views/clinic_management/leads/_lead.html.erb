@@ -134,13 +134,20 @@
         # Build URL parameters for self-booking link
         url_params = {}
         
+        # Get attributed referral once (to avoid multiple queries)
+        # Safe check: only call if lead has appointments to avoid unnecessary queries
+        attributed_referral = nil
+        if lead.respond_to?(:current_attributed_referral) && lead.appointments.any?
+          attributed_referral = lead.current_attributed_referral rescue nil
+        end
+        
         # 1. REFERRAL ATTRIBUTION (who gets commission)
         if referral?(current_user) && user_referral.present?
           # Current user is a referral - they get credit
           url_params[:ref] = user_referral.id
-        elsif lead.respond_to?(:current_attributed_referral) && lead.current_attributed_referral.present?
+        elsif attributed_referral.present?
           # Lead has attributed referral within 180-day grace period
-          url_params[:ref] = lead.current_attributed_referral.id
+          url_params[:ref] = attributed_referral.id
         end
         
         # 2. REGISTERED BY (who shared the link - effort tracking)
@@ -150,9 +157,6 @@
         # Build the self-booking link with all parameters
         self_booking_link = clinic_management.self_booking_path(lead.self_booking_token!, url_params)
         full_link = "#{request.base_url}#{self_booking_link}"
-        
-        # Get attributed referral for display (if any)
-        attributed_referral = lead.respond_to?(:current_attributed_referral) ? lead.current_attributed_referral : nil
       %>
       <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 border-l-4 border-emerald-500">
         <dt class="text-gray-500 text-[18px] font-semibold">
