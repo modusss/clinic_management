@@ -84,30 +84,78 @@
     })();
   </script>
 
-  <!-- Global Loading Script - Shows loader after 2s delay on slow requests -->
+  <!-- Global Loading Script - Shows loader after 2s delay, fallback UI after 5s -->
   <script>
     (function() {
       'use strict';
+
+      /**
+       * Timing Configuration
+       * - DELAY: Time before showing loading overlay (2 seconds)
+       * - FALLBACK_DELAY: Time before showing escape options (5 seconds)
+       */
       var DELAY = 2000;
+      var FALLBACK_DELAY = 5000;
+
       var timeout = null;
+      var fallbackTimeout = null;
       var overlay = null;
+      var fallback = null;
 
       function getOverlay() {
         if (!overlay) overlay = document.getElementById('global-loading-overlay');
         return overlay;
       }
 
+      function getFallback() {
+        if (!fallback) fallback = document.getElementById('global-loading-fallback');
+        return fallback;
+      }
+
+      /**
+       * Shows the loading overlay and starts fallback timer
+       */
       function show() {
         var el = getOverlay();
         if (el) {
           el.classList.remove('opacity-0', 'invisible', 'pointer-events-none');
           el.classList.add('opacity-100', 'visible', 'pointer-events-auto');
           el.setAttribute('aria-hidden', 'false');
+
+          // Start fallback timer after overlay is visible
+          startFallbackTimer();
         }
       }
 
+      /**
+       * Shows the fallback UI with escape options
+       */
+      function showFallback() {
+        var fb = getFallback();
+        if (fb) {
+          fb.classList.add('global-loading-fallback--visible');
+          fb.setAttribute('aria-hidden', 'false');
+        }
+      }
+
+      /**
+       * Hides the fallback UI
+       */
+      function hideFallback() {
+        var fb = getFallback();
+        if (fb) {
+          fb.classList.remove('global-loading-fallback--visible');
+          fb.setAttribute('aria-hidden', 'true');
+        }
+      }
+
+      /**
+       * Hides everything and clears all timers
+       */
       function hide() {
-        if (timeout) { clearTimeout(timeout); timeout = null; }
+        clearAllTimers();
+        hideFallback();
+
         var el = getOverlay();
         if (el) {
           el.classList.add('opacity-0', 'invisible', 'pointer-events-none');
@@ -116,9 +164,28 @@
         }
       }
 
+      /**
+       * Starts the initial loading timer (2s)
+       */
       function startTimer() {
         if (timeout) return;
         timeout = setTimeout(show, DELAY);
+      }
+
+      /**
+       * Starts the fallback timer (5s from when loading appears)
+       */
+      function startFallbackTimer() {
+        if (fallbackTimeout) return;
+        fallbackTimeout = setTimeout(showFallback, FALLBACK_DELAY);
+      }
+
+      /**
+       * Clears all timers
+       */
+      function clearAllTimers() {
+        if (timeout) { clearTimeout(timeout); timeout = null; }
+        if (fallbackTimeout) { clearTimeout(fallbackTimeout); fallbackTimeout = null; }
       }
 
       // Turbo Drive events
@@ -131,6 +198,35 @@
 
       // Browser reload (F5, Ctrl+R)
       window.addEventListener('beforeunload', startTimer);
+
+      // Keyboard support: Escape key to go back
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+          var el = getOverlay();
+          if (el && !el.classList.contains('invisible')) {
+            globalLoadingGoBack();
+          }
+        }
+      });
+
+      /**
+       * Global fallback action handlers
+       * Exposed to window for onclick handlers in the HTML
+       */
+      window.globalLoadingGoBack = function() {
+        hide();
+        window.history.back();
+      };
+
+      window.globalLoadingReload = function() {
+        hide();
+        window.location.reload();
+      };
+
+      window.globalLoadingGoHome = function() {
+        hide();
+        window.location.href = '/';
+      };
     })();
   </script>
 </head>
