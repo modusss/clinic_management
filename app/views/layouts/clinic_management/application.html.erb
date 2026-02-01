@@ -83,8 +83,61 @@
       });
     })();
   </script>
+
+  <!-- Global Loading Script - Shows loader after 2s delay on slow requests -->
+  <script>
+    (function() {
+      'use strict';
+      var DELAY = 2000;
+      var timeout = null;
+      var overlay = null;
+
+      function getOverlay() {
+        if (!overlay) overlay = document.getElementById('global-loading-overlay');
+        return overlay;
+      }
+
+      function show() {
+        var el = getOverlay();
+        if (el) {
+          el.classList.remove('opacity-0', 'invisible', 'pointer-events-none');
+          el.classList.add('opacity-100', 'visible', 'pointer-events-auto');
+          el.setAttribute('aria-hidden', 'false');
+        }
+      }
+
+      function hide() {
+        if (timeout) { clearTimeout(timeout); timeout = null; }
+        var el = getOverlay();
+        if (el) {
+          el.classList.add('opacity-0', 'invisible', 'pointer-events-none');
+          el.classList.remove('opacity-100', 'visible', 'pointer-events-auto');
+          el.setAttribute('aria-hidden', 'true');
+        }
+      }
+
+      function startTimer() {
+        if (timeout) return;
+        timeout = setTimeout(show, DELAY);
+      }
+
+      // Turbo Drive events
+      document.addEventListener('turbo:before-fetch-request', startTimer);
+      document.addEventListener('turbo:before-fetch-response', hide);
+      document.addEventListener('turbo:visit', startTimer);
+      document.addEventListener('turbo:load', hide);
+      document.addEventListener('turbo:submit-start', startTimer);
+      document.addEventListener('turbo:submit-end', hide);
+
+      // Browser reload (F5, Ctrl+R)
+      window.addEventListener('beforeunload', startTimer);
+    })();
+  </script>
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal" style="margin-bottom: 200px">
+  <%# Global loading overlay - shows when requests take > 2 seconds %>
+  <%= render "clinic_management/shared/global_loading" %>
+
   <%= render "clinic_management/shared/navbar" %>
   <%= render "clinic_management/shared/scroll_buttons" %>
   <%= content_for?(:breadcrumb) ? yield(:breadcrumb) : '' %>
