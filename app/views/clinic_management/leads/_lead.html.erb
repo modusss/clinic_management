@@ -112,24 +112,14 @@
       </div>
       
       <%# ============================================================================
-          Self-Booking Link Section
+          Self-Booking Link Section (feature-flagged by account.self_booking_enabled)
           
           Allows staff to generate and copy a unique self-booking link for the patient.
           The patient can use this link to self-schedule their appointment via WhatsApp.
           
-          TWO SEPARATE TRACKING CONCEPTS:
-          1. ref (referral attribution) - WHO GETS THE COMMISSION
-             - If current user is a referral -> use their referral ID
-             - If lead has attributed referral (within 180-day grace period) -> use that referral
-             - Otherwise -> no ref param (will be attributed to "Local")
-          
-          2. reg_by (registered by) - WHO SHARED THE LINK (effort tracking)
-             - Always includes current_user.id when a user is logged in
-             - Tracks who did the work of sharing the link
-             - Example: Assistant Jussara sends link -> reg_by=jussara_user_id
-          
-          ESSENTIAL: This feature requires the self_booking_token migration to be run.
+          ESSENTIAL: Only shown when current_account.self_booking_enabled? (Adicionais toggle in admin).
           ============================================================================ %>
+      <% if current_account&.self_booking_enabled? %>
       <%
         # Build URL parameters for self-booking link
         url_params = {}
@@ -235,6 +225,7 @@
           </p>
         </dd>
       </div>
+      <% end %>
       
       <% unless referral?(current_user) %>
       <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">

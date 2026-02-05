@@ -88,8 +88,8 @@ module ClinicManagement
       start_hour = start_time.strftime('%H:%M')
       end_hour = end_time.strftime('%H:%M')
 
-      # Generate sample self-booking link for preview
-      sample_booking_link = generate_sample_self_booking_link(appointment)
+      # Generate sample self-booking link for preview (only when account has self_booking_enabled)
+      sample_booking_link = (defined?(current_account) && current_account&.self_booking_enabled?) ? generate_sample_self_booking_link(appointment) : ""
 
       # Replace placeholders
       text.gsub('{NOME_COMPLETO_PACIENTE}', lead_name)

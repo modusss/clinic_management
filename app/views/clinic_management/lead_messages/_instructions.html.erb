@@ -91,6 +91,8 @@
             <i class="material-icons text-orange-500">add_circle_outline</i>
         </button>
         
+        <%# LINK_AUTO_MARCACAO - only show when account has self_booking_enabled (Adicionais toggle) %>
+        <% if current_account&.self_booking_enabled? %>
         <button type="button" 
                 class="placeholder-btn flex items-center justify-between p-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors duration-200"
                 data-placeholder="{LINK_AUTO_MARCACAO}"
@@ -101,6 +103,7 @@
             </div>
             <i class="material-icons text-emerald-500">add_circle_outline</i>
         </button>
+        <% end %>
     </div>
     <h5 class="text-lg font-semibold mt-4 mb-2">Funcionalidade de Múltiplas Mensagens Sorteadas:</h5>
     <p>Para incluir múltiplas opções de frases na mensagem, que serão escolhidas aleatoriamente, use colchetes `[]` com opções separadas pelo símbolo `|`. Por exemplo, `[Opção 1|Opção 2|Opção 3]` escolherá aleatoriamente uma das opções.</p>

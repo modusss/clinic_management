@@ -14,13 +14,15 @@
     </nav>
   </header>
 <% elsif (referral? current_user) %>
-  <%# Build share link for referral users %>
+  <%# Build share link for referral users - only when self_booking_enabled (Adicionais toggle) %>
+  <% if current_account&.self_booking_enabled? %>
   <%
     referral_share_params = { reg_by: current_user.id }
     referral_share_params[:ref] = user_referral.id if user_referral.present?
     referral_share_url = "#{request.base_url}#{clinic_management.public_booking_path(referral_share_params)}"
     referral_share_message = "Olá! 👋\n\nAgende sua consulta de forma rápida e fácil:\n\n#{referral_share_url}\n\nClique no link acima para continuar! ✅"
   %>
+  <% end %>
   <header class="navbar-fixed relative bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 py-4 shadow-md md:pl-64 z-50" style="width:100%;">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex flex-wrap justify-between items-center">
@@ -37,7 +39,8 @@
             <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'lead_messages'}" %>
             <%= link_to "Convites", clinic_management.invitations_path(referral_id: user_referral.id), class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'invitations'}" %>
             
-            <%# Mobile share buttons - Referral %>
+            <%# Mobile share buttons - Referral (only when self_booking_enabled) %>
+            <% if current_account&.self_booking_enabled? %>
             <div class="mt-4 pt-4 border-t border-emerald-600 flex flex-col gap-2">
               <a href="https://wa.me/?text=<%= ERB::Util.url_encode(referral_share_message) %>" 
                  target="_blank"
@@ -52,6 +55,7 @@
                 <span>Copiar link</span>
               </button>
             </div>
+            <% end %>
           </nav>
         <% end %>
 
@@ -119,9 +123,9 @@
     </nav>
     
     <%# ================================================================
-        SHARE BOOKING LINK - Referral User
-        Allows referral to share a public booking link with their attribution
+        SHARE BOOKING LINK - Referral User (only when self_booking_enabled)
         ================================================================ %>
+    <% if current_account&.self_booking_enabled? %>
     <div class="mt-6 pt-4 border-t border-emerald-800">
       <p class="text-emerald-300 text-xs uppercase tracking-wider mb-3 px-3">Compartilhar</p>
       
@@ -145,15 +149,18 @@
         Compartilhe com pacientes para agendar
       </p>
     </div>
+    <% end %>
   </aside>
 
 <% else %>
-<%# Build share link for staff users (non-referral) %>
+<%# Build share link for staff users (non-referral) - only when self_booking_enabled %>
+<% if current_account&.self_booking_enabled? %>
 <%
   staff_share_params = { reg_by: current_user.id }
   staff_share_url = "#{request.base_url}#{clinic_management.public_booking_path(staff_share_params)}"
   staff_share_message = "Olá! 👋\n\nAgende sua consulta de forma rápida e fácil:\n\n#{staff_share_url}\n\nClique no link acima para continuar! ✅"
 %>
+<% end %>
 <header class="navbar-fixed relative bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 py-4 shadow-md md:pl-64 z-50">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex flex-wrap justify-between items-center">
@@ -182,7 +189,8 @@
          <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'lead_messages'}"  %>
          <% end %>
          
-         <%# Mobile share buttons - Staff %>
+         <%# Mobile share buttons - Staff (only when self_booking_enabled) %>
+         <% if current_account&.self_booking_enabled? %>
          <div class="mt-4 pt-4 border-t border-emerald-600 flex flex-col gap-2">
            <a href="https://wa.me/?text=<%= ERB::Util.url_encode(staff_share_message) %>" 
               target="_blank"
@@ -197,6 +205,7 @@
              <span>Copiar link</span>
            </button>
          </div>
+         <% end %>
       </nav>
 
       <div class="relative order-2 sm:order-3 w-full sm:w-auto flex-grow sm:flex-grow-0 mx-auto sm:mx-4 mb-4 sm:mb-0" id="search_lead_container" style="max-width: 500px;">
@@ -270,9 +279,9 @@
   </nav>
   
   <%# ================================================================
-      SHARE BOOKING LINK - Staff User
-      Allows staff to share a public booking link (no referral attribution)
+      SHARE BOOKING LINK - Staff User (only when self_booking_enabled)
       ================================================================ %>
+  <% if current_account&.self_booking_enabled? %>
   <div class="mt-6 pt-4 border-t border-emerald-800">
     <p class="text-emerald-300 text-xs uppercase tracking-wider mb-3 px-3">Compartilhar</p>
     
@@ -296,6 +305,7 @@
       Compartilhe com pacientes para agendar
     </p>
   </div>
+  <% end %>
 </aside>
 
 <% end %>

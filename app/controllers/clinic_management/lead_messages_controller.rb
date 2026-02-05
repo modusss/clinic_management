@@ -370,10 +370,11 @@ module ClinicManagement
         options.sample
       end
 
-      # Substituições de texto padrão
+      # Substituições de texto padrão (LINK_AUTO_MARCACAO only when account has self_booking_enabled)
+      link_value = (defined?(current_account) && current_account&.self_booking_enabled?) ? generate_self_booking_link(lead) : ""
       result = result.gsub("{PRIMEIRO_NOME_PACIENTE}", lead.name.split(" ").first)
                .gsub("{NOME_COMPLETO_PACIENTE}", lead.name)
-               .gsub("{LINK_AUTO_MARCACAO}", generate_self_booking_link(lead))
+               .gsub("{LINK_AUTO_MARCACAO}", link_value)
                .gsub("\n", "%0A")
                .gsub("\r\n", "%0A")
 
