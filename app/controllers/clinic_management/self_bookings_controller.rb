@@ -38,7 +38,9 @@ module ClinicManagement
     # Load lead for all actions except public routes
     before_action :set_lead_by_token, except: [:landing, :public_registration, :create_public_registration]
     before_action :set_available_services
-    
+    # ESSENTIAL: Block entire flow when account has self_booking_enabled disabled (Adicionais toggle)
+    before_action :ensure_self_booking_enabled_for_context
+
     # Layout specifically for public self-booking pages
     layout 'clinic_management/self_booking'
 
@@ -715,6 +717,51 @@ module ClinicManagement
     end
 
     private
+
+    # ============================================================================
+    # SELF-BOOKING FEATURE FLAG (account.self_booking_enabled)
+    #
+    # Blocks all actions when the context account has self_booking_enabled false.
+    # Context account is resolved from: @lead.account (when lead has account_id),
+    # session[:self_booking_registered_by_user_id] (user who shared link), or
+    # params[:reg_by] (for public_registration). When account cannot be determined,
+    # access is allowed (backward compat for links without reg_by).
+    # ============================================================================
+    def ensure_self_booking_enabled_for_context
+      account = self_booking_context_account
+      return if account.nil?
+      return if account.self_booking_enabled?
+
+      Rails.logger.info "[SelfBooking] Blocked: account ##{account.id} has self_booking_enabled false"
+      render :feature_disabled, status: :forbidden
+    end
+
+    # Returns the Account to check for self_booking_enabled in this request.
+    # Used when there is no current_user (public controller).
+    #
+    # @return [Account, nil]
+    def self_booking_context_account
+      # 1. From lead (when lead has account_id - future-proof)
+      if defined?(@lead) && @lead.present? && @lead.respond_to?(:account) && @lead.account.present?
+        return @lead.account
+      end
+
+      # 2. From session (user who shared the link, set when opening link with reg_by)
+      user_id = session[:self_booking_registered_by_user_id]
+      if user_id.present?
+        user = User.find_by(id: user_id)
+        return user&.accounts&.first
+      end
+
+      # 3. From params (public_registration / create_public_registration)
+      reg_by = params[:reg_by]
+      if reg_by.present?
+        user = User.find_by(id: reg_by)
+        return user&.accounts&.first
+      end
+
+      nil
+    end
 
     # ============================================================================
     # Loads the lead by self_booking_token from URL params.
