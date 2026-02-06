@@ -24,6 +24,10 @@ module ClinicManagement
         )
         if @appointment.save
           redirect_to @service
+        else
+          @invitation.destroy
+          flash[:error] = @appointment.errors.full_messages.join(", ")
+          redirect_to @service
         end
       end
     end

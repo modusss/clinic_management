@@ -36,6 +36,10 @@ module ClinicManagement
     # Validações para remarcação com esforço ativo
     validates :recapture_actions, presence: true, if: -> { recapture_origin == 'active_effort' }
     validate :at_least_one_action_selected, if: -> { recapture_origin == 'active_effort' }
+
+    # ESSENTIAL: Prevents duplicate appointments for the same service + same patient (same name + same phone).
+    # Covers both: same lead booked twice in same service, and different leads with identical name/phone.
+    validate :no_duplicate_patient_same_service
     
     # Callback para definir o usuário atual se não foi especificado
     before_save :set_registered_by_user_fallback, if: -> { registered_by_user_id.blank? && read_attribute(:registered_by_user).blank? }
@@ -81,6 +85,39 @@ module ClinicManagement
       if recapture_actions.blank? || recapture_actions.reject(&:blank?).empty?
         errors.add(:recapture_actions, "deve ter pelo menos uma ação selecionada")
       end
+    end
+
+    # Ensures no other appointment exists for the same service with the same patient
+    # (same normalized phone and same normalized name). Handles same lead booked twice
+    # and different Lead records with duplicate name+phone.
+    #
+    # @return [void]
+    def no_duplicate_patient_same_service
+      return if lead_id.blank? || service_id.blank?
+      return unless lead.present?
+
+      norm_phone = lead.phone.to_s.gsub(/\D/, "")
+      norm_name = lead.name.to_s.strip.downcase
+
+      # Lead ids considered "same patient": same normalized phone and name (includes current lead)
+      duplicate_lead_ids = if norm_phone.present? && norm_name.present?
+        Lead.where(
+          "REGEXP_REPLACE(COALESCE(phone, ''), '[^0-9]', '', 'g') = ? AND LOWER(TRIM(COALESCE(name, ''))) = ?",
+          norm_phone, norm_name
+        ).pluck(:id)
+      else
+        [lead_id]
+      end
+
+      return if duplicate_lead_ids.empty?
+
+      scope = self.class.where(service_id: service_id, lead_id: duplicate_lead_ids)
+      scope = scope.where.not(id: id) if persisted?
+
+      return unless scope.exists?
+
+      errors.add(:base, I18n.t("clinic_management.appointments.errors.duplicate_patient_same_service",
+        default: "Já existe um agendamento para este paciente (mesmo nome e telefone) neste serviço."))
     end
   end
 end
