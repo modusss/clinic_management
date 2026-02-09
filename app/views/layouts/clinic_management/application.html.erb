@@ -93,12 +93,15 @@
        * Timing Configuration
        * - DELAY: Time before showing loading overlay (2 seconds)
        * - FALLBACK_DELAY: Time before showing escape options (5 seconds)
+       * - SAFETY_TIMEOUT: Max time overlay can stay visible; force-hide after (60s). Prevents stuck overlay.
        */
       var DELAY = 2000;
       var FALLBACK_DELAY = 5000;
+      var SAFETY_TIMEOUT = 60000;
 
       var timeout = null;
       var fallbackTimeout = null;
+      var safetyTimeout = null;
       var overlay = null;
       var fallback = null;
 
@@ -121,7 +124,7 @@
       }
 
       /**
-       * Shows the loading overlay and starts fallback timer
+       * Shows the loading overlay and starts fallback timer and safety timeout
        */
       function show() {
         var el = getOverlay();
@@ -132,6 +135,8 @@
 
           // Start fallback timer after overlay is visible
           startFallbackTimer();
+          // Safety net: force-hide if no Turbo event hides it (e.g. network error)
+          startSafetyTimeout();
         }
       }
 
@@ -158,7 +163,7 @@
       }
 
       /**
-       * Hides everything and clears all timers
+       * Hides everything and clears all timers (including safety timeout)
        */
       function hide() {
         clearAllTimers();
@@ -170,6 +175,14 @@
           el.classList.remove('opacity-100', 'visible', 'pointer-events-auto');
           el.setAttribute('aria-hidden', 'true');
         }
+      }
+
+      /**
+       * Starts safety timeout: force-hide overlay after SAFETY_TIMEOUT ms if no Turbo event hid it.
+       */
+      function startSafetyTimeout() {
+        if (safetyTimeout) clearTimeout(safetyTimeout);
+        safetyTimeout = setTimeout(hide, SAFETY_TIMEOUT);
       }
 
       /**
@@ -226,16 +239,19 @@
       }
 
       /**
-       * Clears all timers
+       * Clears all timers (show, fallback, and safety timeout)
        */
       function clearAllTimers() {
         if (timeout) { clearTimeout(timeout); timeout = null; }
         if (fallbackTimeout) { clearTimeout(fallbackTimeout); fallbackTimeout = null; }
+        if (safetyTimeout) { clearTimeout(safetyTimeout); safetyTimeout = null; }
       }
 
       // Turbo Drive events
       document.addEventListener('turbo:before-fetch-request', startTimer);
       document.addEventListener('turbo:before-fetch-response', hide);
+      // ESSENTIAL: Fires when fetch fails (e.g. network error); before-fetch-response is NOT fired then
+      document.addEventListener('turbo:fetch-request-error', hide);
       document.addEventListener('turbo:visit', startTimer);
       document.addEventListener('turbo:load', hide);
       document.addEventListener('turbo:submit-start', startTimer);

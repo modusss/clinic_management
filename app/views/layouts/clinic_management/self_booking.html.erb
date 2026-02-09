@@ -743,7 +743,10 @@
     (function() {
       'use strict';
       var DELAY = 2000;
+      /** Max time overlay can stay visible; force-hide after (60s). Prevents stuck overlay. */
+      var SAFETY_TIMEOUT = 60000;
       var timeout = null;
+      var safetyTimeout = null;
       var overlay = null;
 
       function getOverlay() {
@@ -757,17 +760,25 @@
           el.classList.remove('opacity-0', 'invisible', 'pointer-events-none');
           el.classList.add('opacity-100', 'visible', 'pointer-events-auto');
           el.setAttribute('aria-hidden', 'false');
+          startSafetyTimeout();
         }
       }
 
       function hide() {
         if (timeout) { clearTimeout(timeout); timeout = null; }
+        if (safetyTimeout) { clearTimeout(safetyTimeout); safetyTimeout = null; }
         var el = getOverlay();
         if (el) {
           el.classList.add('opacity-0', 'invisible', 'pointer-events-none');
           el.classList.remove('opacity-100', 'visible', 'pointer-events-auto');
           el.setAttribute('aria-hidden', 'true');
         }
+      }
+
+      /** Force-hide overlay after SAFETY_TIMEOUT ms if no Turbo event hid it. */
+      function startSafetyTimeout() {
+        if (safetyTimeout) clearTimeout(safetyTimeout);
+        safetyTimeout = setTimeout(hide, SAFETY_TIMEOUT);
       }
 
       /**
@@ -786,6 +797,8 @@
       // Turbo Drive events
       document.addEventListener('turbo:before-fetch-request', startTimer);
       document.addEventListener('turbo:before-fetch-response', hide);
+      // ESSENTIAL: Fires when fetch fails (e.g. network error); before-fetch-response is NOT fired then
+      document.addEventListener('turbo:fetch-request-error', hide);
       document.addEventListener('turbo:visit', startTimer);
       document.addEventListener('turbo:load', hide);
       document.addEventListener('turbo:submit-start', startTimer);
