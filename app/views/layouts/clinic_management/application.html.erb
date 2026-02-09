@@ -165,10 +165,17 @@
       }
 
       /**
-       * Starts the initial loading timer (2s)
+       * Starts the initial loading timer (2s).
+       * Skips overlay for non-navigation links (tel:, mailto:) and for
+       * record_message_sent requests (background tracking, not full page load).
        */
-      function startTimer() {
+      function startTimer(ev) {
         if (timeout) return;
+        if (ev && ev.detail && ev.detail.url) {
+          var u = String(ev.detail.url);
+          if (u.indexOf('tel:') === 0 || u.indexOf('mailto:') === 0) return;
+          if (u.indexOf('record_message_sent') !== -1) return;
+        }
         timeout = setTimeout(show, DELAY);
       }
 

@@ -30,10 +30,11 @@
                       class: "whatsapp-link #{'opacity-50' unless lead.has_whatsapp?}" %>
         <% end %>
         
-        <%# Link tel: para ligar %>
+        <%# Link tel: para ligar - data-turbo=false evita overlay de loading no clique %>
         <a style="display: inline-flex; align-items: center; color: #4B5563; text-decoration: none;" 
            href="tel:<%= current_user&.phone_prefix.present? ? current_user.phone_prefix : '' %><%= lead.phone %>" 
            title="Ligar para <%= current_user&.phone_prefix.present? ? current_user.phone_prefix : '' %><%= lead.phone %>"
+           data-turbo="false"
            data-action="click->message-tracking#recordMessageSent">
           <i class="fas fa-phone" style="margin-right: 4px;"></i>
           <span style="font-size: 15px;">Ligar</span>

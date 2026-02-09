@@ -770,8 +770,16 @@
         }
       }
 
-      function startTimer() {
+      /**
+       * Skips overlay for tel:/mailto: and record_message_sent (e.g. "Ligar" link).
+       */
+      function startTimer(ev) {
         if (timeout) return;
+        if (ev && ev.detail && ev.detail.url) {
+          var u = String(ev.detail.url);
+          if (u.indexOf('tel:') === 0 || u.indexOf('mailto:') === 0) return;
+          if (u.indexOf('record_message_sent') !== -1) return;
+        }
         timeout = setTimeout(show, DELAY);
       }
 
