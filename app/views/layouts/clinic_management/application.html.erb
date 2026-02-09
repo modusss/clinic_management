@@ -102,6 +102,14 @@
       var overlay = null;
       var fallback = null;
 
+      /**
+       * Flag to temporarily suppress the loading overlay.
+       * Set to true when a tel: or mailto: link is clicked, cleared after 1 second.
+       * ESSENTIAL: This prevents beforeunload/turbo:visit events (which lack detail.url)
+       * from triggering the loading overlay when the browser opens a phone/email app.
+       */
+      var suppressLoading = false;
+
       function getOverlay() {
         if (!overlay) overlay = document.getElementById('global-loading-overlay');
         return overlay;
@@ -168,14 +176,44 @@
        * Starts the initial loading timer (2s).
        * Skips overlay for non-navigation links (tel:, mailto:) and for
        * record_message_sent requests (background tracking, not full page load).
+       *
+       * ESSENTIAL: Also checks the originating anchor element to catch cases where
+       * events like turbo:visit or beforeunload are triggered by tel:/mailto: links
+       * but don't carry ev.detail.url (causing infinite loading overlay).
        */
       function startTimer(ev) {
         if (timeout) return;
+
+        // ESSENTIAL: If a tel:/mailto: link was recently clicked, suppress loading.
+        // The beforeunload event from these links has no detail.url to filter on.
+        if (suppressLoading) return;
+
+        // Check ev.detail.url for Turbo fetch events
         if (ev && ev.detail && ev.detail.url) {
           var u = String(ev.detail.url);
           if (u.indexOf('tel:') === 0 || u.indexOf('mailto:') === 0) return;
           if (u.indexOf('record_message_sent') !== -1) return;
+          if (u.indexOf('toggle_whatsapp_status') !== -1) return;
+          if (u.indexOf('verify_whatsapp') !== -1) return;
         }
+
+        // Check the originating element for tel:/mailto: links
+        // Catches turbo:visit events that don't carry detail.url
+        if (ev && ev.target) {
+          var anchor = ev.target.closest ? ev.target.closest('a[href]') : null;
+          if (anchor) {
+            var href = anchor.getAttribute('href') || '';
+            if (href.indexOf('tel:') === 0 || href.indexOf('mailto:') === 0) return;
+          }
+        }
+
+        // Check detail.fetchOptions for Turbo fetch requests with background tracking URLs
+        // (e.g. Turbo Stream requests from sendInteractionRecord)
+        if (ev && ev.detail && ev.detail.fetchOptions && ev.detail.fetchOptions.headers) {
+          var accept = ev.detail.fetchOptions.headers['Accept'] || '';
+          if (accept.indexOf('text/vnd.turbo-stream.html') !== -1) return;
+        }
+
         timeout = setTimeout(show, DELAY);
       }
 
@@ -205,6 +243,25 @@
 
       // Browser reload (F5, Ctrl+R)
       window.addEventListener('beforeunload', startTimer);
+
+      /**
+       * Suppress loading overlay for tel: and mailto: links.
+       * ESSENTIAL: When clicking tel:/mailto: links, browsers may fire beforeunload
+       * (to open the phone/email app) which has no detail.url — causing the loading
+       * overlay to appear and never disappear (infinite loading bug).
+       * This click listener runs BEFORE beforeunload, setting a flag to skip the timer.
+       */
+      document.addEventListener('click', function(ev) {
+        var anchor = ev.target.closest ? ev.target.closest('a[href]') : null;
+        if (anchor) {
+          var href = anchor.getAttribute('href') || '';
+          if (href.indexOf('tel:') === 0 || href.indexOf('mailto:') === 0) {
+            suppressLoading = true;
+            // Clear the flag after 2 seconds (enough time for beforeunload to fire)
+            setTimeout(function() { suppressLoading = false; }, 2000);
+          }
+        }
+      }, true); // Use capture phase to run before other handlers
 
       // Keyboard support: Escape key to go back
       document.addEventListener('keydown', function(event) {
