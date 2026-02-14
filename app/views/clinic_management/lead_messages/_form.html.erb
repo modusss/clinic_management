@@ -38,9 +38,23 @@
         </div>
       <% end %>
 
-      <div class="field mb-4">
+      <div class="field mb-4" data-controller="emoji-picker">
         <%= form.label :text, "Texto da mensagem", class: "block text-gray-700 text-sm font-bold mb-2" %>
-        <%= form.text_area :text, rows: 20, class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+        <%= form.text_area :text, rows: 20, class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline", data: { emoji_picker_target: "input" } %>
+        <%# Emoji picker panel: click inserts emoji at cursor position in the textarea above %>
+        <div class="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+          <p class="text-sm font-medium text-gray-700 mb-2">Inserir emoji no texto:</p>
+          <div class="flex flex-wrap gap-1" role="group" aria-label="Emojis para inserir na mensagem">
+            <% %w[😀 😃 😄 😁 😅 😂 🤣 😊 🙂 🙃 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😜 🤪 😝 🤑 🤗 🤭 🤫 🤔 🤐 🤨 😐 😑 😶 😏 😣 😥 😮 🤐 😯 😪 😫 😴 🤤 😷 🤒 🤕 🤢 🤮 🤧 🥵 🥶 🥴 😵 🤯 🤠 🥳 😎 🤓 😈 👋 🤚 🖐 ✋ 🖖 👌 🤌 🤏 ✌️ 🤞 🤟 🤘 🤙 👈 👉 👆 🖕 👇 ☝️ 👍 👎 ✊ 👊 🤛 🤜 👏 🙌 👐 🤲 🤝 🙏 💪 ❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❣️ 💕 💞 💓 💗 💖 💘 💝 💟 ☮️ ✝️ ☪️ 🕉 ☸️ ✡️ 🔯].each do |emoji| %>
+              <button type="button"
+                      class="text-xl p-1.5 rounded hover:bg-gray-200 focus:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      data-emoji="<%= emoji %>"
+                      data-action="click->emoji-picker#insert"
+                      title="Inserir <%= emoji %>"
+                      aria-label="Inserir emoji <%= emoji %>"><%= emoji %></button>
+            <% end %>
+          </div>
+        </div>
       </div>
 
       <!-- Seção de Anexo de Mídia -->
