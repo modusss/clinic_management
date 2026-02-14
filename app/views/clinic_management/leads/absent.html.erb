@@ -329,6 +329,23 @@
       
       <%# Contador e ação %>
       <div class="flex flex-col justify-between">
+        <%# Intervalo entre mensagens (personalizável) - ESSENTIAL: value sent to backend; margin applied server-side %>
+        <div class="mb-4">
+          <%= label_tag :bulk_interval_seconds, "Intervalo entre mensagens (segundos):", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= number_field_tag :bulk_interval_seconds,
+                bulk_interval_default_seconds,
+                min: bulk_interval_min_seconds,
+                max: bulk_interval_max_seconds,
+                step: 1,
+                class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                data: {
+                  bulk_message_target: "intervalInput",
+                  action: "change->bulk-message#saveIntervalToCookie"
+                } %>
+          <p class="mt-1 text-xs text-gray-500">
+            O sistema aplica uma variação aleatória de até <strong><%= bulk_interval_margin_percent %>%</strong> no intervalo para evitar bloqueios.
+          </p>
+        </div>
         <div>
           <p class="text-sm font-medium text-gray-700 mb-2">Leads selecionados:</p>
           <div class="text-4xl font-bold text-blue-600 mb-4" data-bulk-message-target="counter">0</div>

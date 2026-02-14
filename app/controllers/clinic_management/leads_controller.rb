@@ -13,6 +13,35 @@ module ClinicManagement
     
     # Make can_use_evolution_api? available in views
     helper_method :can_use_evolution_api?
+    helper_method :bulk_interval_margin_percent, :bulk_interval_default_seconds, :bulk_interval_min_seconds, :bulk_interval_max_seconds
+
+    # ==========================================================================
+    # BULK MESSAGE INTERVAL CONFIGURATION (envio em massa)
+    # ==========================================================================
+    # User-defined interval (seconds) between each message. Backend applies a
+    # random margin (BULK_INTERVAL_MARGIN_PERCENT) so the actual interval is
+    # interval_seconds + rand(0..margin) to avoid exact timing and blocking.
+    # ==========================================================================
+    BULK_INTERVAL_MIN_SECONDS = 10   # Minimum allowed (avoid too fast)
+    BULK_INTERVAL_MAX_SECONDS = 3600 # Maximum 1 hour between messages
+    BULK_INTERVAL_MARGIN_PERCENT = 30 # Random extra: 0 to 30% of interval (backend-only)
+    BULK_INTERVAL_DEFAULT_SECONDS = 60 # Default when user does not set (fallback in view)
+
+    def bulk_interval_margin_percent
+      BULK_INTERVAL_MARGIN_PERCENT
+    end
+
+    def bulk_interval_default_seconds
+      BULK_INTERVAL_DEFAULT_SECONDS
+    end
+
+    def bulk_interval_min_seconds
+      BULK_INTERVAL_MIN_SECONDS
+    end
+
+    def bulk_interval_max_seconds
+      BULK_INTERVAL_MAX_SECONDS
+    end
 
     # GET /leads
     # def index
@@ -582,7 +611,18 @@ module ClinicManagement
         # Obter parâmetros
         lead_ids = params[:lead_ids] || []
         message_id = params[:message_id]
-        
+        interval_seconds = params[:interval_seconds].presence&.to_i
+
+        # Optional: custom interval between messages (seconds). Margin applied in backend.
+        bulk_base_delay = nil
+        bulk_random_delay = nil
+        if interval_seconds.present? && interval_seconds >= BULK_INTERVAL_MIN_SECONDS && interval_seconds <= BULK_INTERVAL_MAX_SECONDS
+          bulk_base_delay = interval_seconds
+          bulk_random_delay = (interval_seconds * BULK_INTERVAL_MARGIN_PERCENT / 100.0).round
+          bulk_random_delay = 1 if bulk_random_delay < 1
+          Rails.logger.info "📤 [BULK] Intervalo personalizado: #{bulk_base_delay}s + margem 0-#{bulk_random_delay}s (#{BULK_INTERVAL_MARGIN_PERCENT}%)"
+        end
+
         # Validações básicas
         if lead_ids.blank?
           render json: {
@@ -688,6 +728,10 @@ module ClinicManagement
             
             # Get delay multiplier for referrals with multiple instances
             delay_multiplier = get_evolution_delay_multiplier
+
+            # Custom bulk interval (user-defined seconds + backend margin) or service default
+            enqueue_base = bulk_base_delay
+            enqueue_random = bulk_random_delay
             
             # Usar o serviço de enfileiramento correto com todas as validações
             result = EvolutionMessageQueueService.enqueue_message(
@@ -699,7 +743,9 @@ module ClinicManagement
               user_id: current_user.id,
               appointment_id: appointment.id,
               skip_cooldown_check: false,  # Respeitar cooldown para evitar spam em bulk
-              delay_multiplier: delay_multiplier
+              delay_multiplier: delay_multiplier,
+              base_delay: enqueue_base,
+              random_delay: enqueue_random
             )
             
             # Verificar se enfileiramento foi bem-sucedido
