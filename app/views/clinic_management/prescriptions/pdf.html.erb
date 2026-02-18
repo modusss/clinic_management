@@ -110,7 +110,8 @@
     </p>
     <br>
     <div class="date-info">
-      <strong>Data:</strong> <%= @prescription.appointment.service.date.strftime("%d/%m/%Y") %>
+      <% prescription_date = @prescription.appointment.service&.date || @prescription.appointment.created_at&.to_date || Date.current %>
+      <strong>Data:</strong> <%= prescription_date.strftime("%d/%m/%Y") %>
     </div>
   </div>
     <br>
