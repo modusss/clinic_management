@@ -129,8 +129,8 @@
       function show() {
         var el = getOverlay();
         if (el) {
-          el.classList.remove('opacity-0', 'invisible', 'pointer-events-none');
-          el.classList.add('opacity-100', 'visible', 'pointer-events-auto');
+          el.classList.remove('opacity-0', 'invisible');
+          el.classList.add('opacity-100', 'visible');
           el.setAttribute('aria-hidden', 'false');
 
           // Start fallback timer after overlay is visible
@@ -171,8 +171,8 @@
 
         var el = getOverlay();
         if (el) {
-          el.classList.add('opacity-0', 'invisible', 'pointer-events-none');
-          el.classList.remove('opacity-100', 'visible', 'pointer-events-auto');
+          el.classList.add('opacity-0', 'invisible');
+          el.classList.remove('opacity-100', 'visible');
           el.setAttribute('aria-hidden', 'true');
         }
       }

@@ -1,90 +1,24 @@
 <%#
-  Global Loading Overlay - Tailwind CSS Version
-  =============================================
-  Full-screen loading indicator for clinic_management engine.
-  Shows when Turbo requests exceed 2 seconds.
+  Global Loading Notice - Tailwind CSS Version
+  ============================================
+  Discreet, non-blocking loading notice for clinic_management engine.
+  It appears at the bottom when requests exceed 2 seconds.
 
-  FALLBACK UX: After 5 seconds, shows escape options (back, reload, home)
-  allowing users to recover from prolonged loading states.
-
-  Uses emerald color scheme to match engine's design.
-  ESSENTIAL: Must be rendered as first child of body for z-index stacking.
-
-  Related files:
-  - clinic_management/app/views/layouts/clinic_management/application.html.erb
-  - clinic_management/app/views/layouts/clinic_management/self_booking.html.erb
-
-  Accessibility (WCAG 2.1 AA):
-  - aria-hidden: hides from screen readers when not visible
-  - role="status": announces changes without interrupting user
-  - sr-only span: provides text for screen readers
+  ESSENTIAL: This must never behave like a modal or block any clicks.
+  It is only a passive status indicator.
 %>
 
 <div
   id="global-loading-overlay"
-  class="fixed inset-0 z-[9999] bg-white/90 flex items-center justify-center opacity-0 invisible pointer-events-none transition-all duration-200"
+  class="fixed left-1/2 -translate-x-1/2 z-[10050] opacity-0 invisible pointer-events-none transition-all duration-200"
+  style="bottom: 72px;"
   aria-hidden="true"
   role="status"
   aria-label="Carregando conteudo"
 >
-  <div id="global-loading-content" class="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center gap-4" style="animation: globalLoadingPopIn 250ms ease-out;">
-    <%# Tailwind Spinner SVG - Emerald color to match engine design %>
-    <svg class="animate-spin h-12 w-12 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-    </svg>
-
-    <p class="text-gray-600 font-medium text-base">Carregando...</p>
-
-    <%#
-      FALLBACK UI - Escape Hatch
-      ==========================
-      Hidden by default, appears after 5 seconds of loading.
-      Provides users with options to escape prolonged loading states.
-    %>
-    <div
-      id="global-loading-fallback"
-      class="hidden flex-col items-center gap-3 mt-2 pt-4 border-t border-gray-200 opacity-0 translate-y-[-10px] transition-all duration-300"
-      aria-hidden="true"
-    >
-    <p class="text-gray-600 text-sm text-center m-0 leading-relaxed">
-      <span class="block text-gray-800 font-medium">Processando. Por favor, aguarde.</span>
-      <span class="block">O sistema está trabalhando para concluir esta etapa.</span>
-      <span class="block text-gray-500">Somente se estiver travado por muito tempo, recarregue a página.</span>
-    </p>
-
-      <div class="flex flex-wrap gap-2 justify-center">
-        <button
-          type="button"
-          onclick="globalLoadingGoBack()"
-          class="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium text-gray-600 bg-transparent hover:bg-gray-100 rounded-lg transition-colors"
-          title="Voltar para a página anterior (Esc)"
-        >
-          <i class="material-icons text-lg">arrow_back</i>
-          Voltar
-        </button>
-
-        <button
-          type="button"
-          onclick="globalLoadingReload()"
-          class="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm hover:shadow transition-all"
-          title="Recarregar esta página"
-        >
-          <i class="material-icons text-lg">refresh</i>
-          Recarregar
-        </button>
-
-        <button
-          type="button"
-          onclick="globalLoadingGoHome()"
-          class="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium text-gray-600 bg-transparent hover:bg-gray-100 rounded-lg transition-colors"
-          title="Ir para a página inicial"
-        >
-          <i class="material-icons text-lg">home</i>
-          Início
-        </button>
-      </div>
-    </div>
+  <div id="global-loading-content" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-300/80 bg-white/95 shadow-sm max-w-[92vw]">
+    <span class="h-1.5 w-1.5 rounded-full bg-emerald-600 global-loading-dot" aria-hidden="true"></span>
+    <p class="text-[11px] leading-none text-gray-600 font-medium m-0">Carregando...</p>
 
     <%# Screen reader only text %>
     <span class="sr-only">Carregando conteúdo, por favor aguarde</span>
@@ -92,44 +26,35 @@
 </div>
 
 <style>
-  @keyframes globalLoadingPopIn {
-    from {
-      opacity: 0;
-      transform: scale(0.95) translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
+  #global-loading-overlay.opacity-100 {
+    transform: translateX(-50%) translateY(0);
   }
 
-  /* Fallback visible state */
-  #global-loading-fallback.global-loading-fallback--visible {
-    display: flex !important;
-    opacity: 1;
-    transform: translateY(0);
+  #global-loading-overlay.opacity-0 {
+    transform: translateX(-50%) translateY(8px);
+  }
+
+  @keyframes globalLoadingDotPulse {
+    0%, 100% { opacity: 0.35; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+
+  .global-loading-dot {
+    animation: globalLoadingDotPulse 1.1s ease-in-out infinite;
   }
 
   /* Reduced motion support */
   @media (prefers-reduced-motion: reduce) {
     #global-loading-overlay,
-    #global-loading-overlay > div,
-    #global-loading-fallback {
-      animation: none !important;
+    .global-loading-dot {
       transition: none !important;
+      animation: none !important;
     }
   }
 
-  /* Responsive adjustments for mobile */
   @media screen and (max-width: 640px) {
-    #global-loading-fallback > div:last-child {
-      flex-direction: column;
-      width: 100%;
-    }
-    #global-loading-fallback button {
-      width: 100%;
-      justify-content: center;
-      padding: 12px 16px;
+    #global-loading-overlay {
+      bottom: 64px !important;
     }
   }
 </style>
