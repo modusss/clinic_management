@@ -659,48 +659,76 @@ module ClinicManagement
         errors_details = []
         queued_messages = []  # Array para armazenar dados de cada mensagem enfileirada
         skipped_leads = []    # Array para leads pulados (sem WhatsApp)
-        
-        # Determinar instância (mesma lógica do LeadMessagesController)
-        instance_name = get_evolution_instance_name
-        
-        Rails.logger.info "📤 [BULK] Instância utilizada: #{instance_name}"
-        
+
+        # ============================================================
+        # INSTANCE SELECTION: Round-robin across connected instances
+        # ============================================================
+        # For referrals with multiple WhatsApp instances, messages alternate
+        # between instances (A → B → A → B ...). Each instance has its own
+        # independent queue, so total throughput scales with instance count.
+        #
+        # For non-referrals or single-instance referrals, all messages go
+        # to the single available instance.
+        #
+        # The delay_multiplier is NOT applied because each instance's queue
+        # already handles its own timing independently.
+        # ============================================================
+        available_instances = get_bulk_instance_names
+        instance_index = 0  # Round-robin counter
+
+        if available_instances.blank?
+          render json: {
+            success: false,
+            error: 'Nenhuma instância WhatsApp conectada'
+          }, status: :unprocessable_entity
+          return
+        end
+
+        Rails.logger.info "📤 [BULK] Instâncias disponíveis para round-robin: #{available_instances.join(', ')} (#{available_instances.size} instância(s))"
+
         # Processar cada lead
         leads.each do |lead|
           begin
             # Buscar o último appointment do lead
             appointment = lead.appointments.includes(:service).order('clinic_management_services.date DESC').first
-            
+
             unless appointment
               error_count += 1
               errors_details << "Lead #{lead.name}: Sem appointment"
               next
             end
-            
+
             # Preparar telefone
             phone = lead.phone.to_s.sub(/^55/, '')
-            
+
+            # Pick the next instance via round-robin
+            # ESSENTIAL: Each lead gets the next instance in rotation so messages
+            # distribute evenly across all connected WhatsApp numbers.
+            instance_name = available_instances[instance_index % available_instances.size]
+            instance_index += 1
+
             # Validar se instance_name está presente
             if instance_name.blank?
               error_count += 1
               errors_details << "Lead #{lead.name}: Instância WhatsApp não configurada"
               next
             end
-            
+
             # ============================================================
             # VERIFICAÇÃO DE WHATSAPP ANTES DE ENFILEIRAR
             # Economiza tempo pulando leads sem WhatsApp
+            # Uses the first available instance for checking (any instance can validate)
             # ============================================================
-            Rails.logger.info "🔍 [BULK] Verificando WhatsApp para #{lead.name} (#{phone})..."
-            
-            whatsapp_check = helpers.check_whatsapp_number(phone, instance_name)
-            
+            Rails.logger.info "🔍 [BULK] Verificando WhatsApp para #{lead.name} (#{phone}) via #{instance_name}..."
+
+            whatsapp_check = helpers.check_whatsapp_number(phone, available_instances.first)
+
             if whatsapp_check[:exists] == false
               Rails.logger.warn "⚠️ [BULK] #{lead.name} (#{phone}): SEM WHATSAPP - Pulando!"
-              
+
               # Marcar lead como sem WhatsApp
               lead.update(no_whatsapp: true)
-              
+
               skipped_no_whatsapp += 1
               skipped_leads << {
                 lead_id: lead.id,
@@ -708,32 +736,34 @@ module ClinicManagement
                 phone: phone,
                 reason: 'no_whatsapp'
               }
-              
+
+              # Don't advance round-robin index for skipped leads
+              instance_index -= 1
+
               # Pular para o próximo lead
               next
             end
-            
-            Rails.logger.info "✅ [BULK] #{lead.name} (#{phone}): TEM WHATSAPP - Enfileirando..."
-            
+
+            Rails.logger.info "✅ [BULK] #{lead.name} (#{phone}): TEM WHATSAPP - Enfileirando via #{instance_name}..."
+
             # Gerar mensagem personalizada
             message_data = get_message(message, lead, appointment.service)
             message_text = message_data[:text]
             media_details = message_data[:media]
-            
+
             # Remove URL encoding
             message_text = CGI.unescape(message_text)
-            
-            # Enfileirar mensagem usando o serviço de fila (igual ao send_evolution_message)
-            Rails.logger.info "📤 [BULK] Enfileirando mensagem para #{lead.name} (#{phone})"
-            
-            # Get delay multiplier for referrals with multiple instances
-            delay_multiplier = get_evolution_delay_multiplier
+
+            # Enfileirar mensagem usando o serviço de fila
+            Rails.logger.info "📤 [BULK] Enfileirando mensagem para #{lead.name} (#{phone}) na instância #{instance_name}"
 
             # Custom bulk interval (user-defined seconds + backend margin) or service default
             enqueue_base = bulk_base_delay
             enqueue_random = bulk_random_delay
-            
-            # Usar o serviço de enfileiramento correto com todas as validações
+
+            # ESSENTIAL: delay_multiplier = 1.0 because each instance has its own
+            # independent queue. The throughput gain comes from distributing messages
+            # across queues, not from reducing the interval within each queue.
             result = EvolutionMessageQueueService.enqueue_message(
               phone: phone,
               message_text: message_text,
@@ -743,7 +773,7 @@ module ClinicManagement
               user_id: current_user.id,
               appointment_id: appointment.id,
               skip_cooldown_check: false,  # Respeitar cooldown para evitar spam em bulk
-              delay_multiplier: delay_multiplier,
+              delay_multiplier: 1.0,       # No multiplier — each queue is independent
               base_delay: enqueue_base,
               random_delay: enqueue_random
             )
@@ -896,16 +926,11 @@ module ClinicManagement
           }, status: :forbidden
           return
         end
-        
-        # Determinar instância do usuário atual
-        instance_name = if referral?(current_user)
-          referral = user_referral
-          referral&.evolution_instance_name
-        else
-          Account.first&.evolution_instance_name_2
-        end
-        
-        if instance_name.blank?
+
+        # Get ALL connected instances so we show messages from every queue
+        instance_names = get_bulk_instance_names
+
+        if instance_names.blank?
           render json: {
             success: true,
             scheduled_messages: [],
@@ -913,18 +938,22 @@ module ClinicManagement
           }
           return
         end
-        
-        Rails.logger.info "📋 [LOAD] Buscando mensagens agendadas para instância: #{instance_name}"
-        
+
+        Rails.logger.info "📋 [LOAD] Buscando mensagens agendadas para instância(s): #{instance_names.join(', ')}"
+
         now = Time.current
-        
-        # Buscar jobs pendentes da fila para esta instância
-        jobs = GoodJob::Job.where(
+
+        # Build query that matches ANY of the connected instances
+        # Each instance condition is ORed so we see messages from all queues
+        base_query = GoodJob::Job.where(
           queue_name: 'default'
         ).where("serialized_params::text LIKE ?", "%SendEvolutionMessageJob%")
-         .where("serialized_params::text LIKE ?", "%#{instance_name}%")
          .where("scheduled_at > ?", now)
          .where(finished_at: nil)
+
+        # Filter by instance names — OR across all connected instances
+        instance_conditions = instance_names.map { |name| "serialized_params::text LIKE '%#{ActiveRecord::Base.sanitize_sql_like(name)}%'" }
+        jobs = base_query.where(instance_conditions.join(' OR '))
          .order(scheduled_at: :asc)
          .limit(100)  # Limitar para performance
         
@@ -966,9 +995,9 @@ module ClinicManagement
           success: true,
           scheduled_messages: scheduled_messages,
           total_count: scheduled_messages.length,
-          instance_name: instance_name
+          instance_names: instance_names
         }
-        
+
       rescue StandardError => e
         Rails.logger.error "❌ [LOAD] Erro ao carregar mensagens: #{e.message}"
         render json: {
@@ -990,16 +1019,11 @@ module ClinicManagement
           }, status: :forbidden
           return
         end
-        
-        # Determinar instância do usuário atual
-        instance_name = if referral?(current_user)
-          referral = user_referral
-          referral&.evolution_instance_name
-        else
-          Account.first&.evolution_instance_name_2
-        end
-        
-        if instance_name.blank?
+
+        # Get ALL connected instances so we clear messages from every queue
+        instance_names = get_bulk_instance_names
+
+        if instance_names.blank?
           render json: {
             success: true,
             cancelled_count: 0,
@@ -1007,18 +1031,21 @@ module ClinicManagement
           }
           return
         end
-        
-        Rails.logger.info "🗑️ [CLEAR] Limpando TODAS as mensagens agendadas para instância: #{instance_name}"
-        
+
+        Rails.logger.info "🗑️ [CLEAR] Limpando TODAS as mensagens agendadas para instância(s): #{instance_names.join(', ')}"
+
         now = Time.current
-        
-        # Buscar TODOS os jobs pendentes da fila para esta instância
-        jobs = GoodJob::Job.where(
+
+        # Buscar TODOS os jobs pendentes da fila para TODAS as instâncias do usuário
+        base_query = GoodJob::Job.where(
           queue_name: 'default'
         ).where("serialized_params::text LIKE ?", "%SendEvolutionMessageJob%")
-         .where("serialized_params::text LIKE ?", "%#{instance_name}%")
          .where("scheduled_at > ?", now)
          .where(finished_at: nil)
+
+        # Filter by instance names — OR across all connected instances
+        instance_conditions = instance_names.map { |name| "serialized_params::text LIKE '%#{ActiveRecord::Base.sanitize_sql_like(name)}%'" }
+        jobs = base_query.where(instance_conditions.join(' OR '))
         
         total_count = jobs.count
         
@@ -1053,9 +1080,11 @@ module ClinicManagement
 
     private
     
-    # Retorna o nome da instância Evolution API para o usuário atual
-    # Referrals usam rotação entre suas instâncias (round-robin), outros usam a instância 2 da Account
-    # Quando há múltiplas instâncias conectadas, o sistema alterna entre elas automaticamente
+    # Returns a single instance name for individual message sends.
+    # Referrals use round-robin rotation; non-referrals use Account instance 2.
+    # NOTE: For bulk sends, use get_bulk_instance_names instead to get the full
+    # list and distribute manually — calling this method N times would advance
+    # the round-robin counter via mark_as_used! causing uneven distribution.
     def get_evolution_instance_name
       if referral?(current_user)
         referral = user_referral
@@ -1065,10 +1094,38 @@ module ClinicManagement
         Account.first&.evolution_instance_name_2
       end
     end
-    
-    # Retorna o multiplicador de delay baseado no número de instâncias conectadas
-    # Com 2 instâncias: delay é dividido por 2 (metade do tempo)
-    # Com 3 instâncias: delay é dividido por 3, etc.
+
+    # Returns ALL connected instance names for round-robin distribution in bulk sends.
+    # For referrals: returns all connected + active instances (e.g. ["inst_A", "inst_B"])
+    # For non-referrals: returns the single Account instance as a one-element array.
+    #
+    # ESSENTIAL: This method does NOT call mark_as_used! — the caller controls
+    # round-robin index manually so skipped leads don't waste slots.
+    #
+    # @return [Array<String>] Array of instance names, never empty if user can send
+    # @example
+    #   get_bulk_instance_names
+    #   # => ["referral_inst_1", "referral_inst_2"]  (referral with 2 instances)
+    #   # => ["account_inst_2"]                       (non-referral)
+    def get_bulk_instance_names
+      if referral?(current_user)
+        referral = user_referral
+        return [] unless referral
+
+        names = referral.connected_instance_names
+        # connected_instance_names already includes legacy single instance if connected
+        names.presence || []
+      else
+        instance = Account.first&.evolution_instance_name_2
+        instance.present? ? [instance] : []
+      end
+    end
+
+    # Returns the delay multiplier based on number of connected instances.
+    # With 2 instances: delay is halved, with 3: divided by 3, etc.
+    # NOTE: NOT used in send_bulk_messages because all messages in a batch go
+    # to the same instance. Only useful for individual sends where each request
+    # picks a different instance via round-robin.
     def get_evolution_delay_multiplier
       if referral?(current_user)
         referral = user_referral
