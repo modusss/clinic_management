@@ -83,14 +83,16 @@
     <tbody>
       <tr>
         <td>Direito (OD)</td>
-        <td><%= @prescription.sphere_right.to_f == 0 ? "--" : number_with_precision(@prescription.sphere_right, precision: 2, separator: ',') || "--" %></td>
+        <% sr = @prescription.sphere_right.to_f %>
+        <td><%= sr == 0 ? "--" : (sr > 0 ? "+" : "") + number_with_precision(sr, precision: 2, separator: ',') %></td>
         <td><%= @prescription.cylinder_right.to_f == 0 ? "--" : number_with_precision(@prescription.cylinder_right, precision: 2, separator: ',') || "--" %></td>
         <td><%= @prescription.axis_right.to_i == 0 ? "--" : (@prescription.axis_right || "--") %></td>
         <td><%= @prescription.add_right.to_f == 0 ? "--" : number_with_precision(@prescription.add_right, precision: 2, separator: ',') || "--" %></td>
       </tr>
       <tr>
         <td>Esquerdo (OE)</td>
-        <td><%= @prescription.sphere_left.to_f == 0 ? "--" : number_with_precision(@prescription.sphere_left, precision: 2, separator: ',') || "--" %></td>
+        <% sl = @prescription.sphere_left.to_f %>
+        <td><%= sl == 0 ? "--" : (sl > 0 ? "+" : "") + number_with_precision(sl, precision: 2, separator: ',') %></td>
         <td><%= @prescription.cylinder_left.to_f == 0 ? "--" : number_with_precision(@prescription.cylinder_left, precision: 2, separator: ',') || "--" %></td>
         <td><%= @prescription.axis_left.to_i == 0 ? "--" : (@prescription.axis_left || "--") %></td>
         <td><%= @prescription.add_left.to_f == 0 ? "--" : number_with_precision(@prescription.add_left, precision: 2, separator: ',') || "--" %></td>
@@ -101,18 +103,14 @@
   <div class="note">
     <p class="footer-text">
       Ao optar por confeccionar suas lentes conosco, você conta com a nossa 
-      garantia de resultados e assistência. <strong>Oferecemos garantia total de adaptação:</strong> 
-      caso não se adapte às novas lentes, nós as refaremos <u>quantas vezes forem necessárias</u>, 
-      sempre <strong>sem nenhum custo adicional</strong>, garantindo sua total satisfação.
-    </p>
-    <p class="footer-text">
-      <strong class="text-danger">ATENÇÃO:</strong> Não nos responsabilizamos por revisões desta prescrição por lentes produzidas em outros 
-      estabelecimentos. Em caso de dúvidas, nossa equipe está à disposição para 
-      ajudá-lo.
+      garantia de resultados e assistência.
+      caso não se adapte às novas lentes, nós as refaremos quantas vezes forem necessárias, 
+      <strong>sem nenhum custo adicional</strong>.Mas não nos responsabilizamos caso não se adapte e as lentes sejam produzidas em outros 
+      estabelecimentos. Em caso de dúvidas, nossa equipe está à disposição para ajudá-lo.
     </p>
     <br>
     <div class="date-info">
-      <strong>Data:</strong> <%= @prescription.appointment.created_at.strftime("%d/%m/%Y") %>
+      <strong>Data:</strong> <%= @prescription.appointment.service.date.strftime("%d/%m/%Y") %>
     </div>
   </div>
     <br>
