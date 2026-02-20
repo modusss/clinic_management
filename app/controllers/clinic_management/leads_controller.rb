@@ -948,18 +948,22 @@ module ClinicManagement
 
         now = Time.current
 
-        # Build query that matches ANY of the connected instances
-        # Each instance condition is ORed so we see messages from all queues
-        base_query = GoodJob::Job.where(
-          queue_name: 'default'
-        ).where("serialized_params::text LIKE ?", "%SendEvolutionMessageJob%")
-         .where("scheduled_at > ?", now)
-         .where(finished_at: nil)
+        # Build query that matches ANY connected instance queue (new model) and
+        # also legacy jobs that may still exist in default queue.
+        base_query = GoodJob::Job.where("serialized_params::text LIKE ?", "%SendEvolutionMessageJob%")
+                                 .where("scheduled_at > ?", now)
+                                 .where(finished_at: nil)
 
-        # Filter by instance names — OR across all connected instances
-        instance_conditions = instance_names.map { |name| "serialized_params::text LIKE '%#{ActiveRecord::Base.sanitize_sql_like(name)}%'" }
-        jobs = base_query.where(instance_conditions.join(' OR '))
-         .order(scheduled_at: :asc)
+        instance_queue_names = instance_names.map { |name| EvolutionMessageQueueService.queue_name_for_instance(name) }
+        legacy_like_clauses = instance_names.map { "serialized_params::text LIKE ?" }.join(' OR ')
+        legacy_like_values = instance_names.map { |name| "%#{ActiveRecord::Base.sanitize_sql_like(name)}%" }
+
+        jobs = base_query.where(
+          "(queue_name IN (?)) OR (queue_name = ? AND (#{legacy_like_clauses}))",
+          instance_queue_names,
+          EvolutionMessageQueueService::LEGACY_QUEUE_NAME,
+          *legacy_like_values
+        ).order(scheduled_at: :asc)
          .limit(100)  # Limitar para performance
         
         scheduled_messages = []
@@ -1041,16 +1045,22 @@ module ClinicManagement
 
         now = Time.current
 
-        # Buscar TODOS os jobs pendentes da fila para TODAS as instâncias do usuário
-        base_query = GoodJob::Job.where(
-          queue_name: 'default'
-        ).where("serialized_params::text LIKE ?", "%SendEvolutionMessageJob%")
-         .where("scheduled_at > ?", now)
-         .where(finished_at: nil)
+        # Buscar TODOS os jobs pendentes da fila para TODAS as instâncias do usuário.
+        # Inclui filas dedicadas por instância e fallback para jobs legacy na default.
+        base_query = GoodJob::Job.where("serialized_params::text LIKE ?", "%SendEvolutionMessageJob%")
+                                 .where("scheduled_at > ?", now)
+                                 .where(finished_at: nil)
 
-        # Filter by instance names — OR across all connected instances
-        instance_conditions = instance_names.map { |name| "serialized_params::text LIKE '%#{ActiveRecord::Base.sanitize_sql_like(name)}%'" }
-        jobs = base_query.where(instance_conditions.join(' OR '))
+        instance_queue_names = instance_names.map { |name| EvolutionMessageQueueService.queue_name_for_instance(name) }
+        legacy_like_clauses = instance_names.map { "serialized_params::text LIKE ?" }.join(' OR ')
+        legacy_like_values = instance_names.map { |name| "%#{ActiveRecord::Base.sanitize_sql_like(name)}%" }
+
+        jobs = base_query.where(
+          "(queue_name IN (?)) OR (queue_name = ? AND (#{legacy_like_clauses}))",
+          instance_queue_names,
+          EvolutionMessageQueueService::LEGACY_QUEUE_NAME,
+          *legacy_like_values
+        )
         
         total_count = jobs.count
         
