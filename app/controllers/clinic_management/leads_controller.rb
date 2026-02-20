@@ -701,6 +701,27 @@ module ClinicManagement
             # Preparar telefone
             phone = lead.phone.to_s.sub(/^55/, '')
 
+            # ============================================================
+            # SKIP LEADS ALREADY KNOWN TO HAVE NO WHATSAPP (local check)
+            # ESSENTIAL: This avoids hitting the Evolution API at all for
+            # leads previously confirmed without WhatsApp. The flag is set
+            # by SendEvolutionMessageJob when it verifies each number.
+            # ============================================================
+            if lead.no_whatsapp?
+              Rails.logger.info "⏭️ [BULK] #{lead.name} (#{phone}): Já marcado como sem WhatsApp - Pulando"
+
+              skipped_no_whatsapp += 1
+              skipped_leads << {
+                lead_id: lead.id,
+                lead_name: lead.name,
+                phone: phone,
+                reason: 'no_whatsapp'
+              }
+
+              # Don't advance round-robin index for skipped leads
+              next
+            end
+
             # Pick the next instance via round-robin
             # ESSENTIAL: Each lead gets the next instance in rotation so messages
             # distribute evenly across all connected WhatsApp numbers.
@@ -715,41 +736,24 @@ module ClinicManagement
             end
 
             # ============================================================
-            # VERIFICAÇÃO DE WHATSAPP ANTES DE ENFILEIRAR
-            # Economiza tempo pulando leads sem WhatsApp
-            # ESSENTIAL: check uses the SAME instance selected for sending.
+            # WHATSAPP VERIFICATION: Delegated to SendEvolutionMessageJob
             # ============================================================
-            Rails.logger.info "🔍 [BULK] Verificando WhatsApp para #{lead.name} (#{phone}) via #{instance_name}..."
+            # Previously, check_whatsapp_number was called HERE synchronously
+            # for EVERY lead (50 leads = 50 rapid HTTP calls to Evolution API).
+            # This caused the Evolution instance to disconnect due to rate
+            # limiting / session overload on the WhatsApp connection.
+            #
+            # Now the verification happens INSIDE the job (which already has
+            # this logic at perform time). The job:
+            #   1. Calls check_whatsapp_number with proper spacing (45-90s between jobs)
+            #   2. Marks lead as no_whatsapp if number doesn't have WhatsApp
+            #   3. Broadcasts result to frontend via Turbo Stream
+            #
+            # This is safe because the job already handles all edge cases and
+            # the delay between jobs naturally rate-limits the API calls.
+            # ============================================================
 
-            whatsapp_check = helpers.check_whatsapp_number(phone, instance_name)
-            check_outcome = bulk_whatsapp_check_outcome(whatsapp_check)
-
-            if check_outcome == :confirmed_no_whatsapp
-              Rails.logger.warn "⚠️ [BULK] #{lead.name} (#{phone}): SEM WHATSAPP - Pulando!"
-
-              # Marcar lead como sem WhatsApp
-              lead.update(no_whatsapp: true)
-
-              skipped_no_whatsapp += 1
-              skipped_leads << {
-                lead_id: lead.id,
-                lead_name: lead.name,
-                phone: phone,
-                reason: 'no_whatsapp'
-              }
-
-              # Don't advance round-robin index for skipped leads
-              instance_index -= 1
-
-              # Pular para o próximo lead
-              next
-            end
-
-            if check_outcome == :api_error
-              Rails.logger.warn "⚠️ [BULK] #{lead.name} (#{phone}): Erro ao verificar WhatsApp (#{whatsapp_check[:error]}). Enfileirando mesmo assim; validação final ocorrerá no job."
-            end
-
-            Rails.logger.info "✅ [BULK] #{lead.name} (#{phone}): TEM WHATSAPP - Enfileirando via #{instance_name}..."
+            Rails.logger.info "📤 [BULK] Enfileirando #{lead.name} (#{phone}) via #{instance_name} - verificação de WhatsApp será feita no job"
 
             # Gerar mensagem personalizada
             message_data = get_message(message, lead, appointment.service)
