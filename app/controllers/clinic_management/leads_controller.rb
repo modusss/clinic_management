@@ -717,13 +717,14 @@ module ClinicManagement
             # ============================================================
             # VERIFICAÇÃO DE WHATSAPP ANTES DE ENFILEIRAR
             # Economiza tempo pulando leads sem WhatsApp
-            # Uses the first available instance for checking (any instance can validate)
+            # ESSENTIAL: check uses the SAME instance selected for sending.
             # ============================================================
             Rails.logger.info "🔍 [BULK] Verificando WhatsApp para #{lead.name} (#{phone}) via #{instance_name}..."
 
-            whatsapp_check = helpers.check_whatsapp_number(phone, available_instances.first)
+            whatsapp_check = helpers.check_whatsapp_number(phone, instance_name)
+            check_outcome = bulk_whatsapp_check_outcome(whatsapp_check)
 
-            if whatsapp_check[:exists] == false
+            if check_outcome == :confirmed_no_whatsapp
               Rails.logger.warn "⚠️ [BULK] #{lead.name} (#{phone}): SEM WHATSAPP - Pulando!"
 
               # Marcar lead como sem WhatsApp
@@ -742,6 +743,10 @@ module ClinicManagement
 
               # Pular para o próximo lead
               next
+            end
+
+            if check_outcome == :api_error
+              Rails.logger.warn "⚠️ [BULK] #{lead.name} (#{phone}): Erro ao verificar WhatsApp (#{whatsapp_check[:error]}). Enfileirando mesmo assim; validação final ocorrerá no job."
             end
 
             Rails.logger.info "✅ [BULK] #{lead.name} (#{phone}): TEM WHATSAPP - Enfileirando via #{instance_name}..."
@@ -1119,6 +1124,20 @@ module ClinicManagement
         instance = Account.first&.evolution_instance_name_2
         instance.present? ? [instance] : []
       end
+    end
+
+    # Decides how to handle the synchronous WhatsApp check in bulk mode.
+    # - :confirmed_no_whatsapp => API answered successfully and explicitly said no.
+    # - :api_error             => API check failed; do not drop queue slot.
+    # - :valid_or_unknown      => proceed with enqueue (job re-validates before send).
+    def bulk_whatsapp_check_outcome(whatsapp_check)
+      exists_value = whatsapp_check[:exists]
+      has_error = whatsapp_check[:error].present?
+
+      return :confirmed_no_whatsapp if exists_value == false && !has_error
+      return :api_error if has_error
+
+      :valid_or_unknown
     end
 
     # Returns the delay multiplier based on number of connected instances.
