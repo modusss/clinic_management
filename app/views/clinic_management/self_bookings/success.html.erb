@@ -109,7 +109,7 @@
   </div>
   
   <% share_url = "#{request.base_url}#{self_booking_share_invite_path(@lead.self_booking_token)}" %>
-  <% share_message = "Olá! 👋\n\nEstou indicando a clínica para você! Agende sua consulta de forma rápida e fácil:\n\n#{share_url}\n\nÉ só clicar no link acima! ✅" %>
+  <% share_message = "Olá! 👋\n\nEstou indicando a você um exame de vista gratuito! Agende sua consulta de forma rápida e fácil:\n\n#{share_url}\n\nÉ só clicar no link acima! ✅" %>
   
   <a href="https://wa.me/?text=<%= ERB::Util.url_encode(share_message) %>" 
      target="_blank"
