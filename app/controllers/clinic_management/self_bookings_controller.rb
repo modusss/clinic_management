@@ -153,12 +153,14 @@ module ClinicManagement
       # This ensures both guardian and minor appear in the patient selection screen
       if is_minor
         session[:self_booking_pending_minor_name] = patient_name
+        session.delete(:self_booking_patient_names)
         Rails.logger.info "[SelfBooking] Public registration - Minor patient '#{patient_name}' stored, redirecting to patient selection"
         # Redirect to show page where user can select between guardian and minor
         redirect_to self_booking_path(target_lead.self_booking_token!)
       else
         # For adults, store patient_name and go directly to week selection
         session[:self_booking_patient_name] = patient_name
+        session[:self_booking_patient_names] = [patient_name]
         redirect_to self_booking_select_week_path(target_lead.self_booking_token!)
       end
     end
@@ -238,22 +240,26 @@ module ClinicManagement
     # - selected_patient: the full name of the selected patient
     # ============================================================================
     def select_patient
+      selected_patients = Array(params[:selected_patients]).map { |name| name.to_s.strip }.reject(&:blank?).uniq
       selected_patient = params[:selected_patient]&.strip
-      
-      if selected_patient.blank?
+      selected_patients = [selected_patient] if selected_patients.blank? && selected_patient.present?
+
+      if selected_patients.blank?
         redirect_to self_booking_path(@lead.self_booking_token), 
                     alert: "Por favor, selecione um paciente."
         return
       end
       
-      # Store the selected patient name in session
-      session[:self_booking_patient_name] = selected_patient
+      # Store selected patients in session.
+      # ESSENTIAL: Keep the first name in self_booking_patient_name for backward compatibility.
+      session[:self_booking_patient_names] = selected_patients
+      session[:self_booking_patient_name] = selected_patients.first
       session[:self_booking_lead_id] = @lead.id
       
       # Clear the pending minor name since a patient was selected
       session.delete(:self_booking_pending_minor_name)
       
-      Rails.logger.info "[SelfBooking] Patient selected: #{selected_patient} for lead ##{@lead.id}"
+      Rails.logger.info "[SelfBooking] Patients selected: #{selected_patients.join(', ')} for lead ##{@lead.id}"
       
       # Continue to week selection
       redirect_to self_booking_select_week_path(@lead.self_booking_token)
@@ -304,6 +310,7 @@ module ClinicManagement
       
       # Store booking context in session
       session[:self_booking_patient_name] = patient_name
+      session[:self_booking_patient_names] = [patient_name]
       session[:self_booking_lead_id] = target_lead.id
       
       # Continue to week selection using the ORIGINAL token (for URL consistency)
@@ -348,7 +355,10 @@ module ClinicManagement
         Rails.logger.info "[SelfBooking] Phone #{@new_phone} already exists - redirecting to lead ##{existing_lead.id}"
         
         # Store patient name if provided (for personalization)
-        session[:self_booking_patient_name] = @suggested_name if @suggested_name.present?
+        if @suggested_name.present?
+          session[:self_booking_patient_name] = @suggested_name
+          session[:self_booking_patient_names] = [@suggested_name]
+        end
         session[:self_booking_lead_id] = existing_lead.id
         
         # Force Local attribution since this was patient-shared
@@ -411,6 +421,7 @@ module ClinicManagement
       
       # Store in session
       session[:self_booking_patient_name] = patient_name
+      session[:self_booking_patient_names] = [patient_name]
       session[:self_booking_lead_id] = target_lead.id
       
       # IMPORTANT: Clear any referral attribution - this is always "Local"
@@ -471,6 +482,7 @@ module ClinicManagement
         Rails.logger.info "[SelfBooking] Shared invite: phone #{patient_phone} exists - using lead ##{existing_lead.id}"
         
         session[:self_booking_patient_name] = patient_name
+        session[:self_booking_patient_names] = [patient_name]
         session[:self_booking_lead_id] = existing_lead.id
         session[:self_booking_force_local] = true
         
@@ -489,6 +501,7 @@ module ClinicManagement
       
       # Store in session
       session[:self_booking_patient_name] = patient_name
+      session[:self_booking_patient_names] = [patient_name]
       session[:self_booking_lead_id] = new_lead.id
       session[:self_booking_force_local] = true
       
@@ -506,18 +519,20 @@ module ClinicManagement
     # to keep it or reschedule.
     # ============================================================================
     def select_week
-      @patient_name = session[:self_booking_patient_name] || @lead.patient_first_name
-      @full_patient_name = session[:self_booking_patient_name] || @lead.patient_full_name
+      @selected_patient_names = selected_patient_names_for_booking
+      @patient_name = @selected_patient_names.first || @lead.patient_first_name
+      @full_patient_name = @selected_patient_names.first || @lead.patient_full_name
       @this_week_services = services_this_week
       @next_week_services = services_next_weeks
       
       # If no services available at all, show message
       @has_services = @this_week_services.any? || @next_week_services.any?
       
-      # Check for existing future appointments for this patient
-      # This helps prevent confusion and allows rescheduling
+      # Check existing future appointments for selected patients.
+      # ESSENTIAL: For multi-select flows we show each patient's current appointment.
       target_lead = get_target_lead_for_booking
-      @existing_appointment = find_existing_future_appointment(target_lead, @full_patient_name)
+      @existing_appointments = find_existing_future_appointments(target_lead, @selected_patient_names)
+      @existing_appointment = @existing_appointments.first
     end
 
     # ============================================================================
@@ -576,7 +591,9 @@ module ClinicManagement
     # - service_id: the selected service ID
     # ============================================================================
     def confirm
-      @patient_name = session[:self_booking_patient_name] || @lead.patient_first_name
+      @selected_patient_names = selected_patient_names_for_booking
+      @patient_name = @selected_patient_names.first || session[:self_booking_patient_name] || @lead.patient_first_name
+      @is_multi_patient_booking = @selected_patient_names.size > 1
       @service = Service.find_by(id: params[:service_id])
       
       unless @service
@@ -605,23 +622,14 @@ module ClinicManagement
       # Get the correct lead to use (may differ from @lead if patient changed identity)
       target_lead = get_target_lead_for_booking
       
-      @patient_name = session[:self_booking_patient_name] || target_lead.patient_full_name
+      selected_patient_names = selected_patient_names_for_booking
+      selected_patient_names = [session[:self_booking_patient_name]].compact if selected_patient_names.blank?
+      @patient_name = selected_patient_names.first || target_lead.patient_full_name
       @service = Service.find_by(id: params[:service_id])
       
       unless @service
         redirect_to self_booking_path(@lead.self_booking_token), 
                     alert: "Serviço não encontrado. Por favor, selecione novamente."
-        return
-      end
-      
-      # Check if already booked for this service (on the TARGET lead)
-      existing_appointment = target_lead.appointments.joins(:service)
-                                  .where(clinic_management_services: { id: @service.id })
-                                  .where(status: 'agendado')
-                                  .first
-      
-      if existing_appointment
-        redirect_to self_booking_success_path(@lead.self_booking_token, already_booked: true)
         return
       end
       
@@ -642,33 +650,67 @@ module ClinicManagement
           Rails.logger.info "[SelfBooking] Registered by: #{registered_user&.name} (User ID: #{registered_by_user_id})"
         end
         
-        # Create invitation linked to TARGET lead (the phone owner)
-        @invitation = target_lead.invitations.create!(
-          patient_name: @patient_name,
-          region: region,
-          referral: referral,
-          date: Date.current
-        )
-        
-        # Create appointment linked to TARGET lead
-        # ESSENTIAL: Include tracking fields:
-        # - registered_by_user_id: who shared the link (effort tracking)
-        # - self_booked: true to indicate this came from self-booking flow (channel tracking)
-        @appointment = @invitation.appointments.create!(
-          service: @service,
-          lead: target_lead,
-          status: 'agendado',
-          referral_code: referral.code,
-          registered_by_user_id: registered_by_user_id,
-          self_booked: true  # ESSENTIAL: Marks this appointment as created via self-booking
-        )
-        
+        created_appointments = []
+        skipped_patient_names = []
+
+        selected_patient_names.each do |patient_name|
+          if appointment_exists_for_patient_and_service?(target_lead, patient_name, @service.id)
+            skipped_patient_names << patient_name
+            next
+          end
+
+          # ESSENTIAL: When patient is being rescheduled via self-booking link,
+          # previous active appointments must be marked as 'remarcado'.
+          mark_previous_appointments_as_rescheduled!(target_lead, patient_name, @service.id)
+
+          # Create invitation linked to TARGET lead (the phone owner)
+          invitation = target_lead.invitations.create!(
+            patient_name: patient_name,
+            region: region,
+            referral: referral,
+            date: Date.current
+          )
+
+          # Create appointment linked to TARGET lead
+          # ESSENTIAL: Include tracking fields:
+          # - registered_by_user_id: who shared the link (effort tracking)
+          # - self_booked: true to indicate this came from self-booking flow (channel tracking)
+          appointment = invitation.appointments.create!(
+            service: @service,
+            lead: target_lead,
+            status: 'agendado',
+            referral_code: referral.code,
+            registered_by_user_id: registered_by_user_id,
+            self_booked: true # ESSENTIAL: Marks this appointment as created via self-booking
+          )
+          created_appointments << appointment
+        end
+
+        if created_appointments.blank?
+          session[:self_booking_last_created_patient_names] = []
+          session[:self_booking_last_skipped_patient_names] = skipped_patient_names
+          raise ActiveRecord::Rollback
+        end
+
+        @appointment = created_appointments.last
+        @created_patient_names = created_appointments.map { |apt| apt.invitation.patient_name }
+        @skipped_patient_names = skipped_patient_names
+
         # Update target lead's last appointment reference
         target_lead.update!(last_appointment_id: @appointment.id)
       end
+
+      if @appointment.nil?
+        redirect_to self_booking_success_path(@lead.self_booking_token, already_booked: true)
+        return
+      end
+
+      session[:self_booking_last_created_patient_names] = @created_patient_names
+      session[:self_booking_last_skipped_patient_names] = @skipped_patient_names
       
       # Clear session data
       session.delete(:self_booking_patient_name)
+      session.delete(:self_booking_patient_names)
       session.delete(:self_booking_lead_id)
       session.delete(:self_booking_referral_id)
       session.delete(:self_booking_registered_by_user_id)
@@ -701,6 +743,9 @@ module ClinicManagement
                       target_lead.patient_first_name
       
       @already_booked = params[:already_booked].present?
+      @created_patient_names = Array(session[:self_booking_last_created_patient_names]).reject(&:blank?)
+      @skipped_patient_names = Array(session[:self_booking_last_skipped_patient_names]).reject(&:blank?)
+      @is_multi_patient_result = @created_patient_names.size > 1
       
       if @appointment&.service
         @formatted_date = I18n.l(@appointment.service.date, format: '%A, %d de %B')
@@ -709,11 +754,14 @@ module ClinicManagement
       
       # Clear session data after showing success
       session.delete(:self_booking_patient_name)
+      session.delete(:self_booking_patient_names)
       session.delete(:self_booking_lead_id)
       session.delete(:self_booking_referral_id)
       session.delete(:self_booking_registered_by_user_id)
       session.delete(:self_booking_is_minor)
       session.delete(:self_booking_pending_minor_name)
+      session.delete(:self_booking_last_created_patient_names)
+      session.delete(:self_booking_last_skipped_patient_names)
     end
 
     private
@@ -871,6 +919,100 @@ module ClinicManagement
       
       # Return the earliest future appointment if no specific match
       appointments.first
+    end
+
+    # ============================================================================
+    # Finds existing future appointments for one or many selected patients.
+    #
+    # @param lead [Lead] the lead to search appointments for
+    # @param patient_names [Array<String>] selected patient names
+    # @return [Array<Appointment>] earliest future appointment for each patient
+    # ============================================================================
+    def find_existing_future_appointments(lead, patient_names)
+      names = Array(patient_names).map(&:to_s).map(&:strip).reject(&:blank?).uniq
+      return [find_existing_future_appointment(lead)].compact if names.blank?
+
+      names.map { |name| find_existing_future_appointment(lead, name) }.compact
+    end
+
+    # ============================================================================
+    # Checks if the selected patient already has an active booking in the service.
+    # Uses first-name matching to keep behavior aligned with existing flow.
+    #
+    # @param lead [Lead] the target lead
+    # @param patient_name [String] patient full name
+    # @param service_id [Integer] selected service id
+    # @return [Boolean]
+    # ============================================================================
+    def appointment_exists_for_patient_and_service?(lead, patient_name, service_id)
+      normalized_first_name = normalized_patient_first_name(patient_name)
+      return false if normalized_first_name.blank?
+
+      lead.appointments
+          .joins(:service, :invitation)
+          .where(clinic_management_services: { id: service_id })
+          .where(status: 'agendado')
+          .any? do |appointment|
+            normalized_patient_first_name(appointment.invitation&.patient_name) == normalized_first_name
+          end
+    end
+
+    # Marks previous active bookings as rescheduled when patient picks a new date.
+    #
+    # Rules:
+    # - same patient (first-name match for consistency with existing flow)
+    # - same lead (same phone owner context)
+    # - status currently 'agendado'
+    # - different service from the newly selected one
+    # - service date from today onward (future/current schedule)
+    #
+    # @param lead [Lead] target lead
+    # @param patient_name [String] patient full name
+    # @param new_service_id [Integer] selected new service id
+    # @return [Integer] number of updated appointments
+    def mark_previous_appointments_as_rescheduled!(lead, patient_name, new_service_id)
+      normalized_first_name = normalized_patient_first_name(patient_name)
+      return 0 if normalized_first_name.blank?
+
+      appointments_to_reschedule = lead.appointments
+                                     .joins(:service, :invitation)
+                                     .where(status: 'agendado')
+                                     .where('clinic_management_services.date >= ?', Date.current)
+                                     .where.not(clinic_management_services: { id: new_service_id })
+                                     .select do |appointment|
+        normalized_patient_first_name(appointment.invitation&.patient_name) == normalized_first_name
+      end
+
+      updated_count = 0
+      appointments_to_reschedule.each do |appointment|
+        # ESSENTIAL: Status transition to "remarcado" must bypass create-time validations
+        # that can block historical schedule updates for the same patient/service.
+        appointment.update_columns(status: 'remarcado', updated_at: Time.current)
+        updated_count += 1
+      end
+
+      if updated_count.positive?
+        Rails.logger.info "[SelfBooking] Marked #{updated_count} previous appointment(s) as remarcado for patient #{patient_name}"
+      end
+
+      updated_count
+    end
+
+    # Returns normalized patient first name for safe comparison.
+    #
+    # @param full_name [String]
+    # @return [String]
+    def normalized_patient_first_name(full_name)
+      full_name.to_s.downcase.strip.split.first.to_s
+    end
+
+    # Returns selected patient names from session, with backward compatibility.
+    #
+    # @return [Array<String>]
+    def selected_patient_names_for_booking
+      names = Array(session[:self_booking_patient_names]).map { |name| name.to_s.strip }.reject(&:blank?).uniq
+      names = [session[:self_booking_patient_name].to_s.strip] if names.blank? && session[:self_booking_patient_name].present?
+      names
     end
 
     # ============================================================================

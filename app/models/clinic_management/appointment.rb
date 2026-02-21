@@ -88,8 +88,13 @@ module ClinicManagement
     end
 
     # Ensures no other appointment exists for the same service with the same patient
-    # (same normalized phone and same normalized name). Handles same lead booked twice
-    # and different Lead records with duplicate name+phone.
+    # (same normalized phone and same normalized patient name).
+    #
+    # ESSENTIAL:
+    # - Patient identity must come from invitation.patient_name (when present),
+    #   not only lead.name.
+    # - This allows multiple different patients under the same phone/lead to be
+    #   scheduled in the same service without false-positive duplicate errors.
     #
     # @return [void]
     def no_duplicate_patient_same_service
@@ -97,24 +102,28 @@ module ClinicManagement
       return unless lead.present?
 
       norm_phone = lead.phone.to_s.gsub(/\D/, "")
-      norm_name = lead.name.to_s.strip.downcase
+      norm_patient_name = (invitation&.patient_name.presence || lead.name).to_s.strip.downcase
+      return if norm_patient_name.blank?
 
-      # Lead ids considered "same patient": same normalized phone and name (includes current lead)
-      duplicate_lead_ids = if norm_phone.present? && norm_name.present?
-        Lead.where(
-          "REGEXP_REPLACE(COALESCE(phone, ''), '[^0-9]', '', 'g') = ? AND LOWER(TRIM(COALESCE(name, ''))) = ?",
-          norm_phone, norm_name
-        ).pluck(:id)
-      else
-        [lead_id]
-      end
-
-      return if duplicate_lead_ids.empty?
-
-      scope = self.class.where(service_id: service_id, lead_id: duplicate_lead_ids)
+      scope = self.class.joins(:lead).includes(:invitation, :lead).where(service_id: service_id)
       scope = scope.where.not(id: id) if persisted?
 
-      return unless scope.exists?
+      # Same patient phone context when available; fallback to same lead for blank phone.
+      if norm_phone.present?
+        scope = scope.where(
+          "REGEXP_REPLACE(COALESCE(clinic_management_leads.phone, ''), '[^0-9]', '', 'g') = ?",
+          norm_phone
+        )
+      else
+        scope = scope.where(lead_id: lead_id)
+      end
+
+      duplicate_exists = scope.any? do |appointment|
+        existing_patient_name = (appointment.invitation&.patient_name.presence || appointment.lead&.name).to_s.strip.downcase
+        existing_patient_name == norm_patient_name
+      end
+
+      return unless duplicate_exists
 
       errors.add(:base, I18n.t("clinic_management.appointments.errors.duplicate_patient_same_service",
         default: "Já existe um agendamento para este paciente (mesmo nome e telefone) neste serviço."))

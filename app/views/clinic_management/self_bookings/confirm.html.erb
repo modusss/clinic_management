@@ -41,14 +41,23 @@
   
   <!-- Booking summary -->
   <div class="bg-gray-50 rounded-xl p-4 mb-6 space-y-4">
-    <!-- Patient name -->
-    <div class="flex items-center">
-      <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+    <!-- Patient name(s) -->
+    <div class="flex items-start">
+      <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3 mt-1">
         <i class="fas fa-user text-blue-600"></i>
       </div>
       <div>
-        <div class="text-sm text-gray-500">Paciente</div>
-        <div class="font-semibold text-gray-900"><%= @patient_name %></div>
+        <div class="text-sm text-gray-500"><%= @is_multi_patient_booking ? "Pacientes" : "Paciente" %></div>
+        <% if @is_multi_patient_booking %>
+          <div class="font-semibold text-gray-900">
+            <%= @selected_patient_names.join(", ") %>
+          </div>
+          <div class="text-xs text-gray-500 mt-1">
+            <%= @selected_patient_names.size %> agendamento(s) será(ão) criado(s) neste horário.
+          </div>
+        <% else %>
+          <div class="font-semibold text-gray-900"><%= @patient_name %></div>
+        <% end %>
       </div>
     </div>
     
@@ -79,9 +88,9 @@
   <%= button_to self_booking_create_path(@lead.self_booking_token, service_id: @service.id),
                 method: :post,
                 class: "btn-primary mb-4",
-                data: { turbo_confirm: "Confirmar agendamento para #{@formatted_date}?" } do %>
+                data: { turbo_confirm: @is_multi_patient_booking ? "Confirmar agendamento para #{@selected_patient_names.size} pessoas em #{@formatted_date}?" : "Confirmar agendamento para #{@formatted_date}?" } do %>
     <i class="fas fa-check mr-2"></i>
-    Confirmar agendamento
+    <%= @is_multi_patient_booking ? "Confirmar agendamentos" : "Confirmar agendamento" %>
   <% end %>
   
   <!-- Cancel link -->

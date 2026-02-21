@@ -44,20 +44,30 @@
         the user selects who they are booking for by clicking a card.
         ================================================================ %>
     
-    <p class="text-gray-600 text-center text-base mb-4">
-      Quem está agendando?
+    <p class="text-gray-600 text-center text-base mb-2">
+      Quem vai agendar?
     </p>
-    
-    <div class="space-y-3 mb-6">
-      <% @distinct_patients.each_with_index do |patient, index| %>
-        <%# Each patient is a clickable card that submits the form %>
-        <%= form_with url: self_booking_select_patient_path(@lead.self_booking_token), 
-                      method: :post, 
-                      local: true,
-                      class: "w-full" do %>
-          <input type="hidden" name="selected_patient" value="<%= patient[:full_name] %>">
-          
-          <button type="submit" class="patient-card w-full">
+    <p class="text-gray-500 text-center text-sm mb-4">
+      Selecione 1 ou mais pessoas para remarcar tudo de uma vez.
+    </p>
+
+    <%= form_with url: self_booking_select_patient_path(@lead.self_booking_token),
+                  method: :post,
+                  local: true,
+                  class: "w-full",
+                  id: "multi-patient-form" do %>
+      <div class="space-y-3 mb-5">
+        <% @distinct_patients.each_with_index do |patient, index| %>
+          <% checkbox_id = "selected_patient_#{index}" %>
+          <label for="<%= checkbox_id %>" class="patient-card w-full cursor-pointer">
+            <input
+              type="checkbox"
+              id="<%= checkbox_id %>"
+              name="selected_patients[]"
+              value="<%= patient[:full_name] %>"
+              class="mr-3 h-5 w-5 text-emerald-600 rounded border-gray-300"
+              <%= "checked" if index.zero? %>
+            >
             <div class="patient-card-avatar">
               <%= patient[:first_name][0].upcase %>
             </div>
@@ -65,14 +75,18 @@
               <span class="patient-card-name"><%= patient[:first_name] %></span>
               <span class="patient-card-fullname"><%= patient[:full_name] %></span>
             </div>
-            <i class="fas fa-chevron-right text-gray-400"></i>
-          </button>
+          </label>
         <% end %>
-      <% end %>
-    </div>
-    
+      </div>
+
+      <button type="submit" class="btn-primary mb-3">
+        <i class="fas fa-arrow-right mr-2"></i>
+        Continuar com selecionados
+      </button>
+    <% end %>
+
     <!-- "Not in the list" button -->
-    <%= link_to self_booking_change_name_path(@lead.self_booking_token), 
+    <%= link_to self_booking_change_name_path(@lead.self_booking_token),
                 class: "btn-outline-secondary" do %>
       <i class="fas fa-user-plus mr-2"></i>
       Não estou na lista

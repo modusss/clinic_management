@@ -24,7 +24,7 @@
   Voltar
 <% end %>
 
-<% if @existing_appointment %>
+<% if @existing_appointments.present? %>
   <%# ================================================================
       EXISTING APPOINTMENT CARD
       Shows the patient's current scheduled appointment with options
@@ -36,27 +36,37 @@
         <i class="fas fa-calendar-check"></i>
       </div>
       <div>
-        <h3 class="existing-appointment-title">Você já tem um agendamento!</h3>
-        <p class="existing-appointment-subtitle"><%= @existing_appointment.invitation&.patient_name || @patient_name %></p>
+        <h3 class="existing-appointment-title">
+          <%= @existing_appointments.size > 1 ? "Vocês já têm agendamento!" : "Você já tem um agendamento!" %>
+        </h3>
+        <p class="existing-appointment-subtitle">
+          <%= @existing_appointments.size > 1 ? "Pessoas selecionadas com horário ativo" : (@existing_appointment.invitation&.patient_name || @patient_name) %>
+        </p>
       </div>
     </div>
-    
-    <div class="existing-appointment-details">
-      <div class="existing-appointment-date">
-        <i class="fas fa-calendar text-emerald-500 mr-2"></i>
-        <span><%= I18n.l(@existing_appointment.service.date, format: '%A, %d de %B') %></span>
-      </div>
-      <div class="existing-appointment-time">
-        <i class="fas fa-clock text-emerald-500 mr-2"></i>
-        <span><%= @existing_appointment.service.start_time.strftime('%H:%M') %> - <%= @existing_appointment.service.end_time.strftime('%H:%M') %></span>
-      </div>
-      <% if @existing_appointment.invitation&.referral&.name.present? %>
-        <div class="existing-appointment-referral">
-          <i class="fas fa-user-tag text-gray-400 mr-2"></i>
-          <span class="text-gray-500">Indicação: <%= @existing_appointment.invitation.referral.name %></span>
+
+    <% @existing_appointments.each do |appointment| %>
+      <div class="existing-appointment-details">
+        <div class="existing-appointment-date">
+          <i class="fas fa-user text-emerald-500 mr-2"></i>
+          <span><%= appointment.invitation&.patient_name %></span>
         </div>
-      <% end %>
-    </div>
+        <div class="existing-appointment-date">
+          <i class="fas fa-calendar text-emerald-500 mr-2"></i>
+          <span><%= I18n.l(appointment.service.date, format: '%A, %d de %B') %></span>
+        </div>
+        <div class="existing-appointment-time">
+          <i class="fas fa-clock text-emerald-500 mr-2"></i>
+          <span><%= appointment.service.start_time.strftime('%H:%M') %> - <%= appointment.service.end_time.strftime('%H:%M') %></span>
+        </div>
+        <% if appointment.invitation&.referral&.name.present? %>
+          <div class="existing-appointment-referral">
+            <i class="fas fa-user-tag text-gray-400 mr-2"></i>
+            <span class="text-gray-500">Indicação: <%= appointment.invitation.referral.name %></span>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
     
     <div class="existing-appointment-actions">
       <%= link_to self_booking_success_path(@lead.self_booking_token, already_booked: true), 
@@ -75,7 +85,7 @@
 
 <!-- Main card -->
 <div class="booking-card">
-  <% unless @existing_appointment %>
+  <% unless @existing_appointments.present? %>
     <h2 class="text-xl font-bold text-gray-900 text-center mb-2">
       Olá, <span class="text-emerald-600"><%= @patient_name %></span>!
     </h2>
@@ -86,7 +96,7 @@
   <% else %>
     <p class="text-gray-600 text-center text-base mb-4">
       <i class="fas fa-sync-alt text-amber-500 mr-1"></i>
-      Selecione um novo horário para <strong>reagendar</strong>
+      Selecione um novo horário para <strong>reagendar</strong> os selecionados
     </p>
   <% end %>
   
@@ -150,5 +160,5 @@
 <!-- Help text -->
 <p class="text-center text-gray-500 text-sm mt-4">
   <i class="fas fa-info-circle mr-1"></i>
-  <%= @existing_appointment ? 'Escolha um novo horário ou mantenha o atual' : 'Escolha o período mais conveniente para você' %>
+  <%= @existing_appointments.present? ? 'Escolha um novo horário para todos ou mantenha os atuais' : 'Escolha o período mais conveniente para você' %>
 </p>
