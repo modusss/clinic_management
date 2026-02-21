@@ -135,7 +135,11 @@
                           <div class="patient-links">
                             <% data[:invitations].each_with_index do |invitation, index| %>
                               <%= render partial: "patient_name_display", 
-                                         locals: { invitation: invitation, count: invitation.lead.appointments.count } %>
+                                         locals: {
+                                           invitation: invitation,
+                                           count: invitation.lead.appointments.count,
+                                           self_booked: invitation.appointments.any?(&:self_booked?)
+                                         } %>
                               <%= ", " unless index == data[:invitations].size - 1 %>
                             <% end %>
                           </div>
@@ -164,7 +168,11 @@
                             <% data[:reschedules].each_with_index do |appointment, index| %>
                               <% invitation = appointment.invitation %>
                               <%= render partial: "patient_name_display", 
-                                         locals: { invitation: invitation, count: appointment.lead.appointments.count } %>
+                                         locals: {
+                                           invitation: invitation,
+                                           count: appointment.lead.appointments.count,
+                                           self_booked: appointment.self_booked?
+                                         } %>
                               <%= ", " unless index == data[:reschedules].size - 1 %>
                             <% end %>
                           </div>
@@ -237,7 +245,11 @@
                           <div class="patient-links">
                             <% data[:invitations].each_with_index do |invitation, index| %>
                               <%= render partial: "patient_name_display", 
-                                         locals: { invitation: invitation, count: invitation.lead.appointments.count } %>
+                                         locals: {
+                                           invitation: invitation,
+                                           count: invitation.lead.appointments.count,
+                                           self_booked: invitation.appointments.any?(&:self_booked?)
+                                         } %>
                               <%= ", " unless index == data[:invitations].size - 1 %>
                             <% end %>
                           </div>
@@ -255,7 +267,11 @@
                             <% data[:reschedules].each_with_index do |appointment, index| %>
                               <% invitation = appointment.invitation %>
                               <%= render partial: "patient_name_display", 
-                                         locals: { invitation: invitation, count: appointment.lead.appointments.count } %>
+                                         locals: {
+                                           invitation: invitation,
+                                           count: appointment.lead.appointments.count,
+                                           self_booked: appointment.self_booked?
+                                         } %>
                               <%= ", " unless index == data[:reschedules].size - 1 %>
                             <% end %>
                           </div>
@@ -600,6 +616,30 @@
 .patient-links a:hover {
   color: #1d4ed8;
   text-decoration: underline;
+}
+
+.patient-name-with-origin {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.self-booking-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  background: #ecfeff;
+  border: 1px solid #a5f3fc;
+  color: #0e7490;
+  vertical-align: middle;
+}
+
+.self-booking-indicator i {
+  font-size: 0.72rem;
+  line-height: 1;
 }
 
 .empty-cell {

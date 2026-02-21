@@ -1,3 +1,14 @@
-<span>
+<% self_booked = local_assigns.fetch(:self_booked, false) %>
+
+<span class="patient-name-with-origin">
   <%= link_to invitation.patient_name.split(" ").first, lead_path(invitation.lead), class: "text-blue-500 hover:text-blue-700", target: "_blank" %>
-</span> 
+  <% if self_booked %>
+    <span
+      class="self-booking-indicator"
+      title="Autoagendamento via link"
+      aria-label="Autoagendamento via link"
+    >
+      <i class="material-icons">link</i>
+    </span>
+  <% end %>
+</span>
