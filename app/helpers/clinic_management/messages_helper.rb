@@ -167,8 +167,16 @@ module ClinicManagement
         referral = user_referral
         referral&.has_connected_instances? == true
       else
-        # For non-referral users, check if instance 2 is connected
-        Account.first&.instance_2_connected == true
+        # For non-referral users, always prefer tenant-aware account context.
+        # ESSENTIAL: using Account.first may read another tenant's connection flag
+        # and incorrectly block bulk sends in clinic absent flow.
+        account = if defined?(current_account) && current_account.present?
+          current_account
+        else
+          Account.first
+        end
+
+        account&.instance_2_connected == true
       end
     end
 

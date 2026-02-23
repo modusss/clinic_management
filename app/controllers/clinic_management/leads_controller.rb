@@ -1110,7 +1110,12 @@ module ClinicManagement
         # Use round-robin instance selection if available
         referral&.next_evolution_instance_name
       else
-        Account.first&.evolution_instance_name_2
+        account = if respond_to?(:current_account) && current_account.present?
+          current_account
+        else
+          Account.first
+        end
+        account&.evolution_instance_name_2
       end
     end
 
@@ -1135,7 +1140,12 @@ module ClinicManagement
         # connected_instance_names already includes legacy single instance if connected
         names.presence || []
       else
-        instance = Account.first&.evolution_instance_name_2
+        account = if respond_to?(:current_account) && current_account.present?
+          current_account
+        else
+          Account.first
+        end
+        instance = account&.evolution_instance_name_2
         instance.present? ? [instance] : []
       end
     end
