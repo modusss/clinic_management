@@ -21,14 +21,13 @@ module ClinicManagement
       elsif is_manager_above?
         # Managers: can view global messages OR a specific referral's messages
         # Only show active referrals in the dropdown.
-        # NOTE: Referral.active uses LEFT JOINs, so referrals without a membership
-        # would pass the filter. Adding "memberships.id IS NOT NULL" ensures only
-        # referrals with an actual active user are shown.
+        # Uses the instance method active? (same approach as referrals#index)
+        # because the scope Referral.active has a LEFT JOIN bug that leaks
+        # referrals without memberships.
         referral_ids = LeadMessage.where.not(referral_id: nil).distinct.pluck(:referral_id)
-        @referrals_with_messages = Referral.active
-                                           .where(id: referral_ids)
-                                           .where("memberships.id IS NOT NULL")
+        @referrals_with_messages = Referral.where(id: referral_ids)
                                            .order(:name)
+                                           .select(&:active?)
 
         if params[:referral_id].present?
           @viewing_referral = Referral.find_by(id: params[:referral_id])
