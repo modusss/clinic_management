@@ -8,13 +8,37 @@ module ClinicManagement
     include MessagesHelper
     require 'httparty'
 
+    # ESSENTIAL: Order by created_at ASC so numbering (#1, #2, #3)
+    # matches the send order in jobs.
+    #
+    # For managers: loads @referrals_with_messages (referrals that have at least
+    # one lead_message) and allows filtering via params[:referral_id].
+    # @viewing_referral is set when a manager selects a specific referral.
     def index
-      # Show only messages for the current referral, or global messages if not referral
-      # IMPORTANTE: Ordenar por created_at ASC para que a numeração (#1, #2, #3)
-      # corresponda à ordem de envio nos jobs
       if referral?(current_user)
+        # Referral users: see only their own messages (unchanged)
         @messages = LeadMessage.where(referral_id: user_referral.id).order(created_at: :asc)
+      elsif is_manager_above?
+        # Managers: can view global messages OR a specific referral's messages
+        # Only show active referrals in the dropdown.
+        # NOTE: Referral.active uses LEFT JOINs, so referrals without a membership
+        # would pass the filter. Adding "memberships.id IS NOT NULL" ensures only
+        # referrals with an actual active user are shown.
+        referral_ids = LeadMessage.where.not(referral_id: nil).distinct.pluck(:referral_id)
+        @referrals_with_messages = Referral.active
+                                           .where(id: referral_ids)
+                                           .where("memberships.id IS NOT NULL")
+                                           .order(:name)
+
+        if params[:referral_id].present?
+          @viewing_referral = Referral.find_by(id: params[:referral_id])
+          @messages = LeadMessage.where(referral_id: params[:referral_id]).order(created_at: :asc)
+        else
+          @viewing_referral = nil
+          @messages = LeadMessage.where(referral_id: nil).order(created_at: :asc)
+        end
       else
+        # Non-manager, non-referral: global messages only (unchanged)
         @messages = LeadMessage.where(referral_id: nil).order(created_at: :asc)
       end
       @messages_by_type = @messages.group_by(&:message_type)
@@ -73,15 +97,23 @@ module ClinicManagement
         end
         
         @message.save if @message.changed?
-        redirect_to lead_messages_path
+
+        # Preserve referral context when redirecting back
+        redirect_to @message.referral_id.present? ?
+          lead_messages_path(referral_id: @message.referral_id) : lead_messages_path
       else
         render :edit
       end
     end
-  
+
     def destroy
+      referral_id = @message.referral_id
       @message.destroy
-      redirect_to lead_messages_path, notice: 'Mensagem customizada excluída com sucesso.'
+
+      # Preserve referral context when redirecting back
+      redirect_path = referral_id.present? ?
+        lead_messages_path(referral_id: referral_id) : lead_messages_path
+      redirect_to redirect_path, notice: 'Mensagem customizada excluída com sucesso.'
     end
 
     def build_message
