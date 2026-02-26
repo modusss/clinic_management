@@ -11,9 +11,19 @@
       end
 
       def index_today
-        @services = Service.where(date: Date.current).order(:start_time)
+        # ESSENTIAL: Eager load to avoid N+1 in mapping_rows/process_appointments_data.
+        # Each row renders phone_with_message_tracking (lead_interactions), set_conversion_link (leads_conversion),
+        # and other partials - without includes this causes 10+ queries per appointment.
+        @services = Service
+          .where(date: Date.current)
+          .order(:start_time)
+          .includes(appointments: [
+            :prescription,
+            :service,
+            { invitation: { lead: [:leads_conversion, { lead_interactions: :user }] } }
+          ])
         @rows = mapping_rows(@services)
-        
+
         # Check if WhatsApp instance 2 (clinica) is connected for confirmation button
         @instance_2_connected = Account.first&.instance_2_connected
       end
@@ -81,7 +91,15 @@
       # Shows all services scheduled for the next available day after today (not including today)
       def index_next
         @next_date = Service.where('date > ?', Date.current).order(:date).pluck(:date).first
-        @services = Service.where(date: @next_date).order(:start_time)
+        # ESSENTIAL: Same eager loading as index_today to avoid N+1
+        @services = Service
+          .where(date: @next_date)
+          .order(:start_time)
+          .includes(appointments: [
+            :prescription,
+            :service,
+            { invitation: { lead: [:leads_conversion, { lead_interactions: :user }] } }
+          ])
         @rows = mapping_rows(@services)
         @instance_2_connected = Account.first&.instance_2_connected
       end
@@ -89,7 +107,14 @@
       def index_before
         # Busca o dia anterior ao dia atual que tenha pelo menos um service
         before_date = Service.where('date < ?', Date.current).order(date: :desc).pluck(:date).first
-        @services = Service.where(date: before_date).order(:start_time)
+        @services = Service
+          .where(date: before_date)
+          .order(:start_time)
+          .includes(appointments: [
+            :prescription,
+            :service,
+            { invitation: { lead: [:leads_conversion, { lead_interactions: :user }] } }
+          ])
         @rows = mapping_rows(@services)
       end
 
