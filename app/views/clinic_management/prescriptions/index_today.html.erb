@@ -45,6 +45,15 @@
         instance_2_connected: @instance_2_connected
       } %>
 
+      <%= render partial: "clinic_management/prescriptions/force_confirmation_button", locals: {
+        title: "Enviar Lembretes de Hoje",
+        description: "Força o envio das mensagens de lembrete para os agendamentos de hoje para os que não recebram",
+        button_path: clinic_management.force_reminder_today_path,
+        confirm_message: "Tem certeza que deseja enviar as mensagens de lembrete para HOJE? Isso pode enviar mensagens duplicadas se já foram enviadas.",
+        instance_2_connected: @instance_2_connected,
+        button_label: "Enviar Lembretes"
+      } %>
+
 <% end %>
 
 <%#= link_to 'Ver receita em PDF', pdf_appointment_prescription_path(@prescription.appointment, format: :pdf), class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
