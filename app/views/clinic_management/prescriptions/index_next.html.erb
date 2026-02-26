@@ -4,6 +4,20 @@
       view_type: @view_type 
     } %>
 
+<%# Force confirmation button - only for non-doctor users %>
+<% unless doctor?(current_user) %>
+  <% if @next_date.present? %>
+    <% next_date_formatted = @next_date.strftime("%d/%m/%Y") %>
+    <%= render partial: "clinic_management/prescriptions/force_confirmation_button", locals: {
+      title: "Enviar Confirmações do Próximo Dia",
+      description: "Força o envio das mensagens de confirmação para os agendamentos de #{next_date_formatted} para os que não recebram",
+      button_path: clinic_management.force_confirmation_next_path,
+      confirm_message: "Tem certeza que deseja enviar as mensagens de confirmação para #{next_date_formatted}? Isso pode enviar mensagens duplicadas se já foram enviadas.",
+      instance_2_connected: @instance_2_connected
+    } %>
+  <% end %>
+<% end %>
+
 <%# Shows all services for the next available day after today %>
 <% if @services.present? %>
   <% @rows.each_with_index do |rows, index| %>

@@ -1,0 +1,39 @@
+<%# ============================================================ %>
+<%# FORCE CONFIRMATION BUTTON %>
+<%# ============================================================ %>
+<%# Reusable partial to force send confirmation messages for a target date. %>
+<%# Used in index_today (today) and index_next (next available day). %>
+<%# Only shows when WhatsApp instance 2 (clinica) is connected. %>
+<%# ============================================================ %>
+<%# Locals: %>
+<%#   title [String] - e.g. "Enviar Confirmações de Hoje" %>
+<%#   description [String] - Explanatory text for the button %>
+<%#   button_path [String/Path] - POST path for the action %>
+<%#   confirm_message [String] - Data confirm text shown before submitting %>
+<%#   instance_2_connected [Boolean] - Whether WhatsApp instance is ready %>
+<%# ============================================================ %>
+<div class="bg-white rounded-lg shadow-md p-4 mb-6">
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between">
+    <div>
+      <h3 class="text-lg font-medium text-gray-800"><%= title %></h3>
+      <p class="text-sm text-gray-500"><%= description %></p>
+    </div>
+    
+    <div class="mt-2 sm:mt-0">
+      <% if instance_2_connected %>
+        <%= button_to button_path, 
+            method: :post,
+            class: "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm transition-colors duration-200 flex items-center gap-2",
+            data: { confirm: confirm_message } do %>
+          <i class="fas fa-paper-plane mr-2"></i>
+          Enviar Confirmações
+        <% end %>
+      <% else %>
+        <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-2 rounded text-sm flex items-center gap-2">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span>Instância do WhatsApp não conectada</span>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

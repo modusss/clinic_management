@@ -1,6 +1,6 @@
   module ClinicManagement
     class PrescriptionsController < ApplicationController
-      before_action :set_appointment, except: [:index_today, :generate_order_pdf, :search_index_today, :index_next, :index_before, :force_confirmation_today]
+      before_action :set_appointment, except: [:index_today, :generate_order_pdf, :search_index_today, :index_next, :index_before, :force_confirmation_today, :force_confirmation_next]
       skip_before_action :redirect_doctor_users, only: [:index_today, :show_today, :new_today, :edit_today, :update, :create, :search_index_today]
       skip_before_action :authenticate_user!, only: [:pdf]
       before_action :set_view_type, only: [:index_today, :index_next, :index_before]
@@ -37,12 +37,36 @@
         redirect_to index_today_path
       end
 
+      # POST /prescriptions/force_confirmation_next
+      # Forces execution of ConfirmationAppointmentJob for the next available day's appointments
+      # Same use case as force_confirmation_today, but for the next date with scheduled services
+      def force_confirmation_next
+        account = Account.first
+        
+        unless account&.instance_2_connected
+          flash[:alert] = "Instância do WhatsApp não conectada. Conecte a instância 'Clínica' primeiro."
+          redirect_to index_next_path and return
+        end
+        
+        next_date = Service.where('date > ?', Date.current).order(:date).pluck(:date).first
+        unless next_date
+          flash[:alert] = "Nenhum atendimento futuro encontrado."
+          redirect_to index_next_path and return
+        end
+        
+        ConfirmationAppointmentJob.perform_later(false, next_date)
+        
+        flash[:notice] = "Mensagens de confirmação para #{next_date.strftime('%d/%m/%Y')} foram enfileiradas! O envio está sendo processado em segundo plano."
+        redirect_to index_next_path
+      end
+
       # GET /prescriptions/index_next
       # Shows all services scheduled for the next available day after today (not including today)
       def index_next
-        next_date = Service.where('date > ?', Date.current).order(:date).pluck(:date).first
-        @services = Service.where(date: next_date).order(:start_time)
+        @next_date = Service.where('date > ?', Date.current).order(:date).pluck(:date).first
+        @services = Service.where(date: @next_date).order(:start_time)
         @rows = mapping_rows(@services)
+        @instance_2_connected = Account.first&.instance_2_connected
       end
 
       def index_before
