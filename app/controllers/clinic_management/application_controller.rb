@@ -23,6 +23,22 @@ module ClinicManagement
     end
     helper_method :current_account
 
+    # ESSENTIAL: Service location context for multi-region support.
+    # nil = internal (default); ServiceLocation = external.
+    # Persists in session + cookie so selection survives page refresh.
+    def current_service_location_id
+      id = session[:clinic_service_location_id].presence || cookies[:clinic_service_location_id].presence
+      session[:clinic_service_location_id] = id if id.present? && session[:clinic_service_location_id].blank?
+      id
+    end
+    helper_method :current_service_location_id
+
+    def current_service_location
+      return nil if current_service_location_id.blank?
+      @current_service_location ||= ServiceLocation.find_by(id: current_service_location_id)
+    end
+    helper_method :current_service_location
+
     def authenticate_user!
       unless user_signed_in?
         super

@@ -1,0 +1,10 @@
+<%= breadcrumb({title: "Locais de Atendimento", path: service_locations_path}, {title: "Editar local", path: nil}) %>
+<div class="my-8 mx-auto max-w-md">
+  <h1 class="text-2xl font-bold mb-4">Editar Local de Atendimento</h1>
+
+  <%= render "form", service_location: @service_location %>
+
+  <div class="mt-4">
+    <%= link_to "Voltar para locais", service_locations_path, class: "text-blue-500 hover:underline" %>
+  </div>
+</div>

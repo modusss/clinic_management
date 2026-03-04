@@ -126,6 +126,11 @@ ClinicManagement::Engine.routes.draw do
   end
   resources :time_slots
   resources :regions
+  resources :service_locations do
+    collection do
+      post "switch", action: :switch, as: :switch
+    end
+  end
   resources :service_types
   resources :leads do
     member do

@@ -4,7 +4,7 @@ module ClinicManagement
 
     # GET /time_slots
     def index
-      @time_slots = TimeSlot.all
+      @time_slots = TimeSlot.where(service_location_id: current_service_location_id)
     end
 
     # GET /time_slots/1
@@ -25,6 +25,7 @@ module ClinicManagement
       day_number = get_day_field(params[:time_slot][:weekday])
       @time_slot = TimeSlot.new(time_only_slot_params)
       @time_slot.weekday = day_number
+      @time_slot.service_location_id = current_service_location_id
       if @time_slot.save
         redirect_to @time_slot, notice: "Time slot was successfully created."
       else
@@ -82,7 +83,7 @@ module ClinicManagement
 
       # Only allow a list of trusted parameters through.
       def time_slot_params
-        params.require(:time_slot).permit(:weekday, :start_time, :end_time)
+        params.require(:time_slot).permit(:weekday, :start_time, :end_time, :service_location_id)
       end
 
       def time_only_slot_params

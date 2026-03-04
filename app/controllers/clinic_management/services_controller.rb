@@ -12,7 +12,8 @@ module ClinicManagement
       @referrals = Referral.all
       @view_type = params[:view_type] || 'daily'
       @services = ClinicManagement::Service.includes(:appointments).order(date: :desc)
-      
+      @services = @services.for_location(current_service_location_id)
+
       # Filtrar serviços para auxiliares de clínica
       if helpers.clinical_assistant?(current_user)
         @services = @services.where("date >= ?", Date.current)
@@ -38,6 +39,7 @@ module ClinicManagement
                           .where(appointments: { referral_code: @referral.code })
                           .order(date: :desc)
                           .distinct
+      @services = @services.for_location(current_service_location_id)
       
       case @view_type
       when 'weekly'
@@ -109,6 +111,7 @@ module ClinicManagement
         service.start_time = time_slot.start_time
         service.end_time = time_slot.end_time
         service.date = date
+        service.service_location_id = current_service_location_id
         @services << service
       end
 

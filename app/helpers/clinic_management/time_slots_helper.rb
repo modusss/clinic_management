@@ -1,18 +1,36 @@
 module ClinicManagement
   module TimeSlotsHelper
+    # Returns array of { date:, time_slot:, formatted_date:, formatted_time: } for new service form.
+    # ESSENTIAL: Filters by current_service_location_id (nil = internal).
+    def available_time_slots_for_next_30_days
+      time_slots = ClinicManagement::TimeSlot.where(service_location_id: current_service_location_id)
+      slots_by_weekday = time_slots.group_by(&:weekday)
 
-    
+      (Date.current..Date.current + 29.days).flat_map do |date|
+        weekday = date.wday == 6 ? 7 : date.wday + 1
+        (slots_by_weekday[weekday] || []).map do |time_slot|
+          {
+            date: date,
+            time_slot: time_slot,
+            formatted_date: "#{I18n.t('date.day_names')[date.wday]}, #{date.strftime('%d/%m/%Y')}",
+            formatted_time: "#{time_slot.start_time.strftime('%H:%M')} - #{time_slot.end_time.strftime('%H:%M')}"
+          }
+        end
+      end
+    end
+
     def next_30_days_time_slots(service = nil)
       # Verificar se o serviço existe e se a data já passou
       if service && service.date && service.date < Date.current
         display_info = "#{service.date.strftime('%d/%m/%Y')} - #{I18n.t('date.day_names')[service.date.wday]} - #{service.start_time.strftime('%H:%M')} até #{service.end_time.strftime('%H:%M')}"
         {type: 'text', value: display_info, input: :time_slot_id, name: 'Dias e horários disponíveis', disabled: true}
       else
-        # Agrupar slots de tempo por dia da semana
-        time_slots = ClinicManagement::TimeSlot.all.group_by(&:weekday)
+        # Agrupar slots de tempo por dia da semana (scoped by current service location)
+        time_slots = ClinicManagement::TimeSlot.where(service_location_id: current_service_location_id).group_by(&:weekday)
     
-        # Buscar serviços existentes nos próximos 30 dias, excluindo o serviço atual
-        existing_services = Service.where(date: Date.current..Date.current + 29.days)
+        # Buscar serviços existentes nos próximos 30 dias (same location), excluindo o serviço atual
+        existing_services = Service.for_location(current_service_location_id)
+          .where(date: Date.current..Date.current + 29.days)
           .where.not(id: service&.id)
           .pluck(:date, :start_time)
           .group_by { |date, _| date }

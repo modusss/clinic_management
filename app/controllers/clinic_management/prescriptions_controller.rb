@@ -14,7 +14,9 @@
         # ESSENTIAL: Eager load to avoid N+1 in mapping_rows/process_appointments_data.
         # Each row renders phone_with_message_tracking (lead_interactions), set_conversion_link (leads_conversion),
         # and other partials - without includes this causes 10+ queries per appointment.
+        # ESSENTIAL: Filter by current_service_location_id so menu links obey the selected region.
         @services = Service
+          .for_location(current_service_location_id)
           .where(date: Date.current)
           .order(:start_time)
           .includes(appointments: [
@@ -88,33 +90,46 @@
       end
 
       # GET /prescriptions/index_next
-      # Shows all services scheduled for the next available day after today (not including today)
+      # Shows all services scheduled for the next available day after today (not including today).
+      # ESSENTIAL: Filter by current_service_location_id so menu links obey the selected region.
       def index_next
-        @next_date = Service.where('date > ?', Date.current).order(:date).pluck(:date).first
+        base_scope = Service.for_location(current_service_location_id)
+        @next_date = base_scope.where('date > ?', Date.current).order(:date).pluck(:date).first
         # ESSENTIAL: Same eager loading as index_today to avoid N+1
-        @services = Service
-          .where(date: @next_date)
-          .order(:start_time)
-          .includes(appointments: [
-            :prescription,
-            :service,
-            { invitation: { lead: [:leads_conversion, { lead_interactions: :user }] } }
-          ])
+        @services = if @next_date
+          base_scope
+            .where(date: @next_date)
+            .order(:start_time)
+            .includes(appointments: [
+              :prescription,
+              :service,
+              { invitation: { lead: [:leads_conversion, { lead_interactions: :user }] } }
+            ])
+        else
+          Service.none
+        end
         @rows = mapping_rows(@services)
         @instance_2_connected = Account.first&.instance_2_connected
       end
 
+      # GET /prescriptions/index_before
+      # Shows all services from the previous day that has at least one service.
+      # ESSENTIAL: Filter by current_service_location_id so menu links obey the selected region.
       def index_before
-        # Busca o dia anterior ao dia atual que tenha pelo menos um service
-        before_date = Service.where('date < ?', Date.current).order(date: :desc).pluck(:date).first
-        @services = Service
-          .where(date: before_date)
-          .order(:start_time)
-          .includes(appointments: [
-            :prescription,
-            :service,
-            { invitation: { lead: [:leads_conversion, { lead_interactions: :user }] } }
-          ])
+        base_scope = Service.for_location(current_service_location_id)
+        before_date = base_scope.where('date < ?', Date.current).order(date: :desc).pluck(:date).first
+        @services = if before_date
+          base_scope
+            .where(date: before_date)
+            .order(:start_time)
+            .includes(appointments: [
+              :prescription,
+              :service,
+              { invitation: { lead: [:leads_conversion, { lead_interactions: :user }] } }
+            ])
+        else
+          Service.none
+        end
         @rows = mapping_rows(@services)
       end
 
