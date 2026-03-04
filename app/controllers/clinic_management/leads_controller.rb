@@ -1100,7 +1100,7 @@ module ClinicManagement
     private
     
     # Returns a single instance name for individual message sends.
-    # Referrals use round-robin rotation; non-referrals use Account instance 2.
+    # Priority: 1) Bulk instances (round-robin), 2) Referral instances, 3) Account instance 2.
     # NOTE: For bulk sends, use get_bulk_instance_names instead to get the full
     # list and distribute manually — calling this method N times would advance
     # the round-robin counter via mark_as_used! causing uneven distribution.
@@ -1115,6 +1115,15 @@ module ClinicManagement
         else
           Account.first
         end
+
+        # ESSENTIAL: Prioritize bulk instances for non-referral sends.
+        # This prevents using the clinic WhatsApp (instance_2) for bulk messaging.
+        bulk_instance = BulkEvolutionInstance.next_for_sending(account.id) if account
+        if bulk_instance
+          bulk_instance.mark_as_used!
+          return bulk_instance.instance_name
+        end
+
         account&.evolution_instance_name_2
       end
     end
@@ -1145,6 +1154,14 @@ module ClinicManagement
         else
           Account.first
         end
+
+        # ESSENTIAL: Prioritize dedicated bulk instances over clinic instance (instance_2).
+        # Using instance_2 for bulk messaging risks WhatsApp ban on the clinic number.
+        # Bulk instances are separate numbers specifically for mass sending.
+        bulk_names = BulkEvolutionInstance.connected_instance_names(account.id) if account
+        return bulk_names if bulk_names.present?
+
+        # Fallback: instance_2 (clinic) — only used if no bulk instances exist
         instance = account&.evolution_instance_name_2
         instance.present? ? [instance] : []
       end
@@ -1174,7 +1191,18 @@ module ClinicManagement
         referral = user_referral
         referral&.evolution_delay_multiplier || 1.0
       else
-        1.0
+        # ESSENTIAL: Use bulk instance delay multiplier when bulk instances exist.
+        account = if respond_to?(:current_account) && current_account.present?
+          current_account
+        else
+          Account.first
+        end
+
+        if account && BulkEvolutionInstance.any_connected?(account.id)
+          BulkEvolutionInstance.delay_multiplier(account.id)
+        else
+          1.0
+        end
       end
     end
 

@@ -176,6 +176,11 @@ module ClinicManagement
           Account.first
         end
 
+        # ESSENTIAL: Also check dedicated bulk instances (BulkEvolutionInstance).
+        # These are separate WhatsApp numbers for mass sending that don't use
+        # the clinic number (instance_2), reducing ban risk.
+        return true if account && BulkEvolutionInstance.any_connected?(account.id)
+
         account&.instance_2_connected == true
       end
     end
