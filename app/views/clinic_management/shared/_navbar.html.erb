@@ -166,7 +166,7 @@
     <div class="flex flex-wrap justify-between items-center">
       <h1 class="text-white text-2xl font-bold mb-4 sm:mb-0 w-full sm:w-auto text-center sm:text-left flex items-center gap-2">
          <%= link_to raw("Lipepay <span class='ml-1 text-xs bg-white text-emerald-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-emerald-300" %>
-         <% if is_manager_above? && ClinicManagement::ServiceLocation.any? %>
+         <% if is_manager_above? && current_account&.multi_service_locations_enabled? && ClinicManagement::ServiceLocation.any? %>
          <%= form_with url: clinic_management.switch_service_locations_path, method: :post, local: true, data: { turbo: false }, class: "inline" do |f| %>
            <%= f.select :location_id, options_for_select([["Interno", ""]] + ClinicManagement::ServiceLocation.order(:name).map { |loc| [loc.name, loc.id.to_s] }, current_service_location_id.to_s), {}, { class: "text-sm rounded px-2 py-1 text-gray-800 ml-2", onchange: "this.form.submit()" } %>
          <% end %>
@@ -190,7 +190,7 @@
          <%= link_to "Meus Agendamentos", clinic_management.my_reschedules_appointments_path, class: "text-white hover:text-emerald-300 #{'active' if action_name == 'my_reschedules'}" %>
          <% unless clinical_assistant?(current_user) %>
          <%= link_to "Regiões", clinic_management.regions_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'regions'}" %>
-         <%= link_to "Locais de Atendimento", clinic_management.service_locations_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'service_locations'}" %>
+         <%= link_to "Locais de Atendimento", clinic_management.service_locations_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'service_locations'}" if current_account&.multi_service_locations_enabled? %>
          <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'time_slots'}" %>
          <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'lead_messages'}"  %>
          <% end %>
@@ -279,7 +279,7 @@
     <%= link_to "Meus Agendamentos", clinic_management.my_reschedules_appointments_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if action_name == 'my_reschedules'}" %>
     <% unless clinical_assistant?(current_user) %>
     <%= link_to "Regiões", clinic_management.regions_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'regions'}" %>
-    <%= link_to "Locais de Atendimento", clinic_management.service_locations_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'service_locations'}" %>
+    <%= link_to "Locais de Atendimento", clinic_management.service_locations_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'service_locations'}" if current_account&.multi_service_locations_enabled? %>
     <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'time_slots'}" %>
     <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'lead_messages'}"  %>
     <% end %>

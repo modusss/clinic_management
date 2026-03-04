@@ -26,7 +26,10 @@ module ClinicManagement
     # ESSENTIAL: Service location context for multi-region support.
     # nil = internal (default); ServiceLocation = external.
     # Persists in session + cookie so selection survives page refresh.
+    # When multi_service_locations_enabled is false: always returns nil (internal) so cookie/session
+    # do not leak external context; filters (Services, Prescriptions, etc.) show only internal.
     def current_service_location_id
+      return nil unless current_account&.multi_service_locations_enabled?
       id = session[:clinic_service_location_id].presence || cookies[:clinic_service_location_id].presence
       session[:clinic_service_location_id] = id if id.present? && session[:clinic_service_location_id].blank?
       id

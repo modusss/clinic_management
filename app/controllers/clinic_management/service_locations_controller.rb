@@ -3,7 +3,9 @@
 module ClinicManagement
   # CRUD for ServiceLocation (external attendance locations).
   # Internal = NULL service_location_id; external = ServiceLocation record.
+  # ESSENTIAL: All actions require multi_service_locations_enabled on current_account.
   class ServiceLocationsController < ApplicationController
+    before_action :require_multi_service_locations_enabled!
     before_action :set_service_location, only: %i[show edit update destroy]
 
     # GET /service_locations
@@ -74,6 +76,12 @@ module ClinicManagement
     end
 
     private
+
+    def require_multi_service_locations_enabled!
+      return if current_account&.multi_service_locations_enabled?
+      flash[:alert] = "Múltiplos Locais de Atendimento não está habilitado para esta conta."
+      redirect_to clinic_management.index_today_path
+    end
 
     def edit_button(loc)
       helpers.link_to(edit_service_location_path(loc)) do
