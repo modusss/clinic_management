@@ -44,8 +44,13 @@ module ClinicManagement
         @messages = LeadMessage.where(referral_id: nil).order(created_at: :asc)
       end
 
-      # ESSENTIAL: Filter by service_location from navbar only (no page selector).
-      # Uses current_service_location_id (session/cookie) - user switches via navbar.
+      # ESSENTIAL: When multi-regions disabled, show ONLY interno/global messages (service_location_id nil).
+      # Messages assigned to external locations remain in DB but are hidden until multi-regions is re-enabled.
+      unless multi_service_locations_enabled?
+        @messages = @messages.where(service_location_id: nil)
+      end
+
+      # Filter by service_location from navbar when multi-regions enabled (no page selector).
       @viewing_all_externals = false
       if multi_service_locations_enabled? && @viewing_referral.nil? && !referral?(current_user)
         loc_id = current_service_location_id.to_s
