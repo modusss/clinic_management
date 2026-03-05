@@ -373,8 +373,13 @@ module ClinicManagement
 
     def search_absents
       query = params[:q]&.strip
-      # Removida a diferenciação - usar sempre 1.day.ago para todos
-      @all_leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?', false, 1.days.ago)
+      loc_filter = current_account&.multi_service_locations_enabled? ? current_service_location_id.to_s : nil
+      @all_leads = fetch_leads_by_appointment_condition(
+        'clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?',
+        false,
+        1.days.ago,
+        service_location_filter: loc_filter
+      )
       
       if query.present?
         @leads = @all_leads.where("name ILIKE ? OR phone ILIKE ?", "%#{query}%", "%#{query}%").limit(10)
@@ -559,7 +564,7 @@ module ClinicManagement
       # 1) Carregar a coleção base (com base se é referral ou não)
       @all_leads = base_absent_leads_scope
 
-      # 2) Aplicar filtros sequenciais encapsulados
+      # 2) Aplicar filtros sequenciais encapsulados (service_location já no base_absent_leads_scope)
       @all_leads = filter_leads_with_phone(@all_leads)
       @all_leads = filter_by_whatsapp_status(@all_leads)  # Novo filtro de WhatsApp
       @all_leads = filter_by_hidden_status(@all_leads)  # Filtro de ocultação/interesse
@@ -1225,15 +1230,30 @@ module ClinicManagement
       session[:absent_leads_state] = uri.to_s
     end
 
-    # Retorna o escopo base de leads ausentes, sem diferenciação de usuário
+    # Retorna o escopo base de leads ausentes, sem diferenciação de usuário.
+    # Service location filter passed into base query for DB-level efficiency (no extra filter step).
     def base_absent_leads_scope
-      # Removida a diferenciação - usar sempre 1.day.ago para todos
       absent_threshold_date = 1.day.ago.to_date
+      loc_filter = current_account&.multi_service_locations_enabled? ? current_service_location_id.to_s : nil
       fetch_leads_by_appointment_condition(
         'clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?',
         false,
-        absent_threshold_date
+        absent_threshold_date,
+        service_location_filter: loc_filter
       )
+    end
+
+    # Applies service_location filter to scope (main_svc already joined). Used inside fetch_leads_by_appointment_condition.
+    def apply_service_location_scope(scope, loc_filter)
+      return scope if loc_filter.nil?
+      case loc_filter.to_s
+      when "all"
+        scope.where("main_svc.service_location_id IS NOT NULL")
+      when ""
+        scope.where("main_svc.service_location_id IS NULL")
+      else
+        scope.where("main_svc.service_location_id = ?", loc_filter)
+      end
     end
 
     # Filtra leads que possuem telefone válido
@@ -1651,19 +1671,23 @@ module ClinicManagement
         end
       end
 
-      def fetch_leads_by_appointment_condition(query_condition, value, date = nil)
+      # Fetches leads by appointment condition. Uses subquery for exclusions (no pluck) for scale.
+      # @param service_location_filter [nil, String] nil = no filter; "" = internal; "all" = externals; id = specific
+      def fetch_leads_by_appointment_condition(query_condition, value, date = nil, service_location_filter: nil)
         one_year_ago = Date.current - 1.year
 
-        # 1. Leads que compareceram no último ano (excluir)
-        excluded_lead_ids = ClinicManagement::Appointment.joins(:service)
+        # 1. Subquery for leads who attended in last year — NOT pluck (avoids loading 10k+ IDs into memory).
+        # Database handles NOT IN (SELECT ...) efficiently with indexes.
+        excluded_subquery = ClinicManagement::Appointment
+          .joins(:service)
           .where('clinic_management_appointments.attendance = ? AND clinic_management_services.date >= ?', true, one_year_ago)
-          .pluck(:lead_id)
+          .select(:lead_id)
 
-        # 2. Query mais simples e direta com unificação de dados
+        # 2. Base query with joins. Service location filter applied in same WHERE for planner optimization.
         base_query = ClinicManagement::Lead
           .joins("INNER JOIN clinic_management_appointments AS main_apt ON clinic_management_leads.last_appointment_id = main_apt.id")
           .joins("INNER JOIN clinic_management_services AS main_svc ON main_apt.service_id = main_svc.id")
-          .joins("LEFT JOIN clinic_management_lead_interactions AS latest_interaction ON clinic_management_leads.id = latest_interaction.lead_id AND latest_interaction.occurred_at = (SELECT MAX(occurred_at) FROM clinic_management_lead_interactions WHERE lead_id = clinic_management_leads.id)")
+          .joins("LEFT JOIN clinic_management_lead_interactions AS latest_interaction ON clinic_management_leads.id = latest_interaction.lead_id AND latest_interaction.occurred_at = (SELECT MAX(li2.occurred_at) FROM clinic_management_lead_interactions li2 WHERE li2.lead_id = clinic_management_leads.id)")
           .joins("LEFT JOIN users AS interaction_user ON latest_interaction.user_id = interaction_user.id")
           .select(
             'clinic_management_leads.*',
@@ -1673,13 +1697,15 @@ module ClinicManagement
             'main_apt.id as current_appointment_id',
             'latest_interaction.occurred_at as latest_interaction_at',
             'interaction_user.name as latest_interaction_by',
-            # Usar a data mais recente entre as duas fontes para ordenação
             'COALESCE(latest_interaction.occurred_at, main_apt.last_message_sent_at) as unified_last_contact_at',
             'COALESCE(interaction_user.name, main_apt.last_message_sent_by) as unified_last_contact_by'
           )
-          .where.not(id: excluded_lead_ids)
+          .where.not(id: excluded_subquery)
 
-        # 3. Aplicar condições de forma mais simples
+        # 3. Service location filter — applied in base query so planner can use service_location_id index early.
+        base_query = apply_service_location_scope(base_query, service_location_filter)
+
+        # 4. Attendance/date conditions
         if date
           # Para a condition com data
           base_query = base_query.where(
@@ -1736,14 +1762,18 @@ module ClinicManagement
       end
 
       def fetch_leads_for_download
-        # Removida a diferenciação - usar sempre a estrutura padrão para todos
-        leads = fetch_leads_by_appointment_condition('clinic_management_appointments.attendance = ?', false)
+        loc_filter = current_account&.multi_service_locations_enabled? ? current_service_location_id.to_s : nil
+        leads = fetch_leads_by_appointment_condition(
+          'clinic_management_appointments.attendance = ?',
+          false,
+          nil,
+          service_location_filter: loc_filter
+        )
         
         if params[:year].present? && params[:month].present?
           start_date = Date.new(params[:year].to_i, params[:month].to_i, 1)
           end_date = start_date.end_of_month
-          leads = leads.joins(appointments: :service)
-                       .where('clinic_management_services.date BETWEEN ? AND ?', start_date, end_date)
+          leads = leads.where('main_svc.date BETWEEN ? AND ?', start_date, end_date)
         end
 
         leads
