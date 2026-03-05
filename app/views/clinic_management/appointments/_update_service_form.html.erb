@@ -1,24 +1,10 @@
-<!-- Renderizar o modal de remarcação se for uma remarcação (exceto para referrals e managers) -->
-<% if old_appointment.present? && !(referral?(current_user) || is_manager_above?) %>
-  <% 
-    # Obter lead da variável local ou do old_appointment
-    modal_lead = defined?(lead) && lead.present? ? lead : old_appointment.lead
-  %>
-  <%= render 'clinic_management/appointments/recapture_modal', 
-             lead: modal_lead, 
-             old_appointment: old_appointment,
-             available_services: available_services,
-             referral_id: defined?(user_referral) ? user_referral&.id : old_appointment&.invitation&.referral&.id %>
-<% end %>
-
 <%= form_with model: new_appointment, 
               url: old_appointment.present? ? reschedule_appointment_path(old_appointment) : appointments_path, 
               method: :post, 
               local: true, 
               html: { 
                 class: "items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full",
-                id: old_appointment.present? ? "reschedule-trigger-form-#{old_appointment.id}" : nil,
-                onsubmit: old_appointment.present? ? "return handleRescheduleSubmit(event, this)" : nil
+                id: old_appointment.present? ? "reschedule-trigger-form-#{old_appointment.id}" : nil
               } do |f| %>
   
   <%# ESSENTIAL: Local (ServiceLocation) selector - only when multi_service_locations_enabled.
@@ -43,8 +29,7 @@
     <select name="appointment[service_id]" 
             id="reschedule-service-select-<%= old_appointment ? old_appointment.id : 'new' %>"
             class="w-full shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline reschedule-service-select"
-            data-appointment-id="<%= old_appointment&.id %>"
-            <%= "onchange=\"updateModalServiceInfo(this)\"" if old_appointment.present? %>>
+            data-appointment-id="<%= old_appointment&.id %>">
       <option value="">Selecione...</option>
       <% available_services.each do |svc| %>
         <option value="<%= svc.id %>" 
@@ -110,51 +95,5 @@
       filterServicesByLocation(); // Apply on load (default = original appointment's location)
     }
   })();
-  
-  // Interceptar submit do formulário de remarcação
-  function handleRescheduleSubmit(event, form) {
-    event.preventDefault();
-    
-    const serviceSelect = form.querySelector('select[name="appointment[service_id]"]');
-    const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
-    
-    if (!serviceSelect.value) {
-      alert('Por favor, escolha um dia para a remarcação');
-      return false;
-    }
-    
-    // Verificar se o usuário é referral ou manager/owner
-    const isReferralOrManager = <%= referral?(current_user) || is_manager_above? %>;
-    
-    if (isReferralOrManager) {
-      // Para referrals e managers, fazer submit direto sem modal
-      form.removeAttribute('onsubmit'); // Remover interceptação
-      form.submit(); // Submit direto
-      return false;
-    }
-    
-    // Extrair appointment ID do form ID
-    const formId = form.id;
-    const appointmentId = formId.replace('reschedule-trigger-form-', '');
-    
-    // Abrir modal com informações do serviço selecionado
-    openRecaptureModal(serviceSelect.value, selectedOption.text, appointmentId);
-    
-    return false;
-  }
-  
-  // Atualizar informações no modal quando mudar o select
-  function updateModalServiceInfo(select) {
-    const form = select.closest('form');
-    const formId = form.id;
-    const appointmentId = formId.replace('reschedule-trigger-form-', '');
-    
-    const selectedOption = select.options[select.selectedIndex];
-    const modalServiceDate = document.getElementById('modal-service-date-' + appointmentId);
-    
-    if (modalServiceDate && select.value) {
-      modalServiceDate.textContent = selectedOption.text;
-    }
-  }
 </script>
 <% end %>

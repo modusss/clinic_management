@@ -200,7 +200,7 @@ module ClinicManagement
             @lead = check_existing_leads(invitation_params)
           end
           
-          @invitation = @lead.invitations.new(invitation_params.except(:lead_attributes, :appointments_attributes, :recapture_origin, :recapture_actions, :recapture_screenshots, :recapture_description, :recapture_description_extra))       
+          @invitation = @lead.invitations.new(invitation_params.except(:lead_attributes, :appointments_attributes))       
           @invitation.region = set_local_region
           @invitation.save!
           @lead.update!(name: @invitation.patient_name) if @lead.name.blank?    
@@ -212,52 +212,10 @@ module ClinicManagement
             @lead.errors.add(:base, "Este paciente chamado #{@lead.name} já está agendado para este atendimento.")
             raise ActiveRecord::RecordInvalid.new(@lead)
           else
-            # Construir appointment
             @appointment = @invitation.appointments.build(appointment_params)
             @appointment.referral_code = @invitation&.referral&.code
             @appointment.registered_by_user_id = current_user&.id
-            
-            # Processar dados de recaptura (opcional)
-            if invitation_params[:recapture_origin].present?
-              @appointment.recapture_origin = invitation_params[:recapture_origin]
-              @appointment.recapture_actions = invitation_params[:recapture_actions]&.reject(&:blank?) || []
-              @appointment.recapture_by_user_id = current_user&.id
-              
-              # Construir descrição
-              desc_parts = []
-              desc_parts << invitation_params[:recapture_description] if invitation_params[:recapture_description].present?
-              desc_parts << invitation_params[:recapture_description_extra] if invitation_params[:recapture_description_extra].present?
-              @appointment.recapture_description = desc_parts.join(' | ') if desc_parts.any?
-            end
-            
-            # Salvar SEM validação primeiro para gerar ID e permitir anexos
-            @appointment.save!(validate: false)
-            
-            # Anexar screenshots DEPOIS de ter ID (necessário dentro de transaction)
-            if invitation_params[:recapture_screenshots].present?
-              @appointment.recapture_screenshots.attach(invitation_params[:recapture_screenshots])
-            end
-            
-            # Verificar se tem attachments (via parâmetro, pois .attached? pode ser false dentro de transaction)
-            has_attachments = invitation_params[:recapture_screenshots].present?
-            
-            # Validar manualmente APENAS se for esforço ativo (não chamar .valid? para evitar problema com ActiveStorage em transaction)
-            if @appointment.recapture_origin == 'active_effort'
-              # Verificar ações
-              if @appointment.recapture_actions.blank? || @appointment.recapture_actions.reject(&:blank?).empty?
-                @appointment.errors.add(:recapture_actions, "deve ter pelo menos uma ação selecionada")
-                raise ActiveRecord::RecordInvalid.new(@appointment)
-              end
-              
-              # Screenshots agora são opcionais - não validar mais
-              
-              # Para active_effort, NÃO chamar .valid? pois já validamos tudo manualmente
-            else
-              # Para orgânico ou sem origem, validar normalmente
-              unless @appointment.valid?
-                raise ActiveRecord::RecordInvalid.new(@appointment)
-              end
-            end
+            @appointment.save!
           end
         end
         
@@ -1266,11 +1224,6 @@ module ClinicManagement
           :region_id,
           :patient_name,
           :referral_id,
-          :recapture_origin,
-          :recapture_description,
-          :recapture_description_extra,
-          recapture_actions: [],
-          recapture_screenshots: [],
           appointments_attributes: [
             :id,
             :service_id

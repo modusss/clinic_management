@@ -22,21 +22,12 @@ module ClinicManagement
     belongs_to :registered_by_user, class_name: 'User', optional: true
     has_one :prescription
     
-    # Relacionamentos para controle de remarcação
-    belongs_to :recapture_by_user, class_name: 'User', optional: true
-    belongs_to :recapture_audited_by, class_name: 'User', optional: true
-    has_many_attached :recapture_screenshots
-    
     # ============================================================================
     # SCOPES FOR SELF-BOOKING ANALYTICS
     # ============================================================================
     scope :self_booked, -> { where(self_booked: true) }
     scope :manually_booked, -> { where(self_booked: [false, nil]) }
     
-    # Validações para remarcação com esforço ativo
-    validates :recapture_actions, presence: true, if: -> { recapture_origin == 'active_effort' }
-    validate :at_least_one_action_selected, if: -> { recapture_origin == 'active_effort' }
-
     # ESSENTIAL: Prevents duplicate appointments for the same service + same patient (same name + same phone).
     # Covers both: same lead booked twice in same service, and different leads with identical name/phone.
     validate :no_duplicate_patient_same_service
@@ -79,12 +70,6 @@ module ClinicManagement
     def set_registered_by_user_fallback
       # Fallback para "Sistema" quando não há usuário definido
       write_attribute(:registered_by_user, "Sistema")
-    end
-    
-    def at_least_one_action_selected
-      if recapture_actions.blank? || recapture_actions.reject(&:blank?).empty?
-        errors.add(:recapture_actions, "deve ter pelo menos uma ação selecionada")
-      end
     end
 
     # Ensures no other appointment exists for the same service with the same patient
