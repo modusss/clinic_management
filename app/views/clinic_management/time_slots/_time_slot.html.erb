@@ -1,5 +1,6 @@
+<% hide_location = local_assigns[:hide_location] %>
 <div id="<%= dom_id time_slot %>" class="space-y-2">
-  <% if time_slot.service_location.present? %>
+  <% if time_slot.service_location.present? && !hide_location %>
     <p>
       <strong class="font-semibold">Local:</strong>
       <%= time_slot.service_location.name %>

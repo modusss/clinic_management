@@ -5,6 +5,15 @@ module ClinicManagement
     # GET /time_slots
     def index
       @time_slots = TimeSlot.for_location(current_service_location_id)
+      # Group by location: title above, cards below (avoids repeating "Local" in each card)
+      if current_service_location_id.to_s == "all"
+        @time_slots_grouped = @time_slots.group_by(&:service_location).to_a
+        @time_slots_grouped.sort_by! { |loc, _| loc&.name.to_s }
+      else
+        # Single location (internal or specific external): one section with location as title
+        loc = current_service_location_id.present? ? current_service_location : nil
+        @time_slots_grouped = @time_slots.any? ? [[loc, @time_slots]] : []
+      end
     end
 
     # GET /time_slots/1
@@ -74,7 +83,7 @@ module ClinicManagement
         @time_slot.weekday = day_number
         @time_slot.service_location_id = loc_id.presence
         if @time_slot.save
-          redirect_to @time_slot, notice: "Time slot was successfully created."
+          redirect_to time_slots_path, notice: "Horário criado com sucesso."
         else
           render :new, status: :unprocessable_entity
         end

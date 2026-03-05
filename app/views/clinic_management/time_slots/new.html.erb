@@ -1,6 +1,14 @@
 <%= breadcrumb({title: "Todos os horários", path: time_slots_path}, {title: "Novo horário", path: nil}) %>
 <div class="my-8 mx-auto max-w-md">
   <h1 class="text-2xl font-bold mb-4">Novo horário</h1>
+
+  <% if current_service_location_id.to_s == "all" %>
+    <div class="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-sm">
+      <p class="font-semibold mb-1">Modo: Todos os locais externos</p>
+      <p>O horário será criado para <strong>todos os locais externos</strong> no dia e horário informados. Locais que já possuem esse mesmo horário serão ignorados e não receberão duplicatas.</p>
+    </div>
+  <% end %>
+
   <%= render "form", time_slot: @time_slot %>
 
   <div class="mt-6">

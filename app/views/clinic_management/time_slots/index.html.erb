@@ -2,16 +2,39 @@
 
   <h1 class="text-2xl font-bold mb-4">Horários disponíveis para atendimento</h1>
 
-  <div id="time_slots" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-    <% @time_slots.each do |time_slot| %>
-      <div class="bg-white p-4 rounded-lg shadow-md">
-        <%= render time_slot %>
-        <div class="mt-2">
-          <%= link_to "Detalhes e edições", time_slot, class: "text-blue-600 hover:text-blue-800" %>
+  <% if @time_slots_grouped.present? %>
+    <%# Grouped by location when "Todos externos" is selected %>
+    <div id="time_slots" class="space-y-8">
+      <% @time_slots_grouped.each do |location, slots| %>
+        <section>
+          <h2 class="text-lg font-semibold text-gray-800 mb-3 pb-2 border-b border-gray-200">
+            <%= location&.name || "Interno" %>
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <% slots.each do |time_slot| %>
+              <div class="bg-white p-4 rounded-lg shadow-md">
+                <%= render time_slot, hide_location: true %>
+                <div class="mt-2">
+                  <%= link_to "Detalhes e edições", time_slot, class: "text-blue-600 hover:text-blue-800" %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </section>
+      <% end %>
+    </div>
+  <% else %>
+    <div id="time_slots" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <% @time_slots.each do |time_slot| %>
+        <div class="bg-white p-4 rounded-lg shadow-md">
+          <%= render time_slot %>
+          <div class="mt-2">
+            <%= link_to "Detalhes e edições", time_slot, class: "text-blue-600 hover:text-blue-800" %>
+          </div>
         </div>
-      </div>
-    <% end %>
-  </div>
+      <% end %>
+    </div>
+  <% end %>
 
   <div class="mt-6">
     <%= link_to "Novo horário", new_time_slot_path, class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" %>
