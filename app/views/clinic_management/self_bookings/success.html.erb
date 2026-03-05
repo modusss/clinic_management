@@ -60,10 +60,16 @@
         <i class="fas fa-calendar-alt text-emerald-600 mr-2"></i>
         <span class="font-semibold text-emerald-800 capitalize"><%= @formatted_date %></span>
       </div>
-      <div class="flex items-center justify-center">
+      <div class="flex items-center justify-center mb-2">
         <i class="fas fa-clock text-emerald-600 mr-2"></i>
         <span class="font-semibold text-emerald-800"><%= @formatted_time %></span>
       </div>
+      <% if @appointment.service.service_location.present? %>
+      <div class="flex items-center justify-center">
+        <i class="fas fa-map-marker-alt text-emerald-600 mr-2"></i>
+        <span class="font-semibold text-emerald-800"><%= @appointment.service.service_location.name %></span>
+      </div>
+      <% end %>
     </div>
   <% end %>
   

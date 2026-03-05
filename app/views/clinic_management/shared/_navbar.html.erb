@@ -50,16 +50,30 @@
             
             <%# Mobile share buttons - Referral (only when self_booking_enabled) %>
             <% if current_account&.self_booking_enabled? %>
-            <div class="mt-4 pt-4 border-t border-emerald-600 flex flex-col gap-2">
+            <div class="mt-4 pt-4 border-t border-emerald-600 flex flex-col gap-2 share-booking-block" 
+                 data-base-url="<%= referral_share_url %>" 
+                 data-base-message="<%= ERB::Util.url_encode(referral_share_message) %>">
+              <% if current_account&.multi_service_locations_enabled? && ClinicManagement::ServiceLocation.any? %>
+              <div>
+                <label for="share-loc-referral-mobile" class="block text-white text-xs mb-1">Local do atendimento</label>
+                <select id="share-loc-referral-mobile" class="share-loc-select w-full px-3 py-2 bg-emerald-800 border border-emerald-600 rounded text-white text-sm">
+                  <option value="" selected>Interno</option>
+                  <% ClinicManagement::ServiceLocation.order(:name).each do |loc| %>
+                    <option value="<%= loc.id %>"><%= loc.name %></option>
+                  <% end %>
+                </select>
+              </div>
+              <% end %>
               <a href="https://wa.me/?text=<%= ERB::Util.url_encode(referral_share_message) %>" 
                  target="_blank"
-                 class="navbar-share-btn flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg shadow-lg">
+                 class="navbar-share-btn share-whatsapp-link flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg shadow-lg">
                 <i class="fab fa-whatsapp text-lg"></i>
                 <span class="font-medium">Enviar via WhatsApp</span>
               </a>
               <button type="button"
-                      onclick="copyShareLink(this, '<%= referral_share_url %>')"
-                      class="navbar-copy-btn flex items-center justify-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm">
+                      onclick="copyShareLink(this, this.getAttribute('data-share-url'))"
+                      class="navbar-copy-btn share-copy-btn flex items-center justify-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm"
+                      data-share-url="<%= referral_share_url %>">
                 <i class="fas fa-copy"></i>
                 <span>Copiar link</span>
               </button>
@@ -142,21 +156,38 @@
         SHARE BOOKING LINK - Referral User (only when self_booking_enabled)
         ================================================================ %>
     <% if current_account&.self_booking_enabled? %>
-    <div class="mt-6 pt-4 border-t border-emerald-800">
+    <%
+      referral_base_url = referral_share_url
+      referral_wa_msg = referral_share_message
+    %>
+    <div class="mt-6 pt-4 border-t border-emerald-800 share-booking-block" 
+         data-base-url="<%= referral_base_url %>" 
+         data-base-message="<%= ERB::Util.url_encode(referral_wa_msg) %>">
       <p class="text-emerald-300 text-xs uppercase tracking-wider mb-3 px-3">Compartilhar</p>
       
-      <%# WhatsApp share button %>
-      <a href="https://wa.me/?text=<%= ERB::Util.url_encode(referral_share_message) %>" 
+      <% if current_account&.multi_service_locations_enabled? && ClinicManagement::ServiceLocation.any? %>
+      <div class="mb-3 px-3">
+        <label for="share-loc-referral" class="block text-emerald-200 text-xs mb-1">Local do atendimento</label>
+        <select id="share-loc-referral" class="share-loc-select w-full px-3 py-2 bg-emerald-900 border border-emerald-700 rounded text-emerald-100 text-sm">
+          <option value="" selected>Interno</option>
+          <% ClinicManagement::ServiceLocation.order(:name).each do |loc| %>
+            <option value="<%= loc.id %>"><%= loc.name %></option>
+          <% end %>
+        </select>
+      </div>
+      <% end %>
+      
+      <a href="https://wa.me/?text=<%= ERB::Util.url_encode(referral_wa_msg) %>" 
          target="_blank"
-         class="navbar-share-btn flex items-center justify-center gap-2 w-full px-3 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl">
+         class="navbar-share-btn share-whatsapp-link flex items-center justify-center gap-2 w-full px-3 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl">
         <i class="fab fa-whatsapp text-lg"></i>
         <span class="font-medium">Enviar via WhatsApp</span>
       </a>
       
-      <%# Copy link button %>
       <button type="button"
-              onclick="copyShareLink(this, '<%= referral_share_url %>')"
-              class="navbar-copy-btn flex items-center justify-center gap-2 w-full px-3 py-2 mt-2 bg-emerald-800 hover:bg-emerald-700 text-emerald-100 rounded-lg transition-all duration-200 text-sm">
+              onclick="copyShareLink(this, this.getAttribute('data-share-url'))"
+              class="navbar-copy-btn share-copy-btn flex items-center justify-center gap-2 w-full px-3 py-2 mt-2 bg-emerald-800 hover:bg-emerald-700 text-emerald-100 rounded-lg transition-all duration-200 text-sm"
+              data-share-url="<%= referral_base_url %>">
         <i class="fas fa-copy"></i>
         <span>Copiar link</span>
       </button>
@@ -213,16 +244,30 @@
          
          <%# Mobile share buttons - Staff (only when self_booking_enabled) %>
          <% if current_account&.self_booking_enabled? %>
-         <div class="mt-4 pt-4 border-t border-emerald-600 flex flex-col gap-2">
+         <div class="mt-4 pt-4 border-t border-emerald-600 flex flex-col gap-2 share-booking-block" 
+              data-base-url="<%= staff_share_url %>" 
+              data-base-message="<%= ERB::Util.url_encode(staff_share_message) %>">
+           <% if current_account&.multi_service_locations_enabled? && ClinicManagement::ServiceLocation.any? %>
+           <div>
+             <label for="share-loc-staff-mobile" class="block text-white text-xs mb-1">Local do atendimento</label>
+             <select id="share-loc-staff-mobile" class="share-loc-select w-full px-3 py-2 bg-emerald-800 border border-emerald-600 rounded text-white text-sm">
+               <option value="" selected>Interno</option>
+               <% ClinicManagement::ServiceLocation.order(:name).each do |loc| %>
+                 <option value="<%= loc.id %>"><%= loc.name %></option>
+               <% end %>
+             </select>
+           </div>
+           <% end %>
            <a href="https://wa.me/?text=<%= ERB::Util.url_encode(staff_share_message) %>" 
               target="_blank"
-              class="navbar-share-btn flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg shadow-lg">
+              class="navbar-share-btn share-whatsapp-link flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg shadow-lg">
              <i class="fab fa-whatsapp text-lg"></i>
              <span class="font-medium">Enviar via WhatsApp</span>
            </a>
            <button type="button"
-                   onclick="copyShareLink(this, '<%= staff_share_url %>')"
-                   class="navbar-copy-btn flex items-center justify-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm">
+                   onclick="copyShareLink(this, this.getAttribute('data-share-url'))"
+                   class="navbar-copy-btn share-copy-btn flex items-center justify-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm"
+                   data-share-url="<%= staff_share_url %>">
              <i class="fas fa-copy"></i>
              <span>Copiar link</span>
            </button>
@@ -312,21 +357,34 @@
       SHARE BOOKING LINK - Staff User (only when self_booking_enabled)
       ================================================================ %>
   <% if current_account&.self_booking_enabled? %>
-  <div class="mt-6 pt-4 border-t border-emerald-800">
+  <div class="mt-6 pt-4 border-t border-emerald-800 share-booking-block" 
+       data-base-url="<%= staff_share_url %>" 
+       data-base-message="<%= ERB::Util.url_encode(staff_share_message) %>">
     <p class="text-emerald-300 text-xs uppercase tracking-wider mb-3 px-3">Compartilhar</p>
     
-    <%# WhatsApp share button %>
+    <% if current_account&.multi_service_locations_enabled? && ClinicManagement::ServiceLocation.any? %>
+    <div class="mb-3 px-3">
+      <label for="share-loc-staff" class="block text-emerald-200 text-xs mb-1">Local do atendimento</label>
+      <select id="share-loc-staff" class="share-loc-select w-full px-3 py-2 bg-emerald-900 border border-emerald-700 rounded text-emerald-100 text-sm">
+        <option value="" selected>Interno</option>
+        <% ClinicManagement::ServiceLocation.order(:name).each do |loc| %>
+          <option value="<%= loc.id %>"><%= loc.name %></option>
+        <% end %>
+      </select>
+    </div>
+    <% end %>
+    
     <a href="https://wa.me/?text=<%= ERB::Util.url_encode(staff_share_message) %>" 
        target="_blank"
-       class="navbar-share-btn flex items-center justify-center gap-2 w-full px-3 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl">
+       class="navbar-share-btn share-whatsapp-link flex items-center justify-center gap-2 w-full px-3 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl">
       <i class="fab fa-whatsapp text-lg"></i>
       <span class="font-medium">Enviar via WhatsApp</span>
     </a>
     
-    <%# Copy link button %>
     <button type="button"
-            onclick="copyShareLink(this, '<%= staff_share_url %>')"
-            class="navbar-copy-btn flex items-center justify-center gap-2 w-full px-3 py-2 mt-2 bg-emerald-800 hover:bg-emerald-700 text-emerald-100 rounded-lg transition-all duration-200 text-sm">
+            onclick="copyShareLink(this, this.getAttribute('data-share-url'))"
+            class="navbar-copy-btn share-copy-btn flex items-center justify-center gap-2 w-full px-3 py-2 mt-2 bg-emerald-800 hover:bg-emerald-700 text-emerald-100 rounded-lg transition-all duration-200 text-sm"
+            data-share-url="<%= staff_share_url %>">
       <i class="fas fa-copy"></i>
       <span>Copiar link</span>
     </button>
@@ -427,6 +485,40 @@
 </style>
 
 <script>
+  /**
+   * Updates share URL with loc param when Local select changes (multi-region).
+   * Base URL has no loc; when user selects a location, adds loc=id.
+   */
+  function updateShareUrlWithLoc(block) {
+    var baseUrl = block.getAttribute('data-base-url') || '';
+    var baseMsg = block.getAttribute('data-base-message') || '';
+    var select = block.querySelector('.share-loc-select');
+    var copyBtn = block.querySelector('.share-copy-btn');
+    var waLink = block.querySelector('.share-whatsapp-link');
+    if (!select || !copyBtn || !waLink) return;
+    
+    var loc = select.value || '';
+    var url = baseUrl;
+    if (loc) {
+      url = baseUrl + (baseUrl.indexOf('?') >= 0 ? '&' : '?') + 'loc=' + encodeURIComponent(loc);
+    }
+    
+    copyBtn.setAttribute('data-share-url', url);
+    
+    var msg = decodeURIComponent(baseMsg);
+    var newMsg = msg.replace(baseUrl, url);
+    waLink.href = 'https://wa.me/?text=' + encodeURIComponent(newMsg);
+  }
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.share-booking-block').forEach(function(block) {
+      var select = block.querySelector('.share-loc-select');
+      if (select) {
+        select.addEventListener('change', function() { updateShareUrlWithLoc(block); });
+      }
+    });
+  });
+  
   /**
    * Copies the share link to clipboard and shows visual feedback.
    * 

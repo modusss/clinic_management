@@ -82,6 +82,19 @@
         <div class="font-semibold text-gray-900"><%= @formatted_time %></div>
       </div>
     </div>
+    
+    <%# ESSENTIAL: Show location when external (service has service_location) %>
+    <% if @service.service_location.present? %>
+    <div class="flex items-center">
+      <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center mr-3">
+        <i class="fas fa-map-marker-alt text-emerald-600"></i>
+      </div>
+      <div>
+        <div class="text-sm text-gray-500">Local</div>
+        <div class="font-semibold text-gray-900"><%= @service.service_location.name %></div>
+      </div>
+    </div>
+    <% end %>
   </div>
   
   <!-- Confirm button -->

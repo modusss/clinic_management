@@ -51,12 +51,15 @@
                 id: "registration-form",
                 class: "space-y-4" do %>
     
-    <%# Preserve URL params %>
+    <%# Preserve URL params (ref, reg_by, loc for multi-region) %>
     <% if params[:ref].present? %>
       <input type="hidden" name="ref" value="<%= params[:ref] %>">
     <% end %>
     <% if params[:reg_by].present? %>
       <input type="hidden" name="reg_by" value="<%= params[:reg_by] %>">
+    <% end %>
+    <% if params[:loc].present? || params.key?(:loc) %>
+      <input type="hidden" name="loc" value="<%= params[:loc].to_s %>">
     <% end %>
     
     <%# Patient name field %>

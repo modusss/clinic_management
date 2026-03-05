@@ -67,6 +67,15 @@ module ClinicManagement
         Rails.logger.info "[SelfBooking] Public registration - Registered by User ID #{params[:reg_by]} captured"
       end
       
+      # ESSENTIAL: Capture service location for multi-region self-booking (default: internal)
+      # loc="" or absent = interno; loc=id = specific external location
+      if params[:loc].present? || params.key?(:loc)
+        session[:self_booking_service_location_id] = params[:loc].to_s
+        Rails.logger.info "[SelfBooking] Public registration - Service location #{params[:loc].inspect} captured"
+      else
+        session[:self_booking_service_location_id] = "" # Default: interno
+      end
+      
       # Get referral name for display (if present)
       @referral = Referral.find_by(id: params[:ref]) if params[:ref].present?
       @sharer = User.find_by(id: params[:reg_by]) if params[:reg_by].present?
@@ -145,9 +154,10 @@ module ClinicManagement
       session[:self_booking_lead_id] = target_lead.id
       session[:self_booking_is_minor] = is_minor
       
-      # Preserve referral/reg_by from URL params if present
+      # Preserve referral/reg_by/loc from URL params if present
       session[:self_booking_referral_id] = params[:ref].to_i if params[:ref].present?
       session[:self_booking_registered_by_user_id] = params[:reg_by].to_i if params[:reg_by].present?
+      session[:self_booking_service_location_id] = params[:loc].to_s if params[:loc].present? || params.key?(:loc)
       
       # ESSENTIAL: Store the minor patient name temporarily so it can be added to distinct_patients
       # This ensures both guardian and minor appear in the patient selection screen
@@ -227,6 +237,13 @@ module ClinicManagement
       if params[:reg_by].present?
         session[:self_booking_registered_by_user_id] = params[:reg_by].to_i
         Rails.logger.info "[SelfBooking] Registered by User ID #{params[:reg_by]} captured from URL"
+      end
+      
+      # ESSENTIAL: Capture service location for multi-region (default: internal)
+      if params[:loc].present? || params.key?(:loc)
+        session[:self_booking_service_location_id] = params[:loc].to_s
+      else
+        session[:self_booking_service_location_id] = ""
       end
     end
 
@@ -737,7 +754,7 @@ module ClinicManagement
       target_lead = get_target_lead_for_booking
       
       # Get patient name - prioritize invitation name, then session, then lead
-      @appointment = target_lead.appointments.includes(:service, :invitation).order(created_at: :desc).first
+      @appointment = target_lead.appointments.includes(:invitation, service: :service_location).order(created_at: :desc).first
       @patient_name = @appointment&.invitation&.patient_name&.split&.first || 
                       session[:self_booking_patient_name]&.split&.first || 
                       target_lead.patient_first_name
@@ -825,10 +842,15 @@ module ClinicManagement
     end
 
     # ============================================================================
-    # Pre-loads available services (upcoming, not canceled)
+    # Pre-loads available services (upcoming, not canceled).
+    # ESSENTIAL: When multi_service_locations_enabled, filters by loc param (default: internal).
     # ============================================================================
     def set_available_services
       @available_services = Service.upcoming.order(date: :asc)
+      return unless self_booking_context_account&.multi_service_locations_enabled?
+      
+      loc_id = session[:self_booking_service_location_id].presence || ""
+      @available_services = @available_services.for_location(loc_id)
     end
 
     # ============================================================================
