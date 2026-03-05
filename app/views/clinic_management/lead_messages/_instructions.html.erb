@@ -108,8 +108,8 @@
     <h5 class="text-lg font-semibold mt-4 mb-2">Funcionalidade de Múltiplas Mensagens Sorteadas:</h5>
     <p>Para incluir múltiplas opções de frases na mensagem, que serão escolhidas aleatoriamente, use colchetes `[]` com opções separadas pelo símbolo `|`. Por exemplo, `[Opção 1|Opção 2|Opção 3]` escolherá aleatoriamente uma das opções.</p>
 
-    <!-- Preview Section -->
-    <% sample_appointment = get_sample_appointment_for_preview %>
+    <!-- Preview Section: Skip DB query for new mode (use fallback); edit mode needs real data -->
+    <% sample_appointment = (action_name == 'new') ? get_sample_appointment_for_preview(skip_query: true) : get_sample_appointment_for_preview %>
     <div class="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4" data-controller="message-preview">
         <div class="flex items-center justify-between mb-3">
             <h5 class="text-lg font-semibold text-blue-800 flex items-center">

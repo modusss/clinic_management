@@ -43,21 +43,28 @@ module ClinicManagement
       end
     end
 
-    def get_sample_appointment_for_preview
-      # Try to get a random appointment with complete data for preview
-      appointments = ClinicManagement::Appointment.includes(invitation: :lead, service: :service_type).all
-      
-      # Filter appointments with complete data
-      valid_appointments = appointments.select do |apt|
-        apt.invitation&.patient_name.present? &&
-        apt.invitation&.lead&.name.present? &&
-        apt.service&.date.present?
-      end
-      
-      # Return a random valid appointment
-      return valid_appointments.sample if valid_appointments.any?
+    # ESSENTIAL: Single efficient query - O(1) instead of loading ALL appointments.
+    # Previous implementation loaded every appointment into memory (very slow with many records).
+    # skip_query: true => return fallback immediately (for new form, no DB hit).
+    def get_sample_appointment_for_preview(skip_query: false)
+      return build_sample_appointment_fallback if skip_query
 
-      # Fallback: create sample data if no real appointments exist
+      apt = ClinicManagement::Appointment
+        .joins(:invitation, :service, :lead)
+        .where("clinic_management_invitations.patient_name IS NOT NULL AND clinic_management_invitations.patient_name != ''")
+        .where("clinic_management_leads.name IS NOT NULL AND clinic_management_leads.name != ''")
+        .where("clinic_management_services.date IS NOT NULL")
+        .includes(invitation: :lead, service: :service_type)
+        .order(Arel.sql("RANDOM()"))
+        .limit(1)
+        .first
+
+      return apt if apt
+
+      build_sample_appointment_fallback
+    end
+
+    def build_sample_appointment_fallback
       OpenStruct.new(
         invitation: OpenStruct.new(
           patient_name: "João Silva Santos",
