@@ -16,27 +16,45 @@
        data-phone-checker-csrf-token-value="<%= form_authenticity_token %>">
 
     <h2 class="text-lg font-bold mb-4">1. Dados da marcação</h2>
-    <div class="mb-4">
+    <% local_referral_id = local_assigns[:local_referral_id].to_s %>
+    <% is_referral_local = local_referral_id.present? && (local_assigns[:referral].to_s == local_referral_id) %>
+    <div class="mb-4" <%= raw("data-controller=\"referral-date-toggle\" data-referral-date-toggle-local-referral-id-value=\"#{local_referral_id}\"") if !referral?(current_user) && local_referral_id.present? %>>
       <% if referral? current_user %>
         <%= form.hidden_field :referral_id, value: user_referral.id %>
+        <div class="mb-4">
+          <%= form.label "Dia da marcação", class: "block text-gray-700 font-bold" %>
+          <%= form.collection_select :date, 
+            [ ["Hoje, " + Date.current.strftime("%d/%m/%Y"), Date.current],
+              ["Ontem, " + (Date.current - 1.day).strftime("%d/%m/%Y"), (Date.current - 1.day)],
+              ["Há 2 dias, " + (Date.current - 2.days).strftime("%d/%m/%Y"), (Date.current - 2.days)],
+              ["Há 3 dias, " + (Date.current - 3.days).strftime("%d/%m/%Y"), (Date.current - 3.days)]
+            ], 
+            :last, :first, {selected: date},
+            class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          %>
+        </div>
       <% else %>
         <%= form.label :referral_id, "Indicador", class: "block text-gray-700 font-bold" %>
-        <%= form.collection_select :referral_id, referrals, :id, :name, {selected: referral}, {class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline"} %>
+        <%= form.collection_select :referral_id, referrals, :id, :name, {selected: referral},
+            {class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline",
+             data: { referral_date_toggle_target: "referralSelect", action: "change->referral-date-toggle#toggle" }} %>
+        <%# When Indicador is "Local", Dia da marcação is hidden (implied today). %>
+        <%= form.hidden_field :date, value: Date.current, data: { referral_date_toggle_target: "dateHidden" }, disabled: !is_referral_local %>
+        <div class="mb-4" data-referral-date-toggle-target="dateField" style="<%= 'display:none' if is_referral_local %>">
+          <%= form.label "Dia da marcação", class: "block text-gray-700 font-bold" %>
+          <%= form.collection_select :date, 
+            [ ["Hoje, " + Date.current.strftime("%d/%m/%Y"), Date.current],
+              ["Ontem, " + (Date.current - 1.day).strftime("%d/%m/%Y"), (Date.current - 1.day)],
+              ["Há 2 dias, " + (Date.current - 2.days).strftime("%d/%m/%Y"), (Date.current - 2.days)],
+              ["Há 3 dias, " + (Date.current - 3.days).strftime("%d/%m/%Y"), (Date.current - 3.days)]
+            ], 
+            :last, :first, {selected: date.presence || Date.current},
+            {class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline",
+             data: { referral_date_toggle_target: "dateSelect" },
+             disabled: is_referral_local}
+          %>
+        </div>
       <% end %>
-    </div>
-    <div class="mb-4">
-      <%= form.label "Dia da marcação", class: "block text-gray-700 font-bold" %>
-      <%= form.collection_select :date, 
-        [ ["Hoje, " + Date.current.strftime("%d/%m/%Y"), Date.current],
-          ["Ontem, " + (Date.current - 1.day).strftime("%d/%m/%Y"), (Date.current - 1.day)],
-          ["Há 2 dias, " + (Date.current - 2.days).strftime("%d/%m/%Y"), (Date.current - 2.days)],
-          ["Há 3 dias, " + (Date.current - 3.days).strftime("%d/%m/%Y"), (Date.current - 3.days)]
-        ], 
-        :last, 
-        :first,
-        {selected: date},
-        class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-      %>
     </div>
 
     <%# ESSENTIAL: Local (Service Location) select - filters "Dia destinado" options below. %>
@@ -44,7 +62,7 @@
     <% if local_assigns.key?(:service_locations_for_select) && service_locations_for_select.present? %>
       <div class="mb-4" data-controller="service-location-filter"
            data-service-location-filter-new-url-value="<%= clinic_management.new_invitation_path %>">
-        <label for="invitation_service_location_filter" class="block text-gray-700 font-bold">Local</label>
+        <label for="invitation_service_location_filter" class="block text-gray-700 font-bold">Local do atendimento</label>
         <select id="invitation_service_location_filter"
                 class="w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 data-service-location-filter-target="select"

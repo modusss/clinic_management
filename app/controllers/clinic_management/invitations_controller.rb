@@ -105,6 +105,8 @@ module ClinicManagement
       @service_locations_for_select = build_invitation_service_locations_options
       @regions = Region.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
       @default_region_id_for_external = Region.find_by(name: "Local")&.id
+      # ESSENTIAL: Default Indicador = "Local" for non-referral users. Referral users get their own (hidden field).
+      @default_referral_id = Referral.find_by(name: "Local")&.id
       @invitation = Invitation.new
       @appointment = @invitation.appointments.build
       @lead = @invitation.build_lead
@@ -509,7 +511,8 @@ module ClinicManagement
         referral: @invitation.referral.id
         }
       before_attributes = {
-        referral: @invitation.referral.id,
+        referral: Referral.find_by(name: "Local")&.id,
+        local_referral_id: Referral.find_by(name: "Local")&.id,
         region: @invitation.region.id,
         service: @appointment.service.id,
         date: @invitation.date,
