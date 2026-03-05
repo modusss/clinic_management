@@ -181,8 +181,9 @@
 
       def search_index_today
         if params[:q].present?
-          # get all appointments from the services which has date = Date.current
-          appointments = Appointment.where(service_id: Service.where(date: Date.current).pluck(:id))
+          # ESSENTIAL: Filter by current_service_location_id so search respects selected location.
+          base_services = Service.for_location(current_service_location_id).where(date: Date.current)
+          appointments = Appointment.where(service_id: base_services.pluck(:id))
           # find the appointments with the given patient_name on params[:q]
           @appointments = appointments.select { |appointment| appointment.invitation.patient_name.downcase.include?(params[:q].downcase) }
           # display via turbo_stream a tabel of results on div id #appointment-results

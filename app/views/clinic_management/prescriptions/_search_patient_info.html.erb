@@ -1,7 +1,10 @@
-
-
-<div class="flex flex-col items-center justify-center py-2">
-    <div class="max-w-md w-full space-y-8">
-        <%= render "show_table", prescription: prescription %>
-    </div>
+<%# ESSENTIAL: Prescription preview when single patient match. Rendered via Turbo into #appointment-info. %>
+<div class="flex flex-col items-center justify-center py-4 px-4 bg-gray-50 rounded-lg border border-gray-200">
+  <div class="max-w-md w-full space-y-4">
+    <h2 class="text-xl font-bold text-gray-900">
+      Receita para <%= prescription.appointment.invitation.patient_name %>
+    </h2>
+    <%= render "show_table", prescription: prescription %>
+    <%= link_to "Ver receita", clinic_management.show_today_appointment_prescription_path(prescription.appointment, prescription), class: "inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+  </div>
 </div>
