@@ -4,7 +4,7 @@ module ClinicManagement
 
     # GET /time_slots
     def index
-      @time_slots = TimeSlot.where(service_location_id: current_service_location_id)
+      @time_slots = TimeSlot.for_location(current_service_location_id)
     end
 
     # GET /time_slots/1
@@ -21,15 +21,63 @@ module ClinicManagement
     end
 
     # POST /time_slots
+    # When "all" externals selected: create one TimeSlot per ServiceLocation (shared across all externals).
+    # Otherwise: create single TimeSlot for the selected location.
     def create
       day_number = get_day_field(params[:time_slot][:weekday])
-      @time_slot = TimeSlot.new(time_only_slot_params)
-      @time_slot.weekday = day_number
-      @time_slot.service_location_id = current_service_location_id
-      if @time_slot.save
-        redirect_to @time_slot, notice: "Time slot was successfully created."
+      loc_id = current_service_location_id
+
+      if loc_id.to_s == "all"
+        # Create one TimeSlot per external ServiceLocation that does NOT already have this slot (weekday + start_time + end_time).
+        locations = ServiceLocation.order(:name)
+        if locations.empty?
+          redirect_to time_slots_path, alert: "Nenhum local externo cadastrado. Cadastre em Locais de Atendimento."
+          return
+        end
+        # Parse times via model to match DB format (params may come as string or hash)
+        base_slot = TimeSlot.new(time_only_slot_params)
+        base_slot.weekday = day_number
+        start_t = base_slot.start_time
+        end_t = base_slot.end_time
+        created_count = 0
+        skipped_count = 0
+        errors = []
+        locations.each do |loc|
+          existing = TimeSlot.find_by(weekday: day_number, start_time: start_t, end_time: end_t, service_location_id: loc.id)
+          if existing
+            skipped_count += 1
+            next
+          end
+          slot = TimeSlot.new(time_only_slot_params)
+          slot.weekday = day_number
+          slot.service_location_id = loc.id
+          if slot.save
+            created_count += 1
+          else
+            errors.concat(slot.errors.full_messages)
+          end
+        end
+        if errors.any?
+          @time_slot = TimeSlot.new(time_only_slot_params)
+          @time_slot.weekday = day_number
+          flash.now[:alert] = errors.uniq.join("; ")
+          render :new, status: :unprocessable_entity
+        elsif created_count.zero? && skipped_count > 0
+          redirect_to time_slots_path, notice: "Este horário já existe em todos os locais externos (#{skipped_count} locais). Nenhum novo criado."
+        else
+          msg = ["Horários criados para #{created_count} local(is) externo(s)."]
+          msg << "#{skipped_count} já existiam." if skipped_count > 0
+          redirect_to time_slots_path, notice: msg.join(" ")
+        end
       else
-        render :new, status: :unprocessable_entity
+        @time_slot = TimeSlot.new(time_only_slot_params)
+        @time_slot.weekday = day_number
+        @time_slot.service_location_id = loc_id.presence
+        if @time_slot.save
+          redirect_to @time_slot, notice: "Time slot was successfully created."
+        else
+          render :new, status: :unprocessable_entity
+        end
       end
     end
 

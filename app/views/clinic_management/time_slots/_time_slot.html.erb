@@ -1,4 +1,10 @@
 <div id="<%= dom_id time_slot %>" class="space-y-2">
+  <% if time_slot.service_location.present? %>
+    <p>
+      <strong class="font-semibold">Local:</strong>
+      <%= time_slot.service_location.name %>
+    </p>
+  <% end %>
   <p>
     <strong class="font-semibold">Dia da semana:</strong>
     <%= show_week_day time_slot.weekday %>

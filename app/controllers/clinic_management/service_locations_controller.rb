@@ -66,7 +66,7 @@ module ClinicManagement
       end
     end
 
-    # POST /service_locations/switch - switch context. Params: location_id (optional, blank = internal)
+    # POST /service_locations/switch - switch context. Params: location_id (optional, blank = internal, "all" = all externals)
     # Persists in session + cookie so selection survives page refresh.
     def switch
       location_id = params[:location_id].presence

@@ -111,7 +111,8 @@ module ClinicManagement
         service.start_time = time_slot.start_time
         service.end_time = time_slot.end_time
         service.date = date
-        service.service_location_id = current_service_location_id
+        # ESSENTIAL: Inherit location from time_slot (supports "all" mode where slots come from different externals)
+        service.service_location_id = time_slot.service_location_id
         @services << service
       end
 
@@ -329,7 +330,8 @@ module ClinicManagement
         if ser.canceled
           service_name = "#{service_name} <p style='color: red;'>(cancelado)</p>".html_safe
         end
-        row = [
+        # When "Todos externos" selected: add Local column as first column
+        base_row = [
           { header: "Serviço", content: service_name },
           { header: "Data", content: helpers.link_to(ser.date.strftime("%d/%m/%Y"), link, class: "text-blue-500 hover:text-blue-700") },
           { header: "Dia da semana", content: helpers.show_week_day(ser.weekday) },
@@ -338,6 +340,11 @@ module ClinicManagement
           { header: "Pacientes", content: total_appointments },
           { header: "Compareceram", content: scheduled, class: "text-blue-700" }
         ]
+        row = if current_service_location_id.to_s == "all"
+          base_row.unshift({ header: "Local", content: ser.service_location&.name || "Interno" })
+        else
+          base_row
+        end
 
         if helpers.is_manager_above?
           sales = sales_count(ser)
