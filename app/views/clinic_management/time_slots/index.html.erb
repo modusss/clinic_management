@@ -2,7 +2,46 @@
 
   <h1 class="text-2xl font-bold mb-4">Horários disponíveis para atendimento</h1>
 
-  <% if @time_slots_grouped.present? %>
+  <% if current_service_location_id.to_s == "all" && @view_location_options.present? %>
+    <div class="mb-6">
+      <%= form_with url: time_slots_path, method: :get, local: true, data: { turbo: false }, class: "flex items-center gap-2" do |f| %>
+        <label for="view_location_select" class="text-sm font-medium text-gray-700">Visualizar:</label>
+        <select name="view_location" id="view_location_select" onchange="this.form.submit()" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="all" <%= params[:view_location].blank? || params[:view_location] == "all" ? "selected" : "" %>>Todos (por dia)</option>
+          <% @view_location_options.each do |loc| %>
+            <option value="<%= loc.id %>" <%= params[:view_location].to_s == loc.id.to_s ? "selected" : "" %>><%= loc.name %></option>
+          <% end %>
+        </select>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if @view_mode == "by_day" && @time_slots_by_day.present? %>
+    <%# Day-first: location names + edit icon per slot, compact layout %>
+    <div id="time_slots" class="space-y-8">
+      <% @time_slots_by_day.each do |weekday, slots| %>
+        <% slots_by_time = slots.group_by { |s| [s.start_time&.strftime("%H:%M"), s.end_time&.strftime("%H:%M")] } %>
+        <div class="mb-6">
+          <h2 class="text-lg font-semibold text-gray-800 mb-2"><%= show_week_day(weekday) %></h2>
+          <% slots_by_time.each do |(start_str, end_str), time_slots| %>
+            <div class="mb-4">
+              <h3 class="text-sm font-medium text-gray-700 mb-2"><%= start_str %> - <%= end_str %></h3>
+              <div class="flex flex-wrap items-center gap-3">
+                <% time_slots.each do |time_slot| %>
+                  <span class="inline-flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm border border-gray-100">
+                    <%= time_slot.service_location&.name %>
+                    <%= link_to edit_time_slot_path(time_slot), class: "text-blue-600 hover:text-blue-800", title: "Editar" do %>
+                      <i class="fas fa-edit" aria-hidden="true"></i>
+                    <% end %>
+                  </span>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% elsif @time_slots_grouped.present? %>
     <%# Grouped by location, then by weekday (Domingo..Sábado) %>
     <div id="time_slots" class="space-y-8">
       <% @time_slots_grouped.each do |location, days_slots| %>

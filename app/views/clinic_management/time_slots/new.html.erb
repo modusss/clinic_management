@@ -1,5 +1,5 @@
 <% page_title = if current_service_location.present?
-  "Novo horário para #{current_service_location.name}"
+  "Novo horário de atendimento"
 elsif current_service_location_id.to_s == "all"
   "Novo horário (todos os locais externos)"
 else
@@ -7,6 +7,9 @@ else
 end %>
 <%= breadcrumb({title: "Todos os horários", path: time_slots_path}, {title: page_title, path: nil}) %>
 <div class="my-8 mx-auto max-w-md">
+  <p class="text-sm text-gray-600 mb-2">
+    Local: <strong><%= current_service_location.present? ? current_service_location.name : (current_service_location_id.to_s == "all" ? "Todos os locais externos" : "Interno") %></strong>
+  </p>
   <h1 class="text-2xl font-bold mb-4"><%= page_title %></h1>
 
   <% if current_service_location_id.to_s == "all" %>

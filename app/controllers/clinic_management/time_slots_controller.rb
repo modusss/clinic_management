@@ -5,18 +5,30 @@ module ClinicManagement
     # GET /time_slots
     def index
       @time_slots = TimeSlot.for_location(current_service_location_id)
-      # Group by location, then by weekday (Domingo=1 to Sábado=7) for ordered display
+      @view_location_id = params[:view_location].presence
+
       if current_service_location_id.to_s == "all"
-        by_loc = @time_slots.group_by(&:service_location).to_a
-        by_loc.sort_by! { |loc, _| loc&.name.to_s }
+        @view_location_options = ServiceLocation.order(:name)
+        if @view_location_id.present? && @view_location_id != "all"
+          # Filter to specific location: location-first display
+          loc = ServiceLocation.find_by(id: @view_location_id)
+          slots = @time_slots.select { |s| s.service_location_id.to_s == @view_location_id }
+          by_day = (1..7).map { |day| [day, slots.select { |s| s.weekday == day }.sort_by(&:start_time)] }.select { |_, s| s.any? }
+          @time_slots_grouped = loc ? [[loc, by_day]] : []
+          @view_mode = "by_location"
+        else
+          # "Todos": day-first display (see which locations/hours repeat)
+          @time_slots_by_day = (1..7).map { |day| [day, @time_slots.select { |s| s.weekday == day }.sort_by(&:start_time)] }.select { |_, s| s.any? }
+          @view_mode = "by_day"
+        end
       else
+        @view_mode = "by_location"
         loc = current_service_location_id.present? ? current_service_location : nil
         by_loc = @time_slots.any? ? [[loc, @time_slots]] : []
-      end
-      # Within each location: group by weekday, order Domingo..Sábado; within each day, sort by start_time (earliest first)
-      @time_slots_grouped = by_loc.map do |location, slots|
-        by_day = (1..7).map { |day| [day, slots.select { |s| s.weekday == day }.sort_by(&:start_time)] }.select { |_, s| s.any? }
-        [location, by_day]
+        @time_slots_grouped = by_loc.map do |location, slots|
+          by_day = (1..7).map { |day| [day, slots.select { |s| s.weekday == day }.sort_by(&:start_time)] }.select { |_, s| s.any? }
+          [location, by_day]
+        end
       end
     end
 
@@ -99,7 +111,9 @@ module ClinicManagement
       day_number = get_day_field(params[:time_slot][:weekday])
       @time_slot.weekday = day_number
       if @time_slot.update(time_only_slot_params)
-        redirect_to @time_slot, notice: "Time slot was successfully updated."
+        redirect_path = time_slots_path
+        redirect_path = time_slots_path(view_location: @time_slot.service_location_id) if @time_slot.service_location_id.present?
+        redirect_to redirect_path, notice: "Horário atualizado com sucesso."
       else
         render :edit, status: :unprocessable_entity
       end

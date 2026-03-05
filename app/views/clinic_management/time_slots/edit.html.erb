@@ -1,5 +1,10 @@
 <%= breadcrumb({title: "Todos os horários", path: time_slots_path}, {title: "Editar horário", path: nil}) %>
 <div class="my-8 mx-auto max-w-md">
+  <% if @time_slot.service_location.present? %>
+    <p class="text-sm text-gray-600 mb-2">Local: <strong><%= @time_slot.service_location.name %></strong></p>
+  <% else %>
+    <p class="text-sm text-gray-600 mb-2">Local: <strong>Interno</strong></p>
+  <% end %>
   <h1 class="text-2xl font-bold mb-4">Edição de horário</h1>
   <%= render "form", time_slot: @time_slot %>
 

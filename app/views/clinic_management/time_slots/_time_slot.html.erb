@@ -1,5 +1,6 @@
 <% hide_location = local_assigns[:hide_location] %>
 <% hide_weekday = local_assigns[:hide_weekday] %>
+<% hide_time = local_assigns[:hide_time] %>
 <div id="<%= dom_id time_slot %>" class="space-y-2">
   <% if time_slot.service_location.present? && !hide_location %>
     <p>
@@ -14,13 +15,15 @@
     </p>
   <% end %>
 
-  <p>
-    <strong class="font-semibold">Horário de início:</strong>
-    <%= time_slot.start_time.strftime("%H:%M") %>
-  </p>
+  <% unless hide_time %>
+    <p>
+      <strong class="font-semibold">Horário de início:</strong>
+      <%= time_slot.start_time.strftime("%H:%M") %>
+    </p>
 
-  <p>
-    <strong class="font-semibold">Horário de término:</strong>
-    <%= time_slot.end_time.strftime("%H:%M") %>
-  </p>
+    <p>
+      <strong class="font-semibold">Horário de término:</strong>
+      <%= time_slot.end_time.strftime("%H:%M") %>
+    </p>
+  <% end %>
 </div>
