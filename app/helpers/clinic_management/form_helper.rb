@@ -20,6 +20,10 @@ module ClinicManagement
               options[:html][:data][:lead_phone_validator_lead_id_value] = lead_id
               options[:html][:data][:lead_phone_validator_check_url_value] = check_url
             end
+
+            # Extract custom submit labels (not passed to form_for)
+            submit_label_create = options.delete(:submit_label_create)
+            submit_label_update = options.delete(:submit_label_update)
             
             form_for(record, options) do |f|
                 # Exibir erros de validação do modelo
@@ -91,7 +95,13 @@ module ClinicManagement
                     # add more cases here for other field types
                     end
                 end
-                submit_label = f.object.new_record? ? I18n.t('helpers.submit.create', model: f.object.model_name.human) : I18n.t('helpers.submit.update', model: f.object.model_name.human)
+                submit_label = if f.object.new_record? && submit_label_create.present?
+                  submit_label_create
+                elsif f.object.persisted? && submit_label_update.present?
+                  submit_label_update
+                else
+                  f.object.new_record? ? I18n.t('helpers.submit.create', model: f.object.model_name.human) : I18n.t('helpers.submit.update', model: f.object.model_name.human)
+                end
                 
                 # Adicionar target para validação de telefone
                 submit_options = { class: 'bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4' }

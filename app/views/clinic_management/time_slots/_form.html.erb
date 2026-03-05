@@ -3,4 +3,4 @@
   {type: 'time', input: :start_time, name: 'Início', strftime: "%H:%m", placeholder: time_slot.start_time},
   {type: 'time', input: :end_time, name: 'Fim', strftime: "%H:%m"}
 ] %>
-<%= standardized_form_for(time_slot, form_fields) %>
+<%= standardized_form_for(time_slot, form_fields, submit_label_create: "Criar novo horário de atendimento", submit_label_update: "Atualizar horário de atendimento") %>
