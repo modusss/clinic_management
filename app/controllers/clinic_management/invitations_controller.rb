@@ -6,7 +6,7 @@ module ClinicManagement
 
     # GET /invitations
     def index
-      @referrals = Referral.all
+      @referrals = referrals_for_select
       
       # Check if viewing annual summary
       @view_mode = params[:view_mode] || 'monthly'
@@ -110,7 +110,7 @@ module ClinicManagement
       @invitation = Invitation.new
       @appointment = @invitation.appointments.build
       @lead = @invitation.build_lead
-      @referrals = Referral.all    
+      @referrals = referrals_for_select
       begin
         @today_invitations = helpers.user_referral.invitations.where('created_at >= ?', Date.current.beginning_of_day).limit(100)
         @today_invitations = @today_invitations.map do |invitation|
@@ -182,7 +182,7 @@ module ClinicManagement
       @invitation = Invitation.new
       @appointment = @invitation.appointments.build
       @lead = @invitation.build_lead
-      @referrals = Referral.all    
+      @referrals = referrals_for_select
     end
 
     def create_patient_fitted
@@ -525,7 +525,7 @@ module ClinicManagement
       new_form_sets
       new_form_locals = {
           invitation: @invitation,
-          referrals: Referral.all,
+          referrals: referrals_for_select,
           regions: Region.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
       }
       respond_to do |format|
@@ -552,7 +552,7 @@ module ClinicManagement
         @invitation = Invitation.new
         @appointment = @invitation.appointments.build
         @lead = @invitation.build_lead
-        @referrals = Referral.all
+        @referrals = referrals_for_select
       end
 
 
@@ -1180,7 +1180,7 @@ module ClinicManagement
         @invitation = Invitation.new
         @appointment = @invitation.appointments.build
         @lead = @invitation.build_lead
-        @referrals = Referral.all
+        @referrals = referrals_for_select
       end
 
       def responsible_content(invite)
@@ -1207,6 +1207,11 @@ module ClinicManagement
         loc_id = service_location_id.presence
         scope = scope.for_location(multi_service_locations_enabled? ? loc_id : nil)
         scope
+      end
+
+      # Referrals for Indicador select, with "Local" first.
+      def referrals_for_select
+        Referral.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
       end
 
       # Builds options for the "Local" select in new invitation form.
