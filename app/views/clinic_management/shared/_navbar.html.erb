@@ -198,7 +198,7 @@
          <%= link_to "Atendimentos", clinic_management.services_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'services'}" %>
          <%= link_to "Meus Agendamentos", clinic_management.my_reschedules_appointments_path, class: "text-white hover:text-emerald-300 #{'active' if action_name == 'my_reschedules'}" %>
          <% unless clinical_assistant?(current_user) %>
-         <%= link_to "Regiões", clinic_management.regions_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'regions'}" %>
+         <%= link_to "Regiões de captação", clinic_management.regions_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'regions'}" %>
          <%= link_to "Locais de Atendimento", clinic_management.service_locations_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'service_locations'}" if current_account&.multi_service_locations_enabled? %>
          <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'time_slots'}" %>
          <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'lead_messages'}"  %>
