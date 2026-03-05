@@ -5,14 +5,18 @@ module ClinicManagement
     # GET /time_slots
     def index
       @time_slots = TimeSlot.for_location(current_service_location_id)
-      # Group by location: title above, cards below (avoids repeating "Local" in each card)
+      # Group by location, then by weekday (Domingo=1 to Sábado=7) for ordered display
       if current_service_location_id.to_s == "all"
-        @time_slots_grouped = @time_slots.group_by(&:service_location).to_a
-        @time_slots_grouped.sort_by! { |loc, _| loc&.name.to_s }
+        by_loc = @time_slots.group_by(&:service_location).to_a
+        by_loc.sort_by! { |loc, _| loc&.name.to_s }
       else
-        # Single location (internal or specific external): one section with location as title
         loc = current_service_location_id.present? ? current_service_location : nil
-        @time_slots_grouped = @time_slots.any? ? [[loc, @time_slots]] : []
+        by_loc = @time_slots.any? ? [[loc, @time_slots]] : []
+      end
+      # Within each location: group by weekday, order Domingo..Sábado; within each day, sort by start_time (earliest first)
+      @time_slots_grouped = by_loc.map do |location, slots|
+        by_day = (1..7).map { |day| [day, slots.select { |s| s.weekday == day }.sort_by(&:start_time)] }.select { |_, s| s.any? }
+        [location, by_day]
       end
     end
 

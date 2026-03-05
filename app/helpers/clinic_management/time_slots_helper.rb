@@ -1,5 +1,10 @@
 module ClinicManagement
   module TimeSlotsHelper
+    WEEKDAY_NAMES = { 1 => "Domingo", 2 => "Segunda-feira", 3 => "Terça-feira", 4 => "Quarta-feira", 5 => "Quinta-feira", 6 => "Sexta-feira", 7 => "Sábado" }.freeze
+
+    def show_week_day(weekday)
+      WEEKDAY_NAMES[weekday.to_i]
+    end
     # Returns array of { date:, time_slot:, formatted_date:, formatted_time: } for new service form.
     # ESSENTIAL: Filters by current_service_location_id (nil = internal, "all" = all externals, id = specific).
     # ESSENTIAL: Excludes slots where a Service already exists for that date+time+location (prevents duplicates).
