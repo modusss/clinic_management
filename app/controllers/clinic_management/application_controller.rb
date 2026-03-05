@@ -9,7 +9,8 @@ module ClinicManagement
     private
 
     def set_referral
-      @current_referral = Referral.find_by(code: current_user.memberships.last.code)
+      code = current_user.memberships.last&.code
+      @current_referral = code.present? ? Referral.find_by(code: code) : nil
     end
 
     def set_company_info
@@ -28,13 +29,41 @@ module ClinicManagement
     # Persists in session + cookie so selection survives page refresh.
     # When multi_service_locations_enabled is false: always returns nil (internal) so cookie/session
     # do not leak external context; filters (Services, Prescriptions, etc.) show only internal.
+    # When doctor: only returns locations they're allowed to use (allowed_service_locations).
     def current_service_location_id
       return nil unless current_account&.multi_service_locations_enabled?
       id = session[:clinic_service_location_id].presence || cookies[:clinic_service_location_id].presence
       session[:clinic_service_location_id] = id if id.present? && session[:clinic_service_location_id].blank?
+
+      # ESSENTIAL: Doctors can only see locations they're associated with.
+      if doctor_user?
+        return nil if id.blank? # internal is always allowed
+        unless current_user.allowed_service_locations.exists?(id)
+          session[:clinic_service_location_id] = nil
+          cookies.delete(:clinic_service_location_id)
+          return nil
+        end
+      end
+
       id
     end
     helper_method :current_service_location_id
+
+    # ESSENTIAL: Whether current user is a doctor (Membership.role == "doctor").
+    def doctor_user?
+      helpers.current_membership&.role == "doctor"
+    end
+    helper_method :doctor_user?
+
+    # ESSENTIAL: For doctors, returns [["Interno", ""], ["Local X", id], ...] for location selector.
+    # Only includes locations the doctor is allowed to use.
+    def doctor_service_location_options
+      return [] unless doctor_user? && current_account&.multi_service_locations_enabled?
+      internal = [["Interno", ""]]
+      allowed = current_user.allowed_service_locations.order(:name).map { |loc| [loc.name, loc.id.to_s] }
+      internal + allowed
+    end
+    helper_method :doctor_service_location_options
 
     def current_service_location
       return nil if current_service_location_id.blank?

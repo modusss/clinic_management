@@ -31,6 +31,23 @@
     </div>
   <% end %>
 
+  <%# ESSENTIAL: Doctors allowed to see this location in "atendimento de hoje" menu. Unchecked = cannot see. %>
+  <% if defined?(@active_doctors) && @active_doctors.present? %>
+    <div class="border-t pt-4 mt-4">
+      <h3 class="text-sm font-medium text-gray-700 mb-2">Doutores que podem ver este local</h3>
+      <p class="text-lg text-gray-500 mb-3">Marque os doutores que podem ver e usar este local externo no menu de atendimento de hoje. Se nenhum for marcado, apenas usuários não-doutores verão este local no seletor.</p>
+      <div class="space-y-2 max-h-48 overflow-y-auto rounded border border-gray-200 p-3 bg-gray-50">
+        <% @active_doctors.each do |doc| %>
+          <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 rounded">
+            <%= check_box_tag "service_location[allowed_doctor_ids][]", doc.id, @service_location.allowed_doctor_ids.include?(doc.id), class: "rounded border-gray-300" %>
+            <span class="text-sm text-gray-700"><%= doc.name %></span>
+          </label>
+        <% end %>
+      </div>
+      <%= hidden_field_tag "service_location[allowed_doctor_ids][]", "" %>
+    </div>
+  <% end %>
+
   <div class="flex gap-2">
     <%= f.submit class: "inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" %>
     <%= link_to "Cancelar", service_locations_path, class: "inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50" %>

@@ -14,6 +14,8 @@ module ClinicManagement
     has_many :services, dependent: :nullify
     has_many :service_location_referrals, dependent: :destroy, class_name: "ClinicManagement::ServiceLocationReferral"
     has_many :referrals, through: :service_location_referrals, source: :referral
+    has_many :service_location_users, dependent: :destroy, class_name: "ClinicManagement::ServiceLocationUser"
+    has_many :allowed_doctors, through: :service_location_users, source: :user
 
     validates :name, presence: true
   end

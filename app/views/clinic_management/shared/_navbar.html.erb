@@ -4,6 +4,12 @@
       <div class="flex items-center text-white mr-6">
         <span class="font-semibold text-xl tracking-tight">Lipepay <span class="ml-1 text-xs bg-white text-emerald-700 rounded px-2 py-0.5 font-medium shadow-sm">atendimentos</span></span>
       </div>
+      <%# ESSENTIAL: Location selector for doctors - Interno + their allowed externals. %>
+      <% if doctor_service_location_options.present? && doctor_service_location_options.size > 1 %>
+        <%= form_with url: clinic_management.switch_service_locations_path, method: :post, local: true, data: { turbo: false }, class: "inline" do |f| %>
+          <%= f.select :location_id, options_for_select(doctor_service_location_options, current_service_location_id.to_s), {}, { class: "text-sm rounded px-2 py-1 text-gray-800 ml-2", onchange: "this.form.submit()" } %>
+        <% end %>
+      <% end %>
       <% if user_signed_in? %>
         <div class="flex items-center">
           <span class="mr-4 text-white lg:hidden">Olá, <%= current_user.name %></span>

@@ -5,6 +5,7 @@ module ClinicManagement
   # Internal = NULL service_location_id; external = ServiceLocation record.
   # ESSENTIAL: All actions require multi_service_locations_enabled on current_account.
   class ServiceLocationsController < ApplicationController
+    skip_before_action :redirect_doctor_users, only: [:switch]
     before_action :require_multi_service_locations_enabled!
     before_action :set_service_location, only: %i[show edit update destroy]
 
@@ -13,10 +14,12 @@ module ClinicManagement
       @service_locations = ServiceLocation.order(:name).all
       @rows = @service_locations.map.with_index(1) do |loc, index|
         indicators_text = loc.referrals.any? ? loc.referrals.order(:name).pluck(:name).join(", ") : "—"
+        doctors_text = loc.allowed_doctors.any? ? loc.allowed_doctors.order(:name).pluck(:name).join(", ") : "—"
         [
           { header: "#", content: index },
           { header: "Nome", content: loc.name },
           { header: "Indicadores associados", content: indicators_text },
+          { header: "Doutores associados", content: doctors_text },
           { header: "Time Slots", content: loc.time_slots.count },
           { header: "Services", content: loc.services.count },
           { header: "Editar", content: edit_button(loc) },
@@ -33,11 +36,13 @@ module ClinicManagement
     def new
       @service_location = ServiceLocation.new
       @active_referrals = Referral.all.select(&:active?).reject { |r| r.name == "Local" }.sort_by { |r| r.name.to_s.downcase }
+      @active_doctors = doctors_for_current_account
     end
 
     # GET /service_locations/1/edit
     def edit
       @active_referrals = Referral.all.select(&:active?).reject { |r| r.name == "Local" }.sort_by { |r| r.name.to_s.downcase }
+      @active_doctors = doctors_for_current_account
     end
 
     # POST /service_locations
@@ -72,11 +77,20 @@ module ClinicManagement
 
     # POST /service_locations/switch - switch context. Params: location_id (optional, blank = internal, "all" = all externals)
     # Persists in session + cookie so selection survives page refresh.
+    # ESSENTIAL: When doctor, only allows switching to Interno or their allowed_service_locations.
     def switch
       location_id = params[:location_id].presence
+
+      # Doctors can only switch to Interno or locations they're associated with.
+      if doctor_user?
+        if location_id.present? && !current_user.allowed_service_locations.exists?(location_id)
+          location_id = nil # Force internal if invalid
+        end
+      end
+
       session[:clinic_service_location_id] = location_id
       cookies.permanent[:clinic_service_location_id] = location_id || ""
-      redirect_back fallback_location: clinic_management.services_path
+      redirect_back fallback_location: clinic_management.index_today_path
     end
 
     private
@@ -108,9 +122,21 @@ module ClinicManagement
     end
 
     def service_location_params
-      p = params.require(:service_location).permit(:name, referral_ids: [])
+      p = params.require(:service_location).permit(:name, referral_ids: [], allowed_doctor_ids: [])
       p[:referral_ids] = (p[:referral_ids] || []).reject(&:blank?)
+      p[:allowed_doctor_ids] = (p[:allowed_doctor_ids] || []).reject(&:blank?)
       p
+    end
+
+    # ESSENTIAL: Users with Membership.role == "doctor" in current account.
+    # Used for service location form to associate doctors who can see this location in "atendimento de hoje".
+    def doctors_for_current_account
+      return [] unless current_account
+      User.joins(:memberships)
+          .where(memberships: { role: "doctor", account_id: current_account.id })
+          .where(deleted: false)
+          .distinct
+          .order(:name)
     end
   end
 end
