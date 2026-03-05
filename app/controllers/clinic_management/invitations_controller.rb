@@ -111,6 +111,7 @@ module ClinicManagement
       @appointment = @invitation.appointments.build
       @lead = @invitation.build_lead
       @referrals = referrals_for_select
+      @referral_grouped_options = referral_grouped_options_for_select
       begin
         @today_invitations = helpers.user_referral.invitations.where('created_at >= ?', Date.current.beginning_of_day).limit(100)
         @today_invitations = @today_invitations.map do |invitation|
@@ -183,6 +184,7 @@ module ClinicManagement
       @appointment = @invitation.appointments.build
       @lead = @invitation.build_lead
       @referrals = referrals_for_select
+      @referral_grouped_options = referral_grouped_options_for_select
     end
 
     def create_patient_fitted
@@ -512,6 +514,7 @@ module ClinicManagement
         }
       before_attributes = {
         referral: Referral.find_by(name: "Local")&.id,
+        referral_grouped_options: referral_grouped_options_for_select,
         local_referral_id: Referral.find_by(name: "Local")&.id,
         region: @invitation.region.id,
         service: @appointment.service.id,
@@ -526,6 +529,7 @@ module ClinicManagement
       new_form_locals = {
           invitation: @invitation,
           referrals: referrals_for_select,
+          referral_grouped_options: referral_grouped_options_for_select,
           regions: Region.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
       }
       respond_to do |format|
@@ -553,6 +557,7 @@ module ClinicManagement
         @appointment = @invitation.appointments.build
         @lead = @invitation.build_lead
         @referrals = referrals_for_select
+        @referral_grouped_options = referral_grouped_options_for_select
       end
 
 
@@ -1181,6 +1186,7 @@ module ClinicManagement
         @appointment = @invitation.appointments.build
         @lead = @invitation.build_lead
         @referrals = referrals_for_select
+        @referral_grouped_options = referral_grouped_options_for_select
       end
 
       def responsible_content(invite)
@@ -1209,7 +1215,22 @@ module ClinicManagement
         scope
       end
 
-      # Referrals for Indicador select, with "Local" first.
+      # Referrals for Indicador select: Local first, then Indicadores ativos, then Demais indicadores.
+      # Returns array for grouped_options_for_select: [["Group", [[label, id], ...]], ...]
+      def referral_grouped_options_for_select
+        local = Referral.find_by(name: "Local")
+        all = Referral.all.to_a
+        active = all.select { |r| r.active? && r.name != "Local" }.sort_by { |r| r.name.to_s.downcase }
+        inactive = all.reject { |r| r.active? || r.name == "Local" }.sort_by { |r| r.name.to_s.downcase }
+
+        options = []
+        options << ["Local", [[local.name, local.id]]] if local
+        options << ["Indicadores ativos", active.map { |r| [r.name, r.id] }] if active.any?
+        options << ["Demais indicadores", inactive.map { |r| [r.name, r.id] }] if inactive.any?
+        options
+      end
+
+      # Referrals for Indicador select (flat list, for backward compatibility).
       def referrals_for_select
         Referral.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
       end

@@ -35,9 +35,16 @@
         </div>
       <% else %>
         <%= form.label :referral_id, "Indicador", class: "block text-gray-700 font-bold" %>
-        <%= form.collection_select :referral_id, referrals, :id, :name, {selected: referral},
-            {class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline",
-             data: { referral_date_toggle_target: "referralSelect", action: "change->referral-date-toggle#toggle" }} %>
+        <% if local_assigns.key?(:referral_grouped_options) && referral_grouped_options.present? %>
+          <%= form.select :referral_id, grouped_options_for_select(referral_grouped_options, referral),
+              {},
+              {class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline",
+               data: { referral_date_toggle_target: "referralSelect", action: "change->referral-date-toggle#toggle" }} %>
+        <% else %>
+          <%= form.collection_select :referral_id, referrals, :id, :name, {selected: referral},
+              {class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline",
+               data: { referral_date_toggle_target: "referralSelect", action: "change->referral-date-toggle#toggle" }} %>
+        <% end %>
         <%# When Indicador is "Local", Dia da marcação is hidden (implied today). %>
         <%= form.hidden_field :date, value: Date.current, data: { referral_date_toggle_target: "dateHidden" }, disabled: !is_referral_local %>
         <div class="mb-4" data-referral-date-toggle-target="dateField" style="<%= 'display:none' if is_referral_local %>">
