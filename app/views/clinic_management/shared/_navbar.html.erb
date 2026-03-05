@@ -1,23 +1,26 @@
 <% if (doctor? current_user) %>
-  <header class="bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 py-4 shadow-md">
-    <nav class="container mx-auto flex items-center justify-between p-6">
-      <div class="flex items-center text-white mr-6">
-        <span class="font-semibold text-xl tracking-tight">Lipepay <span class="ml-1 text-xs bg-white text-emerald-700 rounded px-2 py-0.5 font-medium shadow-sm">atendimentos</span></span>
-      </div>
-      <%# ESSENTIAL: Location selector for doctors - Interno + their allowed externals. %>
-      <% if doctor_service_location_options.present? && doctor_service_location_options.size > 1 %>
-        <%= form_with url: clinic_management.switch_service_locations_path, method: :post, local: true, data: { turbo: false }, class: "inline" do |f| %>
-          <%= f.select :location_id, options_for_select(doctor_service_location_options, current_service_location_id.to_s), {}, { class: "text-sm rounded px-2 py-1 text-gray-800 ml-2", onchange: "this.form.submit()" } %>
+  <%# Doctor navbar: only today. No links to other days. Location selector only. No "Ir para atendimento". %>
+  <header class="navbar-fixed relative bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 py-4 shadow-md z-50" style="width:100%;">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-wrap justify-between items-center">
+        <h1 class="text-white text-xl font-bold mb-4 sm:mb-0 w-full sm:w-auto text-center sm:text-left flex items-center gap-2">
+          <%= link_to raw("Lipepay <span class='ml-1 text-xs bg-white text-emerald-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), clinic_management.index_today_path, class: "text-white hover:text-emerald-300" %>
+          <%# ESSENTIAL: Location selector for doctors - Interno + their allowed externals. %>
+          <% if doctor_service_location_options.present? && doctor_service_location_options.size > 1 %>
+            <%= form_with url: clinic_management.switch_service_locations_path, method: :post, local: true, data: { turbo: false }, class: "inline" do |f| %>
+              <%= f.select :location_id, options_for_select(doctor_service_location_options, current_service_location_id.to_s), {}, { class: "text-sm rounded px-2 py-1 text-gray-800 ml-2", onchange: "this.form.submit()" } %>
+            <% end %>
+          <% end %>
+        </h1>
+
+        <% if user_signed_in? %>
+          <div class="flex items-center text-white order-1 sm:order-5">
+            <span class="md:inline mr-4">Olá, <%= current_user.name %></span>
+            <%= link_to "Sair", main_app.destroy_user_session_path, data: { turbo_method: :delete }, class: "text-sm px-4 py-2 border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white" %>
+          </div>
         <% end %>
-      <% end %>
-      <% if user_signed_in? %>
-        <div class="flex items-center">
-          <span class="mr-4 text-white lg:hidden">Olá, <%= current_user.name %></span>
-          <span class="mr-4 text-white lg:block">Olá, <%= current_user.name %></span>
-          <%= link_to "Sair", main_app.destroy_user_session_path, method: :delete, class: "inline-block text-sm px-4 py-2 leading-none border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white" %>
-        </div>
-      <% end %>
-    </nav>
+      </div>
+    </div>
   </header>
 <% elsif (referral? current_user) %>
   <%# Build share link for referral users - only when self_booking_enabled (Adicionais toggle) %>
@@ -349,7 +352,7 @@
 
   @media (max-width: 767px) {
 
-    #service_select{
+    #service_select {
       width: 100%;
     }
 

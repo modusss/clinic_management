@@ -42,6 +42,9 @@
       #main-container {
         margin-left: 280px;
       }
+      body.doctor-view #main-container {
+        margin-left: 0;
+      }
     }
 
     @media (max-width: 768px) {
@@ -310,7 +313,7 @@
     })();
   </script>
 </head>
-<body class="bg-gray-100 font-sans leading-normal tracking-normal" style="margin-bottom: 200px">
+<body class="bg-gray-100 font-sans leading-normal tracking-normal <%= 'doctor-view' if doctor_user? %>" style="margin-bottom: 200px">
   <%# Global loading overlay - shows when requests take > 2 seconds %>
   <%= render "clinic_management/shared/global_loading" %>
 

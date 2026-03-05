@@ -1,6 +1,15 @@
 module ClinicManagement
   module ApplicationHelper
 
+    # ESSENTIAL: Display name for Service in dropdowns (navbar "Ir para atendimento...").
+    # Format: "DD/MM - Tipo" (e.g. "05/03 - Gratuito").
+    def display_service_name(service)
+      return "" if service.blank?
+      date_str = service.date&.strftime("%d/%m") || ""
+      type_name = service.service_type&.name || "Atendimento"
+      [date_str, type_name].reject(&:blank?).join(" - ")
+    end
+
     # Converte imagem do Active Storage para base64 para uso em PDFs
     def active_storage_image_base64(attachment)
       return nil unless attachment.attached?
