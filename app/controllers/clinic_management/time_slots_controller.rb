@@ -111,9 +111,7 @@ module ClinicManagement
       day_number = get_day_field(params[:time_slot][:weekday])
       @time_slot.weekday = day_number
       if @time_slot.update(time_only_slot_params)
-        redirect_path = time_slots_path
-        redirect_path = time_slots_path(view_location: @time_slot.service_location_id) if @time_slot.service_location_id.present?
-        redirect_to redirect_path, notice: "Horário atualizado com sucesso."
+        redirect_to time_slots_path, notice: "Horário atualizado com sucesso."
       else
         render :edit, status: :unprocessable_entity
       end
