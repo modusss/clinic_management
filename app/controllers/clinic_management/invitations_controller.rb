@@ -100,8 +100,11 @@ module ClinicManagement
 
     # GET /invitations/new
     def new
-      @services_list = next_services
+      @selected_service_location_id = params[:service_location_id].presence || ""
+      @services_list = next_services(@selected_service_location_id)
+      @service_locations_for_select = build_invitation_service_locations_options
       @regions = Region.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
+      @default_region_id_for_external = Region.find_by(name: "Local")&.id
       @invitation = Invitation.new
       @appointment = @invitation.appointments.build
       @lead = @invitation.build_lead
@@ -510,12 +513,16 @@ module ClinicManagement
         region: @invitation.region.id,
         service: @appointment.service.id,
         date: @invitation.date,
-        services_list: next_services
+        service_location_id: "",
+        services_list: next_services(""),
+        service_locations_for_select: build_invitation_service_locations_options,
+        selected_service_location_id: "",
+        default_region_id_for_external: Region.find_by(name: "Local")&.id
       }
       new_form_sets
-      new_form_locals = { 
-          invitation: @invitation, 
-          referrals: Referral.all, 
+      new_form_locals = {
+          invitation: @invitation,
+          referrals: Referral.all,
           regions: Region.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
       }
       respond_to do |format|
@@ -1189,8 +1196,24 @@ module ClinicManagement
         @invitation = Invitation.find(params[:id])
       end
 
-      def next_services
-        Service.where("date >= ?", Date.current).order(date: :asc)
+      # Returns upcoming services filtered by service_location_id.
+      # @param service_location_id [String, nil] ""/nil = internal only; id = that location.
+      # When multi_service_locations_enabled is false, only internal services are returned.
+      def next_services(service_location_id = nil)
+        scope = Service.where("date >= ?", Date.current).order(date: :asc)
+        loc_id = service_location_id.presence
+        scope = scope.for_location(multi_service_locations_enabled? ? loc_id : nil)
+        scope
+      end
+
+      # Builds options for the "Local" select in new invitation form.
+      # ESSENTIAL: Only "Interno" when multi_service_locations_enabled is false.
+      # When enabled: "Interno" + all ServiceLocation records.
+      def build_invitation_service_locations_options
+        options = [["Interno", ""]]
+        return options unless multi_service_locations_enabled?
+        ServiceLocation.order(:name).each { |loc| options << [loc.name, loc.id.to_s] }
+        options
       end
 
       # Only allow a list of trusted parameters through.

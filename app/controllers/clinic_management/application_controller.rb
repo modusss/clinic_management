@@ -42,6 +42,13 @@ module ClinicManagement
     end
     helper_method :current_service_location
 
+    # ESSENTIAL: Whether account allows multiple service locations (internal + externals).
+    # When false, only "Interno" is shown in invitation/new and other location selectors.
+    def multi_service_locations_enabled?
+      current_account&.multi_service_locations_enabled?
+    end
+    helper_method :multi_service_locations_enabled?
+
     def authenticate_user!
       unless user_signed_in?
         super

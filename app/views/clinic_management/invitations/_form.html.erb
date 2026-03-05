@@ -15,7 +15,7 @@
        data-phone-checker-check-url-value="<%= check_existing_phone_invitations_path %>"
        data-phone-checker-csrf-token-value="<%= form_authenticity_token %>">
 
-    <h2 class="text-lg font-bold mb-4">1. Dados do marcação</h2>
+    <h2 class="text-lg font-bold mb-4">1. Dados da marcação</h2>
     <div class="mb-4">
       <% if referral? current_user %>
         <%= form.hidden_field :referral_id, value: user_referral.id %>
@@ -38,12 +38,37 @@
         class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
       %>
     </div>
-     <div class="mb-4">
-      <%= form.label "Região", class: "block text-gray-700 font-bold" %>
-      <%= form.collection_select :region_id, regions, :id, :name,
-            { selected: region }, 
-            class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
-    </div>
+
+    <%# ESSENTIAL: Local (Service Location) select - filters "Dia destinado" options below. %>
+    <%# Only shows options beyond "Interno" when multi_service_locations_enabled (Account). %>
+    <% if local_assigns.key?(:service_locations_for_select) && service_locations_for_select.present? %>
+      <div class="mb-4" data-controller="service-location-filter"
+           data-service-location-filter-new-url-value="<%= clinic_management.new_invitation_path %>">
+        <label for="invitation_service_location_filter" class="block text-gray-700 font-bold">Local</label>
+        <select id="invitation_service_location_filter"
+                class="w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                data-service-location-filter-target="select"
+                data-action="change->service-location-filter#reloadWithLocation">
+          <% (service_locations_for_select || [["Interno", ""]]).each do |label, value| %>
+            <option value="<%= value %>" <%= 'selected' if (local_assigns[:selected_service_location_id] || "") == value.to_s %>><%= label %></option>
+          <% end %>
+        </select>
+      </div>
+    <% end %>
+
+    <%# Região: only shown when Local is "Interno". When external, use hidden default "Local" region. %>
+    <% is_external_location = local_assigns.key?(:selected_service_location_id) && local_assigns[:selected_service_location_id].present? %>
+    <% if is_external_location %>
+      <% default_region = local_assigns[:default_region_id_for_external] || regions.find { |r| r.name == "Local" }&.id || regions.first&.id %>
+      <%= form.hidden_field :region_id, value: default_region %>
+    <% else %>
+      <div class="mb-4">
+        <%= form.label "Região de captação do paciente", class: "block text-gray-700 font-bold" %>
+        <%= form.collection_select :region_id, regions, :id, :name,
+              { selected: region }, 
+              class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+      </div>
+    <% end %>
 
     <%= form.fields_for :appointments do |appointment_fields| %>
       <div class="mb-4" data-controller="service-display">
