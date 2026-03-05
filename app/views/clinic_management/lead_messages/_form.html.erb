@@ -24,6 +24,27 @@
         </div>
       <% end %>
 
+      <%# ESSENTIAL: Service location select when multi-regions enabled.
+          Default = current navbar selection. If "Todos" selected, prompt + validation required. %>
+      <% if multi_service_locations_enabled? && !referral?(current_user) %>
+        <div class="field mb-4">
+          <%= form.label :service_location_id, "Local da mensagem", class: "block text-gray-700 text-sm font-bold mb-2" %>
+          <%= form.select :service_location_id,
+              options_for_select(
+                lead_message_service_location_options,
+                lead_message_default_service_location_id
+              ),
+              { prompt: require_service_location_selection? ? "Selecione um local (obrigatório)" : "Selecione um local" },
+              { class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" } %>
+          <% if message.errors[:service_location_id].any? %>
+            <p class="text-red-600 text-sm mt-1"><%= message.errors[:service_location_id].first %></p>
+          <% end %>
+          <p class="text-xs text-gray-500 mt-1">
+            Interno = mensagem para atendimentos locais. Escolha o local para mensagens específicas (ex: endereço da Ótica).
+          </p>
+        </div>
+      <% end %>
+
       <% service_types = ClinicManagement::ServiceType.where(removed: false).order(:name) %>
       <% if service_types.count > 1 %>
         <div class="field mb-4">

@@ -14,6 +14,9 @@ module ClinicManagement
     # For managers: loads @referrals_with_messages (referrals that have at least
     # one lead_message) and allows filtering via params[:referral_id].
     # @viewing_referral is set when a manager selects a specific referral.
+    #
+    # When multi_service_locations_enabled: location filter via params[:service_location_id].
+    # "" = Interno (service_location_id nil); "all" = all externals; id = specific location.
     def index
       if referral?(current_user)
         # Referral users: see only their own messages (unchanged)
@@ -40,6 +43,23 @@ module ClinicManagement
         # Non-manager, non-referral: global messages only (unchanged)
         @messages = LeadMessage.where(referral_id: nil).order(created_at: :asc)
       end
+
+      # ESSENTIAL: Filter by service_location from navbar only (no page selector).
+      # Uses current_service_location_id (session/cookie) - user switches via navbar.
+      @viewing_all_externals = false
+      if multi_service_locations_enabled? && @viewing_referral.nil? && !referral?(current_user)
+        loc_id = current_service_location_id.to_s
+        @messages = filter_messages_by_location(@messages, loc_id)
+        # When "Todos externos": group by location for segmented display.
+        # Each section shows location name + its messages (including empty locations).
+        if loc_id == "all"
+          @viewing_all_externals = true
+          @messages_by_location = ServiceLocation.order(:name).map { |loc|
+            [loc, @messages.select { |m| m.service_location_id == loc.id }]
+          }
+        end
+      end
+
       @messages_by_type = @messages.group_by(&:message_type)
     end
   
@@ -48,7 +68,20 @@ module ClinicManagement
     end
   
     def create
-      @message = LeadMessage.new(message_params)
+      attrs = message_params.to_h
+      # ESSENTIAL: Normalize service_location_id - "internal" -> nil
+      if attrs.key?(:service_location_id)
+        attrs[:service_location_id] = normalize_service_location_param(attrs[:service_location_id])
+      end
+
+      # ESSENTIAL: When navbar is "Todos" and multi enabled, require location selection
+      if require_service_location_selection? && attrs[:service_location_id].blank?
+        @message = LeadMessage.new(attrs)
+        @message.errors.add(:service_location_id, "deve ser selecionado quando 'Todos externos' está ativo")
+        render :new and return
+      end
+
+      @message = LeadMessage.new(attrs)
       # If the user is a referral, associate the message with their referral_id
       @message.referral_id = user_referral.id if referral?(current_user)
       
@@ -81,7 +114,13 @@ module ClinicManagement
     end
   
     def update
-      if @message.update(message_params)
+      attrs = message_params.to_h
+      # ESSENTIAL: Normalize service_location_id - "internal" -> nil
+      if attrs.key?(:service_location_id)
+        attrs[:service_location_id] = normalize_service_location_param(attrs[:service_location_id])
+      end
+
+      if @message.update(attrs)
         # Force message_type = 3 (outro) for referrals and non-manager users
         if referral?(current_user)
           @message.message_type = 3
@@ -97,9 +136,10 @@ module ClinicManagement
         
         @message.save if @message.changed?
 
-        # Preserve referral context when redirecting back
-        redirect_to @message.referral_id.present? ?
+        # Preserve referral context when redirecting back (location comes from navbar)
+        redirect_path = @message.referral_id.present? ?
           lead_messages_path(referral_id: @message.referral_id) : lead_messages_path
+        redirect_to redirect_path
       else
         render :edit
       end
@@ -109,7 +149,7 @@ module ClinicManagement
       referral_id = @message.referral_id
       @message.destroy
 
-      # Preserve referral context when redirecting back
+      # Preserve referral context when redirecting back (location comes from navbar)
       redirect_path = referral_id.present? ?
         lead_messages_path(referral_id: referral_id) : lead_messages_path
       redirect_to redirect_path, notice: 'Mensagem customizada excluída com sucesso.'
@@ -472,8 +512,30 @@ module ClinicManagement
     end
   
     def message_params
-      params.require(:lead_message).permit(:name, :text, :message_type, :service_type_id, :media_file, :media_caption, :media_type)
+      permitted = [:name, :text, :message_type, :service_type_id, :media_file, :media_caption, :media_type]
+      permitted << :service_location_id if multi_service_locations_enabled?
+      params.require(:lead_message).permit(permitted)
     end
+
+    # ESSENTIAL: Filter lead messages by service_location.
+    # "" = Interno (nil); "all" = all externals; id = specific location.
+    def filter_messages_by_location(scope, location_id)
+      case location_id.to_s
+      when "all"
+        scope.where.not(service_location_id: nil)
+      when ""
+        scope.where(service_location_id: nil)
+      else
+        scope.where(service_location_id: location_id)
+      end
+    end
+
+    # Normalize service_location_id from form: "internal" -> nil, "" -> nil when required.
+    def normalize_service_location_param(raw)
+      return nil if raw.blank? || raw.to_s == "internal"
+      raw
+    end
+
 
     # Get the instance name to use for sending messages
     # Uses round-robin for referrals with multiple instances

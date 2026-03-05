@@ -10,6 +10,9 @@ module ClinicManagement
                            recuperação_dois_meses: 8,
                            outro: 3 }
       belongs_to :service_type, optional: true
+      # ESSENTIAL: Optional - nil = global (applies to all locations).
+      # When set, message is specific to that ServiceLocation (e.g. Ótica Light).
+      belongs_to :service_location, optional: true, class_name: "ClinicManagement::ServiceLocation"
       
       # Active Storage attachment for media files (images, audio, video, pdf)
       has_one_attached :media_file

@@ -78,6 +78,36 @@ module ClinicManagement
     end
     helper_method :multi_service_locations_enabled?
 
+    # ESSENTIAL: Options for lead_message form service_location select.
+    # [["Interno", "internal"], ["Local X", id], ...]. "internal" maps to nil (global for internal).
+    # Used when multi_service_locations_enabled - default comes from current_service_location_id.
+    def lead_message_service_location_options
+      return [] unless multi_service_locations_enabled?
+      internal = [["Interno", "internal"]]
+      locations = ServiceLocation.order(:name).map { |loc| [loc.name, loc.id.to_s] }
+      internal + locations
+    end
+    helper_method :lead_message_service_location_options
+
+    # Default value for lead_message form service_location_id.
+    # When navbar has "Todos" (all): returns "" (prompt, validation required).
+    # When navbar has "Interno": returns "internal".
+    # When navbar has specific location: returns that id.
+    def lead_message_default_service_location_id
+      return nil unless multi_service_locations_enabled?
+      id = current_service_location_id
+      return "" if id.to_s == "all"
+      return "internal" if id.blank?
+      id.to_s
+    end
+    helper_method :lead_message_default_service_location_id
+
+    # ESSENTIAL: When navbar is "Todos externos", form must require location selection.
+    def require_service_location_selection?
+      multi_service_locations_enabled? && current_service_location_id.to_s == "all"
+    end
+    helper_method :require_service_location_selection?
+
     def authenticate_user!
       unless user_signed_in?
         super
