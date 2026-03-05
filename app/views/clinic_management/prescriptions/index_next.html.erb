@@ -24,7 +24,7 @@
     <% service = @services[index] %>
     <%# Service header %>
     <h1 class="text-3xl font-bold text-gray-900 mb-2 px-4">
-      Próximo atendimento: <%= show_week_day service.weekday %>
+      Próximo atendimento: <%= show_week_day service.weekday %><%= " — Local: #{service.service_location.name}" if service.service_location.present? %>
     </h1>
     <h2 class="text-2xl text-gray-700 mb-1 px-4"><%= service.service_type&.name %></h2>
     <h2 class="text-2xl text-gray-700 mb-1 px-4"><%= service.date.strftime("%d/%m/%Y") %></h2>

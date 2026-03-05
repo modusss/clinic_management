@@ -19,7 +19,7 @@
           .for_location(current_service_location_id)
           .where(date: Date.current)
           .order(:start_time)
-          .includes(appointments: [
+          .includes(:service_location, appointments: [
             :prescription,
             :service,
             { invitation: { lead: [:leads_conversion, { lead_interactions: :user }] } }
@@ -100,7 +100,7 @@
           base_scope
             .where(date: @next_date)
             .order(:start_time)
-            .includes(appointments: [
+            .includes(:service_location, appointments: [
               :prescription,
               :service,
               { invitation: { lead: [:leads_conversion, { lead_interactions: :user }] } }
@@ -122,7 +122,7 @@
           base_scope
             .where(date: before_date)
             .order(:start_time)
-            .includes(appointments: [
+            .includes(:service_location, appointments: [
               :prescription,
               :service,
               { invitation: { lead: [:leads_conversion, { lead_interactions: :user }] } }
