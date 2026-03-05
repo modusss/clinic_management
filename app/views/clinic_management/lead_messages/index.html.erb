@@ -79,44 +79,23 @@
       <div class="border-b border-gray-200">
         <nav class="-mb-px flex space-x-4">
           <button data-referral-messages-target="tab"
-                  data-tab="personalizadas"
-                  data-action="click->referral-messages#switchTab"
-                  class="py-2 px-4 border-b-2 font-medium text-sm transition-all border-blue-500 text-blue-600 cursor-pointer">
-            Personalizadas
-          </button>
-          <button data-referral-messages-target="tab"
                   data-tab="globais"
                   data-action="click->referral-messages#switchTab"
-                  class="py-2 px-4 border-b-2 font-medium text-sm transition-all border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 cursor-pointer">
+                  class="py-2 px-4 border-b-2 font-medium text-sm transition-all border-blue-500 text-blue-600 cursor-pointer">
             Mensagens Globais
+          </button>
+          <button data-referral-messages-target="tab"
+                  data-tab="personalizadas"
+                  data-action="click->referral-messages#switchTab"
+                  class="py-2 px-4 border-b-2 font-medium text-sm transition-all border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 cursor-pointer">
+            Personalizadas
           </button>
         </nav>
       </div>
     </div>
 
-    <%# TAB: Personalizadas %>
-    <div data-referral-messages-target="tabContent" data-tab-name="personalizadas">
-      <p class="text-sm text-gray-600 mb-4">Mensagens personalizadas que você criou. Você pode editar e excluir estas mensagens.</p>
-      <% if @viewing_all_externals && @messages_by_location.present? %>
-        <% @messages_by_location.each do |location, location_messages| %>
-          <% personalizadas = location_messages.select { |m| m.message_type == 'outro' } %>
-          <div class="mb-8">
-            <h6 class="text-lg font-semibold text-gray-800 mb-3 pb-2 border-b border-gray-200"><%= location.name %></h6>
-            <% if personalizadas.any? %>
-              <%= render partial: 'messages_table', locals: { messages_to_show: personalizadas, show_type_column: false } %>
-            <% else %>
-              <p class="text-sm text-gray-500 italic">Nenhuma mensagem personalizada.</p>
-            <% end %>
-          </div>
-        <% end %>
-      <% else %>
-        <% personalizadas = @messages.select { |m| m.message_type == 'outro' } %>
-        <%= render partial: 'messages_table', locals: { messages_to_show: personalizadas, show_type_column: false } %>
-      <% end %>
-    </div>
-
-    <%# TAB: Mensagens Globais %>
-    <div data-referral-messages-target="tabContent" data-tab-name="globais" style="display: none;">
+    <%# TAB: Mensagens Globais (first/default) %>
+    <div data-referral-messages-target="tabContent" data-tab-name="globais">
       <p class="text-sm text-gray-600 mb-4">
         Mensagens de sistema (Confirmação, Remarcação, Lembrete, etc.).
         <%= is_manager_above? ? 'Você pode editá-las.' : 'Apenas gerentes podem editar estas mensagens.' %>
@@ -136,6 +115,27 @@
       <% else %>
         <% globais = @messages.select { |m| m.message_type != 'outro' } %>
         <%= render partial: 'messages_table', locals: { messages_to_show: globais, show_type_column: true } %>
+      <% end %>
+    </div>
+
+    <%# TAB: Personalizadas %>
+    <div data-referral-messages-target="tabContent" data-tab-name="personalizadas" style="display: none;">
+      <p class="text-sm text-gray-600 mb-4">Mensagens personalizadas que você criou. Você pode editar e excluir estas mensagens.</p>
+      <% if @viewing_all_externals && @messages_by_location.present? %>
+        <% @messages_by_location.each do |location, location_messages| %>
+          <% personalizadas = location_messages.select { |m| m.message_type == 'outro' } %>
+          <div class="mb-8">
+            <h6 class="text-lg font-semibold text-gray-800 mb-3 pb-2 border-b border-gray-200"><%= location.name %></h6>
+            <% if personalizadas.any? %>
+              <%= render partial: 'messages_table', locals: { messages_to_show: personalizadas, show_type_column: false } %>
+            <% else %>
+              <p class="text-sm text-gray-500 italic">Nenhuma mensagem personalizada.</p>
+            <% end %>
+          </div>
+        <% end %>
+      <% else %>
+        <% personalizadas = @messages.select { |m| m.message_type == 'outro' } %>
+        <%= render partial: 'messages_table', locals: { messages_to_show: personalizadas, show_type_column: false } %>
       <% end %>
     </div>
   </div>
