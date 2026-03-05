@@ -12,6 +12,8 @@ module ClinicManagement
 
     has_many :time_slots, dependent: :nullify
     has_many :services, dependent: :nullify
+    has_many :service_location_referrals, dependent: :destroy, class_name: "ClinicManagement::ServiceLocationReferral"
+    has_many :referrals, through: :service_location_referrals, source: :referral
 
     validates :name, presence: true
   end

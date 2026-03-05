@@ -65,8 +65,10 @@
     </div>
 
     <%# ESSENTIAL: Local (Service Location) select - filters "Dia destinado" options below. %>
-    <%# Only shows options beyond "Interno" when multi_service_locations_enabled (Account). %>
-    <% if local_assigns.key?(:service_locations_for_select) && service_locations_for_select.present? %>
+    <%# Only show when there are external locations to choose (Interno + at least one). %>
+    <%# If referral has no allowed externals, hide entirely - they use Interno by default. %>
+    <% has_external_locations = local_assigns.key?(:service_locations_for_select) && service_locations_for_select.present? && service_locations_for_select.size > 1 %>
+    <% if has_external_locations %>
       <div class="mb-4" data-controller="service-location-filter"
            data-service-location-filter-new-url-value="<%= clinic_management.new_invitation_path %>">
         <label for="invitation_service_location_filter" class="block text-gray-700 font-bold">Local do atendimento</label>

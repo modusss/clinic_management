@@ -102,7 +102,7 @@ module ClinicManagement
     def new
       @selected_service_location_id = params[:service_location_id].presence || ""
       @services_list = next_services(@selected_service_location_id)
-      @service_locations_for_select = build_invitation_service_locations_options
+      @service_locations_for_select = build_invitation_service_locations_options(referral?(current_user) ? user_referral : nil)
       @regions = Region.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
       @default_region_id_for_external = Region.find_by(name: "Local")&.id
       # ESSENTIAL: Default Indicador = "Local" for non-referral users. Referral users get their own (hidden field).
@@ -521,7 +521,7 @@ module ClinicManagement
         date: @invitation.date,
         service_location_id: "",
         services_list: next_services(""),
-        service_locations_for_select: build_invitation_service_locations_options,
+        service_locations_for_select: build_invitation_service_locations_options(referral?(current_user) ? user_referral : nil),
         selected_service_location_id: "",
         default_region_id_for_external: Region.find_by(name: "Local")&.id
       }
@@ -1208,9 +1208,14 @@ module ClinicManagement
       # Returns upcoming services filtered by service_location_id.
       # @param service_location_id [String, nil] ""/nil = internal only; id = that location.
       # When multi_service_locations_enabled is false, only internal services are returned.
+      # For referral users: only returns services for locations they are allowed to use.
       def next_services(service_location_id = nil)
         scope = Service.where("date >= ?", Date.current).order(date: :asc)
         loc_id = service_location_id.presence
+        if referral?(current_user) && loc_id.present?
+          allowed_ids = user_referral.allowed_service_locations.pluck(:id).map(&:to_s)
+          loc_id = nil unless allowed_ids.include?(loc_id)
+        end
         scope = scope.for_location(multi_service_locations_enabled? ? loc_id : nil)
         scope
       end
@@ -1235,13 +1240,21 @@ module ClinicManagement
         Referral.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
       end
 
-      # Builds options for the "Local" select in new invitation form.
+      # Builds options for the "Local do atendimento" select in new invitation form.
       # ESSENTIAL: Only "Interno" when multi_service_locations_enabled is false.
-      # When enabled: "Interno" + all ServiceLocation records.
-      def build_invitation_service_locations_options
+      # When enabled: "Interno" + external locations. For referral users, only locations
+      # they are allowed to use (service_location_referrals). If referral has none, only Interno.
+      # @param referral [Referral, nil] When referral user, pass their referral to filter. Nil = show all (admin).
+      def build_invitation_service_locations_options(referral = nil)
         options = [["Interno", ""]]
         return options unless multi_service_locations_enabled?
-        ServiceLocation.order(:name).each { |loc| options << [loc.name, loc.id.to_s] }
+
+        locations = if referral
+          referral.allowed_service_locations.order(:name)
+        else
+          ServiceLocation.order(:name)
+        end
+        locations.each { |loc| options << [loc.name, loc.id.to_s] }
         options
       end
 

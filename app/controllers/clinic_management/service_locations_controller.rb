@@ -12,9 +12,11 @@ module ClinicManagement
     def index
       @service_locations = ServiceLocation.order(:name).all
       @rows = @service_locations.map.with_index(1) do |loc, index|
+        indicators_text = loc.referrals.any? ? loc.referrals.order(:name).pluck(:name).join(", ") : "—"
         [
           { header: "#", content: index },
           { header: "Nome", content: loc.name },
+          { header: "Indicadores associados", content: indicators_text },
           { header: "Time Slots", content: loc.time_slots.count },
           { header: "Services", content: loc.services.count },
           { header: "Editar", content: edit_button(loc) },
@@ -30,10 +32,12 @@ module ClinicManagement
     # GET /service_locations/new
     def new
       @service_location = ServiceLocation.new
+      @active_referrals = Referral.all.select(&:active?).reject { |r| r.name == "Local" }.sort_by { |r| r.name.to_s.downcase }
     end
 
     # GET /service_locations/1/edit
     def edit
+      @active_referrals = Referral.all.select(&:active?).reject { |r| r.name == "Local" }.sort_by { |r| r.name.to_s.downcase }
     end
 
     # POST /service_locations
@@ -104,7 +108,9 @@ module ClinicManagement
     end
 
     def service_location_params
-      params.require(:service_location).permit(:name, :is_default)
+      p = params.require(:service_location).permit(:name, :is_default, referral_ids: [])
+      p[:referral_ids] = (p[:referral_ids] || []).reject(&:blank?)
+      p
     end
   end
 end
