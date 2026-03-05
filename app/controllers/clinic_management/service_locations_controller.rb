@@ -108,7 +108,7 @@ module ClinicManagement
     end
 
     def service_location_params
-      p = params.require(:service_location).permit(:name, :is_default, referral_ids: [])
+      p = params.require(:service_location).permit(:name, referral_ids: [])
       p[:referral_ids] = (p[:referral_ids] || []).reject(&:blank?)
       p
     end

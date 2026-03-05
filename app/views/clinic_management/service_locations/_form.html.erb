@@ -14,11 +14,6 @@
     <%= f.text_field :name, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500", placeholder: "ex: Ótica Centro, Atendimento Shopping" %>
   </div>
 
-  <div class="flex items-center">
-    <%= f.check_box :is_default, class: "rounded border-gray-300" %>
-    <%= f.label :is_default, "Marcar como padrão (opcional)", class: "ml-2 text-sm text-gray-700" %>
-  </div>
-
   <%# ESSENTIAL: Indicators allowed to use this external location. Unchecked = cannot see/use. %>
   <% if defined?(@active_referrals) && @active_referrals.present? %>
     <div class="border-t pt-4 mt-4">
