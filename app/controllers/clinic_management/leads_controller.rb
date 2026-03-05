@@ -1784,10 +1784,12 @@ module ClinicManagement
         "leads_#{month_name.downcase}_#{params[:year]}.csv"
       end
 
+      # Returns services available for rescheduling. Includes service_location for multi-location filtering.
+      # ESSENTIAL: When multi_service_locations_enabled, the form uses this to filter by Local.
       def available_services(service)
-        # Implemente a lógica para obter os serviços disponíveis
-        # Similar à implementação que você já tem no ServicesController
-        Service.where("date >= ?", Date.current).order(date: :asc)
+        scope = ClinicManagement::Service.where(canceled: [nil, false]).where("date >= ?", Date.current).order(date: :asc)
+        scope = scope.where.not(id: service.id) if service&.id.present?
+        scope.includes(:service_location)
       end
 
       # 🆕 Filtrar leads que estão sendo visualizados por outros usuários

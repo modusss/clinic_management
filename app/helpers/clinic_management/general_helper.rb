@@ -60,10 +60,12 @@ module ClinicManagement
         end
       end
 
+      # Returns services available for rescheduling. Includes service_location for multi-location form filtering.
       def available_services(exception_service)
-        exception_service_id = exception_service.id # Get the ID of the exception_service object
-        today = Time.zone.today # Use Time.zone.today instead of Date.current
-        ClinicManagement::Service.where(canceled: [nil, false]).where("date >= ? AND id != ?", today, exception_service_id)
+        today = Time.zone.today
+        scope = ClinicManagement::Service.where(canceled: [nil, false]).where("date >= ?", today)
+        scope = scope.where.not(id: exception_service.id) if exception_service&.id.present?
+        scope.includes(:service_location).order(date: :asc)
       end
 
     def is_basic_above?

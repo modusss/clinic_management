@@ -21,13 +21,36 @@
                 onsubmit: old_appointment.present? ? "return handleRescheduleSubmit(event, this)" : nil
               } do |f| %>
   
+  <%# ESSENTIAL: Local (ServiceLocation) selector - only when multi_service_locations_enabled.
+      Default = original appointment's service location so user can remarcar to same or different local. %>
+  <% if current_account&.multi_service_locations_enabled? && ClinicManagement::ServiceLocation.any? && old_appointment.present? %>
+    <% default_location_id = old_appointment.service&.service_location_id.to_s %>
+    <div class="w-full sm:w-auto">
+      <label for="reschedule-location-filter-<%= old_appointment.id %>" class="block text-gray-700 text-sm font-bold mb-1">Local:</label>
+      <select id="reschedule-location-filter-<%= old_appointment.id %>" 
+              class="w-full shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline reschedule-location-filter"
+              data-appointment-id="<%= old_appointment.id %>">
+        <option value="" <%= 'selected' if default_location_id.blank? %>>Interno</option>
+        <% ClinicManagement::ServiceLocation.order(:name).each do |loc| %>
+          <option value="<%= loc.id %>" <%= 'selected' if default_location_id == loc.id.to_s %>><%= loc.name %></option>
+        <% end %>
+      </select>
+    </div>
+  <% end %>
+
   <div class="w-full sm:w-auto">
     <%= f.label :service_id, "Escolha o dia:", class: "block text-gray-700 text-sm font-bold mb-1" %>
-    <%= f.select :service_id, 
-                 options_from_collection_for_select(available_services, :id, -> (service) { display_service_name(service) }), 
-                 { include_blank: true }, 
-                 { class: "w-full shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline",
-                   onchange: old_appointment.present? ? "updateModalServiceInfo(this)" : nil } %>
+    <select name="appointment[service_id]" 
+            id="reschedule-service-select-<%= old_appointment ? old_appointment.id : 'new' %>"
+            class="w-full shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline reschedule-service-select"
+            data-appointment-id="<%= old_appointment&.id %>"
+            <%= "onchange=\"updateModalServiceInfo(this)\"" if old_appointment.present? %>>
+      <option value="">Selecione...</option>
+      <% available_services.each do |svc| %>
+        <option value="<%= svc.id %>" 
+                data-service-location-id="<%= svc.service_location_id.to_s %>"><%= display_service_name(svc) %></option>
+      <% end %>
+    </select>
   </div>
 
   <% if (controller_name == "leads") && (action_name == "show") %>
@@ -65,6 +88,29 @@
 
 <% if old_appointment.present? %>
 <script>
+  (function() {
+    // ESSENTIAL: Filter service options by selected Local when multi_service_locations_enabled.
+    // Each form has unique ids: reschedule-location-filter-{id}, reschedule-service-select-{id}.
+    var locationFilter = document.getElementById('reschedule-location-filter-<%= old_appointment.id %>');
+    var serviceSelect = document.getElementById('reschedule-service-select-<%= old_appointment.id %>');
+    if (locationFilter && serviceSelect) {
+      function filterServicesByLocation() {
+        var selectedLocId = locationFilter.value || '';
+        var options = serviceSelect.querySelectorAll('option[data-service-location-id]');
+        options.forEach(function(opt) {
+          var optLocId = opt.getAttribute('data-service-location-id') || '';
+          opt.style.display = (selectedLocId === optLocId) ? '' : 'none';
+          if (opt.style.display === 'none' && opt.selected) {
+            opt.selected = false;
+            serviceSelect.querySelector('option[value=""]') && (serviceSelect.querySelector('option[value=""]').selected = true);
+          }
+        });
+      }
+      locationFilter.addEventListener('change', filterServicesByLocation);
+      filterServicesByLocation(); // Apply on load (default = original appointment's location)
+    }
+  })();
+  
   // Interceptar submit do formulário de remarcação
   function handleRescheduleSubmit(event, form) {
     event.preventDefault();
