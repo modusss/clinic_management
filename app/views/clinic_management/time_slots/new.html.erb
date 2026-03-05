@@ -1,6 +1,13 @@
-<%= breadcrumb({title: "Todos os horários", path: time_slots_path}, {title: "Novo horário", path: nil}) %>
+<% page_title = if current_service_location.present?
+  "Novo horário para #{current_service_location.name}"
+elsif current_service_location_id.to_s == "all"
+  "Novo horário (todos os locais externos)"
+else
+  "Novo horário"
+end %>
+<%= breadcrumb({title: "Todos os horários", path: time_slots_path}, {title: page_title, path: nil}) %>
 <div class="my-8 mx-auto max-w-md">
-  <h1 class="text-2xl font-bold mb-4">Novo horário</h1>
+  <h1 class="text-2xl font-bold mb-4"><%= page_title %></h1>
 
   <% if current_service_location_id.to_s == "all" %>
     <div class="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-sm">
