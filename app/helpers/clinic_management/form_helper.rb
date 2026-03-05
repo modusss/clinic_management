@@ -92,6 +92,17 @@ module ClinicManagement
                                             placeholder: field[:placeholder],
                                             value: field[:value],
                                             class: 'appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4'
+                    when 'time_24h'
+                        # Text input accepting 24h format: "16h", "16:00", "16". Stimulus normalizes on blur.
+                        time_val = f.object.send(field[:input])
+                        display_value = time_val.respond_to?(:strftime) ? time_val.strftime("%H:%M") : (field[:value] || "")
+                        field_options = {
+                          value: display_value,
+                          placeholder: field[:placeholder] || "Ex: 16:00 ou 16h",
+                          class: "#{form_class}"
+                        }
+                        field_options[:data] = { controller: "time-24h", action: "input->time-24h#autoComplete blur->time-24h#normalize" }
+                        concat f.text_field field[:input], field_options
                     # add more cases here for other field types
                     end
                 end

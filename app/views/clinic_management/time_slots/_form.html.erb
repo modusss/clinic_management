@@ -1,6 +1,6 @@
 <% form_fields = [
   {type: 'select', selected: show_week_day(time_slot.weekday), input: :weekday, name: 'Dia da semana', options: ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']},
-  {type: 'time', input: :start_time, name: 'Início', strftime: "%H:%m", placeholder: time_slot.start_time},
-  {type: 'time', input: :end_time, name: 'Fim', strftime: "%H:%m"}
+  {type: 'time_24h', input: :start_time, name: 'Início', placeholder: 'Ex: 16:00 ou 16h'},
+  {type: 'time_24h', input: :end_time, name: 'Fim', placeholder: 'Ex: 16:00 ou 16h'}
 ] %>
 <%= standardized_form_for(time_slot, form_fields, submit_label_create: "Criar novo horário de atendimento", submit_label_update: "Atualizar horário de atendimento") %>
