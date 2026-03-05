@@ -93,12 +93,19 @@
             <select id="service_select" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     onchange="if(this.value != '') window.location.href=this.value">
               <option value="" selected>Ir para atendimento...</option>
-              <% ClinicManagement::Service.joins(:appointments)
+              <% ClinicManagement::Service.joins(:appointments).includes(:service_location)
                                           .where(appointments: { referral_code: user_referral.code })
                                           .where("date >= ?", Date.current)
                                           .distinct.order(date: :asc).limit(20).each do |service| %>
                 <option value="<%= clinic_management.show_by_referral_services_path(referral_id: user_referral.id, id: service.id) %>">
-                  <%= display_service_name(service) %>
+                  <% weekday = ClinicManagement::TimeSlotsHelper::WEEKDAY_NAMES[service.weekday.to_i] || "" %>
+                  <% date_str = service.date&.strftime("%d/%m/%Y") || "" %>
+                  <% times = [service.start_time&.strftime('%H:%M'), service.end_time&.strftime('%H:%M')].compact %>
+                  <% time_str = times.size == 2 ? "#{times[0]}h às #{times[1]}h" : "" %>
+                  <% base = [weekday, date_str].reject(&:blank?).join(", ") %>
+                  <% base += " - #{time_str}" if time_str.present? %>
+                  <% base = "Local: #{service.service_location.name}, #{base}" if service.service_location.present? %>
+                  <%= base %>
                 </option>
               <% end %>
             </select>
@@ -248,9 +255,16 @@
           <select id="service_select" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                   onchange="if(this.value != '') window.location.href=this.value">
             <option value="" selected>Ir para atendimento...</option>
-            <% ClinicManagement::Service.for_location(current_service_location_id).where("date >= ?", Date.current).order(date: :asc).limit(20).each do |service| %>
+            <% ClinicManagement::Service.for_location(current_service_location_id).includes(:service_location).where("date >= ?", Date.current).order(date: :asc).limit(20).each do |service| %>
               <option value="<%= clinic_management.service_path(service) %>">
-                <%= display_service_name(service) %>
+                <% weekday = ClinicManagement::TimeSlotsHelper::WEEKDAY_NAMES[service.weekday.to_i] || "" %>
+                <% date_str = service.date&.strftime("%d/%m/%Y") || "" %>
+                <% times = [service.start_time&.strftime('%H:%M'), service.end_time&.strftime('%H:%M')].compact %>
+                <% time_str = times.size == 2 ? "#{times[0]}h às #{times[1]}h" : "" %>
+                <% base = [weekday, date_str].reject(&:blank?).join(", ") %>
+                <% base += " - #{time_str}" if time_str.present? %>
+                <% base = "Local: #{service.service_location.name}, #{base}" if current_service_location_id.to_s == "all" && service.service_location.present? %>
+                <%= base %>
               </option>
             <% end %>
           </select>

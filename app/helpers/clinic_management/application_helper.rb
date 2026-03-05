@@ -2,12 +2,21 @@ module ClinicManagement
   module ApplicationHelper
 
     # ESSENTIAL: Display name for Service in dropdowns (navbar "Ir para atendimento...").
-    # Format: "DD/MM - Tipo" (e.g. "05/03 - Gratuito").
+    # Format: "Quinta-feira, 05/03/2026 - 08:00h às 12:00h".
+    # When "Todos externos" selected: Local as FIRST param so user can distinguish services from different locations.
     def display_service_name(service)
       return "" if service.blank?
-      date_str = service.date&.strftime("%d/%m") || ""
-      type_name = service.service_type&.name || "Atendimento"
-      [date_str, type_name].reject(&:blank?).join(" - ")
+      weekday = TimeSlotsHelper::WEEKDAY_NAMES[service.weekday.to_i] || ""
+      date_str = service.date&.strftime("%d/%m/%Y") || ""
+      times = [service.start_time&.strftime('%H:%M'), service.end_time&.strftime('%H:%M')].compact
+      time_str = times.size == 2 ? "#{times[0]}h às #{times[1]}h" : ""
+      base = [weekday, date_str].reject(&:blank?).join(", ")
+      base += " - #{time_str}" if time_str.present?
+      # When showing all externals, put Local FIRST so user can tell which service is which
+      if current_service_location_id.to_s == "all" && service.service_location.present?
+        base = "Local: #{service.service_location.name}, #{base}"
+      end
+      base
     end
 
     # Converte imagem do Active Storage para base64 para uso em PDFs
