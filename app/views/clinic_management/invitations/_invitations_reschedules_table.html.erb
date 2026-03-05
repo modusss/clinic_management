@@ -2,7 +2,8 @@
   Partial: Invitations & Reschedules Table
   Exibe convites e remarcações agrupados por data e referral
   Params: 
-    - invitations_data: Hash com estrutura { date => { referral => { invitations: [], reschedules: [] } } }
+    - invitations_data: Hash com estrutura { date => { referral_or_local_user => { invitations: [], reschedules: [], whatsapp_count, phone_count } } }
+  Keys can be Referral or { local_user: User } for "Vanessa (Local)" rows (non-referral users who had interactions).
 %>
 
 <div class="invitations-reschedules-container">
@@ -88,13 +89,13 @@
                   </td>
                 </tr>
               <% else %>
-                <% referrals_data.sort_by { |_, data| -(data[:invitations].size + data[:reschedules].size) }.each do |referral, data| %>
+                <% referrals_data.sort_by { |_, data| -(data[:invitations].size + data[:reschedules].size + (data[:whatsapp_count] || 0) + (data[:phone_count] || 0)) }.each do |referral, data| %>
                   <tr class="data-row">
-                    <!-- Referral Name -->
+                    <!-- Referral Name (or "Vanessa (Local)" for non-referral users) -->
                     <td class="referral-cell">
                       <div class="referral-name">
                         <i class="material-icons referral-icon">person</i>
-                        <%= referral&.name || "Sem indicador" %>
+                        <%= indicator_display_name(referral) %>
                       </div>
                     </td>
 
@@ -128,8 +129,8 @@
 
                     <!-- Invitations Names -->
                     <td class="names-cell">
-                      <%# For referral users: only show names of their own patients, hide others' patient names %>
-                      <% show_patient_names = !@is_referral_user || (referral && @current_user_referral && referral.id == @current_user_referral.id) %>
+                      <%# For referral users: only show names of their own patients, hide others' patient names. Local user rows have no invitations. %>
+                      <% show_patient_names = !@is_referral_user || (referral.respond_to?(:id) && @current_user_referral && referral.id == @current_user_referral.id) %>
                       <% if data[:invitations].any? %>
                         <% if show_patient_names %>
                           <div class="patient-links">
@@ -160,8 +161,8 @@
 
                     <!-- Reschedules Names -->
                     <td class="names-cell">
-                      <%# For referral users: only show names of their own patients, hide others' patient names %>
-                      <% show_reschedule_names = !@is_referral_user || (referral && @current_user_referral && referral.id == @current_user_referral.id) %>
+                      <%# For referral users: only show names of their own patients, hide others' patient names. Local user rows have no reschedules. %>
+                      <% show_reschedule_names = !@is_referral_user || (referral.respond_to?(:id) && @current_user_referral && referral.id == @current_user_referral.id) %>
                       <% if data[:reschedules].any? %>
                         <% if show_reschedule_names %>
                           <div class="patient-links">
@@ -197,13 +198,13 @@
               <span class="empty-message">Sem lançamentos</span>
             </div>
           <% else %>
-            <% referrals_data.sort_by { |_, data| -(data[:invitations].size + data[:reschedules].size) }.each do |referral, data| %>
+            <% referrals_data.sort_by { |_, data| -(data[:invitations].size + data[:reschedules].size + (data[:whatsapp_count] || 0) + (data[:phone_count] || 0)) }.each do |referral, data| %>
               <div class="referral-card">
                 <!-- Card Header: Referral Name + Total -->
                 <div class="card-header">
                   <div class="card-referral-name">
                     <i class="material-icons">person</i>
-                    <span><%= referral&.name || "Sem indicador" %></span>
+                    <span><%= indicator_display_name(referral) %></span>
                   </div>
                   <span class="count-badge total-badge">
                     <%= data[:invitations].size + data[:reschedules].size %>
@@ -235,7 +236,7 @@
                 </div>
 
                 <!-- Card Details (Expandable) -->
-                <% show_patient_names = !@is_referral_user || (referral && @current_user_referral && referral.id == @current_user_referral.id) %>
+                <% show_patient_names = !@is_referral_user || (referral.respond_to?(:id) && @current_user_referral && referral.id == @current_user_referral.id) %>
                 <% if data[:invitations].any? || data[:reschedules].any? %>
                   <div class="card-details">
                     <% if data[:invitations].any? %>
@@ -261,7 +262,7 @@
                     <% if data[:reschedules].any? %>
                       <div class="card-detail-section">
                         <span class="detail-label">Remarcações:</span>
-                        <% show_reschedule_names = !@is_referral_user || (referral && @current_user_referral && referral.id == @current_user_referral.id) %>
+                        <% show_reschedule_names = !@is_referral_user || (referral.respond_to?(:id) && @current_user_referral && referral.id == @current_user_referral.id) %>
                         <% if show_reschedule_names %>
                           <div class="patient-links">
                             <% data[:reschedules].each_with_index do |appointment, index| %>

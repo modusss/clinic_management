@@ -700,10 +700,12 @@ module ClinicManagement
       end
 
       def prepare_invitations_reschedules_data(invitations, appointments, interactions)
-        # Estrutura: { date => { referral => { invitations: [], reschedules: [], whatsapp_count: 0, phone_count: 0 } } }
+        # Structure: { date => { referral_or_local_user_key => { invitations: [], reschedules: [], whatsapp_count: 0, phone_count: 0 } } }
+        # ESSENTIAL: Keys can be Referral (normal) or { local_user: User } for non-referral users who had interactions.
+        # Non-referral users (Local) are displayed as "Vanessa (Local)", "Rose (Local)" - only users who participated.
         data = {}
         
-        # Build map of User ID -> Referral
+        # Build map of User ID -> Referral (only for users with referral membership)
         user_referral_map = build_user_referral_map
 
         # Get all unique dates from invitations, appointments, and interactions
@@ -724,29 +726,45 @@ module ClinicManagement
           
           # Process invitations
           date_invitations.group_by(&:referral).each do |referral, invites|
+            next unless referral
             referral_data[referral] ||= init_referral_data
             referral_data[referral][:invitations] = invites
           end
           
           # Process appointments (reschedules)
           date_appointments.group_by { |apt| apt.invitation&.referral }.each do |referral, apts|
+            next unless referral
             referral_data[referral] ||= init_referral_data
             referral_data[referral][:reschedules] = apts
           end
 
-          # Process interactions
+          # Process interactions: referral users -> their referral; non-referral users -> "User (Local)" rows
+          non_referral_user_ids = date_interactions.map(&:user_id).compact.uniq.reject { |uid| user_referral_map[uid] }
+          users_by_id = non_referral_user_ids.any? ? User.where(id: non_referral_user_ids).index_by(&:id) : {}
+          
           date_interactions.group_by(&:user_id).each do |user_id, user_ints|
+            next if user_id.nil?
+            
             referral = user_referral_map[user_id]
-            next unless referral
             
-            referral_data[referral] ||= init_referral_data
-            
-            # Count unique leads per interaction type (1 per lead/day limit)
-            whatsapp_leads = user_ints.select { |i| i.interaction_type == 'whatsapp_click' }.map(&:lead_id).uniq
-            phone_leads = user_ints.select { |i| i.interaction_type == 'phone_call' }.map(&:lead_id).uniq
-            
-            referral_data[referral][:whatsapp_count] += whatsapp_leads.count
-            referral_data[referral][:phone_count] += phone_leads.count
+            if referral
+              # Referral user: attribute to their referral
+              referral_data[referral] ||= init_referral_data
+              whatsapp_leads = user_ints.select { |i| i.interaction_type == 'whatsapp_click' }.map(&:lead_id).uniq
+              phone_leads = user_ints.select { |i| i.interaction_type == 'phone_call' }.map(&:lead_id).uniq
+              referral_data[referral][:whatsapp_count] += whatsapp_leads.count
+              referral_data[referral][:phone_count] += phone_leads.count
+            else
+              # Non-referral user (Local): create per-user row "Vanessa (Local)", "Rose (Local)"
+              user = users_by_id[user_id]
+              next unless user
+              local_user_key = { local_user: user }
+              referral_data[local_user_key] ||= init_referral_data
+              whatsapp_leads = user_ints.select { |i| i.interaction_type == 'whatsapp_click' }.map(&:lead_id).uniq
+              phone_leads = user_ints.select { |i| i.interaction_type == 'phone_call' }.map(&:lead_id).uniq
+              referral_data[local_user_key][:whatsapp_count] += whatsapp_leads.count
+              referral_data[local_user_key][:phone_count] += phone_leads.count
+            end
           end
           
           data[date] = referral_data unless referral_data.empty?
@@ -784,9 +802,12 @@ module ClinicManagement
         end
         
         # Calculate interactions per referral for the period
+        # ESSENTIAL: Non-referral users (no membership) -> attribute to Local
         user_referral_map = build_user_referral_map
+        local_referral = Referral.find_by(name: "Local")
         @interactions.group_by(&:user_id).each do |user_id, user_ints|
-          referral = user_referral_map[user_id]
+          next if user_id.nil?
+          referral = user_referral_map[user_id] || local_referral
           next unless referral
           
           totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0, whatsapp_count: 0, phone_count: 0 }
@@ -924,11 +945,14 @@ module ClinicManagement
         end
         
         # Calculate interactions per referral for this month
+        # ESSENTIAL: Non-referral users -> attribute to Local
         interactions = LeadInteraction.where(occurred_at: start_date.beginning_of_day..end_date.end_of_day)
         user_referral_map = build_user_referral_map
+        local_referral = Referral.find_by(name: "Local")
         
         interactions.group_by(&:user_id).each do |user_id, user_ints|
-          referral = user_referral_map[user_id]
+          next if user_id.nil?
+          referral = user_referral_map[user_id] || local_referral
           next unless referral
           
           totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0, whatsapp_count: 0, phone_count: 0 }
