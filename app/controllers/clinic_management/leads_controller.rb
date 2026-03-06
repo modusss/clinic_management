@@ -322,8 +322,19 @@ module ClinicManagement
       @leads = params.blank? ? [] : Lead.search_by_name_or_phone(params)   
       @leads = @leads.limit(10) unless @leads.blank?
       
-      # Adicionar available_services para uso no partial
-      @available_services = ClinicManagement::Service.where("date >= ?", Date.current).order(date: :asc)
+      # ESSENTIAL: available_services filtered by navbar location when multi-regions enabled.
+      # Ensures reschedule form only shows services for the selected locality.
+      scope = ClinicManagement::Service.where(canceled: [nil, false]).where("date >= ?", Date.current).order(date: :asc)
+      loc_filter = current_account&.multi_service_locations_enabled? ? current_service_location_id.to_s : nil
+      @available_services = loc_filter.nil? ? scope : scope.merge(ClinicManagement::Service.for_location(loc_filter))
+      @available_services = @available_services.includes(:service_location)
+
+      # Label for user reminder: which locality the reschedule form is operating under
+      @current_location_label = if current_account&.multi_service_locations_enabled? && ClinicManagement::ServiceLocation.any?
+        current_service_location_id.blank? ? "Interno" : (current_service_location_id.to_s == "all" ? "Todos externos" : (ClinicManagement::ServiceLocation.find_by(id: current_service_location_id)&.name || "Interno"))
+      else
+        nil
+      end
       
       # Pré-carregar os dados necessários para cada lead
       unless @leads.blank?
@@ -366,7 +377,7 @@ module ClinicManagement
             render turbo_stream: 
                   turbo_stream.update("lead-results", 
                                       partial: "lead_results", 
-                                      locals: { leads: @leads, available_services: @available_services })
+                                      locals: { leads: @leads, available_services: @available_services, current_location_label: @current_location_label })
         end
       end
     end

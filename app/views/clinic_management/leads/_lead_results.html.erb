@@ -59,6 +59,13 @@
           
           <!-- Shortcut para agendamento -->
           <div class="mt-2 pt-2 border-t border-gray-100">
+            <%# ESSENTIAL: Reminder only when multi-locations mode enabled. Avoids confusion about which locality the reschedule applies to. %>
+            <% if current_account&.multi_service_locations_enabled? && defined?(current_location_label) && current_location_label.present? %>
+              <div class="flex items-center gap-1.5 mb-2 px-2 py-1.5 bg-amber-50 border border-amber-200 rounded text-amber-800 text-xs" role="status" aria-live="polite">
+                <i class="fas fa-map-marker-alt text-amber-600 flex-shrink-0" aria-hidden="true"></i>
+                <span><strong>Local ativo:</strong> <%= current_location_label %> — a remarcação será para este local</span>
+              </div>
+            <% end %>
             <div class="text-gray-600 text-xs font-medium mb-1">Agendar para:</div>
             
             <% 
