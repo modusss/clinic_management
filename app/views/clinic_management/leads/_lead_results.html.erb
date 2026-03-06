@@ -68,22 +68,13 @@
             %>
             
             <% if last_appointment.present? %>
-              <!-- Renderizar modal de remarcação (exceto para referrals e managers) -->
-              <% unless referral?(current_user) || is_manager_above? %>
-                <%= render 'clinic_management/appointments/recapture_modal', 
-                           lead: lead, 
-                           old_appointment: last_appointment,
-                           available_services: available_services,
-                           referral_id: default_referral_id %>
-              <% end %>
-              
               <%= form_with url: reschedule_appointment_path(last_appointment), 
                            method: :post, 
                            local: true, 
                            html: { 
                              class: "flex flex-col space-y-2",
                              id: "reschedule-shortcut-form-#{last_appointment.id}",
-                             onsubmit: "return handleRescheduleShortcutSubmit(event, this, #{last_appointment.id})"
+                             onsubmit: "return handleRescheduleShortcutSubmit(event, this)"
                            } do |f| %>
                 
                 <div class="w-full">
@@ -160,31 +151,19 @@
 <% end %>
 
 <script>
-  // Interceptar submit dos formulários shortcut de remarcação
-  function handleRescheduleShortcutSubmit(event, form, appointmentId) {
-    event.preventDefault();
-    
-    const serviceSelect = form.querySelector('select[name="appointment[service_id]"]');
-    const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
-    
-    if (!serviceSelect.value) {
+  /**
+   * Validates reschedule shortcut form before submit.
+   * ESSENTIAL: form_with url: (no model scope) generates name="service_id",
+   * NOT name="appointment[service_id]". Use flexible selector to support both.
+   */
+  function handleRescheduleShortcutSubmit(event, form) {
+    const serviceSelect = form.querySelector('select[name="service_id"]') ||
+                         form.querySelector('select[name="appointment[service_id]"]');
+    if (!serviceSelect || !serviceSelect.value) {
+      event.preventDefault();
       alert('Por favor, escolha um dia para a remarcação');
       return false;
     }
-    
-    // Verificar se o usuário é referral ou manager/owner
-    const isReferralOrManager = <%= referral?(current_user) || is_manager_above? %>;
-    
-    if (isReferralOrManager) {
-      // Para referrals e managers, fazer submit direto sem modal
-      form.removeAttribute('onsubmit'); // Remover interceptação
-      form.submit(); // Submit direto
-      return false;
-    }
-    
-    // Abrir modal com informações do serviço selecionado
-    openRecaptureModal(serviceSelect.value, selectedOption.text, appointmentId);
-    
-    return false;
+    return true; // Allow submit
   }
 </script>

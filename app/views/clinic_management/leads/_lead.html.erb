@@ -144,6 +144,9 @@
         # ESSENTIAL: Always include current_user.id so we know who shared the link
         url_params[:reg_by] = current_user.id if current_user.present?
         
+        # 3. LOCATION (uses navbar selection - current_service_location_id)
+        url_params[:loc] = current_service_location_id if current_service_location_id.present?
+        
         # Build the self-booking link with all parameters
         self_booking_link = clinic_management.self_booking_path(lead.self_booking_token!, url_params)
         full_link = "#{request.base_url}#{self_booking_link}"
@@ -157,14 +160,12 @@
         </dt>
         <dd class="mt-1 sm:mt-0 sm:col-span-2">
           <% if current_account&.multi_service_locations_enabled? && ClinicManagement::ServiceLocation.any? %>
-          <div class="mb-3">
-            <label for="lead-share-loc-<%= lead.id %>" class="block text-sm font-medium text-gray-700 mb-1">Local do atendimento</label>
-            <select id="lead-share-loc-<%= lead.id %>" class="lead-share-loc-select w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-700 text-sm">
-              <option value="" selected>Interno</option>
-              <% ClinicManagement::ServiceLocation.order(:name).each do |loc| %>
-                <option value="<%= loc.id %>"><%= loc.name %></option>
-              <% end %>
-            </select>
+          <div class="mb-3 share-loc-info">
+            <span class="text-sm text-gray-600 block mb-0.5">Compartilhando para:</span>
+            <span class="text-emerald-700 font-medium inline-flex items-center">
+              <i class="fas fa-map-marker-alt text-emerald-500 mr-1"></i>
+              <%= current_service_location_id.blank? ? "Interno" : (current_service_location_id.to_s == "all" ? "Todos externos" : (ClinicManagement::ServiceLocation.find_by(id: current_service_location_id)&.name || "Interno")) %>
+            </span>
           </div>
           <% end %>
           <div class="text-sm text-gray-600 mb-3">
@@ -238,32 +239,6 @@
           </p>
         </dd>
       </div>
-      <% if current_account&.multi_service_locations_enabled? && ClinicManagement::ServiceLocation.any? %>
-      <script>
-        (function() {
-          var block = document.querySelector('.lead-self-booking-block[data-lead-id="<%= lead.id %>"]');
-          if (!block) return;
-          var select = block.querySelector('.lead-share-loc-select');
-          var input = block.querySelector('[data-copy-link-target="input"]');
-          var waLink = block.querySelector('a[href^="https://wa.me/"]');
-          if (!select || !input) return;
-          function updateLeadShareUrl() {
-            var baseUrl = block.getAttribute('data-base-url') || '';
-            var loc = select.value || '';
-            var url = baseUrl;
-            if (loc) {
-              url = baseUrl + (baseUrl.indexOf('?') >= 0 ? '&' : '?') + 'loc=' + encodeURIComponent(loc);
-            }
-            input.value = url;
-            if (waLink) {
-              var msg = "Olá! Segue o link para você agendar sua consulta: " + url;
-              waLink.href = "https://wa.me/55<%= lead.phone %>?text=" + encodeURIComponent(msg);
-            }
-          }
-          select.addEventListener('change', updateLeadShareUrl);
-        })();
-      </script>
-      <% end %>
       <% end %>
       
       <% unless referral?(current_user) %>
