@@ -5,10 +5,14 @@
       <div class="flex flex-wrap justify-between items-center">
         <h1 class="text-white text-xl font-bold mb-4 sm:mb-0 w-full sm:w-auto text-center sm:text-left flex items-center gap-2">
           <%= link_to raw("Lipepay <span class='ml-1 text-xs bg-white text-emerald-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), clinic_management.index_today_path, class: "text-white hover:text-emerald-300" %>
-          <%# ESSENTIAL: Location selector for doctors - Interno + their allowed externals. %>
+          <%# ESSENTIAL: Location selector for doctors - Interno + their allowed externals. High prominence for context. %>
           <% if doctor_service_location_options.present? && doctor_service_location_options.size > 1 %>
-            <%= form_with url: clinic_management.switch_service_locations_path, method: :post, local: true, data: { turbo: false }, class: "inline" do |f| %>
-              <%= f.select :location_id, options_for_select(doctor_service_location_options, current_service_location_id.to_s), {}, { class: "text-sm rounded px-2 py-1 text-gray-800 ml-2", onchange: "this.form.submit()" } %>
+            <%= form_with url: clinic_management.switch_service_locations_path, method: :post, local: true, data: { turbo: false }, class: "inline ml-3" do |f| %>
+              <label for="navbar-location-select-doctor" class="sr-only">Local de atendimento</label>
+              <span class="navbar-location-badge inline-flex items-center gap-2">
+                <i class="fas fa-map-marker-alt text-emerald-600 text-sm flex-shrink-0" aria-hidden="true"></i>
+                <%= f.select :location_id, options_for_select(doctor_service_location_options, current_service_location_id.to_s), {}, { id: "navbar-location-select-doctor", class: "navbar-location-select", onchange: "this.form.submit()" } %>
+              </span>
             <% end %>
           <% end %>
         </h1>
@@ -213,10 +217,14 @@
     <div class="flex flex-wrap justify-between items-center">
       <h1 class="text-white text-2xl font-bold mb-4 sm:mb-0 w-full sm:w-auto text-center sm:text-left flex items-center gap-2">
          <%= link_to raw("Lipepay <span class='ml-1 text-xs bg-white text-emerald-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-emerald-300" %>
-         <%# ESSENTIAL: Location selector visible to all staff (operator, seller, basic, manager, owner, clinical_assistant) when multi-regions enabled. %>
+         <%# ESSENTIAL: Location selector visible to all staff when multi-regions enabled. High prominence for user context. %>
          <% if current_account&.multi_service_locations_enabled? && ClinicManagement::ServiceLocation.any? %>
-         <%= form_with url: clinic_management.switch_service_locations_path, method: :post, local: true, data: { turbo: false }, class: "inline" do |f| %>
-           <%= f.select :location_id, options_for_select([["Interno", ""], ["Todos externos", "all"]] + ClinicManagement::ServiceLocation.order(:name).map { |loc| [loc.name, loc.id.to_s] }, current_service_location_id.to_s), {}, { class: "text-sm rounded px-2 py-1 text-gray-800 ml-2", onchange: "this.form.submit()" } %>
+         <%= form_with url: clinic_management.switch_service_locations_path, method: :post, local: true, data: { turbo: false }, class: "inline ml-3" do |f| %>
+           <label for="navbar-location-select-staff" class="sr-only">Local de atendimento</label>
+           <span class="navbar-location-badge inline-flex items-center gap-2">
+             <i class="fas fa-map-marker-alt text-emerald-600 text-sm flex-shrink-0" aria-hidden="true"></i>
+             <%= f.select :location_id, options_for_select([["Interno", ""], ["Todos externos", "all"]] + ClinicManagement::ServiceLocation.order(:name).map { |loc| [loc.name, loc.id.to_s] }, current_service_location_id.to_s), {}, { id: "navbar-location-select-staff", class: "navbar-location-select", onchange: "this.form.submit()" } %>
+           </span>
          <% end %>
          <% end %>
       </h1>
@@ -400,7 +408,49 @@
 <% end %>
 
 <style>
+  /* ESSENTIAL: Location selector - high prominence for user context tracking. */
+  .navbar-location-badge {
+    background: rgba(255, 255, 255, 0.97);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    border-radius: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .navbar-location-badge:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+    border-color: rgba(16, 185, 129, 0.5);
+  }
+  .navbar-location-select {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #065f46;
+    background: transparent;
+    border: none;
+    padding: 0;
+    min-width: 8.5rem;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23065f46'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.25rem center;
+    background-size: 1.25rem;
+    padding-right: 1.75rem;
+  }
+  .navbar-location-select:focus {
+    outline: none;
+  }
+  .navbar-location-select option {
+    font-weight: 500;
+    padding: 0.5rem;
+  }
+
   @media (max-width: 640px) {
+    .navbar-location-select {
+      font-size: 0.9375rem;
+      min-width: 7.5rem;
+    }
     #search_lead_container {
       width: 100%;
       margin-bottom: 16px;
