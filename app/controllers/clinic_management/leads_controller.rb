@@ -62,10 +62,20 @@ module ClinicManagement
       
       if interaction_type == 'whatsapp_click' && can_use_evolution_api?
         Rails.logger.info "[RECORD MSG] Verificando WhatsApp para Lead ##{@lead.id}: #{@lead.phone}"
-        
-        # Obter nome da instância do usuário atual
+
+        # ESSENTIAL: Referrals must use their own instances — never clinic's.
+        # If no instance available, fail early instead of falling back to clinic.
         instance_name = get_evolution_instance_name
-        
+        if instance_name.blank?
+          flash[:alert] = "Nenhuma instância WhatsApp conectada. Configure sua conexão em WhatsApp."
+          respond_to do |format|
+            format.turbo_stream do
+              render turbo_stream: turbo_stream.update("flash", partial: "shared/flash_messages"), status: :unprocessable_entity
+            end
+          end
+          return
+        end
+
         # Verificar se o número tem WhatsApp
         whatsapp_check = helpers.check_whatsapp_number(@lead.phone, instance_name)
         
@@ -181,8 +191,17 @@ module ClinicManagement
       end
       
       # Obter nome da instância do usuário atual
+      # ESSENTIAL: Referrals must use their own instances — never clinic's.
       instance_name = get_evolution_instance_name
-      
+      if instance_name.blank?
+        return render json: {
+          has_whatsapp: false,
+          api_error: true,
+          message: "Nenhuma instância WhatsApp conectada. Configure sua conexão em WhatsApp.",
+          error: "no_instance"
+        }
+      end
+
       # Verificar se o número tem WhatsApp via Evolution API
       whatsapp_check = helpers.check_whatsapp_number(@lead.phone, instance_name)
       
@@ -1177,13 +1196,14 @@ module ClinicManagement
         # ESSENTIAL: Prioritize dedicated bulk instances over clinic instance (instance_2).
         # Using instance_2 for bulk messaging risks WhatsApp ban on the clinic number.
         # Bulk instances are separate numbers specifically for mass sending.
-        # Only used when the bulk_evolution feature is enabled for this account.
+        # When bulk_evolution_enabled but no bulk instances configured, fall back to
+        # instance_2 so bulk send still works until user configures dedicated connections.
         if account&.bulk_evolution_enabled?
           bulk_names = BulkEvolutionInstance.connected_instance_names(account.id)
           return bulk_names if bulk_names.present?
         end
 
-        # Fallback: instance_2 (clinic) — only used if no bulk instances exist
+        # Fallback: instance_2 (clinic) — used when bulk disabled or no bulk instances
         instance = account&.evolution_instance_name_2
         instance.present? ? [instance] : []
       end
