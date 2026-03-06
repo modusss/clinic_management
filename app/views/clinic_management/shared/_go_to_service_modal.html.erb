@@ -1,7 +1,7 @@
 <%# ESSENTIAL: Modal for "Ir para atendimento" - grouped by day, sorted by start_time within each day.
     Receives: modal_id, trigger_id, grouped_by_day (array of { date:, weekday:, date_str:, items: [{ service:, url: }] }). %>
 <div id="<%= modal_id %>" class="go-to-service-modal" role="dialog" aria-labelledby="<%= modal_id %>-title" aria-modal="true" aria-hidden="true">
-  <div class="go-to-service-modal-backdrop" data-dismiss="<%= modal_id %>"></div>
+  <div class="go-to-service-modal-backdrop" data-action="click->go-to-service-modal#close" role="button" tabindex="-1" aria-label="Fechar modal"></div>
   <div class="go-to-service-modal-dialog">
     <div class="go-to-service-modal-content">
       <div class="go-to-service-modal-header">
@@ -9,7 +9,7 @@
           <i class="fas fa-calendar-alt mr-2" aria-hidden="true"></i>
           Ir para atendimento
         </h2>
-        <button type="button" class="go-to-service-modal-close" data-dismiss="<%= modal_id %>" aria-label="Fechar">
+        <button type="button" class="go-to-service-modal-close" data-action="click->go-to-service-modal#close" aria-label="Fechar">
           <i class="fas fa-times"></i>
         </button>
       </div>

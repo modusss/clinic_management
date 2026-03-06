@@ -102,18 +102,20 @@
           <div id="lead-results" class="absolute mt-1 w-full bg-white shadow-lg rounded-b" style="z-index: 1000"></div>
         </div>
 
-        <%# ESSENTIAL: Button trigger + modal for "Ir para atendimento" - referral. Grouped by day, sorted by start_time. %>
+        <%# ESSENTIAL: Button trigger + modal for "Ir para atendimento" - referral. Stimulus controller for reliable open/close (Turbo-safe). %>
         <% referral_services = ClinicManagement::Service.joins(:appointments).includes(:service_location).where(appointments: { referral_code: user_referral.code }).where("date >= ?", Date.current).distinct.order(date: :asc, start_time: :asc).limit(20) %>
         <% referral_services_with_urls = referral_services.map { |s| { service: s, url: clinic_management.show_by_referral_services_path(referral_id: user_referral.id, id: s.id) } } %>
         <% referral_grouped_by_day = referral_services_with_urls.group_by { |i| i[:service].date }.sort_by { |date, _| date }.map { |date, items| wd = date.wday == 6 ? 7 : date.wday + 1; { date: date, weekday: (ClinicManagement::TimeSlotsHelper::WEEKDAY_NAMES[wd] || ""), date_str: date.strftime("%d/%m/%Y"), items: items.sort_by { |i| i[:service].start_time&.to_s || "00:00" } } } %>
-        <div class="flex items-center order-4 ml-4 mt-4 sm:mt-0">
-          <button type="button" id="go-to-service-trigger-referral" class="go-to-service-trigger" data-modal="go-to-service-modal-referral" aria-haspopup="dialog" aria-expanded="false">
-            <i class="fas fa-calendar-check text-white/90 mr-2" aria-hidden="true"></i>
-            <span>Ir para atendimento...</span>
-            <i class="fas fa-chevron-down text-white/80 ml-2 text-sm" aria-hidden="true"></i>
-          </button>
+        <div data-controller="go-to-service-modal" data-go-to-service-modal-modal-id-value="go-to-service-modal-referral">
+          <div class="flex items-center order-4 ml-4 mt-4 sm:mt-0">
+            <button type="button" id="go-to-service-trigger-referral" class="go-to-service-trigger" data-modal="go-to-service-modal-referral" data-action="click->go-to-service-modal#open" aria-haspopup="dialog" aria-expanded="false">
+              <i class="fas fa-calendar-check text-white/90 mr-2" aria-hidden="true"></i>
+              <span>Ir para atendimento...</span>
+              <i class="fas fa-chevron-down text-white/80 ml-2 text-sm" aria-hidden="true"></i>
+            </button>
+          </div>
+          <%= render "clinic_management/shared/go_to_service_modal", modal_id: "go-to-service-modal-referral", trigger_id: "go-to-service-trigger-referral", grouped_by_day: referral_grouped_by_day, current_path: request.path %>
         </div>
-        <%= render "clinic_management/shared/go_to_service_modal", modal_id: "go-to-service-modal-referral", trigger_id: "go-to-service-trigger-referral", grouped_by_day: referral_grouped_by_day, current_path: request.path %>
 
         <% if user_signed_in? %>
           <div class="flex items-center order-1 sm:order-4 mt-4 sm:mt-0">
@@ -280,18 +282,20 @@
         <div id="lead-results" class="absolute mt-1 w-full bg-white shadow-lg rounded-b" style="z-index: 1000"></div>
       </div>
 
-      <%# ESSENTIAL: Button trigger + modal for "Ir para atendimento" - fixed width, no layout break. Grouped by day, sorted by start_time. %>
+      <%# ESSENTIAL: Button trigger + modal for "Ir para atendimento". Stimulus controller for reliable open/close (Turbo-safe). %>
       <% staff_services = ClinicManagement::Service.for_location(current_service_location_id).includes(:service_location).where("date >= ?", Date.current).order(date: :asc, start_time: :asc).limit(20) %>
       <% staff_services_with_urls = staff_services.map { |s| { service: s, url: clinic_management.service_path(s) } } %>
       <% staff_grouped_by_day = staff_services_with_urls.group_by { |i| i[:service].date }.sort_by { |date, _| date }.map { |date, items| wd = date.wday == 6 ? 7 : date.wday + 1; { date: date, weekday: (ClinicManagement::TimeSlotsHelper::WEEKDAY_NAMES[wd] || ""), date_str: date.strftime("%d/%m/%Y"), items: items.sort_by { |i| i[:service].start_time&.to_s || "00:00" } } } %>
-      <div class="flex items-center order-4 ml-4 mt-4 sm:mt-0">
-        <button type="button" id="go-to-service-trigger-staff" class="go-to-service-trigger" data-modal="go-to-service-modal-staff" aria-haspopup="dialog" aria-expanded="false">
-          <i class="fas fa-calendar-check text-white/90 mr-2" aria-hidden="true"></i>
-          <span>Ir para atendimento...</span>
-          <i class="fas fa-chevron-down text-white/80 ml-2 text-sm" aria-hidden="true"></i>
-        </button>
+      <div data-controller="go-to-service-modal" data-go-to-service-modal-modal-id-value="go-to-service-modal-staff">
+        <div class="flex items-center order-4 ml-4 mt-4 sm:mt-0">
+          <button type="button" id="go-to-service-trigger-staff" class="go-to-service-trigger" data-modal="go-to-service-modal-staff" data-action="click->go-to-service-modal#open" aria-haspopup="dialog" aria-expanded="false">
+            <i class="fas fa-calendar-check text-white/90 mr-2" aria-hidden="true"></i>
+            <span>Ir para atendimento...</span>
+            <i class="fas fa-chevron-down text-white/80 ml-2 text-sm" aria-hidden="true"></i>
+          </button>
+        </div>
+        <%= render "clinic_management/shared/go_to_service_modal", modal_id: "go-to-service-modal-staff", trigger_id: "go-to-service-trigger-staff", grouped_by_day: staff_grouped_by_day, current_path: request.path %>
       </div>
-      <%= render "clinic_management/shared/go_to_service_modal", modal_id: "go-to-service-modal-staff", trigger_id: "go-to-service-trigger-staff", grouped_by_day: staff_grouped_by_day, current_path: request.path %>
 
       <% if user_signed_in? %>
         <div class="flex items-center text-white order-1 sm:order-5">
@@ -687,35 +691,7 @@
 </style>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // ESSENTIAL: Go-to-service modal - open/close, escape key, backdrop click.
-    document.querySelectorAll('.go-to-service-trigger').forEach(function(btn) {
-      var modalId = btn.getAttribute('data-modal');
-      var modal = document.getElementById(modalId);
-      if (!modal) return;
-
-      function openModal() {
-        modal.setAttribute('aria-hidden', 'false');
-        btn.setAttribute('aria-expanded', 'true');
-        document.body.style.overflow = 'hidden';
-        modal.querySelector('.go-to-service-modal-close')?.focus();
-      }
-      function closeModal() {
-        modal.setAttribute('aria-hidden', 'true');
-        btn.setAttribute('aria-expanded', 'false');
-        document.body.style.overflow = '';
-        btn.focus();
-      }
-
-      btn.addEventListener('click', openModal);
-      modal.querySelector('.go-to-service-modal-backdrop')?.addEventListener('click', closeModal);
-      modal.querySelector('.go-to-service-modal-close')?.addEventListener('click', closeModal);
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && modal.getAttribute('aria-hidden') === 'false') closeModal();
-      });
-    });
-  });
-  
+  <%# Go-to-service modal: now handled by Stimulus (go_to_service_modal_controller.js) — Turbo-safe. %>
   /**
    * Copies the share link to clipboard and shows visual feedback.
    * 
