@@ -105,9 +105,10 @@
           <div id="lead-results" class="absolute mt-1 w-full bg-white shadow-lg rounded-b" style="z-index: 1000"></div>
         </div>
 
-        <%# ESSENTIAL: Button trigger + modal for "Ir para atendimento" - referral. Fixed width, no layout break. %>
-        <% referral_services = ClinicManagement::Service.joins(:appointments).includes(:service_location).where(appointments: { referral_code: user_referral.code }).where("date >= ?", Date.current).distinct.order(date: :asc).limit(20) %>
+        <%# ESSENTIAL: Button trigger + modal for "Ir para atendimento" - referral. Grouped by day, sorted by start_time. %>
+        <% referral_services = ClinicManagement::Service.joins(:appointments).includes(:service_location).where(appointments: { referral_code: user_referral.code }).where("date >= ?", Date.current).distinct.order(date: :asc, start_time: :asc).limit(20) %>
         <% referral_services_with_urls = referral_services.map { |s| { service: s, url: clinic_management.show_by_referral_services_path(referral_id: user_referral.id, id: s.id) } } %>
+        <% referral_grouped_by_day = referral_services_with_urls.group_by { |i| i[:service].date }.sort_by { |date, _| date }.map { |date, items| wd = date.wday == 6 ? 7 : date.wday + 1; { date: date, weekday: (ClinicManagement::TimeSlotsHelper::WEEKDAY_NAMES[wd] || ""), date_str: date.strftime("%d/%m/%Y"), items: items.sort_by { |i| i[:service].start_time&.to_s || "00:00" } } } %>
         <div class="flex items-center order-4 ml-4 mt-4 sm:mt-0">
           <button type="button" id="go-to-service-trigger-referral" class="go-to-service-trigger" data-modal="go-to-service-modal-referral" aria-haspopup="dialog" aria-expanded="false">
             <i class="fas fa-calendar-check text-white/90 mr-2" aria-hidden="true"></i>
@@ -115,7 +116,7 @@
             <i class="fas fa-chevron-down text-white/80 ml-2 text-sm" aria-hidden="true"></i>
           </button>
         </div>
-        <%= render "clinic_management/shared/go_to_service_modal", modal_id: "go-to-service-modal-referral", trigger_id: "go-to-service-trigger-referral", services_with_urls: referral_services_with_urls, current_path: request.path %>
+        <%= render "clinic_management/shared/go_to_service_modal", modal_id: "go-to-service-modal-referral", trigger_id: "go-to-service-trigger-referral", grouped_by_day: referral_grouped_by_day, current_path: request.path %>
 
         <% if user_signed_in? %>
           <div class="flex items-center order-1 sm:order-4 mt-4 sm:mt-0">
@@ -290,9 +291,10 @@
         <div id="lead-results" class="absolute mt-1 w-full bg-white shadow-lg rounded-b" style="z-index: 1000"></div>
       </div>
 
-      <%# ESSENTIAL: Button trigger + modal for "Ir para atendimento" - fixed width, no layout break. %>
-      <% staff_services = ClinicManagement::Service.for_location(current_service_location_id).includes(:service_location).where("date >= ?", Date.current).order(date: :asc).limit(20) %>
+      <%# ESSENTIAL: Button trigger + modal for "Ir para atendimento" - fixed width, no layout break. Grouped by day, sorted by start_time. %>
+      <% staff_services = ClinicManagement::Service.for_location(current_service_location_id).includes(:service_location).where("date >= ?", Date.current).order(date: :asc, start_time: :asc).limit(20) %>
       <% staff_services_with_urls = staff_services.map { |s| { service: s, url: clinic_management.service_path(s) } } %>
+      <% staff_grouped_by_day = staff_services_with_urls.group_by { |i| i[:service].date }.sort_by { |date, _| date }.map { |date, items| wd = date.wday == 6 ? 7 : date.wday + 1; { date: date, weekday: (ClinicManagement::TimeSlotsHelper::WEEKDAY_NAMES[wd] || ""), date_str: date.strftime("%d/%m/%Y"), items: items.sort_by { |i| i[:service].start_time&.to_s || "00:00" } } } %>
       <div class="flex items-center order-4 ml-4 mt-4 sm:mt-0">
         <button type="button" id="go-to-service-trigger-staff" class="go-to-service-trigger" data-modal="go-to-service-modal-staff" aria-haspopup="dialog" aria-expanded="false">
           <i class="fas fa-calendar-check text-white/90 mr-2" aria-hidden="true"></i>
@@ -300,7 +302,7 @@
           <i class="fas fa-chevron-down text-white/80 ml-2 text-sm" aria-hidden="true"></i>
         </button>
       </div>
-      <%= render "clinic_management/shared/go_to_service_modal", modal_id: "go-to-service-modal-staff", trigger_id: "go-to-service-trigger-staff", services_with_urls: staff_services_with_urls, current_path: request.path %>
+      <%= render "clinic_management/shared/go_to_service_modal", modal_id: "go-to-service-modal-staff", trigger_id: "go-to-service-trigger-staff", grouped_by_day: staff_grouped_by_day, current_path: request.path %>
 
       <% if user_signed_in? %>
         <div class="flex items-center text-white order-1 sm:order-5">
@@ -549,7 +551,7 @@
   }
   .go-to-service-modal-body {
     padding: 0.75rem;
-    max-height: 20rem;
+    max-height: 700px;
     overflow-y: auto;
   }
   .go-to-service-modal-empty {
@@ -610,6 +612,22 @@
   .go-to-service-item-arrow {
     flex-shrink: 0;
   }
+  .go-to-service-day-group {
+    margin-bottom: 1.25rem;
+  }
+  .go-to-service-day-group:last-child {
+    margin-bottom: 0;
+  }
+  .go-to-service-day-header {
+    margin: 0 0 0.5rem 0;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #065f46;
+    background: #ecfdf5;
+    border-radius: 0.375rem;
+    border-left: 3px solid #10b981;
+  }
 
   @media (max-width: 767px) {
     .go-to-service-trigger {
@@ -620,7 +638,7 @@
       max-height: 85vh;
     }
     .go-to-service-modal-body {
-      max-height: 16rem;
+      max-height: 50%;
     }
 
     .navbar-search {
