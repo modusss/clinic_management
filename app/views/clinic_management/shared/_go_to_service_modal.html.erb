@@ -1,0 +1,59 @@
+<%# ESSENTIAL: Modal for "Ir para atendimento" - replaces native select to fix width issues and improve UX.
+    Works on mobile and desktop. Receives: modal_id, trigger_id, services_with_urls (array of { service:, url: }), current_path (optional). %>
+<div id="<%= modal_id %>" class="go-to-service-modal" role="dialog" aria-labelledby="<%= modal_id %>-title" aria-modal="true" aria-hidden="true">
+  <div class="go-to-service-modal-backdrop" data-dismiss="<%= modal_id %>"></div>
+  <div class="go-to-service-modal-dialog">
+    <div class="go-to-service-modal-content">
+      <div class="go-to-service-modal-header">
+        <h2 id="<%= modal_id %>-title" class="go-to-service-modal-title">
+          <i class="fas fa-calendar-alt mr-2" aria-hidden="true"></i>
+          Ir para atendimento
+        </h2>
+        <button type="button" class="go-to-service-modal-close" data-dismiss="<%= modal_id %>" aria-label="Fechar">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="go-to-service-modal-body">
+        <% if services_with_urls.blank? %>
+          <p class="go-to-service-modal-empty text-gray-500 text-center py-8">
+            <i class="fas fa-inbox text-4xl mb-3 block opacity-50"></i>
+            Nenhum atendimento disponível para hoje.
+          </p>
+        <% else %>
+          <ul class="go-to-service-list" role="listbox">
+            <% services_with_urls.each do |item| %>
+              <% service = item[:service] %>
+              <% url = item[:url] %>
+              <% weekday = ClinicManagement::TimeSlotsHelper::WEEKDAY_NAMES[service.weekday.to_i] || "" %>
+              <% date_str = service.date&.strftime("%d/%m/%Y") || "" %>
+              <% times = [service.start_time&.strftime('%H:%M'), service.end_time&.strftime('%H:%M')].compact %>
+              <% time_str = times.size == 2 ? "#{times[0]}h às #{times[1]}h" : "" %>
+              <% loc_name = service.service_location&.name %>
+              <li role="option">
+                <a href="<%= url %>" class="go-to-service-item" data-turbo="false">
+                  <span class="go-to-service-item-icon">
+                    <i class="fas fa-clock text-emerald-500" aria-hidden="true"></i>
+                  </span>
+                  <span class="go-to-service-item-main">
+                    <span class="go-to-service-item-date"><%= weekday %>, <%= date_str %></span>
+                    <% if time_str.present? %>
+                      <span class="go-to-service-item-time"><%= time_str %></span>
+                    <% end %>
+                    <% if loc_name.present? %>
+                      <span class="go-to-service-item-location">
+                        <i class="fas fa-map-marker-alt text-xs mr-1" aria-hidden="true"></i><%= loc_name %>
+                      </span>
+                    <% end %>
+                  </span>
+                  <span class="go-to-service-item-arrow">
+                    <i class="fas fa-chevron-right text-gray-400 text-sm" aria-hidden="true"></i>
+                  </span>
+                </a>
+              </li>
+            <% end %>
+          </ul>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

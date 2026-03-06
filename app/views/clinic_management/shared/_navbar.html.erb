@@ -105,30 +105,17 @@
           <div id="lead-results" class="absolute mt-1 w-full bg-white shadow-lg rounded-b" style="z-index: 1000"></div>
         </div>
 
-        <!-- Dropdown de serviços disponíveis para referral -->
+        <%# ESSENTIAL: Button trigger + modal for "Ir para atendimento" - referral. Fixed width, no layout break. %>
+        <% referral_services = ClinicManagement::Service.joins(:appointments).includes(:service_location).where(appointments: { referral_code: user_referral.code }).where("date >= ?", Date.current).distinct.order(date: :asc).limit(20) %>
+        <% referral_services_with_urls = referral_services.map { |s| { service: s, url: clinic_management.show_by_referral_services_path(referral_id: user_referral.id, id: s.id) } } %>
         <div class="flex items-center order-4 ml-4 mt-4 sm:mt-0">
-          <div class="w-full sm:w-auto">
-            <select id="service_select" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    onchange="if(this.value != '') window.location.href=this.value">
-              <option value="" selected>Ir para atendimento...</option>
-              <% ClinicManagement::Service.joins(:appointments).includes(:service_location)
-                                          .where(appointments: { referral_code: user_referral.code })
-                                          .where("date >= ?", Date.current)
-                                          .distinct.order(date: :asc).limit(20).each do |service| %>
-                <option value="<%= clinic_management.show_by_referral_services_path(referral_id: user_referral.id, id: service.id) %>">
-                  <% weekday = ClinicManagement::TimeSlotsHelper::WEEKDAY_NAMES[service.weekday.to_i] || "" %>
-                  <% date_str = service.date&.strftime("%d/%m/%Y") || "" %>
-                  <% times = [service.start_time&.strftime('%H:%M'), service.end_time&.strftime('%H:%M')].compact %>
-                  <% time_str = times.size == 2 ? "#{times[0]}h às #{times[1]}h" : "" %>
-                  <% base = [weekday, date_str].reject(&:blank?).join(", ") %>
-                  <% base += " - #{time_str}" if time_str.present? %>
-                  <% base = "Local: #{service.service_location.name}, #{base}" if service.service_location.present? %>
-                  <%= base %>
-                </option>
-              <% end %>
-            </select>
-          </div>
+          <button type="button" id="go-to-service-trigger-referral" class="go-to-service-trigger" data-modal="go-to-service-modal-referral" aria-haspopup="dialog" aria-expanded="false">
+            <i class="fas fa-calendar-check text-white/90 mr-2" aria-hidden="true"></i>
+            <span>Ir para atendimento...</span>
+            <i class="fas fa-chevron-down text-white/80 ml-2 text-sm" aria-hidden="true"></i>
+          </button>
         </div>
+        <%= render "clinic_management/shared/go_to_service_modal", modal_id: "go-to-service-modal-referral", trigger_id: "go-to-service-trigger-referral", services_with_urls: referral_services_with_urls, current_path: request.path %>
 
         <% if user_signed_in? %>
           <div class="flex items-center order-1 sm:order-4 mt-4 sm:mt-0">
@@ -303,27 +290,17 @@
         <div id="lead-results" class="absolute mt-1 w-full bg-white shadow-lg rounded-b" style="z-index: 1000"></div>
       </div>
 
-      <!-- Dropdown de serviços disponíveis -->
+      <%# ESSENTIAL: Button trigger + modal for "Ir para atendimento" - fixed width, no layout break. %>
+      <% staff_services = ClinicManagement::Service.for_location(current_service_location_id).includes(:service_location).where("date >= ?", Date.current).order(date: :asc).limit(20) %>
+      <% staff_services_with_urls = staff_services.map { |s| { service: s, url: clinic_management.service_path(s) } } %>
       <div class="flex items-center order-4 ml-4 mt-4 sm:mt-0">
-        <div class="w-full sm:w-auto">
-          <select id="service_select" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  onchange="if(this.value != '') window.location.href=this.value">
-            <option value="" selected>Ir para atendimento...</option>
-            <% ClinicManagement::Service.for_location(current_service_location_id).includes(:service_location).where("date >= ?", Date.current).order(date: :asc).limit(20).each do |service| %>
-              <option value="<%= clinic_management.service_path(service) %>">
-                <% weekday = ClinicManagement::TimeSlotsHelper::WEEKDAY_NAMES[service.weekday.to_i] || "" %>
-                <% date_str = service.date&.strftime("%d/%m/%Y") || "" %>
-                <% times = [service.start_time&.strftime('%H:%M'), service.end_time&.strftime('%H:%M')].compact %>
-                <% time_str = times.size == 2 ? "#{times[0]}h às #{times[1]}h" : "" %>
-                <% base = [weekday, date_str].reject(&:blank?).join(", ") %>
-                <% base += " - #{time_str}" if time_str.present? %>
-                <% base = "Local: #{service.service_location.name}, #{base}" if current_service_location_id.to_s == "all" && service.service_location.present? %>
-                <%= base %>
-              </option>
-            <% end %>
-          </select>
-        </div>
+        <button type="button" id="go-to-service-trigger-staff" class="go-to-service-trigger" data-modal="go-to-service-modal-staff" aria-haspopup="dialog" aria-expanded="false">
+          <i class="fas fa-calendar-check text-white/90 mr-2" aria-hidden="true"></i>
+          <span>Ir para atendimento...</span>
+          <i class="fas fa-chevron-down text-white/80 ml-2 text-sm" aria-hidden="true"></i>
+        </button>
       </div>
+      <%= render "clinic_management/shared/go_to_service_modal", modal_id: "go-to-service-modal-staff", trigger_id: "go-to-service-trigger-staff", services_with_urls: staff_services_with_urls, current_path: request.path %>
 
       <% if user_signed_in? %>
         <div class="flex items-center text-white order-1 sm:order-5">
@@ -473,10 +450,177 @@
     }
   }
 
-  @media (max-width: 767px) {
+  /* ESSENTIAL: Go-to-service modal + trigger - fixed width, responsive. */
+  .go-to-service-trigger {
+    display: inline-flex;
+    align-items: center;
+    min-width: 11rem;
+    max-width: 14rem;
+    padding: 0.5rem 0.875rem;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 0.5rem;
+    color: white;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .go-to-service-trigger:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.45);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+  .go-to-service-trigger span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .go-to-service-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+  }
+  .go-to-service-modal[aria-hidden="false"] {
+    opacity: 1;
+    visibility: visible;
+  }
+  .go-to-service-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    cursor: pointer;
+  }
+  .go-to-service-modal-dialog {
+    position: relative;
+    width: 100%;
+    max-width: 28rem;
+    max-height: calc(100vh - 2rem);
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    transform: scale(0.95);
+    transition: transform 0.25s ease;
+  }
+  .go-to-service-modal[aria-hidden="false"] .go-to-service-modal-dialog {
+    transform: scale(1);
+  }
+  .go-to-service-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+    color: white;
+  }
+  .go-to-service-modal-title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+  }
+  .go-to-service-modal-close {
+    width: 2.25rem;
+    height: 2.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 0.5rem;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .go-to-service-modal-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+  .go-to-service-modal-body {
+    padding: 0.75rem;
+    max-height: 20rem;
+    overflow-y: auto;
+  }
+  .go-to-service-modal-empty {
+    font-size: 0.9375rem;
+  }
+  .go-to-service-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .go-to-service-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border-radius: 0.5rem;
+    color: #374151;
+    text-decoration: none;
+    transition: background 0.15s;
+    border: 1px solid transparent;
+  }
+  .go-to-service-item:hover {
+    background: #f0fdf4;
+    border-color: #a7f3d0;
+  }
+  .go-to-service-item-icon {
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ecfdf5;
+    border-radius: 0.5rem;
+  }
+  .go-to-service-item-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+  .go-to-service-item-date {
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: #065f46;
+  }
+  .go-to-service-item-time {
+    font-size: 0.8125rem;
+    color: #6b7280;
+  }
+  .go-to-service-item-location {
+    font-size: 0.75rem;
+    color: #059669;
+    display: inline-flex;
+    align-items: center;
+  }
+  .go-to-service-item-arrow {
+    flex-shrink: 0;
+  }
 
-    #service_select {
-      width: 100%;
+  @media (max-width: 767px) {
+    .go-to-service-trigger {
+      min-width: 10rem;
+      max-width: 100%;
+    }
+    .go-to-service-modal-dialog {
+      max-height: 85vh;
+    }
+    .go-to-service-modal-body {
+      max-height: 16rem;
     }
 
     .navbar-search {
@@ -567,6 +711,33 @@
       if (select) {
         select.addEventListener('change', function() { updateShareUrlWithLoc(block); });
       }
+    });
+
+    // ESSENTIAL: Go-to-service modal - open/close, escape key, backdrop click.
+    document.querySelectorAll('.go-to-service-trigger').forEach(function(btn) {
+      var modalId = btn.getAttribute('data-modal');
+      var modal = document.getElementById(modalId);
+      if (!modal) return;
+
+      function openModal() {
+        modal.setAttribute('aria-hidden', 'false');
+        btn.setAttribute('aria-expanded', 'true');
+        document.body.style.overflow = 'hidden';
+        modal.querySelector('.go-to-service-modal-close')?.focus();
+      }
+      function closeModal() {
+        modal.setAttribute('aria-hidden', 'true');
+        btn.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+        btn.focus();
+      }
+
+      btn.addEventListener('click', openModal);
+      modal.querySelector('.go-to-service-modal-backdrop')?.addEventListener('click', closeModal);
+      modal.querySelector('.go-to-service-modal-close')?.addEventListener('click', closeModal);
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.getAttribute('aria-hidden') === 'false') closeModal();
+      });
     });
   });
   
