@@ -293,6 +293,7 @@ module ClinicManagement
   
     def reschedule_form(new_appointment, old_appointment)
       if old_appointment.status != "remarcado"
+        # ESSENTIAL: Identical to LeadsController — same partial, same available_services logic.
         render_to_string(
           partial: "clinic_management/appointments/update_service_form",
           locals: { new_appointment: new_appointment, old_appointment: old_appointment, available_services: available_services(old_appointment.service) }
@@ -300,6 +301,16 @@ module ClinicManagement
       else
         ""
       end
+    end
+
+    # ESSENTIAL: Identical to LeadsController#available_services. Filters by navbar location when multi_service_locations_enabled.
+    def available_services(service)
+      scope = ClinicManagement::Service.where(canceled: [nil, false]).where("date >= ?", Date.current).order(date: :asc)
+      scope = scope.where.not(id: service.id) if service&.id.present?
+      if current_account&.multi_service_locations_enabled?
+        scope = scope.merge(ClinicManagement::Service.for_location(current_service_location_id.to_s))
+      end
+      scope.includes(:service_location)
     end
 
     def generate_message_content(lead, appointment)

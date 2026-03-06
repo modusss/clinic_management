@@ -1796,10 +1796,14 @@ module ClinicManagement
       end
 
       # Returns services available for rescheduling. Includes service_location for multi-location filtering.
-      # ESSENTIAL: When multi_service_locations_enabled, the form uses this to filter by Local.
+      # ESSENTIAL: When multi_service_locations_enabled, filter by navbar location. When navbar has
+      # specific location or Interno, Local select is hidden — so we pre-filter here.
       def available_services(service)
         scope = ClinicManagement::Service.where(canceled: [nil, false]).where("date >= ?", Date.current).order(date: :asc)
         scope = scope.where.not(id: service.id) if service&.id.present?
+        if current_account&.multi_service_locations_enabled?
+          scope = scope.merge(ClinicManagement::Service.for_location(current_service_location_id.to_s))
+        end
         scope.includes(:service_location)
       end
 

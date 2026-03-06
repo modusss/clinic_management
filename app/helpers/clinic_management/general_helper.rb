@@ -61,10 +61,16 @@ module ClinicManagement
       end
 
       # Returns services available for rescheduling. Includes service_location for multi-location form filtering.
-      def available_services(exception_service)
+      # ESSENTIAL: When multi_service_locations_enabled, filter by location. Use location_override when provided
+      # (e.g. service show: filter by the service's location). Otherwise use navbar (current_service_location_id).
+      def available_services(exception_service, location_override: nil)
         today = Time.zone.today
         scope = ClinicManagement::Service.where(canceled: [nil, false]).where("date >= ?", today)
         scope = scope.where.not(id: exception_service.id) if exception_service&.id.present?
+        if respond_to?(:current_account) && current_account&.multi_service_locations_enabled?
+          loc = location_override.nil? && respond_to?(:current_service_location_id) ? current_service_location_id.to_s : location_override.to_s
+          scope = scope.merge(ClinicManagement::Service.for_location(loc))
+        end
         scope.includes(:service_location).order(date: :asc)
       end
 
