@@ -1,0 +1,129 @@
+.eye-education-page {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 1.25rem;
+}
+
+.eye-education-header {
+  margin-bottom: 1.25rem;
+}
+
+.eye-education-header h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.eye-education-header p {
+  margin: 0;
+  font-size: 1rem;
+  color: #475569;
+}
+
+.eye-education-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.eye-education-tab {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.eye-education-tab:hover {
+  border-color: #0ea5e9;
+  color: #0369a1;
+}
+
+.eye-education-tab.active {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  border-color: #0369a1;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(3, 105, 161, 0.25);
+}
+
+.eye-education-panel {
+  display: none;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.eye-education-panel.active {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+}
+
+/* ESSENTIAL: Astigmatismo image is horizontal; show explanation below it. */
+.eye-education-panel--horizontal.active {
+  display: block;
+}
+
+.eye-education-panel--horizontal .eye-education-media {
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.eye-education-panel--horizontal .eye-education-image {
+  height: auto;
+  min-height: 0;
+  max-height: 460px;
+  object-fit: contain;
+}
+
+.eye-education-media {
+  background: #f8fafc;
+}
+
+.eye-education-image {
+  width: 100%;
+  height: 100%;
+  min-height: 320px;
+  object-fit: cover;
+  display: block;
+}
+
+.eye-education-content {
+  padding: 1.5rem;
+}
+
+.eye-education-content h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.eye-education-subtitle {
+  margin: 0 0 1rem 0;
+  color: #0369a1;
+  font-weight: 600;
+}
+
+.eye-education-description {
+  margin: 0;
+  color: #334155;
+  line-height: 1.65;
+}
+
+@media (max-width: 900px) {
+  .eye-education-panel.active {
+    grid-template-columns: 1fr;
+  }
+
+  .eye-education-image {
+    min-height: 240px;
+  }
+}

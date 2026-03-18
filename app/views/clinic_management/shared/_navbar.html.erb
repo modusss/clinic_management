@@ -17,10 +17,13 @@
           <% end %>
         </h1>
 
-        <nav class="w-full sm:w-auto flex justify-center sm:justify-start mb-4 sm:mb-0">
+        <nav class="w-full sm:w-auto flex flex-wrap gap-2 justify-center sm:justify-start mb-4 sm:mb-0">
           <%= link_to "Demonstração de lentes",
                       clinic_management.lens_demonstration_path,
                       class: "text-white hover:text-emerald-200 px-3 py-2 rounded-md border border-emerald-500/40 hover:border-emerald-300/70 transition-colors #{'bg-emerald-700/60 text-white' if controller_name == 'lens_demonstrations' && action_name == 'show'}" %>
+          <%= link_to "Falar sobre o olho",
+                      clinic_management.eye_education_path,
+                      class: "text-white hover:text-emerald-200 px-3 py-2 rounded-md border border-emerald-500/40 hover:border-emerald-300/70 transition-colors #{'bg-emerald-700/60 text-white' if controller_name == 'eye_educations' && action_name == 'show'}" %>
         </nav>
 
         <% if user_signed_in? %>

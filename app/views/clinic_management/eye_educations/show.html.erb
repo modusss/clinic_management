@@ -1,0 +1,30 @@
+<%= breadcrumb({ title: "Atendimento de hoje", path: clinic_management.index_today_path }, { title: "Falar sobre o olho", path: nil }) %>
+
+<section class="eye-education-page" data-controller="eye-education-tabs">
+  <header class="eye-education-header">
+    <h1>Falar sobre o olho</h1>
+    <p>
+      Material visual para explicar de forma simples os principais erros refrativos durante o atendimento.
+    </p>
+  </header>
+
+  <nav class="eye-education-tabs" aria-label="Tipos de condição visual">
+    <% @eye_conditions.each_with_index do |condition, index| %>
+      <button
+        type="button"
+        class="eye-education-tab <%= "active" if index.zero? %>"
+        data-eye-education-tabs-target="tab"
+        data-action="click->eye-education-tabs#selectTab"
+        data-tab-key="<%= condition[:key] %>"
+        aria-selected="<%= index.zero? %>">
+        <%= condition[:title] %>
+      </button>
+    <% end %>
+  </nav>
+
+  <div class="eye-education-panels">
+    <% @eye_conditions.each_with_index do |condition, index| %>
+      <%= render "condition_panel", condition: condition, active: index.zero? %>
+    <% end %>
+  </div>
+</section>

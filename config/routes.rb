@@ -1,6 +1,7 @@
 ClinicManagement::Engine.routes.draw do
   root 'invitations#new'
   resource :lens_demonstration, only: [:show], controller: "lens_demonstrations", path: "demonstracao-lentes"
+  resource :eye_education, only: [:show], controller: "eye_educations", path: "falar-sobre-o-olho"
   
   # ============================================================================
   # PUBLIC REGISTRATION ROUTE (No token required)

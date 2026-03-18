@@ -1,0 +1,18 @@
+<article
+  class="eye-education-panel <%= "eye-education-panel--horizontal" if condition[:key] == "astigmatismo" %> <%= "active" if active %>"
+  data-eye-education-tabs-target="panel"
+  data-tab-content="<%= condition[:key] %>">
+  <div class="eye-education-media">
+    <%= image_tag(
+      condition[:image_path],
+      alt: "Demonstração visual de #{condition[:title]}",
+      class: "eye-education-image"
+    ) %>
+  </div>
+
+  <div class="eye-education-content">
+    <h2><%= condition[:title] %></h2>
+    <p class="eye-education-subtitle"><%= condition[:subtitle] %></p>
+    <p class="eye-education-description"><%= condition[:description] %></p>
+  </div>
+</article>
