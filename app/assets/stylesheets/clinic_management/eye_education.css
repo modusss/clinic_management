@@ -1,64 +1,71 @@
 .eye-education-page {
-  max-width: 1600px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 1.25rem;
+  padding: 20px;
 }
 
 .eye-education-header {
-  margin-bottom: 1.25rem;
+  margin-bottom: 20px;
 }
 
 .eye-education-header h1 {
-  margin: 0 0 0.5rem 0;
-  font-size: 2rem;
+  margin: 0 0 8px 0;
+  font-size: 48px;
   font-weight: 700;
-  color: #0f172a;
+  color: #111827;
+  line-height: 1.1;
 }
 
 .eye-education-header p {
   margin: 0;
-  font-size: 1rem;
-  color: #475569;
+  font-size: 20px;
+  color: #4b5563;
+  line-height: 1.45;
 }
 
+/* Mirrors the same rounded selector pattern used in lens demonstrations. */
 .eye-education-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: 8px;
+  margin: 0 0 20px 0;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
 }
 
 .eye-education-tab {
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #334155;
-  border-radius: 999px;
-  padding: 0.55rem 1rem;
-  font-size: 0.95rem;
-  font-weight: 600;
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  background-color: #fff;
+  color: #4b5563;
   cursor: pointer;
+  font-size: 18px;
+  font-weight: 500;
   transition: all 0.2s ease;
 }
 
 .eye-education-tab:hover {
-  border-color: #0ea5e9;
-  color: #0369a1;
+  background-color: #007bff;
+  border-color: #0069d9;
+  color: #fff;
 }
 
 .eye-education-tab.active {
-  background: linear-gradient(135deg, #0284c7, #0369a1);
-  border-color: #0369a1;
-  color: #ffffff;
-  box-shadow: 0 8px 18px rgba(3, 105, 161, 0.25);
+  background-color: #007bff;
+  color: #fff;
+  border-color: #0069d9;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .eye-education-panel {
   display: none;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 1rem;
+  background: #fff;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  border: 1px solid #e5e7eb;
 }
 
 .eye-education-panel.active {
@@ -66,56 +73,74 @@
   grid-template-columns: 1.1fr 1fr;
 }
 
-/* ESSENTIAL: Astigmatismo image is horizontal; show explanation below it. */
+/* ESSENTIAL: Astigmatism artwork is horizontal and needs text below image. */
 .eye-education-panel--horizontal.active {
   display: block;
 }
 
 .eye-education-panel--horizontal .eye-education-media {
-  border-bottom: 1px solid #e2e8f0;
-  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
 }
 
 .eye-education-panel--horizontal .eye-education-image {
   height: auto;
   min-height: 0;
-  max-height: 460px;
+  max-height: 540px;
   object-fit: contain;
 }
 
 .eye-education-media {
-  background: #f8fafc;
+  background: #f8f9fa;
 }
 
 .eye-education-image {
   width: 100%;
   height: 100%;
-  min-height: 320px;
+  min-height: 340px;
   object-fit: cover;
   display: block;
 }
 
 .eye-education-content {
-  padding: 1.5rem;
+  padding: 28px 30px;
 }
 
 .eye-education-content h2 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.6rem;
+  margin: 0 0 10px 0;
+  font-size: 44px;
   font-weight: 700;
-  color: #0f172a;
+  color: #111827;
+  line-height: 1.1;
 }
 
 .eye-education-subtitle {
-  margin: 0 0 1rem 0;
+  margin: 0 0 16px 0;
   color: #0369a1;
-  font-weight: 600;
+  font-size: 21px;
+  font-weight: 700;
 }
 
 .eye-education-description {
   margin: 0;
-  color: #334155;
-  line-height: 1.65;
+  color: #374151;
+  font-size: 21px;
+  line-height: 1.55;
+}
+
+@media (max-width: 1200px) {
+  .eye-education-header h1 {
+    font-size: 40px;
+  }
+
+  .eye-education-content h2 {
+    font-size: 36px;
+  }
+
+  .eye-education-description,
+  .eye-education-subtitle {
+    font-size: 19px;
+  }
 }
 
 @media (max-width: 900px) {
@@ -125,5 +150,20 @@
 
   .eye-education-image {
     min-height: 240px;
+  }
+
+  .eye-education-header h1 {
+    font-size: 32px;
+  }
+
+  .eye-education-header p,
+  .eye-education-tab,
+  .eye-education-subtitle,
+  .eye-education-description {
+    font-size: 16px;
+  }
+
+  .eye-education-content h2 {
+    font-size: 30px;
   }
 }
