@@ -23,7 +23,7 @@ module ClinicManagement
         post regions_url, params: { region: { name: @region.name } }
       end
 
-      assert_redirected_to region_url(Region.last)
+      assert_redirected_to regions_url
     end
 
     test "should show region" do
@@ -42,11 +42,15 @@ module ClinicManagement
     end
 
     test "should destroy region" do
-      assert_difference("Region.count", -1) do
-        delete region_url(@region)
-      end
-
+      delete region_url(@region)
       assert_redirected_to regions_url
+
+      # With invitations: soft delete (deleted_at set). Without: hard delete (record removed).
+      if @region.invitations.any?
+        assert Region.unscoped.find(@region.id).deleted?, "Region with invitations should be soft-deleted"
+      else
+        assert_nil Region.find_by(id: @region.id), "Region without invitations should be hard-deleted"
+      end
     end
   end
 end

@@ -7,6 +7,8 @@
   Use esta página para fazer um diagnóstico de quais regiões são mais promissoras para o atendimento interno da clínica, com base na captação de pacientes. A quantidade de convites por região ajuda a identificar onde concentrar esforços de divulgação.
 </p>
 
+<%= link_to "Nova Região", new_region_path, class: "inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 mb-4" %>
+
 <!-- Opções de ordenação -->
 <div class="my-4 p-4 bg-gray-100 rounded">
   <%= form_with url: regions_path, method: :get, local: true, class: "flex flex-wrap gap-4 items-center" do |f| %>

@@ -103,8 +103,8 @@ module ClinicManagement
       @selected_service_location_id = params[:service_location_id].presence || ""
       @services_list = next_services(@selected_service_location_id)
       @service_locations_for_select = build_invitation_service_locations_options(referral?(current_user) ? user_referral : nil)
-      @regions = Region.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
-      @default_region_id_for_external = Region.find_by(name: "Local")&.id
+      @regions = Region.active.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
+      @default_region_id_for_external = Region.ensure_local!.id
       # ESSENTIAL: Default Indicador = "Local" for non-referral users. Referral users get their own (hidden field).
       @default_referral_id = Referral.find_by(name: "Local")&.id
       @invitation = Invitation.new
@@ -456,9 +456,11 @@ module ClinicManagement
     end
     
     def set_local_region
-      region = Region.find_by(name: "Local")
+      region = Region.unscoped.find_by(name: "Local")
       unless region.present?
-        region = Region.create(name: "Local")
+        region = Region.create!(name: "Local")
+      else
+        region.restore! if region.deleted?
       end
       region
     end
@@ -481,14 +483,14 @@ module ClinicManagement
         services_list: next_services(""),
         service_locations_for_select: build_invitation_service_locations_options(referral?(current_user) ? user_referral : nil),
         selected_service_location_id: "",
-        default_region_id_for_external: Region.find_by(name: "Local")&.id
+        default_region_id_for_external: Region.ensure_local!.id
       }
       new_form_sets
       new_form_locals = {
           invitation: @invitation,
           referrals: referrals_for_select,
           referral_grouped_options: referral_grouped_options_for_select,
-          regions: Region.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
+          regions: Region.active.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
       }
       respond_to do |format|
         format.turbo_stream do
@@ -510,7 +512,7 @@ module ClinicManagement
 
       def new_form_sets
         @services = Service.all    
-        @regions = Region.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
+        @regions = Region.active.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
         @invitation = Invitation.new
         @appointment = @invitation.appointments.build
         @lead = @invitation.build_lead
@@ -1163,7 +1165,7 @@ module ClinicManagement
 
       def set_lead_name
         @services = Service.all    
-        @regions = Region.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
+        @regions = Region.active.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
         @invitation = Invitation.new
         @appointment = @invitation.appointments.build
         @lead = @invitation.build_lead

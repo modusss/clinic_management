@@ -10,7 +10,7 @@ module ClinicManagement
       @service = Service.find_by(id: params[:service_id])
       @invitation = Invitation.new(
         referral_id: Referral.find_by(name: "Local").id,
-        region_id: Region.find_by(name: "Local").id,
+        region_id: Region.ensure_local!.id,
         patient_name: @lead.name,
         lead_id: @lead.id
       )
@@ -283,7 +283,7 @@ module ClinicManagement
 
       def reschedule_region(referral, lead)
         if referral.name.downcase == "local"
-          Region.find_by(name: "Local")
+          Region.ensure_local!
         else
           lead.invitations.last.region
         end

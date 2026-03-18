@@ -652,7 +652,7 @@ module ClinicManagement
       
       ActiveRecord::Base.transaction do
         # Find or create "Local" region for self-bookings
-        region = Region.find_or_create_by!(name: 'Local')
+        region = Region.ensure_local!
         
         # Determine referral attribution based on who shared the link
         referral = determine_referral_attribution(target_lead)

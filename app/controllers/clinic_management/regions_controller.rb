@@ -4,7 +4,7 @@ module ClinicManagement
 
     # GET /regions
     def index
-      @regions = Region.includes(:invitations).all
+      @regions = Region.active.includes(:invitations)
       
       # Ordenação baseada no parâmetro
       @regions = case params[:sort_by]
@@ -63,9 +63,17 @@ module ClinicManagement
     end
 
     # DELETE /regions/1
+    # When region has invitations: soft delete (set deleted_at) to preserve referential integrity.
+    # When no invitations: hard delete.
     def destroy
-      @region.destroy
-      redirect_to regions_url, notice: "Região removida com sucesso."
+      if @region.invitations.any?
+        @region.soft_delete!
+        notice = "Região excluída. Ela não aparecerá mais nas listas, mas os convites existentes permanecem vinculados."
+      else
+        @region.destroy
+        notice = "Região removida com sucesso."
+      end
+      redirect_to regions_url, notice: notice
     end
 
     private
@@ -77,12 +85,8 @@ module ClinicManagement
       end
 
       def delete_button(reg)
-        if reg.invitations.present?
-          "--"
-        else
-          helpers.button_to(region_path(reg), method: :delete, data: { confirm: "Are you sure?" }) do
-            helpers.content_tag(:i, "", class: "fas fa-trash") 
-          end
+        helpers.button_to(region_path(reg), method: :delete, data: { confirm: "Tem certeza que deseja excluir esta região?" }) do
+          helpers.content_tag(:i, "", class: "fas fa-trash")
         end
       end
 
