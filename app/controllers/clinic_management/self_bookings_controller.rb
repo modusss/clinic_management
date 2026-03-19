@@ -53,6 +53,9 @@ module ClinicManagement
     # Params:
     # - ref: referral_id (for commission attribution)
     # - reg_by: user_id (who shared the link - effort tracking)
+    # - loc: service_location_id (for multi-region filtering)
+    # - svc: service_id (ESSENTIAL: when present, pins booking to this specific service/day)
+    #        Used when sharing from service show view - patient will book for that day only.
     # ============================================================================
     def public_registration
       # Capture referral attribution from URL
@@ -76,6 +79,21 @@ module ClinicManagement
         session[:self_booking_service_location_id] = "" # Default: interno
       end
       
+      # ESSENTIAL: Capture pinned service when sharing from service show view
+      # When svc (service_id) is present, patient will book for that specific day only
+      if params[:svc].present?
+        pinned = Service.upcoming.find_by(id: params[:svc])
+        if pinned.present?
+          session[:self_booking_pinned_service_id] = pinned.id
+          @pinned_service = pinned
+          Rails.logger.info "[SelfBooking] Public registration - Pinned service ##{pinned.id} (#{pinned.date}) captured"
+        else
+          session.delete(:self_booking_pinned_service_id)
+        end
+      else
+        session.delete(:self_booking_pinned_service_id)
+      end
+      
       # Get referral name for display (if present)
       @referral = Referral.find_by(id: params[:ref]) if params[:ref].present?
       @sharer = User.find_by(id: params[:reg_by]) if params[:reg_by].present?
@@ -91,6 +109,10 @@ module ClinicManagement
     # 2. If phone is new -> create new lead
     # Then redirect to the booking flow with proper attribution.
     # 
+    # PINNED SERVICE (svc param): When sharing from service show view, svc pins the
+    # booking to that specific service. After registration, redirect directly to
+    # confirm (bypassing week/day/period selection) so patient books for that day only.
+    # 
     # MINOR PATIENT LOGIC:
     # When is_minor=1, the form includes guardian_name field:
     # - guardian_name -> Lead.name (phone owner/responsible for WhatsApp messages)
@@ -105,23 +127,28 @@ module ClinicManagement
       is_minor = params[:is_minor] == "1"
       guardian_name = params[:guardian_name]&.strip
       
+      # Build redirect params for validation errors (preserve ref, reg_by, loc, svc)
+      redirect_params = { ref: params[:ref], reg_by: params[:reg_by] }
+      redirect_params[:loc] = params[:loc] if params[:loc].present? || params.key?(:loc)
+      redirect_params[:svc] = params[:svc] if params[:svc].present?
+      
       # Validate patient name
       if patient_name.blank?
-        redirect_to public_booking_path(ref: params[:ref], reg_by: params[:reg_by]),
+        redirect_to public_booking_path(redirect_params),
                     alert: "Por favor, informe o nome do paciente."
         return
       end
       
       # Validate phone
       if patient_phone.blank? || patient_phone.length < 10
-        redirect_to public_booking_path(ref: params[:ref], reg_by: params[:reg_by]),
+        redirect_to public_booking_path(redirect_params),
                     alert: "Por favor, informe um telefone válido."
         return
       end
       
       # ESSENTIAL: Validate guardian name when patient is a minor
       if is_minor && guardian_name.blank?
-        redirect_to public_booking_path(ref: params[:ref], reg_by: params[:reg_by]),
+        redirect_to public_booking_path(redirect_params),
                     alert: "Por favor, informe o nome do responsável pelo menor."
         return
       end
@@ -159,6 +186,13 @@ module ClinicManagement
       session[:self_booking_registered_by_user_id] = params[:reg_by].to_i if params[:reg_by].present?
       session[:self_booking_service_location_id] = params[:loc].to_s if params[:loc].present? || params.key?(:loc)
       
+      # ESSENTIAL: Store pinned service when sharing from service show (svc param)
+      # Patient will book for that specific day only - skip week/day/period selection
+      if params[:svc].present?
+        pinned = Service.upcoming.find_by(id: params[:svc])
+        session[:self_booking_pinned_service_id] = pinned.id if pinned.present?
+      end
+      
       # ESSENTIAL: Store the minor patient name temporarily so it can be added to distinct_patients
       # This ensures both guardian and minor appear in the patient selection screen
       if is_minor
@@ -168,10 +202,14 @@ module ClinicManagement
         # Redirect to show page where user can select between guardian and minor
         redirect_to self_booking_path(target_lead.self_booking_token!)
       else
-        # For adults, store patient_name and go directly to week selection
+        # For adults: if pinned service, go directly to confirm; otherwise week selection
         session[:self_booking_patient_name] = patient_name
         session[:self_booking_patient_names] = [patient_name]
-        redirect_to self_booking_select_week_path(target_lead.self_booking_token!)
+        if session[:self_booking_pinned_service_id].present?
+          redirect_to self_booking_confirm_path(target_lead.self_booking_token!, service_id: session[:self_booking_pinned_service_id])
+        else
+          redirect_to self_booking_select_week_path(target_lead.self_booking_token!)
+        end
       end
     end
 
@@ -278,8 +316,12 @@ module ClinicManagement
       
       Rails.logger.info "[SelfBooking] Patients selected: #{selected_patients.join(', ')} for lead ##{@lead.id}"
       
-      # Continue to week selection
-      redirect_to self_booking_select_week_path(@lead.self_booking_token)
+      # ESSENTIAL: When pinned service (from service show share), go directly to confirm
+      if session[:self_booking_pinned_service_id].present?
+        redirect_to self_booking_confirm_path(@lead.self_booking_token, service_id: session[:self_booking_pinned_service_id])
+      else
+        redirect_to self_booking_select_week_path(@lead.self_booking_token)
+      end
     end
 
     # ============================================================================
@@ -619,6 +661,9 @@ module ClinicManagement
         return
       end
       
+      # ESSENTIAL: When coming from pinned service (service show share), back goes to start
+      @from_pinned_service = session[:self_booking_pinned_service_id].present?
+      
       @formatted_date = I18n.l(@service.date, format: '%A, %d de %B')
       @formatted_time = "#{@service.start_time.strftime('%H:%M')} - #{@service.end_time.strftime('%H:%M')}"
     end
@@ -733,6 +778,7 @@ module ClinicManagement
       session.delete(:self_booking_registered_by_user_id)
       session.delete(:self_booking_is_minor)
       session.delete(:self_booking_pending_minor_name)
+      session.delete(:self_booking_pinned_service_id)
       
       redirect_to self_booking_success_path(@lead.self_booking_token)
     rescue ActiveRecord::RecordInvalid => e
@@ -777,6 +823,7 @@ module ClinicManagement
       session.delete(:self_booking_registered_by_user_id)
       session.delete(:self_booking_is_minor)
       session.delete(:self_booking_pending_minor_name)
+      session.delete(:self_booking_pinned_service_id)
       session.delete(:self_booking_last_created_patient_names)
       session.delete(:self_booking_last_skipped_patient_names)
     end

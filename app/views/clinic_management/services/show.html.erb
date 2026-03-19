@@ -25,6 +25,21 @@
     <p class="text-red-500 font-bold">Este atendimento foi cancelado.</p>
   <% end %>
 
+  <%# Self-booking share: any linked account with feature; past dates show explanation %>
+  <% if self_booking_enabled_for_current_user? && !@service.canceled %>
+    <% if @service.date >= Date.current %>
+      <%= render partial: "clinic_management/services/share_self_booking_link", locals: { service: @service } %>
+    <% else %>
+      <div class="mt-6 mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
+        <p class="font-medium"><i class="fas fa-calendar-times mr-1" aria-hidden="true"></i> Link de auto-marcação indisponível para este dia</p>
+        <p class="mt-1 text-amber-800">
+          A data deste atendimento (<strong><%= @service.date.strftime("%d/%m/%Y") %></strong>) já passou.
+          Só é possível compartilhar o link para atendimentos com data <strong>hoje ou futura</strong>.
+        </p>
+      </div>
+    <% end %>
+  <% end %>
+
   <% unless @service.appointments.count > 0%>
   <br>
   <%= button_to "Excluir atendimento", service_path(@service), method: :delete, class: "bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" %>

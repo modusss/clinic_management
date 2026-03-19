@@ -1,0 +1,77 @@
+<%# ============================================================================
+    Share Self-Booking Link for Service (Atendimento)
+
+    UX: Matches the light content plane (white cards + shadow) used elsewhere on
+    services/show — avoids a heavy dark-green block on gray background.
+
+    ESSENTIAL: Uses public_booking_path with svc=service.id so the flow pins to
+    this service.
+    Present in: services/show.html.erb, services/show_by_referral.html.erb
+
+    Optional local :referral_for_link — when set (e.g. show_by_referral), ref= param
+    attributes commission to that referral (required when staff views referral atendimentos).
+    ============================================================================ %>
+<%
+  url_params = { svc: service.id }
+  url_params[:reg_by] = current_user.id if current_user.present?
+  # ESSENTIAL: Referral context from show_by_referral takes precedence for attribution
+  if local_assigns[:referral_for_link].present?
+    url_params[:ref] = referral_for_link.id
+  elsif referral?(current_user) && user_referral.present?
+    url_params[:ref] = user_referral.id
+  end
+  url_params[:loc] = current_service_location_id if current_service_location_id.present?
+
+  full_link = "#{request.base_url}#{clinic_management.public_booking_path(url_params)}"
+  whatsapp_message = "Olá! Segue o link para você se inscrever e agendar sua consulta de exame de vista para o dia #{service.date.strftime('%d/%m/%Y')}: #{full_link}"
+%>
+
+<%# Card plane aligned with patient list / empty state: white, shadow, subtle emerald accent %>
+<div class="service-share-self-booking mt-6 mb-6 bg-white shadow sm:rounded-lg border border-gray-100 border-l-4 border-l-emerald-500 overflow-hidden" style="max-width: 700px;">
+  <div class="px-4 py-5 sm:px-6 sm:py-5">
+    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-4">
+      <div>
+        <h3 class="text-base font-semibold text-gray-900 flex items-center gap-2">
+          <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600" aria-hidden="true">
+            <i class="fas fa-share-alt"></i>
+          </span>
+          <span>Compartilhar auto-marcação</span>
+        </h3>
+        <p class="mt-2 text-sm text-gray-600 leading-relaxed max-w-2xl">
+          Envie o link para pacientes se inscreverem neste atendimento do dia
+          <strong class="text-gray-900"><%= service.date.strftime('%d/%m/%Y') %></strong>
+          <span class="text-gray-500">— nome e WhatsApp no primeiro passo, confirmação em seguida.</span>
+        </p>
+      </div>
+    </div>
+
+    <%# Actions: horizontal on md+ for less vertical scroll; WhatsApp gains contrast vs light card %>
+    <div class="flex flex-col sm:flex-row gap-3 sm:items-stretch">
+      <a href="https://wa.me/?text=<%= ERB::Util.url_encode(whatsapp_message) %>"
+         target="_blank"
+         rel="noopener noreferrer"
+         class="service-share-wa inline-flex items-center justify-center gap-2.5 w-full sm:flex-1 py-3 px-4 rounded-lg font-semibold text-white shadow-sm transition-all duration-150 hover:brightness-105 hover:shadow-md active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2"
+         style="background-color: #25D366; max-width: 225px;">
+        <i class="fab fa-whatsapp text-2xl leading-none" aria-hidden="true"></i>
+        <span>Enviar via WhatsApp</span>
+      </a>
+
+      <div data-controller="copy-link" class="flex w-full sm:w-auto sm:min-w-[200px]">
+        <input type="hidden"
+               data-copy-link-target="input"
+               value="<%= full_link %>">
+        <button type="button"
+                data-action="click->copy-link#copy"
+                class="inline-flex items-center justify-center gap-2 w-full py-3 px-4 rounded-lg font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 transition-colors duration-150 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2">
+          <i data-copy-link-target="icon" class="fas fa-copy" aria-hidden="true"></i>
+          <span data-copy-link-target="label">Copiar link</span>
+        </button>
+      </div>
+    </div>
+
+    <p class="mt-4 text-xs text-gray-500 flex items-center gap-1.5">
+      <i class="fas fa-info-circle text-emerald-600 flex-shrink-0" aria-hidden="true"></i>
+      O paciente agenda apenas neste dia; o link rastreia quem compartilhou quando aplicável.
+    </p>
+  </div>
+</div>

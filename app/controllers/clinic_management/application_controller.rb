@@ -24,6 +24,18 @@ module ClinicManagement
     end
     helper_method :current_account
 
+    # ESSENTIAL: `current_account` is accounts.first — some users (e.g. multiple memberships)
+    # may have self_booking_enabled on another linked account. Share blocks and gates for
+    # "any clinic that enables self-booking for this user" must use this, not only current_account.
+    #
+    # @return [Boolean]
+    def self_booking_enabled_for_current_user?
+      return false unless current_user
+
+      current_user.accounts.where(self_booking_enabled: true).exists?
+    end
+    helper_method :self_booking_enabled_for_current_user?
+
     # ESSENTIAL: Service location context for multi-region support.
     # nil = internal (default); ServiceLocation = external.
     # Persists in session + cookie so selection survives page refresh.

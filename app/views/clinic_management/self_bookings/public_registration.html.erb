@@ -51,7 +51,7 @@
                 id: "registration-form",
                 class: "space-y-4" do %>
     
-    <%# Preserve URL params (ref, reg_by, loc for multi-region) %>
+    <%# Preserve URL params (ref, reg_by, loc for multi-region, svc for service-specific booking) %>
     <% if params[:ref].present? %>
       <input type="hidden" name="ref" value="<%= params[:ref] %>">
     <% end %>
@@ -60,6 +60,10 @@
     <% end %>
     <% if params[:loc].present? || params.key?(:loc) %>
       <input type="hidden" name="loc" value="<%= params[:loc].to_s %>">
+    <% end %>
+    <%# ESSENTIAL: svc (service_id) - when present, pins booking to that specific day (from service show share) %>
+    <% if params[:svc].present? %>
+      <input type="hidden" name="svc" value="<%= params[:svc] %>">
     <% end %>
     
     <%# Patient name field %>

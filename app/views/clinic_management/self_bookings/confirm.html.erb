@@ -14,13 +14,20 @@
   <div class="step-dot active"></div>
 </div>
 
-<!-- Back button -->
+<%# Back button: when from pinned service (service show share), go to start; else go to period selection %>
+<% if @from_pinned_service %>
+<%= link_to self_booking_path(@lead.self_booking_token), class: "back-btn" do %>
+  <i class="fas fa-arrow-left"></i>
+  Voltar
+<% end %>
+<% else %>
 <%= link_to self_booking_select_period_path(@lead.self_booking_token, 
                                              week: params[:week], 
                                              day: params[:day]), 
             class: "back-btn" do %>
   <i class="fas fa-arrow-left"></i>
   Voltar
+<% end %>
 <% end %>
 
 <!-- Main card -->

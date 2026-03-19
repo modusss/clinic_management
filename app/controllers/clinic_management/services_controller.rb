@@ -79,12 +79,27 @@ module ClinicManagement
       end
     end
 
+    # GET show_by_referral/:referral_id?id=:service_id
+    #
+    # ESSENTIAL: Service scope must match index_by_referral — same referral_code filter
+    # and same for_location(current_service_location_id) so multi-region navbar context
+    # cannot open a service that is not listed for that referral/location.
+    # process_appointments_by_referral_data further filters rows by @referral.code.
     def show_by_referral
       @referral = Referral.find(params[:referral_id])
-      all_appointments = Appointment.where(referral_code: @referral.code)
-      all_services = all_appointments.map(&:service).uniq
-      all_services = all_services.sort_by { |service| service.date }.reverse
-      @service = all_services.find { |s| s.id == params[:id].to_i }
+
+      @service = Service.joins(:appointments)
+                        .where(appointments: { referral_code: @referral.code })
+                        .for_location(current_service_location_id)
+                        .distinct
+                        .find_by(id: params[:id])
+
+      unless @service
+        redirect_to index_by_referral_services_path(@referral),
+                    alert: "Atendimento não encontrado ou indisponível para este local."
+        return
+      end
+
       @rows = process_appointments_by_referral_data(@service.appointments)
     end
     
