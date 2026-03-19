@@ -116,8 +116,10 @@
           <div id="lead-results" class="absolute mt-1 w-full bg-white shadow-lg rounded-b" style="z-index: 1000"></div>
         </div>
 
-        <%# ESSENTIAL: Button trigger + modal for "Ir para atendimento" - referral. Stimulus controller for reliable open/close (Turbo-safe). %>
-        <% referral_services = ClinicManagement::Service.joins(:appointments).includes(:service_location).where(appointments: { referral_code: user_referral.code }).where("date >= ?", Date.current).distinct.order(date: :asc, start_time: :asc).limit(20) %>
+        <%# ESSENTIAL: Referral "Ir para atendimento" lists ALL upcoming services for the current location
+            # (same plane as staff quick-nav), not only slots where this referral already has appointments.
+            # So indicadores can open empty days to encaixar patients or share self-booking. %>
+        <% referral_services = ClinicManagement::Service.upcoming.for_location(current_service_location_id).includes(:service_location).order(date: :asc, start_time: :asc).limit(20) %>
         <% referral_services_with_urls = referral_services.map { |s| { service: s, url: clinic_management.show_by_referral_services_path(referral_id: user_referral.id, id: s.id) } } %>
         <% referral_grouped_by_day = referral_services_with_urls.group_by { |i| i[:service].date }.sort_by { |date, _| date }.map { |date, items| wd = date.wday == 6 ? 7 : date.wday + 1; { date: date, weekday: (ClinicManagement::TimeSlotsHelper::WEEKDAY_NAMES[wd] || ""), date_str: date.strftime("%d/%m/%Y"), items: items.sort_by { |i| i[:service].start_time&.to_s || "00:00" } } } %>
         <div data-controller="go-to-service-modal" data-go-to-service-modal-modal-id-value="go-to-service-modal-referral">

@@ -81,17 +81,15 @@ module ClinicManagement
 
     # GET show_by_referral/:referral_id?id=:service_id
     #
-    # ESSENTIAL: Service scope must match index_by_referral — same referral_code filter
-    # and same for_location(current_service_location_id) so multi-region navbar context
-    # cannot open a service that is not listed for that referral/location.
-    # process_appointments_by_referral_data further filters rows by @referral.code.
+    # ESSENTIAL: Service resolution matches referral navbar "Ir para atendimento" —
+    # upcoming (non-canceled, date >= today) + for_location(current_service_location_id).
+    # Referrals may open empty slots (no appointments with their referral_code yet).
+    # Table rows still come only from this referral via process_appointments_by_referral_data.
     def show_by_referral
       @referral = Referral.find(params[:referral_id])
 
-      @service = Service.joins(:appointments)
-                        .where(appointments: { referral_code: @referral.code })
+      @service = Service.upcoming
                         .for_location(current_service_location_id)
-                        .distinct
                         .find_by(id: params[:id])
 
       unless @service
