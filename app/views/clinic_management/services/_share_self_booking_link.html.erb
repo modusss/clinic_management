@@ -31,16 +31,20 @@
   <div class="px-4 py-5 sm:px-6 sm:py-5">
     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-4">
       <div>
-        <h3 class="text-base font-semibold text-gray-900 flex items-center gap-2">
+        <h3 class="text-base font-semibold text-gray-900 flex flex-wrap items-center gap-2">
           <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600" aria-hidden="true">
-            <i class="fas fa-share-alt"></i>
+            <i class="fas fa-calendar-day"></i>
           </span>
-          <span>Compartilhar auto-marcação</span>
+          <span>Auto-marcação neste atendimento</span>
+          <span class="inline-flex items-center rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-semibold text-violet-800 border border-violet-200" title="Tipo de link: dia e turno já definidos nesta tela">
+            Dia e horário fixos
+          </span>
         </h3>
         <p class="mt-2 text-sm text-gray-600 leading-relaxed max-w-2xl">
-          Envie o link para pacientes se inscreverem neste atendimento do dia
-          <strong class="text-gray-900"><%= service.date.strftime('%d/%m/%Y') %></strong>
-          <span class="text-gray-500">— nome e WhatsApp no primeiro passo, confirmação em seguida.</span>
+          Para <strong class="text-gray-800">pessoa nova</strong> (ainda não cadastrada): ela informa nome e WhatsApp e já agenda
+          <strong class="text-gray-900">só neste dia</strong>
+          (<strong><%= service.date.strftime('%d/%m/%Y') %></strong>, <%= service.start_time.strftime('%H:%M') %>–<%= service.end_time.strftime('%H:%M') %>).
+          Não escolhe outro dia — diferente do link geral do menu.
         </p>
       </div>
     </div>
@@ -69,9 +73,6 @@
       </div>
     </div>
 
-    <p class="mt-4 text-xs text-gray-500 flex items-center gap-1.5">
-      <i class="fas fa-info-circle text-emerald-600 flex-shrink-0" aria-hidden="true"></i>
-      O paciente agenda apenas neste dia; o link rastreia quem compartilhou quando aplicável.
-    </p>
+    
   </div>
 </div>

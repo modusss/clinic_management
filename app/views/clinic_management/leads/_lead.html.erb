@@ -112,14 +112,15 @@
       </div>
       
       <%# ============================================================================
-          Self-Booking Link Section (feature-flagged by account.self_booking_enabled)
-          
-          Allows staff to generate and copy a unique self-booking link for the patient.
-          The patient can use this link to self-schedule their appointment via WhatsApp.
-          
-          ESSENTIAL: Only shown when current_account.self_booking_enabled? (Adicionais toggle in admin).
+          Self-Booking — Personal link for THIS lead (token flow).
+
+          UX: Distinct from (1) navbar "link aberto" = public_booking, any day —
+          and (2) service show = fixed day via svc=. Here: who already belongs to this
+          phone/ficha selects patient if needed, then picks new day/time (remarcar/agendar).
+
+          ESSENTIAL: self_booking_enabled_for_current_user? — any linked account with flag.
           ============================================================================ %>
-      <% if current_account&.self_booking_enabled? %>
+      <% if self_booking_enabled_for_current_user? %>
       <%
         # Build URL parameters for self-booking link
         url_params = {}
@@ -154,9 +155,16 @@
       <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 border-l-4 border-emerald-500 lead-self-booking-block" 
            data-base-url="<%= full_link %>" 
            data-lead-id="<%= lead.id %>">
-        <dt class="text-gray-500 text-[18px] font-semibold">
-          <i class="fas fa-calendar-check text-emerald-500 mr-2"></i>
-          Link de Auto-Marcação
+        <dt class="text-gray-500 text-[18px] font-semibold sm:align-top">
+          <span class="flex flex-col gap-2">
+            <span class="inline-flex flex-wrap items-center gap-2">
+              <i class="fas fa-id-card text-emerald-500"></i>
+              <span>Link de Auto-Marcação</span>
+              <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900 border border-amber-300" title="Deste telefone / desta ficha">
+                Quem já está na ficha
+              </span>
+            </span>
+          </span>
         </dt>
         <dd class="mt-1 sm:mt-0 sm:col-span-2">
           <% if current_account&.multi_service_locations_enabled? && ClinicManagement::ServiceLocation.any? %>
@@ -168,8 +176,8 @@
             </span>
           </div>
           <% end %>
-          <div class="text-sm text-gray-600 mb-3">
-            Envie este link para o paciente agendar sua própria consulta:
+          <div class="text-sm text-gray-600 mb-3 leading-relaxed">
+            Link <strong>pessoal desta ficha</strong> (este telefone). Quem abre identifica o paciente se houver <strong>vários nesta ficha</strong>, depois escolhe <strong>novo dia e horário</strong> — útil para <strong>remarcar</strong> ou novo agendamento já vinculado a quem está aqui.
           </div>
           
           <%# Show attribution info badges %>
@@ -233,10 +241,7 @@
             <% end %>
           </div>
           
-          <p class="mt-2 text-xs text-gray-500">
-            <i class="fas fa-info-circle mr-1"></i>
-            O paciente poderá escolher dia e horário de forma simplificada.
-          </p>
+
         </dd>
       </div>
       <% end %>
