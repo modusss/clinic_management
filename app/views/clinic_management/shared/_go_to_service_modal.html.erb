@@ -1,5 +1,8 @@
 <%# ESSENTIAL: Modal for "Ir para atendimento" - grouped by day, sorted by start_time within each day.
-    Receives: modal_id, trigger_id, grouped_by_day (array of { date:, weekday:, date_str:, items: [{ service:, url: }] }). %>
+    Receives: modal_id, trigger_id, grouped_by_day (array of { date:, weekday:, date_str:, items: [...] }).
+    Each item: { service:, url:, appointments_total: Integer (optional), appointments_for_referral: Integer (optional) }
+    Optional local :slot_counts_mode — :staff shows only total; :referral shows total + "por você" (same referral_code). %>
+<% slot_counts_mode = local_assigns.fetch(:slot_counts_mode, :staff) %>
 <div id="<%= modal_id %>" class="go-to-service-modal" role="dialog" aria-labelledby="<%= modal_id %>-title" aria-modal="true" aria-hidden="true">
   <div class="go-to-service-modal-backdrop" data-action="click->go-to-service-modal#close" role="button" tabindex="-1" aria-label="Fechar modal"></div>
   <div class="go-to-service-modal-dialog">
@@ -30,8 +33,19 @@
                   <% times = [service.start_time&.strftime('%H:%M'), service.end_time&.strftime('%H:%M')].compact %>
                   <% time_str = times.size == 2 ? "#{times[0]}h às #{times[1]}h" : "" %>
                   <% loc_name = service.service_location&.name %>
+                  <% appt_total = item[:appointments_total] %>
+                  <% appt_mine = item[:appointments_for_referral] %>
+                  <% show_counts = item.key?(:appointments_total) %>
+                  <% aria_counts = if show_counts && slot_counts_mode == :referral
+                       t_total = appt_total.to_i
+                       t_mine = appt_mine.to_i
+                       "#{t_total} #{t_total == 1 ? 'agendado' : 'agendados'} no horário, #{t_mine} por você"
+                     elsif show_counts
+                       t_total = appt_total.to_i
+                       "#{t_total} #{t_total == 1 ? 'agendado' : 'agendados'} no horário"
+                     end %>
                   <li role="option">
-                    <a href="<%= url %>" class="go-to-service-item" data-turbo="false">
+                    <a href="<%= url %>" class="go-to-service-item" data-turbo="false"<% if aria_counts.present? %> aria-description="<%= ERB::Util.html_escape(aria_counts) %>"<% end %>>
                       <span class="go-to-service-item-icon">
                         <i class="fas fa-clock text-emerald-500" aria-hidden="true"></i>
                       </span>
@@ -42,6 +56,17 @@
                         <% if loc_name.present? %>
                           <span class="go-to-service-item-location">
                             <i class="fas fa-map-marker-alt text-xs mr-1" aria-hidden="true"></i><%= loc_name %>
+                          </span>
+                        <% end %>
+                        <% if show_counts %>
+                          <span class="go-to-service-item-counts">
+                            <% if slot_counts_mode == :referral %>
+                              <span class="go-to-service-item-counts-total"><%= appt_total.to_i %> <%= appt_total.to_i == 1 ? "agendado" : "agendados" %> no horário</span>
+                              <span class="go-to-service-item-counts-sep" aria-hidden="true">·</span>
+                              <span class="go-to-service-item-counts-mine"><%= appt_mine.to_i %> por você</span>
+                            <% else %>
+                              <span class="go-to-service-item-counts-total"><%= appt_total.to_i %> <%= appt_total.to_i == 1 ? "agendado" : "agendados" %> no horário</span>
+                            <% end %>
                           </span>
                         <% end %>
                       </span>

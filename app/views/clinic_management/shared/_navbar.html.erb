@@ -119,8 +119,12 @@
         <%# ESSENTIAL: Referral "Ir para atendimento" lists ALL upcoming services for the current location
             # (same plane as staff quick-nav), not only slots where this referral already has appointments.
             # So indicadores can open empty days to encaixar patients or share self-booking. %>
-        <% referral_services = ClinicManagement::Service.upcoming.for_location(current_service_location_id).includes(:service_location).order(date: :asc, start_time: :asc).limit(20) %>
-        <% referral_services_with_urls = referral_services.map { |s| { service: s, url: clinic_management.show_by_referral_services_path(referral_id: user_referral.id, id: s.id) } } %>
+        <%# ESSENTIAL: Bulk appointment counts (2 queries) for modal — total per service + this referral_code. %>
+        <% referral_services = ClinicManagement::Service.upcoming.for_location(current_service_location_id).includes(:service_location).order(date: :asc, start_time: :asc).limit(20).to_a %>
+        <% referral_slot_ids = referral_services.map(&:id) %>
+        <% referral_appt_total_by_service = referral_slot_ids.blank? ? {} : ClinicManagement::Appointment.where(service_id: referral_slot_ids).group(:service_id).count %>
+        <% referral_appt_mine_by_service = referral_slot_ids.blank? ? {} : ClinicManagement::Appointment.where(service_id: referral_slot_ids, referral_code: user_referral.code).group(:service_id).count %>
+        <% referral_services_with_urls = referral_services.map { |s| { service: s, url: clinic_management.show_by_referral_services_path(referral_id: user_referral.id, id: s.id), appointments_total: referral_appt_total_by_service[s.id] || 0, appointments_for_referral: referral_appt_mine_by_service[s.id] || 0 } } %>
         <% referral_grouped_by_day = referral_services_with_urls.group_by { |i| i[:service].date }.sort_by { |date, _| date }.map { |date, items| wd = date.wday == 6 ? 7 : date.wday + 1; { date: date, weekday: (ClinicManagement::TimeSlotsHelper::WEEKDAY_NAMES[wd] || ""), date_str: date.strftime("%d/%m/%Y"), items: items.sort_by { |i| i[:service].start_time&.to_s || "00:00" } } } %>
         <div data-controller="go-to-service-modal" data-go-to-service-modal-modal-id-value="go-to-service-modal-referral">
           <div class="flex items-center order-4 ml-4 mt-4 sm:mt-0">
@@ -130,7 +134,7 @@
               <i class="fas fa-chevron-down text-white/80 ml-2 text-sm" aria-hidden="true"></i>
             </button>
           </div>
-          <%= render "clinic_management/shared/go_to_service_modal", modal_id: "go-to-service-modal-referral", trigger_id: "go-to-service-trigger-referral", grouped_by_day: referral_grouped_by_day, current_path: request.path %>
+          <%= render "clinic_management/shared/go_to_service_modal", modal_id: "go-to-service-modal-referral", trigger_id: "go-to-service-trigger-referral", grouped_by_day: referral_grouped_by_day, current_path: request.path, slot_counts_mode: :referral %>
         </div>
 
         <% if user_signed_in? %>
@@ -308,8 +312,11 @@
       </div>
 
       <%# ESSENTIAL: Button trigger + modal for "Ir para atendimento". Stimulus controller for reliable open/close (Turbo-safe). %>
-      <% staff_services = ClinicManagement::Service.for_location(current_service_location_id).includes(:service_location).where("date >= ?", Date.current).order(date: :asc, start_time: :asc).limit(20) %>
-      <% staff_services_with_urls = staff_services.map { |s| { service: s, url: clinic_management.service_path(s) } } %>
+      <%# ESSENTIAL: Same bulk counts pattern as referral modal; staff sees only total (:staff mode in partial). %>
+      <% staff_services = ClinicManagement::Service.for_location(current_service_location_id).includes(:service_location).where("date >= ?", Date.current).order(date: :asc, start_time: :asc).limit(20).to_a %>
+      <% staff_slot_ids = staff_services.map(&:id) %>
+      <% staff_appt_total_by_service = staff_slot_ids.blank? ? {} : ClinicManagement::Appointment.where(service_id: staff_slot_ids).group(:service_id).count %>
+      <% staff_services_with_urls = staff_services.map { |s| { service: s, url: clinic_management.service_path(s), appointments_total: staff_appt_total_by_service[s.id] || 0 } } %>
       <% staff_grouped_by_day = staff_services_with_urls.group_by { |i| i[:service].date }.sort_by { |date, _| date }.map { |date, items| wd = date.wday == 6 ? 7 : date.wday + 1; { date: date, weekday: (ClinicManagement::TimeSlotsHelper::WEEKDAY_NAMES[wd] || ""), date_str: date.strftime("%d/%m/%Y"), items: items.sort_by { |i| i[:service].start_time&.to_s || "00:00" } } } %>
       <div data-controller="go-to-service-modal" data-go-to-service-modal-modal-id-value="go-to-service-modal-staff">
         <div class="flex items-center order-4 ml-4 mt-4 sm:mt-0">
@@ -319,7 +326,7 @@
             <i class="fas fa-chevron-down text-white/80 ml-2 text-sm" aria-hidden="true"></i>
           </button>
         </div>
-        <%= render "clinic_management/shared/go_to_service_modal", modal_id: "go-to-service-modal-staff", trigger_id: "go-to-service-trigger-staff", grouped_by_day: staff_grouped_by_day, current_path: request.path %>
+        <%= render "clinic_management/shared/go_to_service_modal", modal_id: "go-to-service-modal-staff", trigger_id: "go-to-service-trigger-staff", grouped_by_day: staff_grouped_by_day, current_path: request.path, slot_counts_mode: :staff %>
       </div>
 
       <% if user_signed_in? %>
@@ -625,6 +632,24 @@
     color: #059669;
     display: inline-flex;
     align-items: center;
+  }
+  .go-to-service-item-counts {
+    font-size: 0.6875rem;
+    line-height: 1.35;
+    color: #6b7280;
+    margin-top: 0.125rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .go-to-service-item-counts-mine {
+    color: #047857;
+    font-weight: 600;
+  }
+  .go-to-service-item-counts-sep {
+    color: #9ca3af;
+    user-select: none;
   }
   .go-to-service-item-arrow {
     flex-shrink: 0;
