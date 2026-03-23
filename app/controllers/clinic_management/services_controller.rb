@@ -81,15 +81,16 @@ module ClinicManagement
 
     # GET show_by_referral/:referral_id?id=:service_id
     #
-    # ESSENTIAL: Service resolution matches referral navbar "Ir para atendimento" —
-    # upcoming (non-canceled, date >= today) + for_location(current_service_location_id).
+    # ESSENTIAL: Resolve the service by id + current location scope only (no `upcoming`).
+    # Index-by-referral rows include past dates and canceled services; date links must open
+    # this page for those rows. Navbar "Ir para atendimento" may still target upcoming slots
+    # elsewhere; that is unrelated to this finder.
     # Referrals may open empty slots (no appointments with their referral_code yet).
     # Table rows still come only from this referral via process_appointments_by_referral_data.
     def show_by_referral
       @referral = Referral.find(params[:referral_id])
 
-      @service = Service.upcoming
-                        .for_location(current_service_location_id)
+      @service = Service.for_location(current_service_location_id)
                         .find_by(id: params[:id])
 
       unless @service
@@ -339,7 +340,14 @@ module ClinicManagement
         next if helpers.clinical_assistant?(current_user) && ser.date < Date.current
 
         total_appointments, scheduled, rescheduled, canceleds = appointment_counts(ser)
-        link = action_name == 'index_by_referral' ? show_by_referral_services_path(referral_id: @referral.id, id: ser.id) : ser
+        # ESSENTIAL: On index_by_referral, date links must always hit show_by_referral (this action).
+        # Referral users cannot use services#show (redirect_referral_users). Staff on this page should
+        # also open the same referral-scoped detail, not the global show.
+        link = if action_name == "index_by_referral"
+                 show_by_referral_services_path(referral_id: @referral.id, id: ser.id)
+               else
+                 ser
+               end
         
         # Determine the date status
         date_status = case
