@@ -68,7 +68,7 @@ module ClinicManagement
       # display via turbo_stream a tabel of results on div id #appointment-results
         @rows = process_appointments_data(@appointments)
       else
-        @rows = "" 
+        @rows = []
       end
       respond_to do |format|
         format.turbo_stream do
@@ -224,7 +224,7 @@ module ClinicManagement
             { header: "Status", content: ap.status, id: "status-#{ap.id}", class: helpers.status_class(ap) }          
           ]
         end
-      end
+      end.compact
     end
     
 
@@ -294,7 +294,7 @@ module ClinicManagement
             { header: "Cancelar?", content: set_cancel_button(ap), id: "cancel-attendance-button-#{ap.id}", class: "pt-2 pb-0" }
           ]
         end                 
-      end
+      end.compact
     end  
 
     def set_conversion_link(lead)

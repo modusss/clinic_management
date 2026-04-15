@@ -78,6 +78,9 @@ module ClinicManagement
   # ENVOLVE A TABELA, VERIFICANDO SE HÁ DADOS
   #
   def table_wrapper(id, rows, inner_classes, fix_to)
+    # ESSENTIAL: rows may be [nil, ...] if upstream map used `next` without compact — rows.first would be nil and break .map.
+    # Also reject non-row values (e.g. search_appointment used to pass "") so only Arrays of cell-hashes are rendered.
+    rows = Array.wrap(rows).compact.select { |r| r.is_a?(Array) && r.first.is_a?(Hash) }
     return content_tag(:p, 'Não houve resultados.', class: 'text-gray-500 italic') if rows.empty?
 
     content_tag(:table, class: inner_classes, id: id) do
