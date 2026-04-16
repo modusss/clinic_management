@@ -4,6 +4,7 @@ module ClinicManagement
 
     # GET /time_slots
     def index
+      TimeSlot.delete_invalid_time_slots!
       @time_slots = TimeSlot.for_location(current_service_location_id)
       @view_location_id = params[:view_location].presence
 
@@ -130,8 +131,11 @@ module ClinicManagement
     end
 
     private
+      # Maps weekday label from the form to 1..7. Returns nil if prompt left blank or unknown.
       def get_day_field(day)
-        case day.downcase
+        return nil if day.blank?
+
+        case day.to_s.downcase.strip
         when "domingo"
           1
         when "segunda-feira"

@@ -28,14 +28,15 @@ module ClinicManagement
             form_for(record, options) do |f|
                 # Exibir erros de validação do modelo
                 if record.errors.any?
-                    concat content_tag(:div, class: 'bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4') do
-                      content_tag(:div, class: 'font-bold mb-2') do
-                        "#{pluralize(record.errors.count, 'erro impediu', 'erros impediram')} que este #{record.model_name.human.downcase} fosse salvo:"
-                      end +
-                      content_tag(:ul, class: 'list-disc list-inside') do
-                        record.errors.full_messages.map { |msg| concat content_tag(:li, msg) }
-                      end
-                    end
+                    # ESSENTIAL: (1) content_tag(:div, class: ...) alone passes Hash as *body* → "{:class=>...}" on screen.
+                    # (2) Do not use concat inside content_tag blocks — concat writes to the form buffer, not into the tag (empty box).
+                    title = "#{pluralize(record.errors.count, 'erro impediu', 'erros impediram')} que este #{record.model_name.human.downcase} fosse salvo:"
+                    list_items = safe_join(record.errors.full_messages.map { |msg| content_tag(:li, msg) })
+                    inner = safe_join([
+                      content_tag(:div, title, class: 'font-bold mb-2'),
+                      content_tag(:ul, list_items, class: 'list-disc list-inside')
+                    ])
+                    concat content_tag(:div, inner, class: 'bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4')
                 end
                 fields.each do |field|
                     concat f.label field[:name], 

@@ -5,6 +5,9 @@ module ClinicManagement
     belongs_to :service_location, optional: true, class_name: "ClinicManagement::ServiceLocation"
 
     before_validation :parse_time_attributes
+    validates :start_time, :end_time, presence: true
+    validates :weekday, presence: true, inclusion: { in: 1..7 }
+    validate :end_time_after_start_time
     validate :unique_slot_per_location
 
     # Scope for filtering by service_location_id.
@@ -19,6 +22,12 @@ module ClinicManagement
         where(service_location_id: location_id)
       end
     }
+
+    # Deletes legacy rows where start/end were never set (invalid; cannot be shown in UI).
+    # ESSENTIAL: Called from TimeSlotsController#index so old bad rows do not crash strftime in views.
+    def self.delete_invalid_time_slots!
+      where(start_time: nil).or(where(end_time: nil)).or(where(weekday: nil)).delete_all
+    end
 
     private
 
@@ -42,8 +51,37 @@ module ClinicManagement
       "#{hour.to_s.rjust(2, '0')}:#{min.to_s.rjust(2, '0')}"
     end
 
-    def unique_slot_per_location
+    # Ensures the slot has a positive duration (same calendar day; no overnight ranges).
+    def end_time_after_start_time
       return if start_time.blank? || end_time.blank?
+
+      start_s = seconds_since_midnight_for_compare(start_time)
+      end_s = seconds_since_midnight_for_compare(end_time)
+      return if start_s.nil? || end_s.nil?
+
+      return if end_s > start_s
+
+      errors.add(:end_time, "deve ser posterior ao horário de início")
+    end
+
+    # @param value [Time, ActiveSupport::TimeWithZone, String] DB time or "HH:mm" from parsing
+    # @return [Integer, nil] seconds since midnight for ordering, or nil if unsupported
+    def seconds_since_midnight_for_compare(value)
+      case value
+      when Time, ActiveSupport::TimeWithZone
+        value.hour * 3600 + value.min * 60 + value.sec
+      when String
+        m = value.strip.match(/\A(\d{1,2}):(\d{2})\z/)
+        return nil unless m
+
+        m[1].to_i * 3600 + m[2].to_i * 60
+      else
+        nil
+      end
+    end
+
+    def unique_slot_per_location
+      return if weekday.blank? || start_time.blank? || end_time.blank?
       scope = self.class.where(weekday: weekday, start_time: start_time, end_time: end_time)
       scope = scope.where(service_location_id: service_location_id)
       scope = scope.where.not(id: id) if persisted?
