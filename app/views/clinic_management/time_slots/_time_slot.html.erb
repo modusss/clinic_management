@@ -2,6 +2,11 @@
 <% hide_weekday = local_assigns[:hide_weekday] %>
 <% hide_time = local_assigns[:hide_time] %>
 <div id="<%= dom_id time_slot %>" class="space-y-2">
+  <%# ESSENTIAL: Some legacy/imported slots may not have start/end time set.
+      Guard formatting to prevent NoMethodError (strftime for nil:NilClass). %>
+  <% start_time_label = time_slot.start_time&.strftime("%H:%M") || "-" %>
+  <% end_time_label = time_slot.end_time&.strftime("%H:%M") || "-" %>
+
   <% if time_slot.service_location.present? && !hide_location %>
     <p>
       <strong class="font-semibold">Local:</strong>
@@ -18,12 +23,12 @@
   <% unless hide_time %>
     <p>
       <strong class="font-semibold">Horário de início:</strong>
-      <%= time_slot.start_time.strftime("%H:%M") %>
+      <%= start_time_label %>
     </p>
 
     <p>
       <strong class="font-semibold">Horário de término:</strong>
-      <%= time_slot.end_time.strftime("%H:%M") %>
+      <%= end_time_label %>
     </p>
   <% end %>
 </div>
