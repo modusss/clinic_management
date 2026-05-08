@@ -10,28 +10,52 @@
 <%#   title [String] - e.g. "Enviar Confirmações de Hoje" %>
 <%#   description [String] - Explanatory text for the button %>
 <%#   button_path [String/Path] - POST path for the action %>
-<%#   confirm_message [String] - Data confirm text shown before submitting %>
+<%#   confirm_message [String] - Turbo confirm text before submitting %>
 <%#   instance_2_connected [Boolean] - Whether WhatsApp instance is ready %>
 <%#   button_label [String] - Optional. Button text (default: "Enviar Confirmações") %>
+<%#   target_scope [String] - Optional. "today" | "next" — enables status polling + anti double-submit %>
 <%# ============================================================ %>
 <% if instance_2_connected %>
 <% button_label = local_assigns[:button_label] || "Enviar Confirmações" %>
+<% target_scope = local_assigns[:target_scope] %>
+<% poll_status = target_scope.present? %>
+<% if poll_status %>
+<div
+  data-controller="confirmation-force-send"
+  data-confirmation-force-send-status-url-value="<%= clinic_management.confirmation_jobs_status_path(target: target_scope) %>"
+  data-confirmation-force-send-poll-interval-value="3000"
+>
+<% end %>
 <div class="bg-white rounded-lg shadow-md p-4 mb-6">
-  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between">
+  <% if poll_status %>
+  <div
+    data-confirmation-force-send-target="statusPanel"
+    class="hidden mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+    role="status"
+    aria-live="polite"
+  >
+    <span data-confirmation-force-send-target="statusText"></span>
+  </div>
+  <% end %>
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
     <div>
       <h3 class="text-lg font-medium text-gray-800"><%= title %></h3>
       <p class="text-sm text-gray-500"><%= description %></p>
     </div>
-    
-    <div class="mt-2 sm:mt-0">
-      <%= button_to button_path, 
+
+    <div class="mt-2 sm:mt-0 shrink-0">
+      <%= button_to button_path,
           method: :post,
-          class: "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm transition-colors duration-200 flex items-center gap-2",
-          data: { confirm: confirm_message } do %>
-        <i class="fas fa-paper-plane mr-2"></i>
+          form: poll_status ? { data: { action: "turbo:submit-start->confirmation-force-send#beginSubmit" } } : {},
+          class: "bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-green-600 text-white px-4 py-2 rounded text-sm transition-colors duration-200 flex items-center gap-2",
+          data: { turbo_confirm: confirm_message } do %>
+        <i class="fas fa-paper-plane mr-2" aria-hidden="true"></i>
         <%= button_label %>
       <% end %>
     </div>
   </div>
 </div>
+<% if poll_status %>
+</div>
+<% end %>
 <% end %>

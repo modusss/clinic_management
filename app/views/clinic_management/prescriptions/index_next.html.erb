@@ -10,10 +10,11 @@
     <% next_date_formatted = @next_date.strftime("%d/%m/%Y") %>
     <%= render partial: "clinic_management/prescriptions/force_confirmation_button", locals: {
       title: "Enviar Confirmações do Próximo Dia",
-      description: "Força o envio das mensagens de confirmação para os agendamentos de #{next_date_formatted} para os que não recebram",
+      description: "Força o envio das mensagens de confirmação para os agendamentos de #{next_date_formatted} para os que não receberam",
       button_path: clinic_management.force_confirmation_next_path,
       confirm_message: "Tem certeza que deseja enviar as mensagens de confirmação para #{next_date_formatted}? Isso pode enviar mensagens duplicadas se já foram enviadas.",
-      instance_2_connected: @instance_2_connected
+      instance_2_connected: @instance_2_connected,
+      target_scope: "next"
     } %>
   <% end %>
 <% end %>

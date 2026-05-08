@@ -1,6 +1,6 @@
   module ClinicManagement
     class PrescriptionsController < ApplicationController
-      before_action :set_appointment, except: [:index_today, :generate_order_pdf, :search_index_today, :index_next, :index_before, :force_confirmation_today, :force_confirmation_next, :force_reminder_today]
+      before_action :set_appointment, except: [:index_today, :generate_order_pdf, :search_index_today, :index_next, :index_before, :force_confirmation_today, :force_confirmation_next, :force_reminder_today, :confirmation_jobs_status]
       skip_before_action :redirect_doctor_users, only: [:index_today, :show_today, :new_today, :edit_today, :update, :create, :search_index_today]
       skip_before_action :authenticate_user!, only: [:pdf]
       before_action :set_view_type, only: [:index_today, :index_next, :index_before]
@@ -77,7 +77,7 @@
           redirect_to index_next_path and return
         end
         
-        next_date = Service.where('date > ?', Date.current).order(:date).pluck(:date).first
+        next_date = Service.for_location(current_service_location_id).where('date > ?', Date.current).order(:date).pluck(:date).first
         unless next_date
           flash[:alert] = "Nenhum atendimento futuro encontrado."
           redirect_to index_next_path and return
@@ -87,6 +87,32 @@
         
         flash[:notice] = "Mensagens de confirmação para #{next_date.strftime('%d/%m/%Y')} foram enfileiradas! O envio está sendo processado em segundo plano."
         redirect_to index_next_path
+      end
+
+      # GET /prescriptions/confirmation_jobs_status?target=today|next
+      # JSON for the force-confirmation card: counts unfinished GoodJob rows for the confirmation
+      # orchestrator and for SendAppointmentMessageJob waves spawned with source_job ConfirmationAppointmentJob.
+      def confirmation_jobs_status
+        if doctor_user?
+          head :forbidden and return
+        end
+
+        target = params[:target].to_s
+        unless %w[today next].include?(target)
+          head :bad_request and return
+        end
+
+        orch_count = pending_confirmation_orchestrator_count(target)
+        send_count = pending_confirmation_send_jobs_count
+
+        busy = orch_count.positive? || send_count.positive?
+
+        render json: {
+          busy: busy,
+          orchestrator_pending: orch_count,
+          confirmation_sends_pending: send_count,
+          target: target
+        }
       end
 
       # GET /prescriptions/index_next
@@ -290,6 +316,50 @@
       end
 
       private
+
+      ORCHESTRATOR_JOB_CLASS = "ConfirmationAppointmentJob"
+      SEND_JOB_CLASS = "SendAppointmentMessageJob"
+      CONFIRMATION_SOURCE_SNIPPET = "ConfirmationAppointmentJob"
+
+      # Pending ConfirmationAppointmentJob rows in GoodJob (queued or running).
+      # @param target [String] "today" | "next"
+      def pending_confirmation_orchestrator_count(target)
+        scope = good_job_pending_scope(ORCHESTRATOR_JOB_CLASS)
+        case target
+        when "today"
+          scope.where(
+            "serialized_params::text LIKE ? OR serialized_params::text LIKE ?",
+            '%"today"%',
+            "%#{Date.current}%"
+          ).count
+        when "next"
+          nd = next_service_date_after_today_for_status
+          return 0 unless nd
+          scope.where("serialized_params::text LIKE ?", "%#{nd}%").count
+        else
+          0
+        end
+      end
+
+      # SendAppointmentMessageJob rows scheduled by ConfirmationAppointmentJob (not reminders/recovery).
+      def pending_confirmation_send_jobs_count
+        good_job_pending_scope(SEND_JOB_CLASS).where(
+          "serialized_params::text LIKE ?",
+          "%#{CONFIRMATION_SOURCE_SNIPPET}%"
+        ).count
+      end
+
+      def good_job_pending_scope(job_class)
+        GoodJob::Job.unscoped.where(job_class: job_class, finished_at: nil)
+      end
+
+      # Aligns with index_next / force_confirmation_next service date for the current location filter.
+      def next_service_date_after_today_for_status
+        Service.for_location(current_service_location_id)
+          .where("date > ?", Date.current)
+          .order(:date)
+          .pick(:date)
+      end
 
       def set_view_type
         @view_type = mobile_device? ? 'cards' : (params[:view_type] || cookies[:preferred_prescriptions_today_view] || 'table')
