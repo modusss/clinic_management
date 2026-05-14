@@ -50,8 +50,18 @@
   <header class="navbar-fixed relative bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 py-4 shadow-md md:pl-64 z-50" style="width:100%;">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex flex-wrap justify-between items-center">
-        <h1 class="text-white text-xl font-bold mb-4 sm:mb-0">
+        <h1 class="text-white text-xl font-bold mb-4 sm:mb-0 w-full sm:w-auto text-center sm:text-left flex items-center gap-2">
           <%= link_to raw("Lipepay <span class='ml-1 text-xs bg-white text-emerald-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-emerald-300" %>
+          <%# ESSENTIAL: Referrals with assigned external locations can switch context like staff. %>
+          <% if referral_service_location_options.present? && referral_service_location_options.size > 1 %>
+            <%= form_with url: clinic_management.switch_service_locations_path, method: :post, local: true, data: { turbo: false }, class: "inline ml-3" do |f| %>
+              <label for="navbar-location-select-referral" class="sr-only">Local de atendimento</label>
+              <span class="navbar-location-badge inline-flex items-center gap-2">
+                <i class="fas fa-map-marker-alt text-emerald-600 text-sm flex-shrink-0" aria-hidden="true"></i>
+                <%= f.select :location_id, options_for_select(referral_service_location_options, current_service_location_id.to_s), {}, { id: "navbar-location-select-referral", class: "navbar-location-select", onchange: "this.form.submit()" } %>
+              </span>
+            <% end %>
+          <% end %>
         </h1>
 
         <% if user_signed_in? %>

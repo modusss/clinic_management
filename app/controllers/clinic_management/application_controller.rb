@@ -57,6 +57,23 @@ module ClinicManagement
         end
       end
 
+      # ESSENTIAL: Referrals can only see Interno or locations linked on the service location form.
+      if referral_user?
+        return nil if id.blank?
+        if id.to_s == "all"
+          session[:clinic_service_location_id] = nil
+          cookies.delete(:clinic_service_location_id)
+          return nil
+        end
+
+        referral = helpers.user_referral
+        unless referral&.allowed_service_locations&.exists?(id)
+          session[:clinic_service_location_id] = nil
+          cookies.delete(:clinic_service_location_id)
+          return nil
+        end
+      end
+
       id
     end
     helper_method :current_service_location_id
@@ -67,6 +84,12 @@ module ClinicManagement
     end
     helper_method :doctor_user?
 
+    # ESSENTIAL: Whether current user is a referral (Membership.role == "referral").
+    def referral_user?
+      helpers.referral?(current_user)
+    end
+    helper_method :referral_user?
+
     # ESSENTIAL: For doctors, returns [["Interno", ""], ["Local X", id], ...] for location selector.
     # Only includes locations the doctor is allowed to use.
     def doctor_service_location_options
@@ -76,6 +99,19 @@ module ClinicManagement
       internal + allowed
     end
     helper_method :doctor_service_location_options
+
+    # ESSENTIAL: For referrals, returns Interno plus only the external locations assigned to them.
+    def referral_service_location_options
+      return [] unless referral_user? && current_account&.multi_service_locations_enabled?
+
+      referral = helpers.user_referral
+      return [] unless referral
+
+      internal = [["Interno", ""]]
+      allowed = referral.allowed_service_locations.order(:name).map { |loc| [loc.name, loc.id.to_s] }
+      internal + allowed
+    end
+    helper_method :referral_service_location_options
 
     def current_service_location
       return nil if current_service_location_id.blank?

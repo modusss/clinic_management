@@ -6,6 +6,7 @@ module ClinicManagement
   # ESSENTIAL: All actions require multi_service_locations_enabled on current_account.
   class ServiceLocationsController < ApplicationController
     skip_before_action :redirect_doctor_users, only: [:switch]
+    skip_before_action :redirect_referral_users, only: [:switch]
     before_action :require_multi_service_locations_enabled!
     before_action :set_service_location, only: %i[show edit update destroy]
 
@@ -85,6 +86,14 @@ module ClinicManagement
       if doctor_user?
         if location_id.present? && !current_user.allowed_service_locations.exists?(location_id)
           location_id = nil # Force internal if invalid
+        end
+      end
+
+      # Referrals can only switch to Interno or locations assigned to their referral profile.
+      if referral_user?
+        referral = helpers.user_referral
+        if location_id.to_s == "all" || (location_id.present? && !referral&.allowed_service_locations&.exists?(location_id))
+          location_id = nil
         end
       end
 

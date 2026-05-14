@@ -112,15 +112,7 @@ module ClinicManagement
       @lead = @invitation.build_lead
       @referrals = referrals_for_select
       @referral_grouped_options = referral_grouped_options_for_select
-      begin
-        @today_invitations = helpers.user_referral.invitations.where('created_at >= ?', Date.current.beginning_of_day).limit(100)
-        @today_invitations = @today_invitations.map do |invitation|
-          service = invitation.appointments.last&.service
-          [invitation, service] if service
-        end.compact
-      rescue
-        @today_invitations = nil
-      end
+      @today_invitations = today_invitations_for_new_form(@selected_service_location_id)
     end
 
     # GET /invitations/1/edit
@@ -466,25 +458,16 @@ module ClinicManagement
     end
 
     def render_turbo_stream
+      created_invitation = @invitation
+      created_appointment = @appointment
+
       invitation_list_locals = {
-        invitation: @invitation, 
-        appointment: @appointment,
-        service: @appointment.service.id,
-        referral: @invitation.referral.id
-        }
-      before_attributes = {
-        referral: Referral.find_by(name: "Local")&.id,
-        referral_grouped_options: referral_grouped_options_for_select,
-        local_referral_id: Referral.find_by(name: "Local")&.id,
-        region: @invitation.region.id,
-        service: @appointment.service.id,
-        date: @invitation.date,
-        service_location_id: "",
-        services_list: next_services(""),
-        service_locations_for_select: build_invitation_service_locations_options(referral?(current_user) ? user_referral : nil),
-        selected_service_location_id: "",
-        default_region_id_for_external: Region.ensure_local!.id
+        invitation: created_invitation,
+        appointment: created_appointment,
+        service: created_appointment.service.id,
+        referral: created_invitation.referral.id
       }
+      before_attributes = invitation_form_before_attributes(created_invitation, created_appointment)
       new_form_sets
       new_form_locals = {
           invitation: @invitation,
@@ -499,6 +482,58 @@ module ClinicManagement
                                turbo_stream.update("validation", "")
         end
       end
+    end
+
+    # ESSENTIAL: Rebuilds the new invitation form with the same Indicador, local,
+    # region and Dia destinado after Turbo replaces the form on create.
+    def invitation_form_before_attributes(created_invitation, created_appointment)
+      service = created_appointment.service
+      selected_service_location_id = service.service_location_id&.to_s.presence ||
+        params[:service_location_id].to_s.presence ||
+        ""
+
+      {
+        referral: created_invitation.referral_id,
+        referral_grouped_options: referral_grouped_options_for_select,
+        local_referral_id: Referral.find_by(name: "Local")&.id,
+        region: created_invitation.region_id,
+        service: service.id,
+        date: created_invitation.date,
+        service_location_id: selected_service_location_id,
+        services_list: next_services(selected_service_location_id),
+        service_locations_for_select: build_invitation_service_locations_options(referral?(current_user) ? user_referral : nil),
+        selected_service_location_id: selected_service_location_id,
+        default_region_id_for_external: Region.ensure_local!.id
+      }
+    end
+
+    # ESSENTIAL: Lists today's invitations created by the current user for the
+    # selected service location (Interno when service_location_id is blank).
+    def today_invitations_for_new_form(service_location_id)
+      return [] unless current_user
+
+      appointments_scope = Appointment.joins(:service, :invitation)
+        .where(registered_by_user_id: current_user.id)
+        .where("clinic_management_invitations.created_at >= ?", Date.current.beginning_of_day)
+
+      appointments_scope = if service_location_id.present?
+        appointments_scope.where(clinic_management_services: { service_location_id: service_location_id })
+      else
+        appointments_scope.where(clinic_management_services: { service_location_id: nil })
+      end
+
+      seen_invitation_ids = []
+      appointments_scope
+        .includes(invitation: [:lead, :referral], service: :service_location)
+        .order("clinic_management_invitations.created_at DESC")
+        .limit(100)
+        .filter_map do |appointment|
+          invitation = appointment.invitation
+          next if seen_invitation_ids.include?(invitation.id)
+
+          seen_invitation_ids << invitation.id
+          [invitation, appointment.service]
+        end
     end
     
     def render_validation_errors(exception)
