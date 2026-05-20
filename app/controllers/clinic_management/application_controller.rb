@@ -9,7 +9,7 @@ module ClinicManagement
     private
 
     def set_referral
-      code = current_user.memberships.last&.code
+      code = current_user&.memberships&.last&.code
       @current_referral = code.present? ? Referral.find_by(code: code) : nil
     end
 
