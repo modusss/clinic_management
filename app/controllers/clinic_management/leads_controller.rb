@@ -1503,8 +1503,7 @@ module ClinicManagement
 
       appointments.map.with_index do |ap, index|
         invitation = ap.invitation
-        # ESSENTIAL: invitation can be nil (nullable FK); use &. so referral check does not short-circuit incorrectly.
-        is_current_referral_invitation = current_referral && invitation&.referral_id == current_referral.id
+        is_current_referral_invitation = current_referral && invitation.referral_id == current_referral.id
         new_appointment = ClinicManagement::Appointment.new
 
         row = [
@@ -1512,8 +1511,8 @@ module ClinicManagement
           {
             header: "Paciente", 
             content: render_to_string(
-              partial: "clinic_management/leads/patient_name_with_edit_button",
-              locals: { invitation: invitation, lead: @lead }
+              partial: "clinic_management/leads/patient_name_with_edit_button", 
+              locals: { invitation: ap.invitation }
             ).html_safe, 
             class: "nowrap size_20 patient-name"
           },          
