@@ -407,7 +407,7 @@ module ClinicManagement
       @all_leads = fetch_leads_by_appointment_condition(
         'clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?',
         false,
-        1.days.ago,
+        Date.current,
         service_location_filter: loc_filter
       )
       
@@ -1264,12 +1264,15 @@ module ClinicManagement
     # Retorna o escopo base de leads ausentes, sem diferenciação de usuário.
     # Service location filter passed into base query for DB-level efficiency (no extra filter step).
     def base_absent_leads_scope
-      absent_threshold_date = 1.day.ago.to_date
+      # ESSENTIAL: service date must be strictly before today (not today/future).
+      # Previous logic used `date < 1.day.ago.to_date`, which excluded yesterday's
+      # absences on the day after the service (e.g. May 20 absences missing on May 21).
+      service_cutoff_date = Date.current
       loc_filter = current_account&.multi_service_locations_enabled? ? current_service_location_id.to_s : nil
       fetch_leads_by_appointment_condition(
         'clinic_management_appointments.attendance = ? AND clinic_management_services.date < ?',
         false,
-        absent_threshold_date,
+        service_cutoff_date,
         service_location_filter: loc_filter
       )
     end
@@ -1336,12 +1339,7 @@ module ClinicManagement
       one_year_ago = 1.year.ago.to_date
       case params[:patient_type]
       when "absent"
-        scope.joins("INNER JOIN clinic_management_appointments AS latest_apt ON latest_apt.id = (
-          SELECT id FROM clinic_management_appointments 
-          WHERE lead_id = clinic_management_leads.id 
-          ORDER BY created_at DESC 
-          LIMIT 1
-        )")
+        scope.joins("INNER JOIN clinic_management_appointments AS latest_apt ON latest_apt.id = (#{latest_appointment_by_service_date_subquery})")
         .where('latest_apt.attendance = ?', false)
       when "attended_year_ago"
         scope.where('main_apt.attendance = ? AND main_svc.date < ?', true, one_year_ago)
@@ -1715,8 +1713,10 @@ module ClinicManagement
           .select(:lead_id)
 
         # 2. Base query with joins. Service location filter applied in same WHERE for planner optimization.
+        # ESSENTIAL: resolve the latest appointment by service date — not last_appointment_id,
+        # which can stay stale when appointments are created outside a few controller paths.
         base_query = ClinicManagement::Lead
-          .joins("INNER JOIN clinic_management_appointments AS main_apt ON clinic_management_leads.last_appointment_id = main_apt.id")
+          .joins("INNER JOIN clinic_management_appointments AS main_apt ON main_apt.id = (#{latest_appointment_by_service_date_subquery})")
           .joins("INNER JOIN clinic_management_services AS main_svc ON main_apt.service_id = main_svc.id")
           .joins("LEFT JOIN clinic_management_lead_interactions AS latest_interaction ON clinic_management_leads.id = latest_interaction.lead_id AND latest_interaction.occurred_at = (SELECT MAX(li2.occurred_at) FROM clinic_management_lead_interactions li2 WHERE li2.lead_id = clinic_management_leads.id)")
           .joins("LEFT JOIN users AS interaction_user ON latest_interaction.user_id = interaction_user.id")
@@ -1750,6 +1750,21 @@ module ClinicManagement
         end
         
         base_query
+      end
+
+      # Returns SQL subquery selecting the lead's latest appointment id by service date.
+      # Tie-breaker: highest appointment id when multiple rows share the same service date.
+      #
+      # @return [String] correlated subquery usable inside JOIN ... ON main_apt.id = (...)
+      def latest_appointment_by_service_date_subquery
+        <<~SQL.squish
+          SELECT a.id
+          FROM clinic_management_appointments a
+          INNER JOIN clinic_management_services s ON s.id = a.service_id
+          WHERE a.lead_id = clinic_management_leads.id
+          ORDER BY s.date DESC, a.id DESC
+          LIMIT 1
+        SQL
       end
         
       # Use callbacks to share common setup or constraints between actions.
