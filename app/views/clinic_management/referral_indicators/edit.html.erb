@@ -1,0 +1,19 @@
+<% content_for :footer, @company_name.presence || "Clínica" %>
+
+<div class="max-w-3xl mx-auto">
+  <nav class="text-sm text-emerald-800 mb-4" aria-label="Breadcrumb">
+    <%= link_to "Indicadores", referral_indicators_path, class: "hover:underline" %>
+    <span class="mx-1">/</span>
+    <span class="text-gray-600">Editar indicador</span>
+  </nav>
+
+  <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+    <div class="bg-gradient-to-r from-emerald-800 to-emerald-700 px-6 py-4">
+      <h1 class="text-xl font-semibold text-white">Atualizar indicador</h1>
+      <p class="text-emerald-100 text-sm mt-1"><%= @referral.name %></p>
+    </div>
+    <div class="p-6">
+      <%= render "clinic_management/referral_indicators/form", referral: @referral %>
+    </div>
+  </div>
+</div>

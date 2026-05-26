@@ -6,6 +6,11 @@ module ClinicManagement
     before_action :set_referral
     before_action :set_company_info
 
+    helper ::ReferralUiPathsHelper
+    helper ::CommissionsHelper
+    helper ::GeneralHelper
+    helper ::StatusHelper
+
     private
 
     def set_referral
@@ -163,7 +168,7 @@ module ClinicManagement
     end
 
     def redirect_referral_users
-      return if clinic_only_profile_page?
+      return if clinic_only_staff_exception_page?
       unless devise_or_session_or_registration_controller?
         membership = helpers.current_membership
         if membership.role == "referral"
@@ -174,7 +179,7 @@ module ClinicManagement
     end    
 
     def redirect_doctor_users
-      return if clinic_only_profile_page?
+      return if clinic_only_staff_exception_page?
       unless devise_or_session_or_registration_controller?
         if helpers.current_membership&.role == "doctor"
           redirect_to clinic_management.index_today_path
@@ -186,9 +191,19 @@ module ClinicManagement
       is_a?(::Devise::SessionsController) || is_a?(::Devise::RegistrationsController) || is_a?(::DeviseController)
     end
 
-    # ESSENTIAL: Doctors/referrals are redirected away from staff routes — except profile in clinic-only mode.
+    # ESSENTIAL: Doctors/referrals are redirected away from staff routes — except profile/commissions in clinic-only mode.
     def clinic_only_profile_page?
       current_account&.clinic_only? && controller_name == "profiles"
+    end
+
+    def clinic_only_referral_indicators_page?
+      return false unless current_account&.clinic_only?
+
+      %w[referral_indicators referral_commissions].include?(controller_name)
+    end
+
+    def clinic_only_staff_exception_page?
+      clinic_only_profile_page? || clinic_only_referral_indicators_page?
     end
 
   end

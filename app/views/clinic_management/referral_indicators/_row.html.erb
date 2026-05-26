@@ -1,0 +1,30 @@
+<%# ESSENTIAL: Single table row for referral indicators list (clinic Tailwind UI). %>
+<tr>
+  <td class="px-4 py-3 align-top">
+    <div class="font-semibold text-gray-900"><%= referral.name %></div>
+    <div class="text-xs text-gray-500 mt-0.5">cod. <%= referral.code %></div>
+  </td>
+  <td class="px-4 py-3 text-gray-700"><%= referral.phone.presence || "—" %></td>
+  <td class="px-4 py-3 text-center">
+    <% if referral.commission_type == "fixed" %>
+      <span class="inline-flex rounded-full bg-blue-100 text-blue-800 px-2.5 py-0.5 text-xs font-semibold">Fixo</span>
+    <% else %>
+      <span class="inline-flex rounded-full bg-teal-100 text-teal-800 px-2.5 py-0.5 text-xs font-semibold">%</span>
+    <% end %>
+  </td>
+  <td class="px-4 py-3 text-center">
+    <% if referral.can_access_leads? %>
+      <i class="fas fa-check-circle text-emerald-600" aria-label="Sim"></i>
+    <% else %>
+      <i class="fas fa-times-circle text-gray-400" aria-label="Não"></i>
+    <% end %>
+  </td>
+  <td class="px-4 py-3">
+    <div class="flex flex-wrap justify-end gap-2">
+      <%= link_to "Visualizar", commissions_referral_indicator_path(referral),
+          class: "inline-flex items-center rounded-md bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 transition-colors" %>
+      <%= link_to "Editar", edit_referral_indicator_path(referral),
+          class: "inline-flex items-center rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 transition-colors" %>
+    </div>
+  </td>
+</tr>
