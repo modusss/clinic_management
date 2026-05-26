@@ -1,0 +1,7 @@
+<%# ESSENTIAL: Standard clinic_management flash banners — notice (green) and alert (red). %>
+<% if flash[:notice].present? %>
+  <%= render partial: "shared/flash_message", locals: { type: :notice, message: flash[:notice] } %>
+<% end %>
+<% if flash[:alert].present? %>
+  <%= render partial: "shared/flash_message", locals: { type: :alert, message: flash[:alert] } %>
+<% end %>
