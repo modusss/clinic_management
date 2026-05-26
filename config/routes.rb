@@ -162,17 +162,9 @@ ClinicManagement::Engine.routes.draw do
   # ESSENTIAL: Profile edit inside clinic Tailwind layout (Apenas Clínica mode).
   resource :profile, only: [:edit, :update], path: "perfil", controller: "profiles"
 
-  # ESSENTIAL: Referral indicators (Indicadores) in clinic-only mode — Tailwind layout.
-  resources :referral_indicators, path: "indicadores", only: [:index, :edit, :update] do
-    member do
-      get :commissions, path: "comissoes", controller: "referral_commissions", action: "show"
-      get :commission_cards, path: "comissoes/cards", controller: "referral_commissions", action: "cards"
-      get :payouts, path: "pagamentos", controller: "referral_commissions", action: "payouts"
-      put :receive_all_commissions, path: "comissoes/receber-todas", controller: "referral_commissions", action: "receive_all"
-      get :payment_history, path: "historico"
-      put :set_all_commissions_as_paid, path: "marcar-todas-pagas"
-    end
-  end
+  # ESSENTIAL: Referral indicators (Indicadores) in clinic-only mode — list + edit only.
+  # Commission dashboards require retail orders and are not available in Apenas Clínica.
+  resources :referral_indicators, path: "indicadores", only: [:index, :edit, :update]
 
   mount ActionCable.server => '/cable'
 end

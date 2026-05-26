@@ -1,4 +1,4 @@
-<%# ESSENTIAL: Tailwind referral form — same fields/Stimulus as host referrals/_form. %>
+<%# ESSENTIAL: Tailwind referral form for clinic-only mode — no commission fields (no retail orders). %>
 <%= form_with model: referral,
               url: referral_indicator_path(referral),
               method: :patch,
@@ -31,30 +31,6 @@
   </section>
 
   <section class="space-y-4 pt-4 border-t border-gray-100">
-    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Configuração de comissão</h2>
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <%= form.label :commission_type, "Tipo de comissão", class: "block text-sm font-medium text-gray-700 mb-1" %>
-        <%= form.select :commission_type,
-            { "Fixo" => "fixed", "Porcentagem" => "percentage" },
-            { include_blank: "Selecione o tipo..." },
-            required: true,
-            class: "w-full rounded-lg border border-gray-300 px-3 py-2.5 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
-            data: {
-              referral_form_target: "commissionTypeSelect",
-              action: "change->referral-form#onCommissionTypeChange"
-            } %>
-      </div>
-      <div data-referral-form-target="percentageSection" style="<%= referral.commission_type == 'percentage' ? '' : 'display: none;' %>">
-        <%= form.label :percentage, "Percentual (%)", class: "block text-sm font-medium text-gray-700 mb-1" %>
-        <%= form.number_field :percentage, step: :any, placeholder: "Ex: 10",
-            class: "w-full rounded-lg border border-gray-300 px-3 py-2.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
-            data: { referral_form_target: "percentageInput" } %>
-      </div>
-    </div>
-  </section>
-
-  <section class="space-y-4 pt-4 border-t border-gray-100">
     <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Permissões</h2>
 
     <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
@@ -67,7 +43,7 @@
             } %>
         <span>
           <span class="block font-medium text-gray-900">É um agendador de exame?</span>
-          <span class="block text-sm text-gray-600">Habilita convites e marcações na página de comissões.</span>
+          <span class="block text-sm text-gray-600">Habilita convites e marcações de exames na clínica.</span>
         </span>
       <% end %>
     </div>

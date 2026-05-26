@@ -4,7 +4,7 @@
     <% if is_manager_above? && current_account&.referral_indicators_enabled? %>
       <%= link_to "Indicadores",
           clinic_management.referral_indicators_path,
-          class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md flex items-center gap-2 #{'bg-emerald-950 text-white' if controller_name == 'referral_indicators' || controller_name == 'referral_commissions'}" %>
+          class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md flex items-center gap-2 #{'bg-emerald-950 text-white' if controller_name == 'referral_indicators'}" %>
     <% end %>
     <%= link_to "Perfil",
         clinic_management.edit_profile_path,

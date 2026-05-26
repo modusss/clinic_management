@@ -9,7 +9,6 @@ module ClinicManagement
     helper ::ReferralUiPathsHelper
     helper ::CommissionsHelper
     helper ::GeneralHelper
-    helper ::StatusHelper
 
     private
 
@@ -199,7 +198,7 @@ module ClinicManagement
     def clinic_only_referral_indicators_page?
       return false unless current_account&.clinic_only?
 
-      %w[referral_indicators referral_commissions].include?(controller_name)
+      controller_name == "referral_indicators"
     end
 
     def clinic_only_staff_exception_page?
