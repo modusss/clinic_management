@@ -159,6 +159,9 @@ ClinicManagement::Engine.routes.draw do
   end
   post 'build_message/:lead_id', to: 'lead_messages#build_message', as: 'build_message'
 
+  # ESSENTIAL: Profile edit inside clinic Tailwind layout (Apenas Clínica mode).
+  resource :profile, only: [:edit, :update], path: "perfil", controller: "profiles"
+
   mount ActionCable.server => '/cable'
 end
 

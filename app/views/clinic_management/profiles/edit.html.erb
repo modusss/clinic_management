@@ -1,0 +1,17 @@
+<% content_for :footer, @company_name.presence || "Clínica" %>
+
+<div class="max-w-2xl mx-auto">
+  <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+    <div class="bg-gradient-to-r from-emerald-800 to-emerald-700 px-6 py-4">
+      <h1 class="text-xl font-semibold text-white flex items-center gap-2">
+        <i class="fas fa-user-circle" aria-hidden="true"></i>
+        Atualizar dados pessoais
+      </h1>
+      <p class="text-emerald-100 text-sm mt-1">Nome, contato e senha da sua conta.</p>
+    </div>
+
+    <div class="p-6">
+      <%= render "clinic_management/profiles/form", user: @user %>
+    </div>
+  </div>
+</div>

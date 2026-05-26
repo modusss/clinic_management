@@ -18,6 +18,11 @@
         </h1>
 
         <nav class="w-full sm:w-auto flex flex-wrap gap-2 justify-center sm:justify-start mb-4 sm:mb-0">
+          <% if current_account&.clinic_only? %>
+            <%= link_to "Perfil",
+                        clinic_management.edit_profile_path,
+                        class: "text-white hover:text-emerald-200 px-3 py-2 rounded-md border border-emerald-500/40 hover:border-emerald-300/70 transition-colors #{'bg-emerald-700/60 text-white' if controller_name == 'profiles'}" %>
+          <% end %>
           <%= link_to "Demonstração de lentes",
                       clinic_management.lens_demonstration_path,
                       class: "text-white hover:text-emerald-200 px-3 py-2 rounded-md border border-emerald-500/40 hover:border-emerald-300/70 transition-colors #{'bg-emerald-700/60 text-white' if controller_name == 'lens_demonstrations' && action_name == 'show'}" %>
@@ -72,6 +77,9 @@
             <%= link_to "Atendimentos", clinic_management.index_by_referral_services_path(user_referral), class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'services'}" %>
             <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'lead_messages'}" %>
             <%= link_to "Convites", clinic_management.invitations_path(referral_id: user_referral.id), class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'invitations'}" %>
+            <% if current_account&.clinic_only? %>
+              <%= link_to "Perfil", clinic_management.edit_profile_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'profiles'}" %>
+            <% end %>
             
             <%# Mobile share buttons - Referral (only when self_booking_enabled) %>
             <% if self_booking_enabled_for_current_user? %>
@@ -171,6 +179,7 @@
         <%= link_to "Atendimentos", clinic_management.index_by_referral_services_path(user_referral), class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'services'}" %>
         <%= link_to "Convites", clinic_management.invitations_path(referral_id: user_referral.id), class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'invitations'}" %>
         <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'lead_messages'}" %>
+        <%= render "clinic_management/shared/clinic_only_nav_links" %>
     </nav>
     
     <%# ================================================================
@@ -267,6 +276,9 @@
          <%= link_to "Locais de Atendimento", clinic_management.service_locations_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'service_locations'}" if current_account&.multi_service_locations_enabled? %>
          <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'time_slots'}" %>
          <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'lead_messages'}"  %>
+         <% end %>
+         <% if current_account&.clinic_only? %>
+           <%= link_to "Perfil", clinic_management.edit_profile_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'profiles'}" %>
          <% end %>
          
          <%# Mobile share buttons - Staff (only when self_booking_enabled) %>
@@ -374,6 +386,7 @@
     <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'time_slots'}" %>
     <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'lead_messages'}"  %>
     <% end %>
+    <%= render "clinic_management/shared/clinic_only_nav_links" %>
   </nav>
   
   <%# ================================================================

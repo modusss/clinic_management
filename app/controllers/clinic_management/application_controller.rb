@@ -163,6 +163,7 @@ module ClinicManagement
     end
 
     def redirect_referral_users
+      return if clinic_only_profile_page?
       unless devise_or_session_or_registration_controller?
         membership = helpers.current_membership
         if membership.role == "referral"
@@ -173,6 +174,7 @@ module ClinicManagement
     end    
 
     def redirect_doctor_users
+      return if clinic_only_profile_page?
       unless devise_or_session_or_registration_controller?
         if helpers.current_membership&.role == "doctor"
           redirect_to clinic_management.index_today_path
@@ -182,6 +184,11 @@ module ClinicManagement
 
     def devise_or_session_or_registration_controller?
       is_a?(::Devise::SessionsController) || is_a?(::Devise::RegistrationsController) || is_a?(::DeviseController)
+    end
+
+    # ESSENTIAL: Doctors/referrals are redirected away from staff routes — except profile in clinic-only mode.
+    def clinic_only_profile_page?
+      current_account&.clinic_only? && controller_name == "profiles"
     end
 
   end
