@@ -117,34 +117,31 @@
     <br>
     <br>
   <div class="contact-info">
-    <!-- Logo e informações da conta -->
+    <%# ESSENTIAL: Clinic branding only — @company_contact = account_clinic_contact_info; logo = clinic_logo. %>
     <div style="text-align: center;">
-      <% if current_user&.accounts&.first&.logo&.attached? %>
-        <%= image_tag active_storage_image_base64(current_user.accounts.first.logo), class: "logo" %>
+      <% if @account&.clinic_logo&.attached? %>
+        <% logo_data = active_storage_image_base64(@account.clinic_logo) %>
+        <%= image_tag logo_data, class: "logo" if logo_data.present? %>
       <% end %>
     </div>
 
     <div style="text-align: center;">
-      <% if @company_contact.present? %>
-        <div>
-          <strong>Tel:</strong> <%= @company_contact.phone1 %><%= " | #{@company_contact.phone2}" if @company_contact.phone2.present? %>
-        </div>
-        <div>
-          <%= @company_contact.street %><%= ", #{@company_contact.neighborhood}" if @company_contact.neighborhood.present? %>
-        </div>
-        <div>
-          <%= @company_contact.city %>/<%= @company_contact.state %>
-        </div>
-      <% else %>
-        <div>
-          <strong>Tel:</strong> (77) 9 9836-7332 | (77) 9 8804-3621
-        </div>
-        <div>
-          Rua Joaquim Nabuco, 99B, Centro
-        </div>
-        <div>
-          Vitória da Conquista/BA
-        </div>
+      <% if @company_contact.present? && [@company_contact.phone1, @company_contact.street, @company_contact.city].any?(&:present?) %>
+        <% if @company_contact.phone1.present? %>
+          <div>
+            <strong>Tel:</strong> <%= @company_contact.phone1 %><%= " | #{@company_contact.phone2}" if @company_contact.phone2.present? %>
+          </div>
+        <% end %>
+        <% if @company_contact.street.present? %>
+          <div>
+            <%= @company_contact.street %><%= ", #{@company_contact.neighborhood}" if @company_contact.neighborhood.present? %>
+          </div>
+        <% end %>
+        <% if @company_contact.city.present? || @company_contact.state.present? %>
+          <div>
+            <%= [@company_contact.city, @company_contact.state].compact.join("/") %>
+          </div>
+        <% end %>
       <% end %>
     </div>
   </div>

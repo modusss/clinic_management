@@ -187,8 +187,11 @@
 
       def pdf
         @prescription = @appointment.prescription
-        @company_contact = current_account&.account_contact_info
-        
+        # ESSENTIAL: Public PDF (no session) — same account resolution as other clinic engine actions.
+        @account = current_account || Account.first
+        # ESSENTIAL: Footer must use clinic contact/logo (Organização → Contato da clínica), not ótica.
+        @company_contact = @account&.account_clinic_contact_info
+
         respond_to do |format|
           format.html
           format.pdf do
