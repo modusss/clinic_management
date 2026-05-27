@@ -8,6 +8,7 @@ module ClinicManagement
 
     helper ::ReferralUiPathsHelper
     helper ::OrganizationUiPathsHelper
+    helper ::WhatsappUiPathsHelper
     helper ::CommissionsHelper
     helper ::GeneralHelper
 
@@ -208,8 +209,14 @@ module ClinicManagement
       controller_name == "organization"
     end
 
+    def clinic_only_whatsapp_page?
+      return false unless current_account&.clinic_only?
+
+      controller_name == "whatsapp"
+    end
+
     def clinic_only_staff_exception_page?
-      clinic_only_profile_page? || clinic_only_referral_indicators_page? || clinic_only_organization_page?
+      clinic_only_profile_page? || clinic_only_referral_indicators_page? || clinic_only_organization_page? || clinic_only_whatsapp_page?
     end
 
   end

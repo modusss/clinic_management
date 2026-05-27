@@ -176,6 +176,9 @@ ClinicManagement::Engine.routes.draw do
   # Commission dashboards require retail orders and are not available in Apenas Clínica.
   resources :referral_indicators, path: "indicadores", only: [:index, :edit, :update]
 
+  # ESSENTIAL: WhatsApp (Evolution instances) in clinic-only mode — embedded Tailwind UI.
+  get "whatsapp", to: "whatsapp#index", as: :whatsapp
+
   mount ActionCable.server => '/cable'
 end
 

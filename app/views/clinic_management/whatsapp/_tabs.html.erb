@@ -1,0 +1,13 @@
+<%# ESSENTIAL: WhatsApp settings sub-tabs — Local, Indicadores, Captação (clinic-only embedded UI). %>
+<nav class="flex flex-wrap gap-2 border-b border-gray-200 px-4 sm:px-6 pt-4 bg-gray-50" aria-label="Abas do WhatsApp">
+  <% active_label = case active_tab
+                    when "indicadores" then "Indicadores"
+                    when "captacao" then "Captação"
+                    else "Local"
+                    end %>
+  <% tabs.each do |tab| %>
+    <%= link_to tab[:name],
+        tab[:link],
+        class: "px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 transition-colors #{active_label == tab[:name] ? 'border-emerald-700 text-emerald-800 bg-white' : 'border-transparent text-gray-600 hover:text-emerald-700 hover:border-emerald-300'}" %>
+  <% end %>
+</nav>

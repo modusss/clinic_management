@@ -1,0 +1,124 @@
+<%# ESSENTIAL: Local WhatsApp connections (Geral + Clínica) — clinic-only Tailwind shell around host partials. %>
+<div class="space-y-6">
+  <p class="text-sm text-gray-600">
+    Configure as conexões do WhatsApp para a clínica. Você pode criar até duas conexões: Geral e Clínica.
+  </p>
+
+  <%= turbo_stream_from "evolution_instances" %>
+  <%= turbo_stream_from "evolution_instances_#{account.id}" %>
+
+  <div data-controller="evolution-qr-timeout" data-evolution-qr-timeout-timeout-value="20" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+      <div id="instance_geral">
+        <% if account.evolution_instance_name.present? %>
+          <%= render partial: "/evolution_instances/instance_card", locals: {
+                account: account,
+                instance_type: "geral",
+                instance_name: account.evolution_instance_name,
+                connected: account.instance_1_connected,
+                connecting: account.instance_1_connecting,
+                show_manager_actions: is_manager_above?
+              } %>
+        <% else %>
+          <div class="p-5 space-y-4">
+            <h3 class="text-base font-semibold text-gray-900">Conexão Geral</h3>
+            <p class="text-sm text-gray-600">Nenhuma conexão configurada</p>
+            <%= form_with url: whatsapp_create_instance_path, method: :post do |f| %>
+              <%= f.hidden_field :instance_type, value: "geral" %>
+              <% if current_user.admin? %>
+                <div>
+                  <%= f.label :instance_name, "Nome customizado (opcional)", class: "block text-sm font-medium text-gray-700 mb-1" %>
+                  <%= f.text_field :instance_name, placeholder: "geral_#{server_code} (deixe em branco para padrão)", class: "w-full rounded-lg border border-gray-300 px-3 py-2.5" %>
+                </div>
+              <% else %>
+                <%= f.hidden_field :instance_name, value: nil %>
+              <% end %>
+              <% if evolution_proxy_configured?(account) %>
+                <%= f.hidden_field :with_proxy, value: "true" %>
+              <% end %>
+              <%= f.submit "Nova Conexão", class: "cursor-pointer mt-3 inline-flex items-center rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-5 py-2.5" %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+      <div id="instance_clinica">
+        <% if account.evolution_instance_name_2.present? %>
+          <%= render partial: "/evolution_instances/instance_card", locals: {
+                account: account,
+                instance_type: "clinica",
+                instance_name: account.evolution_instance_name_2,
+                connected: account.instance_2_connected,
+                connecting: account.instance_2_connecting,
+                show_manager_actions: is_manager_above?
+              } %>
+        <% else %>
+          <div class="p-5 space-y-4">
+            <h3 class="text-base font-semibold text-gray-900">Conexão Clínica</h3>
+            <p class="text-sm text-gray-600">Nenhuma conexão configurada</p>
+            <%= form_with url: whatsapp_create_instance_path, method: :post do |f| %>
+              <%= f.hidden_field :instance_type, value: "clinica" %>
+              <% if current_user.admin? %>
+                <div>
+                  <%= f.label :instance_name_2, "Nome customizado (opcional)", class: "block text-sm font-medium text-gray-700 mb-1" %>
+                  <%= f.text_field :instance_name_2, placeholder: "clinica_#{server_code} (deixe em branco para padrão)", class: "w-full rounded-lg border border-gray-300 px-3 py-2.5" %>
+                </div>
+              <% else %>
+                <%= f.hidden_field :instance_name_2, value: nil %>
+              <% end %>
+              <% if evolution_proxy_configured?(account) %>
+                <%= f.hidden_field :with_proxy, value: "true" %>
+              <% end %>
+              <%= f.submit "Nova Conexão", class: "cursor-pointer mt-3 inline-flex items-center rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-5 py-2.5" %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <h3 class="text-base font-semibold text-gray-900 mb-1">Intervalo entre mensagens</h3>
+    <p class="text-sm text-gray-600 mb-4">Tempo mínimo e máximo entre envios pelo WhatsApp Local (evita detecção de spam).</p>
+    <%= form_with url: whatsapp_update_message_intervals_path, method: :patch, local: true, class: "grid grid-cols-1 sm:grid-cols-3 gap-4 items-end" do |f| %>
+      <div>
+        <%= f.label :message_interval_min_seconds, "Mínimo (segundos)", class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= f.number_field :message_interval_min_seconds, value: account.message_interval_min_seconds, min: 30, max: 600, class: "w-full rounded-lg border border-gray-300 px-3 py-2.5" %>
+        <p class="text-xs text-gray-500 mt-1">Padrão: 90s</p>
+      </div>
+      <div>
+        <%= f.label :message_interval_max_seconds, "Máximo (segundos)", class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= f.number_field :message_interval_max_seconds, value: account.message_interval_max_seconds, min: 30, max: 600, class: "w-full rounded-lg border border-gray-300 px-3 py-2.5" %>
+        <p class="text-xs text-gray-500 mt-1">Padrão: 180s</p>
+      </div>
+      <div>
+        <%= f.submit "Salvar intervalo", class: "cursor-pointer inline-flex items-center rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 w-full sm:w-auto" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const msg = sessionStorage.getItem('evolution_qr_timeout_alert');
+    if (msg) {
+      sessionStorage.removeItem('evolution_qr_timeout_alert');
+      alert(msg);
+    }
+  })();
+  App.evolution_instances = App.cable.subscriptions.create("EvolutionInstancesChannel", {
+    received(data) {
+      if (data.action === "qr_updated" && data.account_id === <%= account.id %>) {
+        if (data.instance_name === "<%= account.evolution_instance_name %>") {
+          const qrImage = document.getElementById("qr-code-instance-1");
+          if (qrImage) qrImage.src = data.qr_base64;
+        } else if (data.instance_name === "<%= account.evolution_instance_name_2 %>") {
+          const qrImage = document.getElementById("qr-code-instance-2");
+          if (qrImage) qrImage.src = data.qr_base64;
+        }
+      }
+    }
+  });
+</script>

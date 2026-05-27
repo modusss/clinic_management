@@ -1,0 +1,35 @@
+<% content_for :footer, @company_name.presence || "Clínica" %>
+
+<div class="max-w-6xl mx-auto space-y-6">
+  <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+    <div class="bg-gradient-to-r from-emerald-800 to-emerald-700 px-6 py-4">
+      <h1 class="text-xl font-semibold text-white flex items-center gap-2">
+        <i class="fab fa-whatsapp" aria-hidden="true"></i>
+        Whatsapp
+      </h1>
+      <p class="text-emerald-100 text-sm mt-1">Conexões Evolution API — Local, indicadores e captação.</p>
+    </div>
+
+    <%= render "clinic_management/whatsapp/tabs", tabs: @whatsapp_tabs, active_tab: @active_whatsapp_tab %>
+
+    <div class="p-4 sm:p-6">
+      <% case @active_whatsapp_tab %>
+      <% when "captacao" %>
+        <%= turbo_stream_from "bulk_evolution_instances" %>
+        <%= turbo_stream_from "bulk_evolution_instances_#{@account.id}" %>
+        <%= render partial: "/bulk_evolution_instances/content", locals: { account: @account } %>
+      <% when "indicadores" %>
+        <%= turbo_stream_from "referral_evolution_instances" %>
+        <% @referrals.each do |ref| %>
+          <%= turbo_stream_from "referral_evolution_instances_#{ref.id}" %>
+        <% end %>
+        <%= render partial: "/referral_evolution_instances/content", locals: {
+              referrals: @referrals,
+              initial_referral_id: params[:referral_id]
+            } %>
+      <% else %>
+        <%= render "clinic_management/whatsapp/config_tab", account: @account %>
+      <% end %>
+    </div>
+  </div>
+</div>
