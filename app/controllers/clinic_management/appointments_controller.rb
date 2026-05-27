@@ -160,8 +160,10 @@ module ClinicManagement
     end
 
     def my_reschedules
-      @conversion_filter = params[:conversion_filter] # purchased, not_purchased
-      
+      # ESSENTIAL: Conversion / "Cliente" column only apply when retail (loja/vendas) is enabled.
+      @show_retail_client_column = !clinic_only?
+      @conversion_filter = @show_retail_client_column ? params[:conversion_filter] : nil # purchased, not_purchased
+
       # Query base: appointments criados pelo usuário atual onde o status é "agendado"
       base_query = Appointment.joins(:lead)
                                .where(registered_by_user_id: current_user&.id, status: 'agendado')
@@ -172,8 +174,8 @@ module ClinicManagement
       @appointments = @appointments.includes(:service, :invitation, :lead)
                                    .order(created_at: :desc)
       
-      # Aplicar filtro de conversão (comprou/não comprou) ANTES da paginação
-      if @conversion_filter.present?
+      # Aplicar filtro de conversão (comprou/não comprou) ANTES da paginação — retail only
+      if @show_retail_client_column && @conversion_filter.present?
         all_appointments = @appointments.to_a
         
         filtered_appointments = all_appointments.select do |appointment|
@@ -203,63 +205,71 @@ module ClinicManagement
           total_count: filtered_appointments.size
         ).page(page).per(per_page)
       else
-        # Calcular contadores sem filtro de conversão
-        all_for_count = @appointments.to_a
-        @purchased_count = all_for_count.count { |apt| appointment_lead_purchased?(apt) }
-        @not_purchased_count = all_for_count.count { |apt| !appointment_lead_purchased?(apt) }
-        
+        if @show_retail_client_column
+          # Calcular contadores sem filtro de conversão
+          all_for_count = @appointments.to_a
+          @purchased_count = all_for_count.count { |apt| appointment_lead_purchased?(apt) }
+          @not_purchased_count = all_for_count.count { |apt| !appointment_lead_purchased?(apt) }
+        end
+
         # Paginar normalmente
         @appointments = @appointments.page(params[:page]).per(50)
       end
 
       # Prepara os dados para a tabela usando partials
-      @rows = @appointments.map do |appointment|
+      @rows = @appointments.map { |appointment| my_reschedules_table_row(appointment) }
+    end
+
+    private
+
+      # Builds one data_table row for Meus Agendamentos.
+      # ESSENTIAL: "Cliente" column omitted in Apenas Clínica (retail_module_enabled false).
+      def my_reschedules_table_row(appointment)
         invitation = appointment.invitation
         lead = appointment.lead
         service = appointment.service
-        
-        [
+
+        cells = [
           {
             header: "Data do exame",
-            content: render_to_string(partial: "clinic_management/appointments/reschedule_service_date", 
+            content: render_to_string(partial: "clinic_management/appointments/reschedule_service_date",
                                     locals: { service: service, appointment: appointment }),
             class: "nowrap"
           },
           {
-            header: "Nome do paciente", 
-            content: render_to_string(partial: "clinic_management/appointments/reschedule_patient_name", 
+            header: "Nome do paciente",
+            content: render_to_string(partial: "clinic_management/appointments/reschedule_patient_name",
                                     locals: { invitation: invitation, lead: lead }),
             class: "patient-name nowrap"
           },
           {
             header: "Nome do responsável",
-            content: render_to_string(partial: "clinic_management/appointments/reschedule_responsible_name", 
+            content: render_to_string(partial: "clinic_management/appointments/reschedule_responsible_name",
                                     locals: { lead: lead, invitation: invitation }),
             class: "nowrap"
           },
-          
           {
             header: "Telefone",
-            content: render_to_string(partial: "clinic_management/appointments/reschedule_phone", 
+            content: render_to_string(partial: "clinic_management/appointments/reschedule_phone",
                                     locals: { lead: lead, appointment: appointment }).html_safe,
             class: "text-blue-500 hover:text-blue-700 nowrap"
           },
           {
             header: "Status",
-            content: render_to_string(partial: "clinic_management/appointments/reschedule_status", 
+            content: render_to_string(partial: "clinic_management/appointments/reschedule_status",
                                     locals: { appointment: appointment }).html_safe,
             id: "status-#{appointment.id}",
             class: helpers.status_class(appointment)
           },
           {
             header: "Origem",
-            content: render_to_string(partial: "clinic_management/appointments/reschedule_origin", 
+            content: render_to_string(partial: "clinic_management/appointments/reschedule_origin",
                                     locals: { appointment: appointment }).html_safe,
             class: "nowrap"
           },
           {
             header: "Observações",
-            content: render_to_string(partial: "clinic_management/appointments/reschedule_comments", 
+            content: render_to_string(partial: "clinic_management/appointments/reschedule_comments",
                                     locals: { appointment: appointment }),
             class: "comments",
             id: "appointment-comments-#{appointment.id}"
@@ -268,18 +278,20 @@ module ClinicManagement
             header: "Indicação",
             content: invitation.referral.name.upcase,
             class: "nowrap"
-          },
-          {
+          }
+        ]
+
+        if @show_retail_client_column
+          cells << {
             header: "Cliente",
             content: render_to_string(partial: "clinic_management/appointments/reschedule_customer_link",
                                     locals: { lead: lead, appointment: appointment }).html_safe,
             class: "nowrap"
           }
-        ]
-      end
-    end
+        end
 
-    private
+        cells
+      end
 
       def reschedule_region(referral, lead)
         if referral.name.downcase == "local"

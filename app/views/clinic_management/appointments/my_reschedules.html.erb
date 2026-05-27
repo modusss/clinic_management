@@ -13,6 +13,8 @@
     <p class="text-gray-600 px-4">Lista de agendamentos realizados por você.</p>
   </div>
 
+  <%# ESSENTIAL: Conversion filters and Cliente column require retail (loja/vendas) module. %>
+  <% if @show_retail_client_column %>
   <!-- Filtros de Conversão (Comprou/Não Comprou) -->
   <div class="px-4 mb-4">
     <div class="flex items-center gap-3">
@@ -46,6 +48,7 @@
       <% end %>
     </div>
   </div>
+  <% end %>
 
   <%# Render table or cards view based on @view_type %>
   <% if @rows.present? %>
