@@ -579,7 +579,7 @@ module ClinicManagement
               end
       
               rows << [
-                {header: "Indicador", content: referral&.name},
+                {header: "Captador", content: referral&.name},
                 {header: "Qtd de convites", content: referral_invitations.size},
                 {header: "Convites", content: patient_links.join(", ").html_safe},
                 {header: "Regiões", content: referral_invitations.map { |invite| invite&.region&.name }.uniq.join(", ")},
@@ -589,7 +589,7 @@ module ClinicManagement
           else
             rows << [{header: "", content: helpers.show_week_day(date.strftime("%A")) + ", " + date.strftime("%d/%m/%Y"), colspan: 4, class: "bg-gray-100 font-bold"}]
             rows << [
-              {header: "Indicador", content: ""},
+              {header: "Captador", content: ""},
               {header: "Qtd de convites", content: ""},
               {header: "Convites", content: "Sem lançamentos"},
               {header: "Regiões", content: ""},
@@ -662,7 +662,7 @@ module ClinicManagement
               end
       
               rows << [
-                {header: "Indicador", content: referral&.name},
+                {header: "Captador", content: referral&.name},
                 {header: "Qtd de convites", content: r_invitations.size},
                 {header: "Convites", content: invitation_patient_links.join(", ").html_safe},
                 {header: "Qtd de remarcações", content: r_appointments.size},
@@ -672,7 +672,7 @@ module ClinicManagement
           else
             rows << [{header: "", content: helpers.show_week_day(date.strftime("%A")) + ", " + date.strftime("%d/%m/%Y"), colspan: 5, class: "bg-gray-100 font-bold"}]
             rows << [
-              {header: "Indicador", content: ""},
+              {header: "Captador", content: ""},
               {header: "Qtd de convites", content: ""},
               {header: "Convites", content: "Sem lançamentos"},
               {header: "Qtd de remarcações", content: ""},
@@ -1239,7 +1239,7 @@ module ClinicManagement
         scope
       end
 
-      # Referrals for Indicador select: Local first, then Indicadores ativos, then Demais indicadores.
+      # Referrals for Indicador select: Local first, then Captadores ativos, then Demais captadores.
       # Returns array for grouped_options_for_select: [["Group", [[label, id], ...]], ...]
       def referral_grouped_options_for_select
         local = Referral.find_by(name: "Local")
@@ -1249,8 +1249,8 @@ module ClinicManagement
 
         options = []
         options << ["Local", [[local.name, local.id]]] if local
-        options << ["Indicadores ativos", active.map { |r| [r.name, r.id] }] if active.any?
-        options << ["Demais indicadores", inactive.map { |r| [r.name, r.id] }] if inactive.any?
+        options << ["Captadores ativos", active.map { |r| [r.name, r.id] }] if active.any?
+        options << ["Demais captadores", inactive.map { |r| [r.name, r.id] }] if inactive.any?
         options
       end
 

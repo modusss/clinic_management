@@ -34,7 +34,7 @@
           %>
         </div>
       <% else %>
-        <%= form.label :referral_id, "Indicador", class: "block text-gray-700 font-bold" %>
+        <%= form.label :referral_id, "Captador", class: "block text-gray-700 font-bold" %>
         <% if local_assigns.key?(:referral_grouped_options) && referral_grouped_options.present? %>
           <%= form.select :referral_id, grouped_options_for_select(referral_grouped_options, referral),
               {},

@@ -1151,17 +1151,6 @@ module ClinicManagement
           Account.first
         end
 
-        # ESSENTIAL: Prioritize bulk instances for non-referral sends.
-        # This prevents using the clinic WhatsApp (instance_2) for bulk messaging.
-        # Only used when the bulk_evolution feature is enabled for this account.
-        if account&.bulk_evolution_enabled?
-          bulk_instance = BulkEvolutionInstance.next_for_sending(account.id)
-          if bulk_instance
-            bulk_instance.mark_as_used!
-            return bulk_instance.instance_name
-          end
-        end
-
         account&.evolution_instance_name_2
       end
     end
@@ -1193,17 +1182,7 @@ module ClinicManagement
           Account.first
         end
 
-        # ESSENTIAL: Prioritize dedicated bulk instances over clinic instance (instance_2).
-        # Using instance_2 for bulk messaging risks WhatsApp ban on the clinic number.
-        # Bulk instances are separate numbers specifically for mass sending.
-        # When bulk_evolution_enabled but no bulk instances configured, fall back to
-        # instance_2 so bulk send still works until user configures dedicated connections.
-        if account&.bulk_evolution_enabled?
-          bulk_names = BulkEvolutionInstance.connected_instance_names(account.id)
-          return bulk_names if bulk_names.present?
-        end
-
-        # Fallback: instance_2 (clinic) — used when bulk disabled or no bulk instances
+        # ESSENTIAL: Non-referral bulk sends use clinic WhatsApp (instance_2).
         instance = account&.evolution_instance_name_2
         instance.present? ? [instance] : []
       end
@@ -1233,18 +1212,7 @@ module ClinicManagement
         referral = user_referral
         referral&.evolution_delay_multiplier || 1.0
       else
-        # ESSENTIAL: Use bulk instance delay multiplier when bulk instances exist.
-        account = if respond_to?(:current_account) && current_account.present?
-          current_account
-        else
-          Account.first
-        end
-
-        if account&.bulk_evolution_enabled? && BulkEvolutionInstance.any_connected?(account.id)
-          BulkEvolutionInstance.delay_multiplier(account.id)
-        else
-          1.0
-        end
+        1.0
       end
     end
 

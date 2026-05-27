@@ -1,8 +1,7 @@
-<%# ESSENTIAL: WhatsApp settings sub-tabs — Local, Indicadores, Captação (clinic-only embedded UI). %>
+<%# ESSENTIAL: WhatsApp settings sub-tabs — Local, Captadores (clinic-only embedded UI). %>
 <nav class="flex flex-wrap gap-2 border-b border-gray-200 px-4 sm:px-6 pt-4 bg-gray-50" aria-label="Abas do WhatsApp">
   <% active_label = case active_tab
-                    when "indicadores" then "Indicadores"
-                    when "captacao" then "Captação"
+                    when "indicadores" then ReferralDisplayLabelsHelper::REFERRAL_CAPTURES_PLURAL
                     else "Local"
                     end %>
   <% tabs.each do |tab| %>

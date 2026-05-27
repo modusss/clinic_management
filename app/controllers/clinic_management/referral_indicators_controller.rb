@@ -30,7 +30,7 @@ module ClinicManagement
           @referral.membership.update(role: params[:membership_role])
         end
 
-        redirect_to referral_indicators_path, notice: "Indicador atualizado com sucesso."
+        redirect_to referral_indicators_path, notice: "Captador atualizado com sucesso."
       else
         render :edit, status: :unprocessable_entity
       end
@@ -53,7 +53,7 @@ module ClinicManagement
     def require_referral_indicators_feature!
       return if current_account&.referral_indicators_enabled?
 
-      redirect_to clinic_management.index_today_path, alert: "Indicadores comissionados não estão habilitados para esta conta."
+      redirect_to clinic_management.index_today_path, alert: "Captadores não estão habilitados para esta conta."
     end
   end
 end

@@ -19,7 +19,7 @@ module ClinicManagement
         [
           { header: "#", content: index },
           { header: "Nome", content: loc.name },
-          { header: "Indicadores associados", content: indicators_text },
+          { header: "Captadores associados", content: indicators_text },
           { header: "Doutores associados", content: doctors_text },
           { header: "Time Slots", content: loc.time_slots.count },
           { header: "Services", content: loc.services.count },

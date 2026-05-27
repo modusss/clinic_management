@@ -1,5 +1,6 @@
 module ClinicManagement
   module ApplicationHelper
+    include ReferralDisplayLabelsHelper
 
     # ESSENTIAL: Display name for Service in dropdowns (navbar "Ir para atendimento...").
     # Format: "Quinta-feira, 05/03/2026 - 08:00h às 12:00h".

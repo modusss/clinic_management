@@ -7,17 +7,13 @@
         <i class="fab fa-whatsapp" aria-hidden="true"></i>
         Whatsapp
       </h1>
-      <p class="text-emerald-100 text-sm mt-1">Conexões Evolution API — Local, indicadores e captação.</p>
+      <p class="text-emerald-100 text-sm mt-1">Conexões Evolution API — Local e captadores.</p>
     </div>
 
     <%= render "clinic_management/whatsapp/tabs", tabs: @whatsapp_tabs, active_tab: @active_whatsapp_tab %>
 
     <div class="p-4 sm:p-6">
       <% case @active_whatsapp_tab %>
-      <% when "captacao" %>
-        <%= turbo_stream_from "bulk_evolution_instances" %>
-        <%= turbo_stream_from "bulk_evolution_instances_#{@account.id}" %>
-        <%= render partial: "/bulk_evolution_instances/content", locals: { account: @account } %>
       <% when "indicadores" %>
         <%= turbo_stream_from "referral_evolution_instances" %>
         <% @referrals.each do |ref| %>
