@@ -190,7 +190,7 @@
       referral_base_url = referral_share_url
       referral_wa_msg = referral_share_message
     %>
-    <div class="mt-6 pt-4 border-t border-emerald-800 share-booking-block" 
+    <div style="margin-bottom: 100px;" class="mt-6 pt-4 border-t border-emerald-800 share-booking-block" 
          data-base-url="<%= referral_base_url %>" 
          data-base-message="<%= ERB::Util.url_encode(referral_wa_msg) %>">
       <p class="text-emerald-300 text-xs uppercase tracking-wider mb-1 px-3">Compartilhar</p>
@@ -393,7 +393,7 @@
       SHARE BOOKING LINK - Staff User (only when self_booking_enabled)
       ================================================================ %>
   <% if self_booking_enabled_for_current_user? %>
-  <div class="mt-6 pt-4 border-t border-emerald-800 share-booking-block" 
+  <div style="margin-bottom: 100px;" class="mt-6 pt-4 border-t border-emerald-800 share-booking-block" 
        data-base-url="<%= staff_share_url %>" 
        data-base-message="<%= ERB::Util.url_encode(staff_share_message) %>">
     <p class="text-emerald-300 text-xs uppercase tracking-wider mb-1 px-3">Compartilhar</p>
