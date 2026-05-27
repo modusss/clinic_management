@@ -1,5 +1,8 @@
 module ClinicManagement
   class ApplicationController < ActionController::Base
+    # ESSENTIAL: Apenas Clínica — engine root (invitations#new) is not the staff home; index_today is.
+    prepend_before_action :redirect_clinic_only_home_from_engine_root
+
     before_action :authenticate_user!
     before_action :redirect_referral_users
     before_action :redirect_doctor_users
@@ -217,6 +220,14 @@ module ClinicManagement
 
     def clinic_only_staff_exception_page?
       clinic_only_profile_page? || clinic_only_referral_indicators_page? || clinic_only_organization_page? || clinic_only_whatsapp_page?
+    end
+
+    # ESSENTIAL: Redirect /clinic_management (invitations#new) to prescriptions/index_today in Apenas Clínica.
+    def redirect_clinic_only_home_from_engine_root
+      return unless current_account&.clinic_only?
+      return unless controller_name == "invitations" && action_name == "new"
+
+      redirect_to clinic_management.index_today_path
     end
 
   end

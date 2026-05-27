@@ -335,6 +335,12 @@
       <p class="text-white text-base font-medium">
         &copy; <%= Time.now.year %> - <%= yield(:footer) || "Nome da sua empresa" %>
       </p>
+      <%# ESSENTIAL: Discrete admin entry for platform operators (user.admin) inside clinic engine. %>
+      <% if user_signed_in? && current_user.admin? %>
+        <%= link_to "Admin",
+            main_app.admin_accounts_path,
+            class: "inline-block mt-1 text-[11px] text-emerald-300/50 hover:text-emerald-200/90 transition-colors tracking-wide" %>
+      <% end %>
     </div>
   </footer>
 </body>
