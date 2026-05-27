@@ -1,48 +1,13 @@
-<%# ESSENTIAL: Local WhatsApp connections (Geral + Clínica) — clinic-only Tailwind shell around host partials. %>
+<%# ESSENTIAL: Local WhatsApp — clinic-only shows Clínica instance only (no retail "Geral"). %>
 <div class="space-y-6">
   <p class="text-sm text-gray-600">
-    Configure as conexões do WhatsApp para a clínica. Você pode criar até duas conexões: Geral e Clínica.
+    Configure a conexão do WhatsApp Clínica para mensagens do atendimento.
   </p>
 
   <%= turbo_stream_from "evolution_instances" %>
   <%= turbo_stream_from "evolution_instances_#{account.id}" %>
 
-  <div data-controller="evolution-qr-timeout" data-evolution-qr-timeout-timeout-value="20" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <div class="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
-      <div id="instance_geral">
-        <% if account.evolution_instance_name.present? %>
-          <%= render partial: "/evolution_instances/instance_card", locals: {
-                account: account,
-                instance_type: "geral",
-                instance_name: account.evolution_instance_name,
-                connected: account.instance_1_connected,
-                connecting: account.instance_1_connecting,
-                show_manager_actions: is_manager_above?
-              } %>
-        <% else %>
-          <div class="p-5 space-y-4">
-            <h3 class="text-base font-semibold text-gray-900">Conexão Geral</h3>
-            <p class="text-sm text-gray-600">Nenhuma conexão configurada</p>
-            <%= form_with url: whatsapp_create_instance_path, method: :post do |f| %>
-              <%= f.hidden_field :instance_type, value: "geral" %>
-              <% if current_user.admin? %>
-                <div>
-                  <%= f.label :instance_name, "Nome customizado (opcional)", class: "block text-sm font-medium text-gray-700 mb-1" %>
-                  <%= f.text_field :instance_name, placeholder: "geral_#{server_code} (deixe em branco para padrão)", class: "w-full rounded-lg border border-gray-300 px-3 py-2.5" %>
-                </div>
-              <% else %>
-                <%= f.hidden_field :instance_name, value: nil %>
-              <% end %>
-              <% if evolution_proxy_configured?(account) %>
-                <%= f.hidden_field :with_proxy, value: "true" %>
-              <% end %>
-              <%= f.submit "Nova Conexão", class: "cursor-pointer mt-3 inline-flex items-center rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-5 py-2.5" %>
-            <% end %>
-          </div>
-        <% end %>
-      </div>
-    </div>
-
+  <div data-controller="evolution-qr-timeout" data-evolution-qr-timeout-timeout-value="20" class="max-w-xl">
     <div class="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
       <div id="instance_clinica">
         <% if account.evolution_instance_name_2.present? %>
