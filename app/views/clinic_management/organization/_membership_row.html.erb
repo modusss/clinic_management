@@ -1,0 +1,33 @@
+<%# ESSENTIAL: Single cooperator row in organization memberships table. %>
+<tr>
+  <td class="px-4 py-3">
+    <div class="flex items-center gap-3">
+      <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
+        <%= user.name.to_s.split.map { |part| part[0] }.first(2).join.upcase %>
+      </span>
+      <span class="font-medium text-gray-900"><%= user.name %></span>
+    </div>
+  </td>
+  <td class="px-4 py-3 text-gray-700"><%= user.email %></td>
+  <td class="px-4 py-3">
+    <div class="flex flex-wrap justify-end gap-2">
+      <% if current_user.admin? %>
+        <%= link_to edit_organization_cooperator_path(user),
+            class: "inline-flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 text-white",
+            title: "Editar cooperador" do %>
+          <i class="fas fa-pen text-xs"></i>
+        <% end %>
+      <% end %>
+
+      <% if current_user.admin? || (is_owner? && membership.role != "owner") %>
+        <%= button_to organization_cooperator_destroy_path(user),
+              method: :delete,
+              form: { data: { turbo_confirm: "Tem certeza que deseja excluir o usuário #{user.name}?" } },
+              class: "inline-flex h-9 w-9 items-center justify-center rounded-full bg-red-600 hover:bg-red-700 text-white",
+              title: "Excluir cooperador" do %>
+          <i class="fas fa-trash text-xs"></i>
+        <% end %>
+      <% end %>
+    </div>
+  </td>
+</tr>

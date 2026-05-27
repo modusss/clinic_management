@@ -1,0 +1,13 @@
+<%# ESSENTIAL: Organization tabs — clinic-only subset (no cartões / retail CSV). %>
+<nav class="flex flex-wrap gap-2 border-b border-gray-200 px-4 sm:px-6 pt-4 bg-gray-50" aria-label="Abas da organização">
+  <% tabs = [
+    ["memberships", "Membros"],
+    ["contact", "Contato"],
+    ["downloads", "Downloads"]
+  ] %>
+  <% tabs.each do |tab_id, label| %>
+    <%= link_to label,
+        edit_organization_path(tab: tab_id),
+        class: "px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 transition-colors #{active_tab == tab_id ? 'border-emerald-700 text-emerald-800 bg-white' : 'border-transparent text-gray-600 hover:text-emerald-700 hover:border-emerald-300'}" %>
+  <% end %>
+</nav>

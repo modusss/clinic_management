@@ -1,0 +1,29 @@
+<% content_for :footer, @company_name.presence || "Clínica" %>
+
+<div class="max-w-6xl mx-auto space-y-6">
+  <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+    <div class="bg-gradient-to-r from-emerald-800 to-emerald-700 px-6 py-4">
+      <h1 class="text-xl font-semibold text-white flex items-center gap-2">
+        <i class="fas fa-building" aria-hidden="true"></i>
+        Organização
+      </h1>
+      <p class="text-emerald-100 text-sm mt-1">Membros, contato e downloads da clínica.</p>
+    </div>
+
+    <%= render "clinic_management/organization/tabs", active_tab: @active_tab %>
+
+    <div class="p-4 sm:p-6">
+      <% case @active_tab %>
+      <% when "contact" %>
+        <%= render "clinic_management/organization/contact_tab", account: @user_account %>
+      <% when "downloads" %>
+        <%= render "clinic_management/organization/downloads_tab" %>
+      <% else %>
+        <%= render "clinic_management/organization/memberships_tab",
+              membership_users: @membership_users,
+              new_user: @new_user,
+              available_referrals: @available_referrals %>
+      <% end %>
+    </div>
+  </div>
+</div>

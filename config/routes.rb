@@ -162,6 +162,16 @@ ClinicManagement::Engine.routes.draw do
   # ESSENTIAL: Profile edit inside clinic Tailwind layout (Apenas Clínica mode).
   resource :profile, only: [:edit, :update], path: "perfil", controller: "profiles"
 
+  # ESSENTIAL: Organization (Organização) in clinic-only mode — Membros, Contato, Downloads.
+  resource :organization, path: "organizacao", only: [:edit, :update], controller: "organization" do
+    delete :logo, on: :member, action: :remove_logo
+    get :download_leads_csv, on: :member, path: "leads.csv"
+    post :cooperators, on: :collection, action: :create_membership, path: "cooperadores"
+  end
+  get "organizacao/cooperadores/:user_id/editar", to: "organization#edit_membership", as: :edit_organization_cooperator
+  patch "organizacao/cooperadores/:user_id", to: "organization#update_membership", as: :organization_cooperator
+  delete "organizacao/cooperadores/:user_id", to: "organization#destroy_membership", as: :organization_cooperator_destroy
+
   # ESSENTIAL: Referral indicators (Indicadores) in clinic-only mode — list + edit only.
   # Commission dashboards require retail orders and are not available in Apenas Clínica.
   resources :referral_indicators, path: "indicadores", only: [:index, :edit, :update]

@@ -1,0 +1,50 @@
+<%# ESSENTIAL: Cooperators list grouped by role (clinic-only organization). %>
+<% if membership_users.count > 1 %>
+  <div class="space-y-6">
+    <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+      <i class="fas fa-users text-emerald-700" aria-hidden="true"></i>
+      Lista de cooperadores
+    </h2>
+
+    <% users_by_role = membership_users.where.not(id: current_user.id)
+                                      .where(deleted: [false, nil])
+                                      .where(admin: [false, nil])
+                                      .includes(:memberships)
+                                      .group_by { |user| user.memberships.find { |m| m.account_id == current_account.id }&.role } %>
+
+    <% users_by_role.compact.sort.each do |role, users| %>
+      <div class="rounded-xl border border-gray-200 overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex flex-wrap items-center justify-between gap-2">
+          <div class="font-semibold text-gray-900 flex items-center gap-2">
+            <i class="fas fa-id-badge text-emerald-700"></i>
+            <%= translate_user_role(role) %>
+          </div>
+          <span class="text-sm text-gray-500"><%= pluralize(users.size, "cooperador", "cooperadores") %></span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <thead class="bg-white">
+              <tr>
+                <th class="px-4 py-3 text-left font-semibold text-gray-700">Nome</th>
+                <th class="px-4 py-3 text-left font-semibold text-gray-700">Email</th>
+                <th class="px-4 py-3 text-right font-semibold text-gray-700">Ações</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+              <% users.sort_by(&:name).each do |user| %>
+                <% membership = user.memberships.find { |item| item.account_id == current_account.id } %>
+                <%= render "clinic_management/organization/membership_row", user: user, membership: membership %>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% end %>
+
+<div class="mt-8">
+  <%= render "clinic_management/organization/membership_form",
+        new_user: new_user,
+        available_referrals: available_referrals %>
+</div>

@@ -1,0 +1,98 @@
+<%# ESSENTIAL: Add cooperator form — reuses membership-form Stimulus from host app. %>
+<% at_user_limit = current_account&.max_users.present? && current_account.at_max_users_for_account? %>
+
+<div class="rounded-xl border border-gray-200 bg-gray-50 overflow-hidden">
+  <div class="px-4 py-3 border-b border-gray-200 bg-white">
+    <h3 class="text-base font-semibold text-gray-900 flex items-center gap-2">
+      <i class="fas fa-user-plus text-emerald-700"></i>
+      Adicionar cooperador
+    </h3>
+  </div>
+
+  <div class="p-4 sm:p-6">
+    <% if at_user_limit %>
+      <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800 text-sm">
+        Limite de usuários atingido (<%= current_account.cooperators_count_for_user_limit %> / <%= current_account.max_users %>).
+        O administrador da plataforma pode aumentar este limite em Gestão de Contas.
+      </div>
+    <% else %>
+      <div data-controller="membership-form">
+        <%= form_with model: new_user, url: cooperators_organization_path, method: :post, local: true, html: { class: "space-y-5" } do |form| %>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <%= form.label :name, "Nome completo", class: "block text-sm font-medium text-gray-700 mb-1" %>
+              <%= form.text_field :name, required: true, class: "w-full rounded-lg border border-gray-300 px-3 py-2.5" %>
+            </div>
+            <div>
+              <%= form.label :email, "E-mail", class: "block text-sm font-medium text-gray-700 mb-1" %>
+              <%= form.email_field :email, required: true, class: "w-full rounded-lg border border-gray-300 px-3 py-2.5" %>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <%= form.label :password, "Senha", class: "block text-sm font-medium text-gray-700 mb-1" %>
+              <%= form.password_field :password, required: true, class: "w-full rounded-lg border border-gray-300 px-3 py-2.5" %>
+              <p class="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>
+            </div>
+            <div>
+              <%= form.label :password_confirmation, "Confirmação de senha", class: "block text-sm font-medium text-gray-700 mb-1" %>
+              <%= form.password_field :password_confirmation, required: true, class: "w-full rounded-lg border border-gray-300 px-3 py-2.5" %>
+            </div>
+          </div>
+
+          <div>
+            <%= form.label :role, "Cargo", class: "block text-sm font-medium text-gray-700 mb-1" %>
+            <% role_options = membership_role_options %>
+            <%= form.select :role,
+                options_for_select(role_options, include_blank: "Selecione o cargo..."),
+                {},
+                required: true,
+                class: "w-full rounded-lg border border-gray-300 px-3 py-2.5 bg-white",
+                data: { membership_form_target: "roleSelect", action: "change->membership-form#toggleFields" } %>
+          </div>
+
+          <div data-membership-form-target="referralOptionsContainer" class="hidden space-y-3">
+            <p class="text-sm font-medium text-gray-700">Opções para indicador</p>
+            <label class="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 cursor-pointer">
+              <input type="radio" name="referral_option" value="new" checked
+                     data-membership-form-target="newReferralRadio"
+                     data-action="change->membership-form#selectNewReferral" class="mt-1">
+              <span>
+                <span class="font-semibold text-blue-900">Criar novo indicador</span>
+                <span class="block text-sm text-blue-800">Código único gerado automaticamente.</span>
+              </span>
+            </label>
+
+            <% if available_referrals.present? %>
+              <label class="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 cursor-pointer">
+                <input type="radio" name="referral_option" value="existing"
+                       data-membership-form-target="existingReferralRadio"
+                       data-action="change->membership-form#selectExistingReferral" class="mt-1">
+                <span>
+                  <span class="font-semibold text-emerald-900">Reintegrar indicador existente</span>
+                  <span class="block text-sm text-emerald-800">Reative acesso de indicador já cadastrado.</span>
+                </span>
+              </label>
+
+              <div data-membership-form-target="existingReferralContainer" class="hidden">
+                <%= form.label :existing_referral_id, "Indicador", class: "block text-sm font-medium text-gray-700 mb-1" %>
+                <%= form.select :existing_referral_id,
+                    options_for_select(available_referrals.map { |r| ["#{r.name} (#{r.code})", r.id] }),
+                    { include_blank: "Selecione o indicador..." },
+                    class: "w-full rounded-lg border border-gray-300 px-3 py-2.5 bg-white",
+                    data: { membership_form_target: "existingReferralSelect" } %>
+              </div>
+            <% end %>
+          </div>
+
+          <div class="flex justify-end pt-2">
+            <%= form.submit "Adicionar cooperador",
+                class: "cursor-pointer inline-flex items-center rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-5 py-2.5",
+                data: { membership_form_target: "submitButton" } %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

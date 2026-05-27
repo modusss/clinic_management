@@ -7,6 +7,7 @@ module ClinicManagement
     before_action :set_company_info
 
     helper ::ReferralUiPathsHelper
+    helper ::OrganizationUiPathsHelper
     helper ::CommissionsHelper
     helper ::GeneralHelper
 
@@ -201,8 +202,14 @@ module ClinicManagement
       controller_name == "referral_indicators"
     end
 
+    def clinic_only_organization_page?
+      return false unless current_account&.clinic_only?
+
+      controller_name == "organization"
+    end
+
     def clinic_only_staff_exception_page?
-      clinic_only_profile_page? || clinic_only_referral_indicators_page?
+      clinic_only_profile_page? || clinic_only_referral_indicators_page? || clinic_only_organization_page?
     end
 
   end
