@@ -144,12 +144,15 @@
         
         <%= f.radio_button :patient_type, "attended_year_ago", checked: (params[:patient_type] == "attended_year_ago"), class: "sr-only", id: "patient_type_attended_year_ago" %>
         <label for="patient_type_attended_year_ago" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:patient_type] == 'attended_year_ago' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Compareceu +1 ano</label>
-        
+
+        <%# ESSENTIAL: Retail customer segments (orders) are hidden in Apenas Clínica mode. %>
+        <% unless current_account&.clinic_only? %>
         <%= f.radio_button :patient_type, "attended_year_ago_customer", checked: (params[:patient_type] == "attended_year_ago_customer"), class: "sr-only", id: "patient_type_attended_year_ago_customer" %>
         <label for="patient_type_attended_year_ago_customer" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:patient_type] == 'attended_year_ago_customer' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Já é cliente +1 ano</label>
-        
+
         <%= f.radio_button :patient_type, "attended_year_ago_non_customer", checked: (params[:patient_type] == "attended_year_ago_non_customer"), class: "sr-only", id: "patient_type_attended_year_ago_non_customer" %>
         <label for="patient_type_attended_year_ago_non_customer" class="px-3 py-2 text-sm border rounded cursor-pointer <%= params[:patient_type] == 'attended_year_ago_non_customer' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' %>">Não cliente +1 ano</label>
+        <% end %>
       </div>
     </div>
     <!-- Filtro de Contato -->

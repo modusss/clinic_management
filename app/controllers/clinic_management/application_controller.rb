@@ -33,6 +33,21 @@ module ClinicManagement
     end
     helper_method :current_account
 
+    # ESSENTIAL: Mirrors main ApplicationController — engine views use clinic_only? / retail_module_enabled?.
+    # @return [Boolean] true when loja/vendas is active for current_account
+    def retail_module_enabled?
+      return true if current_account.nil?
+
+      current_account.retail_module_enabled?
+    end
+    helper_method :retail_module_enabled?
+
+    # @return [Boolean] true when only clinic module should be exposed (retail hidden)
+    def clinic_only?
+      !retail_module_enabled?
+    end
+    helper_method :clinic_only?
+
     # ESSENTIAL: `current_account` is accounts.first — some users (e.g. multiple memberships)
     # may have self_booking_enabled on another linked account. Share blocks and gates for
     # "any clinic that enables self-booking for this user" must use this, not only current_account.

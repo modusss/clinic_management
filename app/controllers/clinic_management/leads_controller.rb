@@ -1336,6 +1336,13 @@ module ClinicManagement
     # Filtra por tipo de paciente, se especificado
     def filter_by_patient_type(scope)
       return scope unless params[:patient_type].present? && params[:patient_type] != "all"
+
+      # ESSENTIAL: Customer/non-customer segments depend on retail orders — unavailable in Apenas Clínica.
+      if current_account&.clinic_only? &&
+         %w[attended_year_ago_customer attended_year_ago_non_customer].include?(params[:patient_type])
+        return scope
+      end
+
       one_year_ago = 1.year.ago.to_date
       case params[:patient_type]
       when "absent"
@@ -1581,8 +1588,13 @@ module ClinicManagement
         # Para funcionalidades que precisam do appointment completo, buscar quando necessário
         full_appointment = nil
         
-        # Get order count information
-        order_count = lead&.customer&.orders&.count || 0
+        # ESSENTIAL: Retail-only order line in Status; skip DB hit in Apenas Clínica.
+        clinic_only_mode = current_account&.clinic_only?
+        order_count = if clinic_only_mode
+                        0
+                      else
+                        lead&.customer&.orders&.count || 0
+                      end
         
         # Determine the patient's status with order info on a separate line
         status_content = if last_appointment.attendance == false
@@ -1646,12 +1658,18 @@ module ClinicManagement
             row_class: ""  # Classe será manipulada via JS para highlight
           },
           {
-            header: "Paciente", 
-            content: patient_content, 
-            class: "nowrap size_20 patient-name" 
+            header: "Paciente",
+            content: patient_content,
+            class: "nowrap size_20 patient-name"
           },
-          # Status column with separated order information
-          {header: "Status", content: status_content.to_s.html_safe, class: "!min-w-[300px] size_20 " + helpers.status_class(last_appointment)},
+          # ESSENTIAL: min-width 300px only in retail (second line "compras na ótica"); clinic-only uses natural width.
+          {
+            header: "Status",
+            content: status_content.to_s.html_safe,
+            class: (
+              clinic_only_mode ? "nowrap size_20 " : "!min-w-[300px] size_20 "
+            ) + helpers.status_class(last_appointment)
+          },
           {
             header: "Telefone", 
             content: render_to_string(
