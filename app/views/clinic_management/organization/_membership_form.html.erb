@@ -43,7 +43,8 @@
 
           <div>
             <span class="block text-sm font-medium text-gray-700 mb-2">Cargo <span class="text-red-600">*</span></span>
-            <% role_cards = build_membership_role_cards(membership_role_options) %>
+            <%# ESSENTIAL: account: required so CLINIC_ONLY_ROLE_DESCRIPTIONS apply (not retail operator copy). %>
+            <% role_cards = build_membership_role_cards(membership_role_options, account: current_account) %>
             <%= render "shared/membership_role_cards",
                 form: form,
                 role_cards: role_cards,

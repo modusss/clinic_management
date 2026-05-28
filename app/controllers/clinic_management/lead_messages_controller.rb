@@ -21,8 +21,8 @@ module ClinicManagement
       if referral?(current_user)
         # Referral users: see only their own messages (unchanged)
         @messages = LeadMessage.where(referral_id: user_referral.id).order(created_at: :asc)
-      elsif is_manager_above?
-        # Managers: can view global messages OR a specific referral's messages
+      elsif can_manage_lead_messages?
+        # Operator, manager, owner: global messages OR a specific referral's messages
         # Only show active referrals in the dropdown.
         # Uses the instance method active? (same approach as referrals#index)
         # because the scope Referral.active has a LEFT JOIN bug that leaks
@@ -93,7 +93,7 @@ module ClinicManagement
       # Force message_type = 3 (outro) for referrals and non-manager users
       if referral?(current_user)
         @message.message_type = 3
-      elsif !is_manager_above?
+      elsif !can_manage_lead_messages?
         @message.message_type = 3
       end
       
@@ -129,7 +129,7 @@ module ClinicManagement
         # Force message_type = 3 (outro) for referrals and non-manager users
         if referral?(current_user)
           @message.message_type = 3
-        elsif !is_manager_above?
+        elsif !can_manage_lead_messages?
           @message.message_type = 3
         end
         
@@ -507,12 +507,12 @@ module ClinicManagement
     end
 
     def check_message_permissions
-      # Gerentes podem editar/excluir qualquer mensagem
-      return if is_manager_above?
-      
-      # Usuários comuns só podem editar/excluir mensagens do tipo "outro"
+      # ESSENTIAL: Operator+ (can_manage_lead_messages?) may edit/delete any message type.
+      return if can_manage_lead_messages?
+
+      # Clinical assistant and others: only "outro" messages
       unless @message.message_type == 'outro'
-        redirect_to lead_messages_path, alert: 'Você não tem permissão para modificar mensagens de sistema. Apenas gerentes podem fazer isso.'
+        redirect_to lead_messages_path, alert: 'Você não tem permissão para modificar mensagens de sistema. Operadores e gerentes podem fazer isso.'
       end
     end
   

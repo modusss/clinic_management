@@ -48,6 +48,11 @@ module ClinicManagement
         color_map.dig(color_name, shade) || '#000000'
       end
 
+      # ESSENTIAL: Clinic-only hierarchy (no seller/basic). Operator + manager + owner.
+      # Navbar staff limits use clinical_assistant? (not this helper): assistant skips regiões,
+      # horários, mensagens customizadas e pacientes ausentes; operator has full staff menu
+      # except is_manager_above? items (convites, tipos de serviço, Organização, WhatsApp, captadores).
+      # @return [Boolean]
       def is_operator_above?
         if current_user.present?
             if ["operator", "manager", "owner"].include? current_user.memberships.first.role
@@ -58,6 +63,13 @@ module ClinicManagement
         else
             return false
         end
+      end
+
+      # ESSENTIAL: Lead messages (mensagens customizadas) — operator may create/edit all types,
+      # same as manager/owner. Use in LeadMessagesController + views (not is_manager_above? alone).
+      # @return [Boolean]
+      def can_manage_lead_messages?
+        is_operator_above?
       end
 
       # Returns services available for rescheduling. Includes service_location for multi-location form filtering.

@@ -27,7 +27,7 @@
    # Shows only when there are referrals with messages.
    # Server-side filtering via query param — robust and simple.
    # ============================================================================ %>
-<% if is_manager_above? && !@current_referral && @referrals_with_messages&.any? %>
+<% if can_manage_lead_messages? && !@current_referral && @referrals_with_messages&.any? %>
   <div class="mb-6"
        data-controller="referral-messages"
        data-referral-messages-base-path-value="<%= lead_messages_path %>">
@@ -98,7 +98,7 @@
     <div data-referral-messages-target="tabContent" data-tab-name="globais">
       <p class="text-sm text-gray-600 mb-4">
         Mensagens de sistema (Confirmação, Remarcação, Lembrete, etc.).
-        <%= is_manager_above? ? 'Você pode editá-las.' : 'Apenas gerentes podem editar estas mensagens.' %>
+        <%= can_manage_lead_messages? ? 'Você pode editá-las.' : 'Apenas operadores e gerentes podem editar estas mensagens.' %>
       </p>
       <% if @viewing_all_externals && @messages_by_location.present? %>
         <% @messages_by_location.each do |location, location_messages| %>
