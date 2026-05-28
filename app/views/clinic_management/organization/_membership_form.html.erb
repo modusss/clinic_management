@@ -42,14 +42,12 @@
           </div>
 
           <div>
-            <%= form.label :role, "Cargo", class: "block text-sm font-medium text-gray-700 mb-1" %>
-            <% role_options = membership_role_options %>
-            <%= form.select :role,
-                options_for_select(role_options, include_blank: "Selecione o cargo..."),
-                {},
-                required: true,
-                class: "w-full rounded-lg border border-gray-300 px-3 py-2.5 bg-white",
-                data: { membership_form_target: "roleSelect", action: "change->membership-form#toggleFields" } %>
+            <span class="block text-sm font-medium text-gray-700 mb-2">Cargo <span class="text-red-600">*</span></span>
+            <% role_cards = build_membership_role_cards(membership_role_options) %>
+            <%= render "shared/membership_role_cards",
+                form: form,
+                role_cards: role_cards,
+                variant: "tailwind" %>
           </div>
 
           <div data-membership-form-target="referralOptionsContainer" class="hidden space-y-3">

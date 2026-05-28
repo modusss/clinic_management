@@ -14,17 +14,20 @@
     </div>
 
     <div class="p-6">
-      <%= form_with model: @user, url: organization_cooperator_path(@user), method: :patch, local: true, html: { class: "space-y-4" } do |form| %>
+      <%= form_with model: @user, url: organization_cooperator_path(@user), method: :patch, local: true,
+          html: { class: "space-y-4", data: { controller: "membership-form" } } do |form| %>
         <div>
           <%= form.label :name, "Nome", class: "block text-sm font-medium text-gray-700 mb-1" %>
           <%= form.text_field :name, required: true, class: "w-full rounded-lg border border-gray-300 px-3 py-2.5" %>
         </div>
         <div>
-          <%= form.label :role, "Cargo", class: "block text-sm font-medium text-gray-700 mb-1" %>
-          <%= form.select :role,
-              options_for_select(membership_role_options(@membership), @membership.role),
-              {},
-              class: "w-full rounded-lg border border-gray-300 px-3 py-2.5 bg-white" %>
+          <span class="block text-sm font-medium text-gray-700 mb-2">Cargo <span class="text-red-600">*</span></span>
+          <% role_cards = build_membership_role_cards(membership_role_options(@membership)) %>
+          <%= render "shared/membership_role_cards",
+              form: form,
+              role_cards: role_cards,
+              variant: "tailwind",
+              selected: @membership.role %>
         </div>
         <div class="flex flex-wrap justify-end gap-3 pt-2">
           <%= link_to "Cancelar", edit_organization_path(tab: "memberships"), class: "text-sm font-medium text-gray-600 hover:text-emerald-700 px-3 py-2" %>
