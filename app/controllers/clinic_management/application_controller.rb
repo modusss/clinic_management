@@ -1,5 +1,7 @@
 module ClinicManagement
   class ApplicationController < ActionController::Base
+    include ::ClinicModuleGuard
+
     # ESSENTIAL: Apenas Clínica — engine root (invitations#new) is not the staff home; index_today is.
     prepend_before_action :redirect_clinic_only_home_from_engine_root
 
@@ -43,11 +45,25 @@ module ClinicManagement
     end
     helper_method :retail_module_enabled?
 
+    # @return [Boolean] true when clinic module is enabled for current_account
+    def clinic_module_enabled?
+      return true if current_account.nil?
+
+      current_account.clinic_module_enabled?
+    end
+    helper_method :clinic_module_enabled?
+
     # @return [Boolean] true when only clinic module should be exposed (retail hidden)
     def clinic_only?
-      !retail_module_enabled?
+      current_account&.clinic_only? || false
     end
     helper_method :clinic_only?
+
+    # @return [Boolean] true when only retail should be exposed (clinic hidden)
+    def optics_only?
+      current_account&.optics_only? || false
+    end
+    helper_method :optics_only?
 
     # ESSENTIAL: `current_account` is accounts.first — some users (e.g. multiple memberships)
     # may have self_booking_enabled on another linked account. Share blocks and gates for
