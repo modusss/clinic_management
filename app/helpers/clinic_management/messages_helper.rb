@@ -176,18 +176,12 @@ module ClinicManagement
       else
         # For non-referral users, always prefer tenant-aware account context.
         # ESSENTIAL: using Account.first may read another tenant's connection flag
-        # and incorrectly block bulk sends in clinic absent flow.
+        # and incorrectly block Evolution API checks in clinic absent flow.
         account = if defined?(current_account) && current_account.present?
           current_account
         else
           Account.first
         end
-
-        # ESSENTIAL: Also check dedicated bulk instances (BulkEvolutionInstance).
-        # These are separate WhatsApp numbers for mass sending that don't use
-        # the clinic number (instance_2), reducing ban risk.
-        # Only considered when the bulk_evolution feature is enabled for this account.
-        return true if account&.bulk_evolution_enabled? && BulkEvolutionInstance.any_connected?(account.id)
 
         account&.instance_2_connected == true
       end
