@@ -164,7 +164,7 @@ ClinicManagement::Engine.routes.draw do
 
   # ESSENTIAL: Organization (Organização) in clinic-only mode — Membros, Contato, Downloads.
   resource :organization, path: "organizacao", only: [:edit, :update], controller: "organization" do
-    delete :logo, on: :member, action: :remove_logo
+    delete :clinic_logo, on: :member, action: :remove_clinic_logo
     get :download_leads_csv, on: :member, path: "leads.csv"
     post :cooperators, on: :collection, action: :create_membership, path: "cooperadores"
   end

@@ -31,14 +31,14 @@ module ClinicManagement
       end
     end
 
-    # DELETE /clinic_management/organizacao/logo
-    def remove_logo
+    # DELETE /clinic_management/organizacao/clinic_logo
+    def remove_clinic_logo
       @account = current_account
-      if @account.logo.attached?
-        @account.logo.purge
-        redirect_to edit_organization_path(tab: "contact"), notice: "Logo removida com sucesso."
+      if @account.clinic_logo.attached?
+        @account.clinic_logo.purge
+        redirect_to edit_organization_path(tab: "contact"), notice: "Logo da clínica removida com sucesso."
       else
-        redirect_to edit_organization_path(tab: "contact"), alert: "Nenhuma logo para remover."
+        redirect_to edit_organization_path(tab: "contact"), alert: "Nenhuma logo da clínica para remover."
       end
     end
 

@@ -23,7 +23,8 @@ module ClinicManagement
     end
 
     def set_company_info
-      @company_contact = current_account&.account_contact_info
+      # ESSENTIAL: Apenas Clínica — branding from clinic contact tab, not ótica account_contact_info.
+      @company_contact = current_account&.account_clinic_contact_info
       @company_name = @company_contact&.company_name
     end
     
