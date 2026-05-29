@@ -1,0 +1,98 @@
+/* ============================================================================
+   Lens demonstration — embedded in clinic_management (reuses lens_demonstrations/show)
+   ESSENTIAL: Main app wraps this view in .custom-container; clinic uses .clinic-lens-demo-shell.
+   Do not nest inside Tailwind `container` — it caps width and breaks comparison sliders.
+   ============================================================================ */
+
+body.clinic-lens-demo #main-container {
+  width: 100%;
+  max-width: none;
+}
+
+body.clinic-lens-demo #main-container > .clinic-lens-demo-shell {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin: 0 auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media screen and (min-width: 640px) {
+  body.clinic-lens-demo #main-container > .clinic-lens-demo-shell {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media screen and (min-width: 1024px) {
+  body.clinic-lens-demo #main-container > .clinic-lens-demo-shell {
+    /* Mirrors main app custom-container breathing room on wide screens */
+    width: calc(100% - 3rem);
+    max-width: 1400px;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+/* Root demo container — remove double padding from shared template */
+body.clinic-lens-demo .lens-demonstration-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body.clinic-lens-demo .lens-demonstration-container .tabs-container {
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+body.clinic-lens-demo .lens-demonstration-container .comparison-container {
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+/* ESSENTIAL: Parent flex/overflow must not clip absolute comparison layers */
+body.clinic-lens-demo .lens-demonstration-container .tab-content.active {
+  width: 100%;
+  min-width: 0;
+}
+
+body.clinic-lens-demo .lens-demonstration-container .image-base,
+body.clinic-lens-demo .lens-demonstration-container .lens-darkening-overlay,
+body.clinic-lens-demo .lens-demonstration-container .lens-color-overlay {
+  overflow: hidden;
+}
+
+body.clinic-lens-demo .lens-demonstration-container .crop-center-wrapper {
+  overflow: hidden;
+}
+
+body.clinic-lens-demo .lens-demonstration-container .treatment-content .comparison-container {
+  max-width: 1200px;
+}
+
+@media screen and (max-width: 767px) {
+  body.clinic-lens-demo .lens-demonstration-container .tabs-container {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.35rem;
+    margin-bottom: 1rem;
+  }
+
+  body.clinic-lens-demo .lens-demonstration-container .comparison-container {
+    max-height: none;
+  }
+
+  body.clinic-lens-demo #main-container > .clinic-lens-demo-shell {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}

@@ -2,16 +2,16 @@
   <%# Doctor navbar: only today. No links to other days. Location selector only. No "Ir para atendimento". %>
   <%# ESSENTIAL: clinic-navbar--doctor uses main.css grid/flex — do not revert to flex-wrap + order-* (breaks desktop logo/badge overlap). %>
   <header class="navbar-fixed clinic-navbar clinic-navbar--doctor relative bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 py-4 shadow-md z-50" style="width:100%;">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 clinic-navbar__container">
-      <div class="clinic-navbar__row flex flex-wrap justify-between items-center gap-3">
-        <div class="clinic-navbar__brand mb-4 md:mb-0 w-full md:w-auto text-center md:text-left">
+    <div class="clinic-navbar__container mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="clinic-navbar__row">
+        <div class="clinic-navbar__brand">
           <h1 class="clinic-navbar__brand-title text-white text-xl font-bold m-0">
             <%= link_to "Lipepay", clinic_management.index_today_path, class: "text-white hover:text-emerald-300 clinic-navbar__brand-name" %>
             <span class="clinic-navbar__badge">atendimentos</span>
           </h1>
           <%# ESSENTIAL: Location selector for doctors - Interno + their allowed externals. High prominence for context. %>
           <% if doctor_service_location_options.present? && doctor_service_location_options.size > 1 %>
-            <%= form_with url: clinic_management.switch_service_locations_path, method: :post, local: true, data: { turbo: false }, class: "clinic-navbar__location-form inline-block mt-2 md:mt-0 md:ml-3" do |f| %>
+            <%= form_with url: clinic_management.switch_service_locations_path, method: :post, local: true, data: { turbo: false }, class: "clinic-navbar__location-form" do |f| %>
               <label for="navbar-location-select-doctor" class="sr-only">Local de atendimento</label>
               <span class="navbar-location-badge inline-flex items-center gap-2">
                 <i class="fas fa-map-marker-alt text-emerald-600 text-sm flex-shrink-0" aria-hidden="true"></i>
@@ -21,23 +21,23 @@
           <% end %>
         </div>
 
-        <nav class="clinic-navbar__links w-full md:w-auto flex flex-wrap gap-2 justify-center md:justify-center mb-4 md:mb-0">
+        <nav class="clinic-navbar__links">
           <% if current_account&.clinic_only? %>
             <%= link_to "Perfil",
                         clinic_management.edit_profile_path,
-                        class: "text-white hover:text-emerald-200 px-3 py-2 rounded-md border border-emerald-500/40 hover:border-emerald-300/70 transition-colors #{'bg-emerald-700/60 text-white' if controller_name == 'profiles'}" %>
+                        class: "clinic-navbar__link text-white hover:text-emerald-200 px-3 py-2 rounded-md border border-emerald-500/40 hover:border-emerald-300/70 transition-colors #{'bg-emerald-700/60 text-white' if controller_name == 'profiles'}" %>
           <% end %>
           <%= link_to "Demonstração de lentes",
                       clinic_management.lens_demonstration_path,
-                      class: "text-white hover:text-emerald-200 px-3 py-2 rounded-md border border-emerald-500/40 hover:border-emerald-300/70 transition-colors #{'bg-emerald-700/60 text-white' if controller_name == 'lens_demonstrations' && action_name == 'show'}" %>
+                      class: "clinic-navbar__link text-white hover:text-emerald-200 px-3 py-2 rounded-md border border-emerald-500/40 hover:border-emerald-300/70 transition-colors #{'bg-emerald-700/60 text-white' if controller_name == 'lens_demonstrations' && action_name == 'show'}" %>
           <%= link_to "Falar sobre o olho",
                       clinic_management.eye_education_path,
-                      class: "text-white hover:text-emerald-200 px-3 py-2 rounded-md border border-emerald-500/40 hover:border-emerald-300/70 transition-colors #{'bg-emerald-700/60 text-white' if controller_name == 'eye_educations' && action_name == 'show'}" %>
+                      class: "clinic-navbar__link text-white hover:text-emerald-200 px-3 py-2 rounded-md border border-emerald-500/40 hover:border-emerald-300/70 transition-colors #{'bg-emerald-700/60 text-white' if controller_name == 'eye_educations' && action_name == 'show'}" %>
         </nav>
 
         <% if user_signed_in? %>
-          <div class="clinic-navbar__user flex items-center text-white w-full md:w-auto justify-center md:justify-end">
-            <span class="mr-4">Olá, <%= current_user.name %></span>
+          <div class="clinic-navbar__user">
+            <span class="clinic-navbar__greeting mr-4">Olá, <%= current_user.name %></span>
             <%= link_to "Sair", main_app.destroy_user_session_path, data: { turbo_method: :delete }, class: "text-sm px-4 py-2 border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white" %>
           </div>
         <% end %>
@@ -169,12 +169,9 @@
     </div>
   </header>
 
-  <aside class="hidden md:block w-64 bg-emerald-950 text-white fixed top-0 left-0 h-screen pt-6 p-4 z-40 overflow-y-auto">
-    <h1 class="text-white text-xl font-bold mb-6">
-       <%= link_to raw("Lipepay <span class='block mt-1 text-xs bg-white text-emerald-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-emerald-300" %>
-    </h1>
-    
-    <nav class="flex flex-col space-y-3 text-lg">
+  <aside class="hidden md:block w-64 bg-emerald-950 text-white fixed top-0 left-0 h-screen pt-4 p-4 z-40 overflow-y-auto clinic-sidebar" style="margin-top: 100px;">
+    <%# ESSENTIAL: Brand is in the top header on desktop — no duplicate logo in sidebar. %>
+    <nav class="flex flex-col space-y-3 text-lg clinic-sidebar__nav">
         <% if allowed_to_access_leads?(current_user) %>
           <%= link_to "Pacientes ausentes",
               session[:absent_leads_state] || clinic_management.absent_leads_path,
@@ -368,11 +365,9 @@
   </div>
 </header>
 
-<aside class="hidden md:block w-64 bg-emerald-950 text-white fixed top-0 left-0 h-screen pt-6 p-4 z-40 overflow-y-auto">
-  <h1 class="text-white text-2xl font-bold mb-6">
-     <%= link_to raw("Lipepay <span class='block mt-1 text-xs bg-white text-emerald-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-emerald-300" %>
-  </h1>
-  <nav class="flex flex-col space-y-3 text-lg">
+<aside class="hidden md:block w-64 bg-emerald-950 text-white fixed top-0 left-0 h-screen pt-4 p-4 z-40 overflow-y-auto clinic-sidebar" style="margin-top: 100px;">
+  <%# ESSENTIAL: Brand is in the top header (clinic-navbar__brand) on desktop — do not duplicate logo in sidebar. %>
+  <nav class="flex flex-col space-y-3 text-lg clinic-sidebar__nav">
     <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if request.path == clinic_management.index_today_path}", data: { turbo: false } %>
     <%= link_to "Próximo atendimento", clinic_management.index_next_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if request.path == clinic_management.index_next_path }", data: { turbo: false } %>
     <%= link_to "Atendimento anterior", clinic_management.index_before_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if request.path == clinic_management.index_before_path }", data: { turbo: false } %>

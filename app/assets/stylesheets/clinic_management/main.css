@@ -176,13 +176,82 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
+.clinic-navbar__container {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Mobile: stacked blocks */
+.clinic-navbar__row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.clinic-navbar__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.clinic-navbar__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.clinic-navbar__user {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+.clinic-navbar__location-form {
+  display: inline-block;
+  margin: 0;
+}
+
 @media screen and (min-width: 768px) {
+  /* ESSENTIAL: CSS grid beats Tailwind CDN w-full utilities on doctor navbar */
+  .clinic-navbar--doctor .clinic-navbar__row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .clinic-navbar--doctor .clinic-navbar__brand {
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    justify-self: start;
+  }
+
+  .clinic-navbar--doctor .clinic-navbar__links {
+    flex-wrap: nowrap;
+    justify-content: center;
+    justify-self: center;
+    min-width: 0;
+  }
+
+  .clinic-navbar--doctor .clinic-navbar__user {
+    justify-content: flex-end;
+    justify-self: end;
+    flex-wrap: nowrap;
+  }
+
   .clinic-navbar__row {
+    flex-direction: row;
     flex-wrap: nowrap !important;
     align-items: center;
   }
 
-  .clinic-navbar--doctor .clinic-navbar__brand,
   .clinic-navbar--staff .clinic-navbar__brand {
     display: flex;
     flex-wrap: nowrap;
@@ -190,19 +259,6 @@
     flex-shrink: 0;
     width: auto !important;
     text-align: left;
-  }
-
-  .clinic-navbar--doctor .clinic-navbar__links {
-    flex: 1 1 auto;
-    justify-content: center;
-    width: auto !important;
-    margin-bottom: 0;
-  }
-
-  .clinic-navbar--doctor .clinic-navbar__user {
-    flex-shrink: 0;
-    width: auto !important;
-    margin-left: 0.75rem;
   }
 
   .clinic-navbar--staff .clinic-navbar__user {

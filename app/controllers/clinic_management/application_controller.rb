@@ -100,6 +100,12 @@ module ClinicManagement
     end
     helper_method :clinic_only?
 
+    # @return [Boolean] true on pages that reuse main-app lens demo (full-width shell, no Tailwind container cap)
+    def clinic_lens_demo_layout?
+      @clinic_lens_demo_layout == true
+    end
+    helper_method :clinic_lens_demo_layout?
+
     # @return [Boolean] true when only retail should be exposed (clinic hidden)
     def optics_only?
       current_account&.optics_only? || false
