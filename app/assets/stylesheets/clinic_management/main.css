@@ -11,6 +11,11 @@
     width: 100%;
     box-sizing: border-box;
   }
+
+  /* ESSENTIAL: Hide table/cards toggle on mobile — cards layout is forced server-side. */
+  .view-toggle-container {
+    display: none !important;
+  }
 }
 
 .nowrap {

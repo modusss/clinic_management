@@ -365,7 +365,12 @@
       end
 
       def set_view_type
-        @view_type = mobile_device? ? 'cards' : (params[:view_type] || cookies[:preferred_prescriptions_today_view] || 'table')
+        cookie_name = case action_name
+                      when "index_next" then :preferred_prescriptions_next_view
+                      when "index_before" then :preferred_prescriptions_before_view
+                      else :preferred_prescriptions_today_view
+                      end
+        @view_type = resolve_cards_table_view_type(cookie_name)
       end
 
       def mapping_rows(services)

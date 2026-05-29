@@ -171,7 +171,7 @@ module ClinicManagement
     private
 
     def set_view_type
-      @view_type = mobile_device? ? 'cards' : (params[:view_type] || cookies[:preferred_service_view] || 'table')
+      @view_type = resolve_cards_table_view_type(:preferred_service_view)
     end
 
     def decode_json(json_str)

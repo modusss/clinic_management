@@ -4,7 +4,7 @@
 <%= render partial: "clinic_management/shared/toggle_cards_table", locals: { 
       path: ->(args = {}) { url_for(params.permit!.merge(args)) }, 
       cookie_name: "preferred_reschedules_view", 
-      view_type: @view_type || 'table'
+      view_type: @view_type
     } %>
 
 <div class="container py-8">
@@ -52,7 +52,7 @@
 
   <%# Render table or cards view based on @view_type %>
   <% if @rows.present? %>
-    <% if (@view_type || 'table') == 'cards' %>
+    <% if @view_type == 'cards' %>
       <%= render partial: "reschedule_cards", locals: { rows: @rows } %>
     <% else %>
       <div data-controller="table" class="overflow-hidden border-gray-200 sm:rounded-lg">

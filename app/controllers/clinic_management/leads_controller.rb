@@ -1440,7 +1440,7 @@ module ClinicManagement
     end
 
     def set_view_type
-      @view_type = mobile_device? ? 'cards' : (params[:view_type] || cookies[:preferred_absent_view] || 'table')
+      @view_type = resolve_cards_table_view_type(:preferred_absent_view)
     end
 
     def generate_csv(rows)

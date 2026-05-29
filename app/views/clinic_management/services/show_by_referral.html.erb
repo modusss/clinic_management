@@ -10,13 +10,6 @@
       view_type: @view_type 
     } %>
 
-<%# Toggle for table/cards view. Stores preference in a cookie. %>
-<div class="flex justify-end mb-4 px-4">
-  <button id="toggle-view" class="px-4 py-2 border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white">
-    <%= @view_type == 'cards' ? 'Tabela' : 'Cartões' %>
-  </button>
-</div>
-
 <!-- Restante do código da view -->
 
 <div class="container py-8">

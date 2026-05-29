@@ -320,6 +320,44 @@
       };
     })();
   </script>
+
+  <%# ESSENTIAL: Lets viewport script reload once when narrow screen still received table HTML. %>
+  <% if defined?(@view_type) && @view_type.present? %>
+    <meta name="clinic-cards-view-type" content="<%= @view_type %>">
+  <% end %>
+
+  <%# ESSENTIAL: Sync viewport width cookie + redirect table → cards on mobile (DevTools/responsive). %>
+  <script>
+    (function() {
+      'use strict';
+      var MOBILE_QUERY = window.matchMedia('(max-width: 767px)');
+
+      function syncViewportCookie(isMobile) {
+        if (isMobile) {
+          document.cookie = 'clinic_viewport_mobile=1; path=/; max-age=' + (60 * 60 * 24 * 30);
+        } else {
+          document.cookie = 'clinic_viewport_mobile=; path=/; max-age=0';
+        }
+      }
+
+      function maybeRedirectToCards() {
+        if (!MOBILE_QUERY.matches) return;
+        var meta = document.querySelector('meta[name="clinic-cards-view-type"]');
+        if (!meta || meta.content !== 'table') return;
+        var url = new URL(window.location.href);
+        if (url.searchParams.get('view_type') === 'cards') return;
+        url.searchParams.set('view_type', 'cards');
+        window.location.replace(url.toString());
+      }
+
+      syncViewportCookie(MOBILE_QUERY.matches);
+      maybeRedirectToCards();
+      MOBILE_QUERY.addEventListener('change', function(event) {
+        syncViewportCookie(event.matches);
+        if (event.matches) maybeRedirectToCards();
+      });
+    })();
+  </script>
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal <%= 'doctor-view' if doctor_user? %>" style="margin-bottom: 200px">
   <%# Global loading overlay - shows when requests take > 2 seconds %>

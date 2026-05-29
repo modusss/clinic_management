@@ -1,6 +1,7 @@
 module ClinicManagement
   class ApplicationController < ActionController::Base
     include ::ClinicModuleGuard
+    include GeneralHelper
 
     # ESSENTIAL: Apenas Clínica — engine root (invitations#new) is not the staff home; index_today is.
     prepend_before_action :redirect_clinic_only_home_from_engine_root

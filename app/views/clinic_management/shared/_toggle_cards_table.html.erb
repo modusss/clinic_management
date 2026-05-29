@@ -7,8 +7,8 @@
           view_type: @view_type 
         } %#>
 %>
-<% unless mobile_device? %>
-<div class="view-toggle-container right-align mb-4">
+<%# ESSENTIAL: Desktop only — mobile always loads cards (see GeneralHelper#mobile_cards_layout?). %>
+<div class="view-toggle-container right-align mb-4 hidden md:block">
   <div class="btn-group">
     <a href="<%= path.call(view_type: 'table') %>"
        onclick="document.cookie = '<%= cookie_name %>=table; path=/; max-age=31536000';"
@@ -29,5 +29,4 @@
       <% end %>
     </a>
   </div>
-</div> 
-<% end %>
+</div>

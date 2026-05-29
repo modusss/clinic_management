@@ -1,8 +1,27 @@
 module ClinicManagement
     module GeneralHelper
 
+      # ESSENTIAL: Mobile detection for cards-only layout (UA, Client Hints, viewport cookie set by layout script).
       def mobile_device?
-        request.user_agent =~ /Mobile|webOS|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i
+        ua = request.user_agent.to_s
+        ua.match?(/Mobile|webOS|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i) ||
+          request.headers["Sec-CH-UA-Mobile"] == "?1"
+      end
+
+      # ESSENTIAL: When true, table/card toggle is hidden and @view_type must be "cards".
+      def mobile_cards_layout?
+        mobile_device? || cookies[:clinic_viewport_mobile] == "1"
+      end
+      alias_method :mobile_cards_layout, :mobile_cards_layout?
+
+      # Resolves table vs cards preference; mobile always returns "cards".
+      # @param cookie_name [String, Symbol] persisted desktop preference cookie
+      # @param default [String] fallback when no param/cookie ("table")
+      # @return [String] "cards" or "table"
+      def resolve_cards_table_view_type(cookie_name, default: "table")
+        return "cards" if mobile_cards_layout?
+
+        params[:view_type].presence || cookies[cookie_name].presence || default
       end
 
 

@@ -1,6 +1,7 @@
 module ClinicManagement
   class AppointmentsController < ApplicationController
     before_action :set_appointment, only: %i[ show edit update destroy ]
+    before_action :set_reschedules_view_type, only: [:my_reschedules]
     skip_before_action :redirect_referral_users, only: [:reschedule, :create, :update, :update_comments]
 
     # POST /appointments
@@ -344,6 +345,11 @@ module ClinicManagement
           :confirmed, 
           :registered_by_user_id
         )
+      end
+
+      # ESSENTIAL: Meus Agendamentos — mobile always uses cards layout.
+      def set_reschedules_view_type
+        @view_type = resolve_cards_table_view_type(:preferred_reschedules_view)
       end
   end
 end
