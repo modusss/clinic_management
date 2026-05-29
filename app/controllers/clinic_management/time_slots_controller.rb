@@ -121,7 +121,7 @@ module ClinicManagement
     # DELETE /time_slots/1
     def destroy
       @time_slot.destroy
-      redirect_to time_slots_url, notice: "Time slot was successfully destroyed."
+      redirect_to time_slots_url, notice: "Horário excluído com sucesso."
     end
 
     def available_dates

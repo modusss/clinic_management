@@ -229,7 +229,7 @@ module ClinicManagement
     # PATCH/PUT /invitations/1
     def update
       if @invitation.update(invitation_params)
-        redirect_to @invitation, notice: "Invitation was successfully updated."
+        redirect_to @invitation, notice: "Convite atualizado com sucesso."
       else
         render :edit, status: :unprocessable_entity
       end
@@ -238,7 +238,7 @@ module ClinicManagement
     # DELETE /invitations/1
     def destroy
       @invitation.destroy
-      redirect_to new_invitation_url, notice: "Invitation was successfully destroyed."
+      redirect_to new_invitation_url, notice: "Convite excluído com sucesso."
     end
 
     def edit_patient_name

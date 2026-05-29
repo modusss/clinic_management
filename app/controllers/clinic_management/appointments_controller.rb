@@ -94,7 +94,7 @@ module ClinicManagement
     def update
       if @appointment.update(appointment_params)
         @appointment.lead.update(last_appointment_id: @appointment.id)
-        redirect_to @appointment, notice: "Appointment was successfully updated."
+        redirect_to @appointment, notice: "Agendamento atualizado com sucesso."
       else
         render :edit, status: :unprocessable_entity
       end
@@ -103,7 +103,7 @@ module ClinicManagement
     # DELETE /appointments/1
     def destroy
       @appointment.destroy
-      redirect_to appointments_url, notice: "Appointment was successfully destroyed."
+      redirect_to appointments_url, notice: "Agendamento excluído com sucesso."
     end
 
     def set_attendance

@@ -141,7 +141,7 @@ module ClinicManagement
     # PATCH/PUT /services/1
     def update
       if @service.update(service_params)
-        redirect_to @service, notice: "Service was successfully updated."
+        redirect_to @service, notice: "Atendimento atualizado com sucesso."
       else
         render :edit, status: :unprocessable_entity
       end
@@ -151,7 +151,7 @@ module ClinicManagement
     def destroy
       unless @service.appointments.count > 0
         @service.destroy
-        redirect_to services_url, notice: "Service was successfully destroyed."
+        redirect_to services_url, notice: "Atendimento excluído com sucesso."
       end
     end
 
@@ -162,9 +162,9 @@ module ClinicManagement
         @service.appointments.each do |appointment|
           appointment.update(status: "cancelado")
         end
-        redirect_to @service, notice: "Service was successfully canceled."
+        redirect_to @service, notice: "Atendimento cancelado com sucesso."
       else
-        redirect_to @service, alert: "Failed to cancel the service."
+        redirect_to @service, alert: "Não foi possível cancelar o atendimento."
       end
     end
 

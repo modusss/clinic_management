@@ -296,7 +296,7 @@ module ClinicManagement
       @lead = Lead.new(lead_params)
 
       if @lead.save
-        redirect_to @lead, notice: "Lead was successfully created."
+        redirect_to @lead, notice: "Lead cadastrado com sucesso."
       else
         render :new, status: :unprocessable_entity
       end
@@ -319,7 +319,7 @@ module ClinicManagement
       end
       
       if @lead.update(lead_params)
-        redirect_to @lead, notice: "Lead was successfully updated."
+        redirect_to @lead, notice: "Lead atualizado com sucesso."
       else
         render :edit, status: :unprocessable_entity
       end

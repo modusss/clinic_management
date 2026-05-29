@@ -262,9 +262,9 @@
           @appointment.attendance = true
           @appointment.save
           if request.referrer.include?("new_today")
-            redirect_to index_today_path, notice: 'Prescription was successfully updated.'
+            redirect_to index_today_path, notice: "Receita lançada com sucesso."
           else
-            redirect_to lead_path(@appointment.lead), notice: 'Prescription was successfully created.'
+            redirect_to lead_path(@appointment.lead), notice: "Receita lançada com sucesso."
           end
         else
           render :new
@@ -284,9 +284,9 @@
         @prescription.doctor_name = current_user.name if helpers.doctor?(current_user)
         if @prescription.update(prescription_params)
           if request.referrer.include?("edit_today")
-            redirect_to show_today_appointment_prescription_path(@appointment, @prescription), notice: 'Prescription was successfully updated.'
+            redirect_to show_today_appointment_prescription_path(@appointment, @prescription), notice: "Receita atualizada com sucesso."
           else
-            redirect_to appointment_prescription_path(@appointment), notice: 'Prescription was successfully updated.'
+            redirect_to appointment_prescription_path(@appointment), notice: "Receita atualizada com sucesso."
           end
         else
           render :edit
@@ -296,7 +296,7 @@
       def destroy
         @prescription = @appointment.prescription
         @prescription.destroy
-        redirect_to @appointment, notice: 'Prescription was successfully destroyed.'
+        redirect_to @appointment, notice: "Receita excluída com sucesso."
       end
 
       def send_whatsapp
