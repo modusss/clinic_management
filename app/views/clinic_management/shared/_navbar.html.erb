@@ -1,13 +1,17 @@
 <% if (doctor? current_user) %>
   <%# Doctor navbar: only today. No links to other days. Location selector only. No "Ir para atendimento". %>
-  <header class="navbar-fixed relative bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 py-4 shadow-md z-50" style="width:100%;">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex flex-wrap justify-between items-center">
-        <h1 class="text-white text-xl font-bold mb-4 sm:mb-0 w-full sm:w-auto text-center sm:text-left flex items-center gap-2">
-          <%= link_to raw("Lipepay <span class='ml-1 text-xs bg-white text-emerald-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), clinic_management.index_today_path, class: "text-white hover:text-emerald-300" %>
+  <%# ESSENTIAL: clinic-navbar--doctor uses main.css grid/flex — do not revert to flex-wrap + order-* (breaks desktop logo/badge overlap). %>
+  <header class="navbar-fixed clinic-navbar clinic-navbar--doctor relative bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 py-4 shadow-md z-50" style="width:100%;">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 clinic-navbar__container">
+      <div class="clinic-navbar__row flex flex-wrap justify-between items-center gap-3">
+        <div class="clinic-navbar__brand mb-4 md:mb-0 w-full md:w-auto text-center md:text-left">
+          <h1 class="clinic-navbar__brand-title text-white text-xl font-bold m-0">
+            <%= link_to "Lipepay", clinic_management.index_today_path, class: "text-white hover:text-emerald-300 clinic-navbar__brand-name" %>
+            <span class="clinic-navbar__badge">atendimentos</span>
+          </h1>
           <%# ESSENTIAL: Location selector for doctors - Interno + their allowed externals. High prominence for context. %>
           <% if doctor_service_location_options.present? && doctor_service_location_options.size > 1 %>
-            <%= form_with url: clinic_management.switch_service_locations_path, method: :post, local: true, data: { turbo: false }, class: "inline ml-3" do |f| %>
+            <%= form_with url: clinic_management.switch_service_locations_path, method: :post, local: true, data: { turbo: false }, class: "clinic-navbar__location-form inline-block mt-2 md:mt-0 md:ml-3" do |f| %>
               <label for="navbar-location-select-doctor" class="sr-only">Local de atendimento</label>
               <span class="navbar-location-badge inline-flex items-center gap-2">
                 <i class="fas fa-map-marker-alt text-emerald-600 text-sm flex-shrink-0" aria-hidden="true"></i>
@@ -15,9 +19,9 @@
               </span>
             <% end %>
           <% end %>
-        </h1>
+        </div>
 
-        <nav class="w-full sm:w-auto flex flex-wrap gap-2 justify-center sm:justify-start mb-4 sm:mb-0">
+        <nav class="clinic-navbar__links w-full md:w-auto flex flex-wrap gap-2 justify-center md:justify-center mb-4 md:mb-0">
           <% if current_account&.clinic_only? %>
             <%= link_to "Perfil",
                         clinic_management.edit_profile_path,
@@ -32,8 +36,8 @@
         </nav>
 
         <% if user_signed_in? %>
-          <div class="flex items-center text-white order-1 sm:order-5">
-            <span class="md:inline mr-4">Olá, <%= current_user.name %></span>
+          <div class="clinic-navbar__user flex items-center text-white w-full md:w-auto justify-center md:justify-end">
+            <span class="mr-4">Olá, <%= current_user.name %></span>
             <%= link_to "Sair", main_app.destroy_user_session_path, data: { turbo_method: :delete }, class: "text-sm px-4 py-2 border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white" %>
           </div>
         <% end %>
@@ -239,11 +243,14 @@
   staff_share_loc_label = current_service_location_id.blank? ? "Interno" : (current_service_location_id.to_s == "all" ? "Todos externos" : (ClinicManagement::ServiceLocation.find_by(id: current_service_location_id)&.name || "Interno"))
 %>
 <% end %>
-<header class="navbar-fixed relative bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 py-4 shadow-md md:pl-64 z-50">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex flex-wrap justify-between items-center">
-      <h1 class="text-white text-2xl font-bold mb-4 sm:mb-0 w-full sm:w-auto text-center sm:text-left flex items-center gap-2">
-         <%= link_to raw("Lipepay <span class='ml-1 text-xs bg-white text-emerald-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-emerald-300" %>
+<header class="navbar-fixed clinic-navbar clinic-navbar--staff relative bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 py-4 shadow-md md:pl-64 z-50">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 clinic-navbar__container">
+    <div class="clinic-navbar__row flex flex-wrap justify-between items-center gap-3">
+      <div class="clinic-navbar__brand mb-4 md:mb-0 w-full md:w-auto text-center md:text-left">
+      <h1 class="clinic-navbar__brand-title text-white text-2xl font-bold m-0">
+         <%= link_to "Lipepay", main_app.root_path, class: "text-white hover:text-emerald-300 clinic-navbar__brand-name" %>
+         <span class="clinic-navbar__badge">atendimentos</span>
+      </h1>
          <%# ESSENTIAL: Location selector visible to all staff when multi-regions enabled. High prominence for user context. %>
          <% if current_account&.multi_service_locations_enabled? && ClinicManagement::ServiceLocation.any? %>
          <%= form_with url: clinic_management.switch_service_locations_path, method: :post, local: true, data: { turbo: false }, class: "inline ml-3" do |f| %>
@@ -254,7 +261,7 @@
            </span>
          <% end %>
          <% end %>
-      </h1>
+      </div>
 
       <nav class="text-xl order-3 sm:order-2 w-full sm:w-auto mt-4 sm:mt-0 flex flex-col sm:flex-row sm:flex-wrap justify-center space-y-4 sm:space-y-0 sm:space-x-4 md:hidden">
          <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-white hover:text-emerald-300 #{'active' if request.path == clinic_management.index_today_path}", data: { turbo: false } %>
@@ -352,8 +359,8 @@
       </div>
 
       <% if user_signed_in? %>
-        <div class="flex items-center text-white order-1 sm:order-5">
-           <span class="md:inline mr-4">Olá, <%= current_user.name %></span>
+        <div class="clinic-navbar__user flex items-center text-white order-1 sm:order-5 w-full sm:w-auto justify-center sm:justify-end">
+           <span class="mr-4">Olá, <%= current_user.name %></span>
            <%= link_to "Sair", main_app.destroy_user_session_path, data: { turbo_method: :delete }, class: "text-sm px-4 py-2 border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white" %>
         </div>
       <% end %>
@@ -496,6 +503,7 @@
     .navbar-fixed {
       position: fixed;
       width: 100%;
+      top: 0;
     }
   }
 

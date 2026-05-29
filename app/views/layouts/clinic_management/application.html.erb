@@ -41,6 +41,7 @@
     @media (min-width: 768px) {
       #main-container {
         margin-left: 280px;
+        margin-top: 100px;
       }
       body.doctor-view #main-container {
         margin-left: 0;
@@ -50,6 +51,7 @@
     @media (max-width: 768px) {
       #main-container {
         display: flex;
+        margin-top: 40px;
       }
 
       /* ESSENTIAL: Horizontal gutters on mobile — Tailwind CDN `container` has no default padding. */
@@ -359,14 +361,14 @@
     })();
   </script>
 </head>
-<body class="bg-gray-100 font-sans leading-normal tracking-normal <%= 'doctor-view' if doctor_user? %>" style="margin-bottom: 200px">
+<body class="clinic-app bg-gray-100 font-sans leading-normal tracking-normal <%= 'doctor-view' if doctor_user? %>" style="margin-bottom: 200px">
   <%# Global loading overlay - shows when requests take > 2 seconds %>
   <%= render "clinic_management/shared/global_loading" %>
 
   <%= render "clinic_management/shared/navbar" %>
   <%= render "clinic_management/shared/scroll_buttons" %>
   <%= yield(:breadcrumb) if content_for?(:breadcrumb) %>
-  <main class="my-8" id="main-container">
+  <main class="mb-8" id="main-container">
     <%# ESSENTIAL: Match navbar/breadcrumb gutters — `container` alone has no horizontal padding on mobile. %>
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 clinic-main-shell">
       <%= render "clinic_management/shared/flash_messages" %>
