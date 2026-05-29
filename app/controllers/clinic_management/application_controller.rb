@@ -51,6 +51,11 @@ module ClinicManagement
           safe_join([segment, separator].compact)
         end
       end
+
+      # ESSENTIAL: Uses kaminari/clinic/* partials + .clinic-pagination CSS (main.css).
+      def clinic_paginate(scope, **options)
+        paginate(scope, **options.merge(theme: "clinic"))
+      end
     end
 
     private

@@ -1,0 +1,7 @@
+<li class="clinic-pagination__item<%= " clinic-pagination__item--active" if page.current? %>">
+  <% if page.current? %>
+    <span class="clinic-pagination__link clinic-pagination__link--current" aria-current="page"><%= page %></span>
+  <% else %>
+    <%= link_to page, url, class: "clinic-pagination__link", rel: "next", remote: remote %>
+  <% end %>
+</li>

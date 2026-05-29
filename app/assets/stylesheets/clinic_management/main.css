@@ -56,6 +56,94 @@
 }
 
 /* ============================================================================
+   Pagination — kaminari/* (clinic_management engine)
+   ESSENTIAL: Main app uses Materialize .pagination; clinic layout has no Materialize.
+   Without flex row, <li> items stack vertically on mobile.
+   ============================================================================ */
+
+.clinic-pagination {
+  margin: 1.25rem 0;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.clinic-pagination__list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+  min-width: min-content;
+}
+
+.clinic-pagination__item {
+  flex: 0 0 auto;
+}
+
+.clinic-pagination__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  background-color: #ffffff;
+  color: #047857;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.clinic-pagination__link:hover,
+.clinic-pagination__link:focus-visible {
+  background-color: #ecfdf5;
+  border-color: #6ee7b7;
+  color: #065f46;
+  outline: none;
+}
+
+.clinic-pagination__link--current {
+  background-color: #047857;
+  border-color: #047857;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: default;
+}
+
+.clinic-pagination__link--disabled,
+.clinic-pagination__link--gap {
+  background-color: #f9fafb;
+  border-color: #e5e7eb;
+  color: #9ca3af;
+  cursor: default;
+  pointer-events: none;
+}
+
+.clinic-pagination__link--nav {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.clinic-pagination__item--active .clinic-pagination__link--current {
+  box-shadow: 0 1px 2px rgba(4, 120, 87, 0.25);
+}
+
+@media screen and (max-width: 767px) {
+  .clinic-pagination__list {
+    justify-content: flex-start;
+  }
+}
+
+/* ============================================================================
    Main content shell — mobile horizontal gutters
    Used by: layouts/clinic_management/application.html.erb (.clinic-main-shell)
    ESSENTIAL: Tailwind CDN `container` does not add side padding; navbar uses px-4.

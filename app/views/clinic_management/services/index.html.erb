@@ -107,7 +107,7 @@
     <% end %>
     
     <% if @view_type == 'daily' && @services.present? %>
-      <%= paginate @services %>
+      <%= clinic_paginate @services %>
     <% end %>
   </section>
 

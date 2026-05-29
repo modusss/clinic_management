@@ -1,7 +1,7 @@
 <%= data_table(rows, 2) %>
 
 <% if leads.size > 10 %>
-  <%= paginate leads %>
+  <%= clinic_paginate leads %>
 <% end %>
 
 <%= turbo_frame_tag "message_sent_notification" %>

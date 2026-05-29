@@ -1,0 +1,9 @@
+<li class="clinic-pagination__item">
+  <% if current_page.first? %>
+    <span class="clinic-pagination__link clinic-pagination__link--disabled" aria-disabled="true">&lsaquo;</span>
+  <% else %>
+    <%= link_to url, class: "clinic-pagination__link clinic-pagination__link--nav", rel: "prev", remote: remote, aria: { label: "Página anterior" } do %>
+      &lsaquo;
+    <% end %>
+  <% end %>
+</li>
