@@ -392,9 +392,16 @@
           next unless (invitation.present?) && (lead.present?) && (ap.present?) && (lead.name.present?) 
     
           if helpers.doctor?(current_user)
-            next unless ap.attendance == true
+            # ESSENTIAL: Do not filter by attendance server-side — doctor_attendance_filter Stimulus
+            # toggles Presentes (default) vs Ausentes (not yet marked present) on index_today.
+            attendance_status = ap.attendance == true ? "present" : "absent"
             [
-              {header: "#", content: index},
+              {
+                header: "#",
+                content: index,
+                row_id: "doctor-appointment-#{ap.id}",
+                attendance_status: attendance_status
+              },
               {header: "Paciente", content: invitation.patient_name, class: "size_20 nowrap patient-name"},
               {header: "Comparecimento", content: ap.attendance == true ? "sim" : "--"},
               {header: "Receita", content: prescription_link(ap), class: "nowrap"}
@@ -458,7 +465,17 @@
     end
 
       def new_settings
-        @prescription = @appointment.build_prescription
+        # ESSENTIAL: Defaults must match GeneralHelper#format_number ("0.00") so f.select opens on neutral values.
+        @prescription = @appointment.build_prescription(
+          sphere_right: "0.00",
+          sphere_left: "0.00",
+          cylinder_right: "0.00",
+          cylinder_left: "0.00",
+          axis_right: "0",
+          axis_left: "0",
+          add_right: "0.00",
+          add_left: "0.00"
+        )
         @service = @appointment.service
         @patients = @service.appointments.joins(:invitation).pluck('clinic_management_invitations.patient_name')
       end

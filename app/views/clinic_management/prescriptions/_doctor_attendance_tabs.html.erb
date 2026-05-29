@@ -1,0 +1,25 @@
+<%# ESSENTIAL: Doctor-only tabs — filter present vs not-yet-marked-present patients via Stimulus (no extra view). %>
+<nav class="doctor-attendance-tabs mb-6 px-4" aria-label="Filtrar pacientes por comparecimento" style="margin-top: 50px;">
+  <div class="doctor-attendance-tabs__list" role="tablist">
+    <button type="button"
+            role="tab"
+            aria-selected="true"
+            data-doctor-attendance-filter-target="tab"
+            data-filter="present"
+            data-action="click->doctor-attendance-filter#showPresent"
+            class="doctor-attendance-tabs__tab doctor-attendance-tabs__tab--active">
+      Presentes
+      <span data-doctor-attendance-filter-target="presentCount" class="doctor-attendance-tabs__count">(0)</span>
+    </button>
+    <button type="button"
+            role="tab"
+            aria-selected="false"
+            data-doctor-attendance-filter-target="tab"
+            data-filter="absent"
+            data-action="click->doctor-attendance-filter#showAbsent"
+            class="doctor-attendance-tabs__tab">
+      Ausentes
+      <span data-doctor-attendance-filter-target="absentCount" class="doctor-attendance-tabs__count">(0)</span>
+    </button>
+  </div>
+</nav>

@@ -27,23 +27,22 @@ module ClinicManagement
       end
     end
 
-    def collection_for_sphere
-      (-25..25).step(0.25).map { |x| x.positive? ? "+#{x.round(2)}" : x.round(2).to_s }
-    end
-    
-    def collection_for_cylinder
-      (-10..0).step(0.25).map { |x| x.round(2) }
-    end
-
     def collection_for_axis
       (0..180).to_a
     end
 
-    def collection_for_add
-      (0..3.5).step(0.25).map { |x| x.positive? ? "+#{x.round(2)}" : x.round(2).to_s }
-
+    # ESSENTIAL: Default select value for new/blank prescription fields — must match GeneralHelper#format_number ("0.00").
+    def default_prescription_value(type)
+      type == "axis" ? 0 : "0.00"
     end
 
+    # ESSENTIAL: Used by _form.html.erb f.select third argument — do not rely on options_for_select(selected:).
+    def prescription_field_selected(prescription, type, side)
+      value = prescription.send("#{type}_#{side}")
+      return default_prescription_value(type) if value.blank?
+
+      value
+    end
 
     # Método auxiliar para centralizar lógica de ícones/cores do attendance
     def attendance_info(appointment)

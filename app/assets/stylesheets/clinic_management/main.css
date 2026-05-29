@@ -352,3 +352,48 @@
 .copy-success {
     animation: copy-success-pulse 0.3s ease-out;
 }
+
+/* ============================================================================
+   Doctor attendance tabs — prescriptions/index_today (doctor role)
+   ESSENTIAL: Presentes / Ausentes filter via doctor_attendance_filter_controller.js
+   ============================================================================ */
+
+.doctor-attendance-tabs__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.doctor-attendance-tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #4b5563;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-bottom: 2px solid transparent;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.doctor-attendance-tabs__tab:hover {
+  color: #047857;
+  background: #ecfdf5;
+}
+
+.doctor-attendance-tabs__tab--active {
+  color: #047857;
+  background: #ffffff;
+  border-bottom-color: #059669;
+}
+
+.doctor-attendance-tabs__count {
+  font-weight: 500;
+  color: inherit;
+  opacity: 0.85;
+}

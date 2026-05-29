@@ -113,8 +113,17 @@ def table_body(rows, fix_to)
       
       # Adicionar ID único para cada linha baseado no lead
       row_id = row.first[:row_id] || "table-row-#{row_index}"
-      
-      content_tag(:tr, class: row_class, id: row_id) do
+
+      tr_options = { class: row_class, id: row_id }
+      # ESSENTIAL: Enables doctor_attendance_filter Stimulus on prescriptions/index_today rows.
+      if row.first[:attendance_status].present?
+        tr_options[:data] = {
+          doctor_attendance_filter_target: "item",
+          attendance: row.first[:attendance_status]
+        }
+      end
+
+      content_tag(:tr, **tr_options) do
         cells_html = row.map.with_index do |cell, index|
           # Verifica o número de palavras no conteúdo
           content = cell[:content].to_s
