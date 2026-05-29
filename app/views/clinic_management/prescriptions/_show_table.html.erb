@@ -1,31 +1,34 @@
-    <table class="mt-4 min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-50">
+<%# ESSENTIAL: Centered prescription grid — used on show_today, show, search_patient_info (mobile-first). %>
+<div class="prescription-show-table-wrapper w-full overflow-x-auto flex justify-center">
+  <table class="prescription-show-table mt-4 mx-auto w-full max-w-lg divide-y divide-gray-200">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="px-2 py-2 sm:px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+        <th class="px-2 py-2 sm:px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Esférico</th>
+        <th class="px-2 py-2 sm:px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Cilindro</th>
+        <th class="px-2 py-2 sm:px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Eixo</th>
+        <th class="px-2 py-2 sm:px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Adição</th>
+      </tr>
+    </thead>
+    <tbody class="bg-white divide-y divide-gray-200">
+      <% ['right', 'left'].each do |side| %>
         <tr>
-          <th></th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Esférico</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cilindro</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Eixo</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adição</th>
+          <td class="px-2 py-3 sm:px-4 text-center whitespace-nowrap text-sm font-medium text-gray-900"><%= translate_side(side) %></td>
+          <% ['sphere', 'cylinder', 'axis', 'add'].each do |type| %>
+            <td class="px-2 py-3 sm:px-4 whitespace-nowrap text-sm text-gray-500 text-center">
+              <% if ["0.0", "0.00", "0"].include?(prescription.send("#{type}_#{side}").to_s) %>
+                --
+              <% else %>
+                <%= prescription.send("#{type}_#{side}") %>
+              <% end %>
+            </td>
+          <% end %>
         </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-        <% ['right', 'left'].each do |side| %>
-          <tr>
-            <td class="px-6 text-center py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= translate_side(side) %></td>
-            <% ['sphere', 'cylinder', 'axis', 'add'].each do |type| %>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                <% if ["0.0", "0"].include? prescription.send("#{type}_#{side}") %>
-                  --
-                <% else %>
-                  <%= prescription.send("#{type}_#{side}") %>
-                <% end %>
-              </td>
-            <% end %>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
-    <div class="mt-8">
-      <h2 class="text-xl font-bold mb-2">Comentário:</h2>
-      <p class="text-gray-700"><%= prescription.comment %></p>
-    </div>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+<div class="mt-6 sm:mt-8 w-full max-w-lg mx-auto text-center sm:text-left">
+  <h2 class="text-xl font-bold mb-2">Comentário:</h2>
+  <p class="text-gray-700"><%= prescription.comment.presence || "—" %></p>
+</div>

@@ -354,6 +354,34 @@
 }
 
 /* ============================================================================
+   Prescription show table — _show_table.html.erb (show_today, show, search)
+   ESSENTIAL: Keeps the grid centered on narrow viewports without SassC min()/max().
+   ============================================================================ */
+
+.prescription-show-table-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  -webkit-overflow-scrolling: touch;
+}
+
+.prescription-show-table {
+  table-layout: fixed;
+}
+
+@media (max-width: 767px) {
+  .prescription-show-table th,
+  .prescription-show-table td {
+    word-break: break-word;
+  }
+
+  .prescription-show-table th:first-child,
+  .prescription-show-table td:first-child {
+    width: 22%;
+  }
+}
+
+/* ============================================================================
    Doctor attendance tabs — prescriptions/index_today (doctor role)
    ESSENTIAL: Presentes / Ausentes filter via doctor_attendance_filter_controller.js
    ============================================================================ */
