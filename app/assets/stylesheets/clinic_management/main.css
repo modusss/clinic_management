@@ -1,3 +1,18 @@
+/* ============================================================================
+   Main content shell — mobile horizontal gutters
+   Used by: layouts/clinic_management/application.html.erb (.clinic-main-shell)
+   ESSENTIAL: Tailwind CDN `container` does not add side padding; navbar uses px-4.
+   ============================================================================ */
+
+@media screen and (max-width: 767px) {
+  #main-container > .clinic-main-shell {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
 .nowrap {
     white-space: nowrap !important;
 }
