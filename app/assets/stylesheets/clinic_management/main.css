@@ -1,4 +1,61 @@
 /* ============================================================================
+   Breadcrumb — clinic_management/shared/_breadcrumb.html.erb
+   ESSENTIAL: Do not rely on Tailwind CDN for link affordance; these classes are compiled in main.css.
+   ============================================================================ */
+
+.clinic-breadcrumb {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.clinic-breadcrumb__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.clinic-breadcrumb__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.clinic-breadcrumb__link {
+  color: #047857;
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: rgba(4, 120, 87, 0.35);
+  text-underline-offset: 2px;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+.clinic-breadcrumb__link:hover,
+.clinic-breadcrumb__link:focus-visible {
+  color: #065f46;
+  text-decoration-color: #065f46;
+  outline: none;
+}
+
+.clinic-breadcrumb__current {
+  color: #374151;
+  font-weight: 600;
+}
+
+.clinic-breadcrumb__separator {
+  color: #9ca3af;
+  font-weight: 400;
+  user-select: none;
+  padding: 0 0.1rem;
+}
+
+/* ============================================================================
    Main content shell — mobile horizontal gutters
    Used by: layouts/clinic_management/application.html.erb (.clinic-main-shell)
    ESSENTIAL: Tailwind CDN `container` does not add side padding; navbar uses px-4.

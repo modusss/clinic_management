@@ -19,6 +19,40 @@ module ClinicManagement
     helper ::GeneralHelper
     helper ::MembershipRolesHelper
 
+    # ESSENTIAL: Must override ::GeneralHelper#breadcrumb — define methods directly on last helper module.
+    helper do
+      def breadcrumb(*crumbs)
+        content_for :breadcrumb do
+          render "clinic_management/shared/breadcrumb" do
+            safe_join(crumbs.each_with_index.map do |crumb, index|
+              clinic_breadcrumb_item(crumb, is_last: index == crumbs.length - 1)
+            end)
+          end
+        end
+      end
+
+      def clinic_breadcrumb_item(crumb, is_last:)
+        title = crumb[:title].to_s
+        path = crumb[:path]
+
+        content_tag(:li, class: "clinic-breadcrumb__item") do
+          segment = if is_last || path.blank?
+            attrs = { class: "clinic-breadcrumb__current" }
+            attrs[:"aria-current"] = "page" if is_last
+            content_tag(:span, title, attrs)
+          else
+            link_to(title, path, class: "clinic-breadcrumb__link")
+          end
+
+          separator = unless is_last
+            content_tag(:span, "/", class: "clinic-breadcrumb__separator", aria: { hidden: true })
+          end
+
+          safe_join([segment, separator].compact)
+        end
+      end
+    end
+
     private
 
     def set_referral
