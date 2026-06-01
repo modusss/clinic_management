@@ -21,6 +21,14 @@ module ClinicManagement
     belongs_to :invitation, required: true
     belongs_to :registered_by_user, class_name: 'User', optional: true
     has_one :prescription
+    # ESSENTIAL: Destroy interaction audit rows before the appointment row is removed.
+    # Lead#destroy cascades through invitations -> appointments; without this, PostgreSQL
+    # blocks deletion (fk_rails_9cdf2c50d4 on clinic_management_lead_interactions).
+    has_many :lead_interactions,
+             class_name: 'ClinicManagement::LeadInteraction',
+             foreign_key: :appointment_id,
+             dependent: :destroy,
+             inverse_of: :appointment
     
     # ============================================================================
     # SCOPES FOR SELF-BOOKING ANALYTICS

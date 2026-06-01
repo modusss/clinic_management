@@ -3,17 +3,16 @@ module ClinicManagement
     
     before_save :format_latitude, :format_longitude, :sanitize_phone
 
+    # ESSENTIAL: Destroy lead_interactions before invitations/appointments (FK on appointment_id).
+    has_many :lead_interactions, dependent: :destroy
     has_many :invitations, dependent: :destroy
     has_many :appointments, through: :invitations
     has_many :appointments, dependent: :destroy
     has_one :leads_conversion, foreign_key: 'clinic_management_lead_id'
     has_one :customer, through: :leads_conversion
-    has_many :lead_interactions, dependent: :destroy
     has_many :lead_page_views, dependent: :destroy
     validates :phone, format: { with: /\A\d{10,11}\z/, message: "deve ter 10 ou 11 dígitos" }, allow_blank: true
     validates :self_booking_token, uniqueness: true, allow_nil: true
-
-    before_destroy :destroy_appointments
 
     # ============================================================================
     # SELF-BOOKING TOKEN METHODS
@@ -169,10 +168,6 @@ module ClinicManagement
     end
 
     # after_create :merge_with_duplicate_leads, if: :phone?
-
-    def destroy_appointments
-      appointments.destroy_all
-    end
 
     def test_dms_to_dec(coordinate, type)
       dms_to_dec(coordinate, type)
