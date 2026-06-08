@@ -381,8 +381,10 @@ module ClinicManagement
         if helpers.is_manager_above?
           sales = sales_count(ser)
           sales_amt = sales_amount(ser)
+          receipts_amt = receipts_amount(ser)
           row << { header: "Vendas", content: sales, class: "text-purple-700 font-bold" }
           row << { header: "Montante de vendas", content: helpers.number_to_currency(sales_amt), class: "text-green-700 font-bold" }
+          row << { header: "Recebimentos", content: helpers.number_to_currency(receipts_amt), class: "text-teal-700 font-bold" }
         end
 
         row << { header: "Remarcados", content: rescheduled, class: "text-green-700" }
@@ -412,49 +414,50 @@ module ClinicManagement
       end
     end
 
-    def sales_amount(service)
-      # Get all attended appointments for this service
+    # ESSENTIAL: Paid statuses must stay aligned with Order#total_paid_amount in the host app.
+    PAID_PAYMENT_STATUSES = %w[PAYMENT_RECEIVED RECEIVED CONFIRMED RECEIVED_IN_CASH PAID].freeze
+
+    # Returns customer IDs from attended appointments (optionally scoped to current referral).
+    def service_customer_ids(service)
       attended_appointments = service.appointments.where(attendance: true)
-      
-      # Filter by referral if needed
+
       if action_name == "index_by_referral"
         attended_appointments = attended_appointments.select { |a| a&.invitation&.referral == @referral }
       end
-      
-      # Get customer IDs from attended appointments through leads
-      customer_ids = attended_appointments.map { |app| 
-        app.lead.leads_conversion&.customer_id 
-      }.compact
-      
-      return 0 if customer_ids.empty?
-      
-      # Sum total amount of orders made by customers within 30 days of the service date
+
+      attended_appointments.map { |app| app.lead.leads_conversion&.customer_id }.compact
+    end
+
+    # Orders from attended patients within 30 days after the service date (same window as sales metrics).
+    def service_orders_scope(service)
+      customer_ids = service_customer_ids(service)
+      return Order.none if customer_ids.empty?
+
       Order.where(customer_id: customer_ids)
            .where(created_at: service.date.beginning_of_day..(service.date + 30.days).end_of_day)
-           .sum(:total_amount)
+    end
+
+    def sales_amount(service)
+      service_orders_scope(service).sum(:total_amount)
     end
 
     def sales_count(service)
-      # Get all attended appointments for this service
-      attended_appointments = service.appointments.where(attendance: true)
-      
-      # Filter by referral if needed
-      if action_name == "index_by_referral"
-        attended_appointments = attended_appointments.select { |a| a&.invitation&.referral == @referral }
-      end
-      
-      # Get customer IDs from attended appointments through leads
-      customer_ids = attended_appointments.map { |app| 
-        app.lead.leads_conversion&.customer_id 
-      }.compact
-      
-      return 0 if customer_ids.empty?
-      
-      # Count customers who made orders within 30 days of the service date
-      Order.where(customer_id: customer_ids)
-           .where(created_at: service.date.beginning_of_day..(service.date + 30.days).end_of_day)
-           .distinct
-           .count(:customer_id)
+      service_orders_scope(service).distinct.count(:customer_id)
+    end
+
+    # Sum of payments already received on orders attributed to this service (entry, pickup, installments).
+    def receipts_amount(service)
+      order_ids = service_orders_scope(service).pluck(:id)
+      return 0 if order_ids.empty?
+
+      early_total = EarlyPayment.where(order_id: order_ids, status: PAID_PAYMENT_STATUSES).sum(:amount)
+      pickup_total = PickupPayment.where(order_id: order_ids, status: PAID_PAYMENT_STATUSES).sum(:amount)
+      installments_total = Installment.joins(:payment_book)
+                                        .where(payment_books: { order_id: order_ids })
+                                        .where(installments: { status: PAID_PAYMENT_STATUSES })
+                                        .sum("installments.amount")
+
+      early_total + pickup_total + installments_total
     end
 
     def appointment_counts(service)
@@ -494,6 +497,7 @@ module ClinicManagement
         total_canceled = 0
         total_sales = 0
         total_sales_amount = 0
+        total_receipts_amount = 0
         
         week_services.each do |service|
           appointments, scheduled, rescheduled, canceled = appointment_counts(service)
@@ -505,8 +509,10 @@ module ClinicManagement
           if helpers.is_manager_above?
             sales = sales_count(service)
             sales_amt = sales_amount(service)
+            receipts_amt = receipts_amount(service)
             total_sales += sales
             total_sales_amount += sales_amt
+            total_receipts_amount += receipts_amt
           end
         end
         
@@ -520,6 +526,7 @@ module ClinicManagement
         if helpers.is_manager_above?
           row << { header: "Vendas", content: total_sales, class: "text-purple-700 font-bold" }
           row << { header: "Montante de vendas", content: helpers.number_to_currency(total_sales_amount), class: "text-green-700 font-bold" }
+          row << { header: "Recebimentos", content: helpers.number_to_currency(total_receipts_amount), class: "text-teal-700 font-bold" }
         end
 
         row << { header: "Remarcados", content: total_rescheduled, class: "text-green-700" }
@@ -542,6 +549,7 @@ module ClinicManagement
         total_canceled = 0
         total_sales = 0
         total_sales_amount = 0
+        total_receipts_amount = 0
         
         month_services.each do |service|
           appointments, scheduled, rescheduled, canceled = appointment_counts(service)
@@ -553,8 +561,10 @@ module ClinicManagement
           if helpers.is_manager_above?
             sales = sales_count(service)
             sales_amt = sales_amount(service)
+            receipts_amt = receipts_amount(service)
             total_sales += sales
             total_sales_amount += sales_amt
+            total_receipts_amount += receipts_amt
           end
         end
         
@@ -568,6 +578,7 @@ module ClinicManagement
         if helpers.is_manager_above?
           row << { header: "Vendas", content: total_sales, class: "text-purple-700 font-bold" }
           row << { header: "Montante de vendas", content: helpers.number_to_currency(total_sales_amount), class: "text-green-700 font-bold" }
+          row << { header: "Recebimentos", content: helpers.number_to_currency(total_receipts_amount), class: "text-teal-700 font-bold" }
         end
 
         row << { header: "Remarcados", content: total_rescheduled, class: "text-green-700" }
@@ -768,17 +779,20 @@ module ClinicManagement
         total_canceled = 0
         total_sales = 0
         total_sales_amount = 0
+        total_receipts_amount = 0
         
         week_services.each do |service|
           appointments, scheduled, rescheduled, canceled = appointment_counts(service)
           sales = sales_count(service)
           sales_amt = sales_amount(service)
+          receipts_amt = receipts_amount(service)
           total_appointments += appointments
           total_scheduled += scheduled
           total_rescheduled += rescheduled
           total_canceled += canceled
           total_sales += sales
           total_sales_amount += sales_amt
+          total_receipts_amount += receipts_amt
         end
         
         [
@@ -788,6 +802,7 @@ module ClinicManagement
           { header: "Compareceram", content: total_scheduled, class: "text-blue-700" },
           { header: "Vendas", content: total_sales, class: "text-purple-700 font-bold" },
           { header: "Montante de vendas", content: helpers.number_to_currency(total_sales_amount), class: "text-green-700 font-bold" },
+          { header: "Recebimentos", content: helpers.number_to_currency(total_receipts_amount), class: "text-teal-700 font-bold" },
           { header: "Remarcados", content: total_rescheduled, class: "text-green-700" },
           { header: "Cancelados", content: total_canceled, class: "text-red-600" },
           { header: "Taxa de Comparecimento", content: total_appointments > 0 ? "#{percentage(total_scheduled, total_appointments)}%" : "0%", class: "text-blue-700" }
@@ -806,17 +821,20 @@ module ClinicManagement
         total_canceled = 0
         total_sales = 0
         total_sales_amount = 0
+        total_receipts_amount = 0
         
         month_services.each do |service|
           appointments, scheduled, rescheduled, canceled = appointment_counts(service)
           sales = sales_count(service)
           sales_amt = sales_amount(service)
+          receipts_amt = receipts_amount(service)
           total_appointments += appointments
           total_scheduled += scheduled
           total_rescheduled += rescheduled
           total_canceled += canceled
           total_sales += sales
           total_sales_amount += sales_amt
+          total_receipts_amount += receipts_amt
         end
         
         [
@@ -826,6 +844,7 @@ module ClinicManagement
           { header: "Compareceram", content: total_scheduled, class: "text-blue-700" },
           { header: "Vendas", content: total_sales, class: "text-purple-700 font-bold" },
           { header: "Montante de vendas", content: helpers.number_to_currency(total_sales_amount), class: "text-green-700 font-bold" },
+          { header: "Recebimentos", content: helpers.number_to_currency(total_receipts_amount), class: "text-teal-700 font-bold" },
           { header: "Remarcados", content: total_rescheduled, class: "text-green-700" },
           { header: "Cancelados", content: total_canceled, class: "text-red-600" },
           { header: "Taxa de Comparecimento", content: total_appointments > 0 ? "#{percentage(total_scheduled, total_appointments)}%" : "0%", class: "text-blue-700" }
