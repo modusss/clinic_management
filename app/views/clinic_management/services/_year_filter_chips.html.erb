@@ -1,0 +1,24 @@
+<%# ESSENTIAL: Monthly view year filter — only years with service data; max 12 month rows per selected year. %>
+<% referral_filter = local_assigns[:referral] %>
+<% if @view_type == 'monthly' && @available_years.present? %>
+  <div class="mt-4 pt-4 border-t border-gray-200" role="group" aria-label="Filtrar por ano">
+    <p class="text-sm font-medium text-gray-700 mb-2">Ano:</p>
+    <div class="flex flex-wrap gap-2">
+      <% @available_years.each do |year| %>
+        <% chip_path = if referral_filter.present?
+                         index_by_referral_services_path(referral_id: referral_filter.id, view_type: 'monthly', year: year)
+                       else
+                         services_path(view_type: 'monthly', year: year)
+                       end %>
+        <% active = year == @selected_year %>
+        <%= link_to year,
+                    chip_path,
+                    class: [
+                      "inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium transition-colors",
+                      active ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                    ].join(" "),
+                    aria: { current: (active ? "true" : nil) } %>
+      <% end %>
+    </div>
+  </div>
+<% end %>

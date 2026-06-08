@@ -40,12 +40,13 @@
           <% when 'weekly' %>
             Dados agrupados por semana (20 semanas por página)
           <% when 'monthly' %>
-            Dados agrupados por mês
+            Dados agrupados por mês — selecione o ano
           <% else %>
             Dados detalhados por dia
           <% end %>
         </div>
       </div>
+      <%= render "clinic_management/services/year_filter_chips", referral: @referral %>
     </div>
     <% end %>
 
@@ -77,7 +78,7 @@
           </button>
         </div>
         <h3 class="text-lg font-semibold text-gray-900 mb-4">
-          Gráfico de <%= @view_type == 'weekly' ? 'Dados Semanais' : 'Dados Mensais' %> - <%= @referral.name %>
+          Gráfico de <%= @view_type == 'weekly' ? 'Dados Semanais' : "Dados Mensais — #{@selected_year}" %> - <%= @referral.name %>
         </h3>
         <div class="relative" style="height: 400px;">
           <canvas id="servicesChart"></canvas>
@@ -93,7 +94,7 @@
             <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">">
               <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                  Gráfico Expandido - <%= @view_type == 'weekly' ? 'Dados Semanais' : 'Dados Mensais' %>
+                  Gráfico Expandido - <%= @view_type == 'weekly' ? 'Dados Semanais' : "Dados Mensais — #{@selected_year}" %>
                 </h3>
                 <button onclick="closeChartModal()" class="text-gray-400 hover:text-gray-500 focus:outline-none">
                   <span class="material-icons">close</span>
@@ -243,7 +244,7 @@
         plugins: {
           title: {
             display: true,
-            text: '<%= @view_type == "weekly" ? "Estatísticas Semanais" : "Estatísticas Mensais" %> - <%= @referral.name %>',
+            text: '<%= @view_type == "weekly" ? "Estatísticas Semanais" : "Estatísticas Mensais — #{@selected_year}" %> - <%= @referral.name %>',
             font: { size: 16, weight: 'bold' }
           },
           legend: { display: true, position: 'top' },
@@ -291,7 +292,7 @@
           plugins: {
             title: {
               display: true,
-              text: '<%= @view_type == "weekly" ? "Estatísticas Semanais" : "Estatísticas Mensais" %> - <%= @referral.name %>',
+              text: '<%= @view_type == "weekly" ? "Estatísticas Semanais" : "Estatísticas Mensais — #{@selected_year}" %> - <%= @referral.name %>',
               font: { size: 20, weight: 'bold' }
             },
             legend: { display: true, position: 'top', labels: { font: { size: 14 } } },

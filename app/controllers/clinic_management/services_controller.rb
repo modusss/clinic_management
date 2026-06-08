@@ -26,8 +26,11 @@ module ClinicManagement
         @rows = process_weekly_data(weekly_services)
         @chart_data = generate_weekly_chart_data(weekly_services)
       when 'monthly'
-        @rows = process_monthly_data(@services)
-        @chart_data = generate_monthly_chart_data(@services)
+        @available_years = available_years(@services)
+        @selected_year = resolve_selected_year(@available_years)
+        monthly_services = services_for_year(@services, @selected_year)
+        @rows = process_monthly_data(monthly_services)
+        @chart_data = generate_monthly_chart_data(monthly_services)
       else # daily
         @services = @services.page(params[:page]).per(20)
         @rows = process_services_data(@services)
@@ -50,8 +53,11 @@ module ClinicManagement
         @rows = process_weekly_data_by_referral(weekly_services)
         @chart_data = generate_weekly_chart_data_by_referral(weekly_services)
       when 'monthly'
-        @rows = process_monthly_data_by_referral(@services)
-        @chart_data = generate_monthly_chart_data_by_referral(@services)
+        @available_years = available_years(@services)
+        @selected_year = resolve_selected_year(@available_years)
+        monthly_services = services_for_year(@services, @selected_year)
+        @rows = process_monthly_data_by_referral(monthly_services)
+        @chart_data = generate_monthly_chart_data_by_referral(monthly_services)
       else # daily
         @services = @services.page(params[:page]).per(20)
         @rows = process_services_data(@services)
@@ -514,6 +520,29 @@ module ClinicManagement
       scope.unscope(:order).where(date: min_date..max_date).distinct.includes(:appointments)
     end
 
+    # ESSENTIAL: Monthly view scopes data to one calendar year (max 12 month rows).
+    def available_years(scope)
+      scope
+        .unscope(:order)
+        .group(Arel.sql("EXTRACT(YEAR FROM date)::integer"))
+        .order(Arel.sql("EXTRACT(YEAR FROM date)::integer DESC"))
+        .pluck(Arel.sql("EXTRACT(YEAR FROM date)::integer"))
+    end
+
+    def resolve_selected_year(available_years)
+      requested_year = params[:year].to_i
+      return requested_year if available_years.include?(requested_year)
+
+      available_years.first || Date.current.year
+    end
+
+    def services_for_year(scope, year)
+      scope.unscope(:order)
+           .where(date: Date.new(year, 1, 1).all_year)
+           .distinct
+           .includes(:appointments)
+    end
+
     def process_weekly_data(services)
       # Group services by week (newest weeks first)
       weekly_groups = services.group_by { |service| service.date.beginning_of_week }
@@ -567,10 +596,10 @@ module ClinicManagement
     end
 
     def process_monthly_data(services)
-      # Group services by month
+      # Group services by month (newest months first)
       monthly_groups = services.group_by { |service| service.date.beginning_of_month }
-      
-      monthly_groups.map do |month_start, month_services|
+
+      monthly_groups.sort_by { |month_start, _| month_start }.reverse.map do |month_start, month_services|
         month_end = month_start.end_of_month
         total_appointments = 0
         total_scheduled = 0
@@ -841,8 +870,8 @@ module ClinicManagement
 
     def process_monthly_data_by_referral(services)
       monthly_groups = services.group_by { |service| service.date.beginning_of_month }
-      
-      monthly_groups.map do |month_start, month_services|
+
+      monthly_groups.sort_by { |month_start, _| month_start }.reverse.map do |month_start, month_services|
         month_end = month_start.end_of_month
         total_appointments = 0
         total_scheduled = 0
