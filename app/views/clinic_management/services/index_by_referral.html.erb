@@ -83,6 +83,15 @@
       <%= clinic_paginate @services %>
     <% end %>
   </section>
+
+  <% if show_services_referrals_nav? && @referrals.present? %>
+    <section class="mt-10 pt-8 border-t border-gray-200">
+      <%= render "clinic_management/services/referrals_section",
+                 current_referral: @referral,
+                 link_params: referrals_nav_link_params,
+                 subtitle: "Navegue entre captadores para comparar o desempenho." %>
+    </section>
+  <% end %>
 </div>
 
 <style>

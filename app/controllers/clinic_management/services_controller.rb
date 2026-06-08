@@ -9,9 +9,7 @@ module ClinicManagement
 
     # GET /services
     def index
-      @referrals = Referral.all.sort_by { |r| r.name.to_s.downcase }
-      @active_referrals = @referrals.select(&:active?)
-      @inactive_referrals = @referrals.reject(&:active?)
+      load_referrals_navigation_data
       @view_type = params[:view_type] || 'daily'
       @services = ClinicManagement::Service.includes(:appointments).order(date: :desc)
       @services = @services.for_location(current_service_location_id)
@@ -64,6 +62,8 @@ module ClinicManagement
         @services = @services.page(params[:page]).per(20)
         @rows = process_services_data(@services)
       end
+
+      load_referrals_navigation_data if helpers.show_services_referrals_nav?
     end
     
     # GET /services/1
@@ -184,6 +184,13 @@ module ClinicManagement
 
     def set_view_type
       @view_type = resolve_cards_table_view_type(:preferred_service_view)
+    end
+
+    # Shared captador list for services#index and services#index_by_referral navigation.
+    def load_referrals_navigation_data
+      @referrals = Referral.all.sort_by { |r| r.name.to_s.downcase }
+      @active_referrals = @referrals.select(&:active?)
+      @inactive_referrals = @referrals.reject(&:active?)
     end
 
     def decode_json(json_str)

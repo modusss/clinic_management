@@ -1,13 +1,23 @@
 <%# Card grid linking each captador to index_by_referral services view. %>
 <% referrals = Array(local_assigns[:referrals]).sort_by { |r| r.name.to_s.downcase } %>
+<% current_referral = local_assigns[:current_referral] %>
+<% link_params = local_assigns.fetch(:link_params, {}) %>
 
 <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
   <% referrals.each do |referral| %>
-    <div class="border border-gray-300 p-4 rounded-lg bg-white">
-      <h2 class="text-xl font-medium text-gray-900"><%= referral.name %></h2>
-      <%= link_to "Visualizar marcações",
-                  index_by_referral_services_path(referral_id: referral.id),
-                  class: "mt-2 inline-block text-blue-500 hover:text-blue-700" %>
+    <% is_current = current_referral&.id == referral.id %>
+    <div class="<%= is_current ? 'border-2 border-blue-500 bg-blue-50 ring-2 ring-blue-100' : 'border border-gray-300 bg-white' %> p-4 rounded-lg">
+      <div class="flex items-start justify-between gap-2">
+        <h2 class="text-xl font-medium text-gray-900"><%= referral.name %></h2>
+        <% if is_current %>
+          <span class="shrink-0 text-xs font-semibold uppercase tracking-wide text-blue-700 bg-blue-100 px-2 py-1 rounded">Atual</span>
+        <% end %>
+      </div>
+      <% unless is_current %>
+        <%= link_to "Visualizar marcações",
+                    index_by_referral_services_path(referral_id: referral.id, **link_params),
+                    class: "mt-2 inline-block text-blue-500 hover:text-blue-700" %>
+      <% end %>
     </div>
   <% end %>
 </div>

@@ -58,6 +58,18 @@ module ClinicManagement
         paginate(scope, **options.merge(theme: "clinic"))
       end
 
+      # ESSENTIAL: Captador switcher on services#index_by_referral — managers/owners in retail mode only (not clinic_only).
+      def show_services_referrals_nav?
+        is_manager_above? && !clinic_only_referrals_ui?
+      end
+
+      # Preserves aggregated view filters when switching captador (page resets per captador).
+      def referrals_nav_link_params
+        nav = {}
+        nav[:view_type] = @view_type if @view_type.present? && @view_type != "daily"
+        nav[:year] = @selected_year if @view_type == "monthly" && @selected_year.present?
+        nav
+      end
     end
 
     private
