@@ -169,9 +169,9 @@ body.clinic-lens-demo .lens-demonstration-container .crop-center-wrapper {
     white-space: nowrap;
   }
 
-  /* Use viewport height — comparison is the hero on tablet */
+  /* ESSENTIAL: unquote — bare min(68vh, 820px) makes SassC fail on px+vh at assets:precompile. */
   body.clinic-lens-demo .lens-demonstration-container .comparison-container {
-    max-height: min(68vh, 820px);
+    max-height: unquote("min(68vh, 820px)");
   }
 
   body.clinic-lens-demo .lens-demonstration-container .comparison-container::before {
