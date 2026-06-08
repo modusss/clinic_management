@@ -13,6 +13,7 @@ module ClinicManagement
     before_action :set_company_info
 
     helper ::ReferralUiPathsHelper
+    helper ::ReferralDisplayLabelsHelper
     helper ::OrganizationUiPathsHelper
     helper ::WhatsappUiPathsHelper
     helper ::CommissionsHelper
@@ -56,6 +57,7 @@ module ClinicManagement
       def clinic_paginate(scope, **options)
         paginate(scope, **options.merge(theme: "clinic"))
       end
+
     end
 
     private

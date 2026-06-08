@@ -1,0 +1,13 @@
+<%# Card grid linking each captador to index_by_referral services view. %>
+<% referrals = Array(local_assigns[:referrals]).sort_by { |r| r.name.to_s.downcase } %>
+
+<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+  <% referrals.each do |referral| %>
+    <div class="border border-gray-300 p-4 rounded-lg bg-white">
+      <h2 class="text-xl font-medium text-gray-900"><%= referral.name %></h2>
+      <%= link_to "Visualizar marcações",
+                  index_by_referral_services_path(referral_id: referral.id),
+                  class: "mt-2 inline-block text-blue-500 hover:text-blue-700" %>
+    </div>
+  <% end %>
+</div>

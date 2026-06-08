@@ -9,7 +9,9 @@ module ClinicManagement
 
     # GET /services
     def index
-      @referrals = Referral.all
+      @referrals = Referral.all.sort_by { |r| r.name.to_s.downcase }
+      @active_referrals = @referrals.select(&:active?)
+      @inactive_referrals = @referrals.reject(&:active?)
       @view_type = params[:view_type] || 'daily'
       @services = ClinicManagement::Service.includes(:appointments).order(date: :desc)
       @services = @services.for_location(current_service_location_id)
