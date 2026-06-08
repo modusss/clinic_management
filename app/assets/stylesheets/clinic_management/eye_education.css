@@ -123,27 +123,13 @@
 .eye-education-panel.active {
   display: grid;
   grid-template-columns: 1.1fr 1fr;
-}
-
-/* ESSENTIAL: Astigmatism artwork is horizontal and needs text below image. */
-.eye-education-panel--horizontal.active {
-  display: block;
-}
-
-.eye-education-panel--horizontal .eye-education-media {
-  border-bottom: 1px solid #e5e7eb;
-  background: #fff;
-}
-
-.eye-education-panel--horizontal .eye-education-image {
-  height: auto;
-  min-height: 0;
-  max-height: 540px;
-  object-fit: contain;
+  align-items: stretch;
 }
 
 .eye-education-media {
   background: #f8f9fa;
+  min-height: 100%;
+  display: flex;
 }
 
 .eye-education-image {
@@ -152,6 +138,12 @@
   min-height: 340px;
   object-fit: cover;
   display: block;
+}
+
+/* ESSENTIAL: Astigmatism diagram is wider — same side column, contain avoids cropping. */
+.eye-education-image--contain {
+  object-fit: contain;
+  background: #f8f9fa;
 }
 
 .eye-education-content {
@@ -301,21 +293,15 @@ html.eye-education-presentation-active .eye-education-panel.active {
   box-shadow: 0 8px 28px rgba(15, 23, 42, 0.14);
 }
 
-html.eye-education-presentation-active .eye-education-panel--horizontal.active {
-  min-height: calc(100vh - 110px);
-}
-
 html.eye-education-presentation-active .eye-education-image {
   min-height: calc(100vh - 150px);
   max-height: calc(100vh - 130px);
-  object-fit: contain;
+  object-fit: cover;
   background: #f8f9fa;
 }
 
-html.eye-education-presentation-active .eye-education-panel--horizontal .eye-education-image {
-  min-height: 0;
-  max-height: calc(100vh - 320px);
-  width: 100%;
+html.eye-education-presentation-active .eye-education-image--contain {
+  object-fit: contain;
 }
 
 html.eye-education-presentation-active .eye-education-content {
@@ -347,9 +333,5 @@ html.eye-education-presentation-active .eye-education-description {
   html.eye-education-presentation-active .eye-education-image {
     min-height: 42vh;
     max-height: 48vh;
-  }
-
-  html.eye-education-presentation-active .eye-education-panel--horizontal .eye-education-image {
-    max-height: 40vh;
   }
 }
