@@ -193,6 +193,11 @@ module ClinicManagement
       @inactive_referrals = @referrals.reject(&:active?)
     end
 
+    # ESSENTIAL: Vendas, Montante and Recebimentos require retail module; clinic_only skips Order queries entirely.
+    def include_sales_metrics?
+      helpers.services_sales_metrics_available?
+    end
+
     def decode_json(json_str)
       while json_str.is_a?(String)
         begin
@@ -397,13 +402,10 @@ module ClinicManagement
           base_row
         end
 
-        if helpers.is_manager_above?
-          sales = sales_count(ser)
-          sales_amt = sales_amount(ser)
-          receipts_amt = receipts_amount(ser)
-          row << { header: "Vendas", content: sales, class: "text-purple-700 font-bold" }
-          row << { header: "Montante de vendas", content: helpers.number_to_currency(sales_amt), class: "text-green-700 font-bold" }
-          row << { header: "Recebimentos", content: helpers.number_to_currency(receipts_amt), class: "text-teal-700 font-bold" }
+        if helpers.is_manager_above? && include_sales_metrics?
+          row << { header: "Vendas", content: sales_count(ser), class: "text-purple-700 font-bold" }
+          row << { header: "Montante de vendas", content: helpers.number_to_currency(sales_amount(ser)), class: "text-green-700 font-bold" }
+          row << { header: "Recebimentos", content: helpers.number_to_currency(receipts_amount(ser)), class: "text-teal-700 font-bold" }
         end
 
         row << { header: "Remarcados", content: rescheduled, class: "text-green-700" }
@@ -573,13 +575,10 @@ module ClinicManagement
           total_rescheduled += rescheduled
           total_canceled += canceled
           
-          if helpers.is_manager_above?
-            sales = sales_count(service)
-            sales_amt = sales_amount(service)
-            receipts_amt = receipts_amount(service)
-            total_sales += sales
-            total_sales_amount += sales_amt
-            total_receipts_amount += receipts_amt
+          if helpers.is_manager_above? && include_sales_metrics?
+            total_sales += sales_count(service)
+            total_sales_amount += sales_amount(service)
+            total_receipts_amount += receipts_amount(service)
           end
         end
         
@@ -590,7 +589,7 @@ module ClinicManagement
           { header: "Compareceram", content: total_scheduled, class: "text-blue-700" }
         ]
 
-        if helpers.is_manager_above?
+        if helpers.is_manager_above? && include_sales_metrics?
           row << { header: "Vendas", content: total_sales, class: "text-purple-700 font-bold" }
           row << { header: "Montante de vendas", content: helpers.number_to_currency(total_sales_amount), class: "text-green-700 font-bold" }
           row << { header: "Recebimentos", content: helpers.number_to_currency(total_receipts_amount), class: "text-teal-700 font-bold" }
@@ -625,13 +624,10 @@ module ClinicManagement
           total_rescheduled += rescheduled
           total_canceled += canceled
           
-          if helpers.is_manager_above?
-            sales = sales_count(service)
-            sales_amt = sales_amount(service)
-            receipts_amt = receipts_amount(service)
-            total_sales += sales
-            total_sales_amount += sales_amt
-            total_receipts_amount += receipts_amt
+          if helpers.is_manager_above? && include_sales_metrics?
+            total_sales += sales_count(service)
+            total_sales_amount += sales_amount(service)
+            total_receipts_amount += receipts_amount(service)
           end
         end
         
@@ -642,7 +638,7 @@ module ClinicManagement
           { header: "Compareceram", content: total_scheduled, class: "text-blue-700" }
         ]
 
-        if helpers.is_manager_above?
+        if helpers.is_manager_above? && include_sales_metrics?
           row << { header: "Vendas", content: total_sales, class: "text-purple-700 font-bold" }
           row << { header: "Montante de vendas", content: helpers.number_to_currency(total_sales_amount), class: "text-green-700 font-bold" }
           row << { header: "Recebimentos", content: helpers.number_to_currency(total_receipts_amount), class: "text-teal-700 font-bold" }
@@ -683,9 +679,8 @@ module ClinicManagement
           total_rescheduled += rescheduled
           total_canceled += canceled
           
-          if helpers.is_manager_above?
-            sales = sales_count(service)
-            total_sales += sales
+          if helpers.is_manager_above? && include_sales_metrics?
+            total_sales += sales_count(service)
           end
         end
         
@@ -713,7 +708,7 @@ module ClinicManagement
         }
       ]
 
-      if helpers.is_manager_above?
+      if helpers.is_manager_above? && include_sales_metrics?
         datasets << {
           label: 'Vendas',
           data: sales_data,
@@ -772,9 +767,8 @@ module ClinicManagement
           total_rescheduled += rescheduled
           total_canceled += canceled
           
-          if helpers.is_manager_above?
-            sales = sales_count(service)
-            total_sales += sales
+          if helpers.is_manager_above? && include_sales_metrics?
+            total_sales += sales_count(service)
           end
         end
         
@@ -802,7 +796,7 @@ module ClinicManagement
         }
       ]
 
-      if helpers.is_manager_above?
+      if helpers.is_manager_above? && include_sales_metrics?
         datasets << {
           label: 'Vendas',
           data: sales_data,
@@ -850,30 +844,32 @@ module ClinicManagement
         
         week_services.each do |service|
           appointments, scheduled, rescheduled, canceled = appointment_counts(service)
-          sales = sales_count(service)
-          sales_amt = sales_amount(service)
-          receipts_amt = receipts_amount(service)
           total_appointments += appointments
           total_scheduled += scheduled
           total_rescheduled += rescheduled
           total_canceled += canceled
-          total_sales += sales
-          total_sales_amount += sales_amt
-          total_receipts_amount += receipts_amt
+          if include_sales_metrics?
+            total_sales += sales_count(service)
+            total_sales_amount += sales_amount(service)
+            total_receipts_amount += receipts_amount(service)
+          end
         end
-        
-        [
+
+        row = [
           { header: "Período", content: "#{week_start.strftime('%d/%m/%Y')} - #{week_end.strftime('%d/%m/%Y')}" },
           { header: "Serviços", content: week_services.count },
           { header: "Total de Pacientes", content: total_appointments },
-          { header: "Compareceram", content: total_scheduled, class: "text-blue-700" },
-          { header: "Vendas", content: total_sales, class: "text-purple-700 font-bold" },
-          { header: "Montante de vendas", content: helpers.number_to_currency(total_sales_amount), class: "text-green-700 font-bold" },
-          { header: "Recebimentos", content: helpers.number_to_currency(total_receipts_amount), class: "text-teal-700 font-bold" },
-          { header: "Remarcados", content: total_rescheduled, class: "text-green-700" },
-          { header: "Cancelados", content: total_canceled, class: "text-red-600" },
-          { header: "Taxa de Comparecimento", content: total_appointments > 0 ? "#{percentage(total_scheduled, total_appointments)}%" : "0%", class: "text-blue-700" }
+          { header: "Compareceram", content: total_scheduled, class: "text-blue-700" }
         ]
+        if include_sales_metrics?
+          row << { header: "Vendas", content: total_sales, class: "text-purple-700 font-bold" }
+          row << { header: "Montante de vendas", content: helpers.number_to_currency(total_sales_amount), class: "text-green-700 font-bold" }
+          row << { header: "Recebimentos", content: helpers.number_to_currency(total_receipts_amount), class: "text-teal-700 font-bold" }
+        end
+        row << { header: "Remarcados", content: total_rescheduled, class: "text-green-700" }
+        row << { header: "Cancelados", content: total_canceled, class: "text-red-600" }
+        row << { header: "Taxa de Comparecimento", content: total_appointments > 0 ? "#{percentage(total_scheduled, total_appointments)}%" : "0%", class: "text-blue-700" }
+        row
       end
     end
 
@@ -892,30 +888,32 @@ module ClinicManagement
         
         month_services.each do |service|
           appointments, scheduled, rescheduled, canceled = appointment_counts(service)
-          sales = sales_count(service)
-          sales_amt = sales_amount(service)
-          receipts_amt = receipts_amount(service)
           total_appointments += appointments
           total_scheduled += scheduled
           total_rescheduled += rescheduled
           total_canceled += canceled
-          total_sales += sales
-          total_sales_amount += sales_amt
-          total_receipts_amount += receipts_amt
+          if include_sales_metrics?
+            total_sales += sales_count(service)
+            total_sales_amount += sales_amount(service)
+            total_receipts_amount += receipts_amount(service)
+          end
         end
-        
-        [
+
+        row = [
           { header: "Mês", content: I18n.l(month_start, format: "%B de %Y").capitalize },
           { header: "Serviços", content: month_services.count },
           { header: "Total de Pacientes", content: total_appointments },
-          { header: "Compareceram", content: total_scheduled, class: "text-blue-700" },
-          { header: "Vendas", content: total_sales, class: "text-purple-700 font-bold" },
-          { header: "Montante de vendas", content: helpers.number_to_currency(total_sales_amount), class: "text-green-700 font-bold" },
-          { header: "Recebimentos", content: helpers.number_to_currency(total_receipts_amount), class: "text-teal-700 font-bold" },
-          { header: "Remarcados", content: total_rescheduled, class: "text-green-700" },
-          { header: "Cancelados", content: total_canceled, class: "text-red-600" },
-          { header: "Taxa de Comparecimento", content: total_appointments > 0 ? "#{percentage(total_scheduled, total_appointments)}%" : "0%", class: "text-blue-700" }
+          { header: "Compareceram", content: total_scheduled, class: "text-blue-700" }
         ]
+        if include_sales_metrics?
+          row << { header: "Vendas", content: total_sales, class: "text-purple-700 font-bold" }
+          row << { header: "Montante de vendas", content: helpers.number_to_currency(total_sales_amount), class: "text-green-700 font-bold" }
+          row << { header: "Recebimentos", content: helpers.number_to_currency(total_receipts_amount), class: "text-teal-700 font-bold" }
+        end
+        row << { header: "Remarcados", content: total_rescheduled, class: "text-green-700" }
+        row << { header: "Cancelados", content: total_canceled, class: "text-red-600" }
+        row << { header: "Taxa de Comparecimento", content: total_appointments > 0 ? "#{percentage(total_scheduled, total_appointments)}%" : "0%", class: "text-blue-700" }
+        row
       end
     end
 
@@ -946,9 +944,8 @@ module ClinicManagement
           total_rescheduled += rescheduled
           total_canceled += canceled
           
-          if helpers.is_manager_above?
-            sales = sales_count(service)
-            total_sales += sales
+          if include_sales_metrics?
+            total_sales += sales_count(service)
           end
         end
         
@@ -976,7 +973,7 @@ module ClinicManagement
         }
       ]
 
-      if helpers.is_manager_above?
+      if include_sales_metrics?
         datasets << {
           label: 'Vendas',
           data: sales_data,
@@ -1035,9 +1032,8 @@ module ClinicManagement
           total_rescheduled += rescheduled
           total_canceled += canceled
           
-          if helpers.is_manager_above?
-            sales = sales_count(service)
-            total_sales += sales
+          if include_sales_metrics?
+            total_sales += sales_count(service)
           end
         end
         
@@ -1065,7 +1061,7 @@ module ClinicManagement
         }
       ]
 
-      if helpers.is_manager_above?
+      if include_sales_metrics?
         datasets << {
           label: 'Vendas',
           data: sales_data,
