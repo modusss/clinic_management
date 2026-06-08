@@ -21,8 +21,10 @@ module ClinicManagement
       
       case @view_type
       when 'weekly'
-        @rows = process_weekly_data(@services)
-        @chart_data = generate_weekly_chart_data(@services)
+        @week_periods = paginated_week_starts(@services)
+        weekly_services = services_for_week_starts(@services, @week_periods)
+        @rows = process_weekly_data(weekly_services)
+        @chart_data = generate_weekly_chart_data(weekly_services)
       when 'monthly'
         @rows = process_monthly_data(@services)
         @chart_data = generate_monthly_chart_data(@services)
@@ -43,8 +45,10 @@ module ClinicManagement
       
       case @view_type
       when 'weekly'
-        @rows = process_weekly_data_by_referral(@services)
-        @chart_data = generate_weekly_chart_data_by_referral(@services)
+        @week_periods = paginated_week_starts(@services)
+        weekly_services = services_for_week_starts(@services, @week_periods)
+        @rows = process_weekly_data_by_referral(weekly_services)
+        @chart_data = generate_weekly_chart_data_by_referral(weekly_services)
       when 'monthly'
         @rows = process_monthly_data_by_referral(@services)
         @chart_data = generate_monthly_chart_data_by_referral(@services)
@@ -485,11 +489,36 @@ module ClinicManagement
       (count.to_f / total * 100).round(2)
     end
 
+    # ESSENTIAL: Weekly aggregated view loads at most this many week rows per page (not all history).
+    WEEKLY_PERIODS_PER_PAGE = 20
+
+    # Lightweight query: distinct week starts only, then Kaminari slices the period list.
+    def paginated_week_starts(scope)
+      week_starts = scope
+        .unscope(:order)
+        .group(Arel.sql("DATE_TRUNC('week', date)::date"))
+        .order(Arel.sql("DATE_TRUNC('week', date)::date DESC"))
+        .pluck(Arel.sql("DATE_TRUNC('week', date)::date"))
+        .map(&:to_date)
+
+      Kaminari.paginate_array(week_starts).page(params[:page]).per(WEEKLY_PERIODS_PER_PAGE)
+    end
+
+    # Loads only services that fall inside the paginated week windows (max 20 weeks of data).
+    def services_for_week_starts(scope, paginated_week_starts)
+      week_starts = paginated_week_starts.to_a
+      return scope.none if week_starts.empty?
+
+      min_date = week_starts.min
+      max_date = week_starts.max.end_of_week
+      scope.unscope(:order).where(date: min_date..max_date).distinct.includes(:appointments)
+    end
+
     def process_weekly_data(services)
-      # Group services by week
+      # Group services by week (newest weeks first)
       weekly_groups = services.group_by { |service| service.date.beginning_of_week }
-      
-      weekly_groups.map do |week_start, week_services|
+
+      weekly_groups.sort_by { |week_start, _| week_start }.reverse.map do |week_start, week_services|
         week_end = week_start.end_of_week
         total_appointments = 0
         total_scheduled = 0
@@ -770,8 +799,8 @@ module ClinicManagement
 
     def process_weekly_data_by_referral(services)
       weekly_groups = services.group_by { |service| service.date.beginning_of_week }
-      
-      weekly_groups.map do |week_start, week_services|
+
+      weekly_groups.sort_by { |week_start, _| week_start }.reverse.map do |week_start, week_services|
         week_end = week_start.end_of_week
         total_appointments = 0
         total_scheduled = 0

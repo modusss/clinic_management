@@ -38,7 +38,7 @@
         <div class="text-sm text-gray-600">
           <% case @view_type %>
           <% when 'weekly' %>
-            Dados agrupados por semana
+            Dados agrupados por semana (20 semanas por página)
           <% when 'monthly' %>
             Dados agrupados por mês
           <% else %>
@@ -108,7 +108,9 @@
       </div>
     <% end %>
     
-    <% if @view_type == 'daily' && @services.present? %>
+    <% if @view_type == 'weekly' && @week_periods.present? %>
+      <%= clinic_paginate @week_periods, params: { view_type: @view_type } %>
+    <% elsif @view_type == 'daily' && @services.present? %>
       <%= clinic_paginate @services %>
     <% end %>
   </section>
