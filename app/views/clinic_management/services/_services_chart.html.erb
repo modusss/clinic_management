@@ -1,0 +1,59 @@
+<%# ESSENTIAL: Chart rendering via services_chart Stimulus controller — survives Turbo pagination. %>
+<% chart_heading = local_assigns[:chart_heading] %>
+<% stats_title = local_assigns[:stats_title] %>
+<% x_axis_label = local_assigns[:x_axis_label] %>
+<% chart_data = local_assigns[:chart_data] %>
+
+<%= tag.div class: "mt-8 p-6 bg-white rounded-lg shadow-lg border relative group",
+            data: {
+              controller: "services-chart",
+              services_chart_chart_data_value: chart_data.to_json,
+              services_chart_stats_title_value: stats_title,
+              services_chart_x_axis_label_value: x_axis_label
+            } do %>
+  <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+    <button type="button"
+            class="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 hover:text-gray-800"
+            title="Expandir gráfico"
+            data-action="services-chart#openModal">
+      <span class="material-icons">open_in_full</span>
+    </button>
+  </div>
+
+  <h3 class="text-lg font-semibold text-gray-900 mb-4"><%= chart_heading %></h3>
+
+  <div class="relative" style="height: 400px;">
+    <canvas data-services-chart-target="canvas"></canvas>
+  </div>
+
+  <div data-services-chart-target="modal"
+       class="fixed inset-0 z-50 hidden overflow-y-auto"
+       aria-labelledby="services-chart-modal-title"
+       role="dialog"
+       aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+      <div data-services-chart-target="backdrop"
+           class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+           aria-hidden="true"
+           data-action="click->services-chart#closeModalOnBackdrop"></div>
+      <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+      <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-4 sm:align-middle sm:w-full" style="width: 95%; max-width: 95%;">
+        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg leading-6 font-medium text-gray-900" id="services-chart-modal-title">
+              Gráfico Expandido - <%= stats_title %>
+            </h3>
+            <button type="button"
+                    class="text-gray-400 hover:text-gray-500 focus:outline-none"
+                    data-action="services-chart#closeModal">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+          <div class="relative" style="height: 80vh;">
+            <canvas data-services-chart-target="modalCanvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
