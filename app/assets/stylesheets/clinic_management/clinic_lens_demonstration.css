@@ -1,8 +1,14 @@
 /* ============================================================================
    Lens demonstration — embedded in clinic_management (reuses lens_demonstrations/show)
-   ESSENTIAL: Main app wraps this view in .custom-container; clinic uses .clinic-lens-demo-shell.
-   Do not nest inside Tailwind `container` — it caps width and breaks comparison sliders.
+   ESSENTIAL: Main app uses .custom-container + lens_demonstrations.css; clinic uses
+   .clinic-lens-demo-shell + this file. Tablet/doctor presentation rules live here only.
+   Present in: clinic_management/lens_demonstrations#show, layouts/clinic_management/application
    ============================================================================ */
+
+body.clinic-lens-demo {
+  /* Inline layout sets 200px — keep only room for fixed footer */
+  margin-bottom: 88px !important;
+}
 
 body.clinic-lens-demo #main-container {
   width: 100%;
@@ -14,25 +20,8 @@ body.clinic-lens-demo #main-container > .clinic-lens-demo-shell {
   width: 100%;
   max-width: none;
   margin: 0 auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-@media screen and (min-width: 640px) {
-  body.clinic-lens-demo #main-container > .clinic-lens-demo-shell {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
-}
-
-@media screen and (min-width: 1024px) {
-  body.clinic-lens-demo #main-container > .clinic-lens-demo-shell {
-    /* Mirrors main app custom-container breathing room on wide screens */
-    width: calc(100% - 3rem);
-    max-width: 1400px;
-    padding-left: 0;
-    padding-right: 0;
-  }
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
 }
 
 /* Root demo container — remove double padding from shared template */
@@ -45,13 +34,67 @@ body.clinic-lens-demo .lens-demonstration-container {
 }
 
 body.clinic-lens-demo .lens-demonstration-container .tabs-container {
-  justify-content: center;
+  align-items: flex-end;
+  justify-content: flex-start;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
-body.clinic-lens-demo .lens-demonstration-container .comparison-container {
+/* ESSENTIAL: Presentation button styles — lens_demonstrations.css is not loaded in clinic engine */
+body.clinic-lens-demo .presentation-mode-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  margin-left: auto;
+  margin-bottom: 0;
+  padding: 0 14px;
+  border: 1px solid rgba(5, 150, 105, 0.35);
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.08);
+  color: #047857;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+body.clinic-lens-demo .presentation-mode-button i {
+  font-size: 20px;
+  line-height: 1;
+}
+
+body.clinic-lens-demo .presentation-mode-button:hover,
+body.clinic-lens-demo .presentation-mode-button:focus-visible {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: rgba(5, 150, 105, 0.55);
+  color: #065f46;
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.18);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+body.clinic-lens-demo .presentation-mode-button.active {
+  background: #065f46;
+  border-color: #065f46;
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(6, 95, 70, 0.28);
+}
+
+body.clinic-lens-demo .lens-demonstration-container .comparison-container,
+body.clinic-lens-demo .lens-demonstration-container .static-treatment-card,
+body.clinic-lens-demo .lens-demonstration-container .treatment-description,
+body.clinic-lens-demo .lens-demonstration-container .thickness-demonstration-container {
   width: 100%;
-  max-width: 1200px;
+  max-width: none;
   margin-left: auto;
   margin-right: auto;
   box-sizing: border-box;
@@ -73,11 +116,95 @@ body.clinic-lens-demo .lens-demonstration-container .crop-center-wrapper {
   overflow: hidden;
 }
 
-body.clinic-lens-demo .lens-demonstration-container .treatment-content .comparison-container {
-  max-width: 1200px;
+/* ========== Tablet (doctor iPad / landscape) — 768px to 1365px ========== */
+@media screen and (min-width: 768px) and (max-width: 1365px) {
+  body.clinic-lens-demo #main-container {
+    margin-top: 72px !important;
+  }
+
+  body.clinic-lens-demo #main-container > .clinic-lens-demo-shell {
+    width: 100%;
+    max-width: none;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  body.clinic-lens-demo .lens-demonstration-container {
+    padding: 4px 2px 8px;
+  }
+
+  body.clinic-lens-demo .lens-demonstration-container .tabs-container {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 0.35rem;
+    margin-bottom: 0.75rem;
+  }
+
+  body.clinic-lens-demo .lens-demonstration-container .tabs-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  body.clinic-lens-demo .lens-demonstration-container .tab-button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  body.clinic-lens-demo .lens-demonstration-container .treatments-menu {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    justify-content: flex-start;
+    scrollbar-width: none;
+    margin-bottom: 0.65rem;
+  }
+
+  body.clinic-lens-demo .lens-demonstration-container .treatments-menu::-webkit-scrollbar {
+    display: none;
+  }
+
+  body.clinic-lens-demo .lens-demonstration-container .treatment-button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  /* Use viewport height — comparison is the hero on tablet */
+  body.clinic-lens-demo .lens-demonstration-container .comparison-container {
+    max-height: min(68vh, 820px);
+  }
+
+  body.clinic-lens-demo .lens-demonstration-container .comparison-container::before {
+    padding-top: 48%;
+  }
+
+  body.clinic-lens-demo .presentation-mode-label {
+    display: none;
+  }
+
+  body.clinic-lens-demo .presentation-mode-button {
+    flex: 0 0 auto;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 12px;
+  }
+}
+
+@media screen and (min-width: 1024px) {
+  body.clinic-lens-demo #main-container > .clinic-lens-demo-shell {
+    /* ESSENTIAL: Do not cap at 1400px — doctor tablet/desktop needs full width */
+    width: 100%;
+    max-width: none;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
 }
 
 @media screen and (max-width: 767px) {
+  body.clinic-lens-demo #main-container {
+    margin-top: 44px !important;
+  }
+
   body.clinic-lens-demo .lens-demonstration-container .tabs-container {
     justify-content: flex-start;
     flex-wrap: nowrap;
@@ -92,7 +219,118 @@ body.clinic-lens-demo .lens-demonstration-container .treatment-content .comparis
   }
 
   body.clinic-lens-demo #main-container > .clinic-lens-demo-shell {
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+/* ========== Apresentar / fullscreen — clinic_management chrome hidden ========== */
+html.lens-presentation-active body.clinic-lens-demo {
+  margin-bottom: 0 !important;
+  overflow: auto;
+}
+
+html.lens-presentation-active body.clinic-lens-demo .clinic-navbar,
+html.lens-presentation-active body.clinic-lens-demo .clinic-breadcrumb,
+html.lens-presentation-active body.clinic-lens-demo footer,
+html.lens-presentation-active body.clinic-lens-demo [data-controller="scroll"] {
+  display: none !important;
+}
+
+html.lens-presentation-active body.clinic-lens-demo #main-container {
+  margin-top: 0 !important;
+  margin-left: 0 !important;
+  width: 100%;
+  max-width: none;
+  min-height: 100vh;
+}
+
+html.lens-presentation-active body.clinic-lens-demo #main-container > .clinic-lens-demo-shell {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 8px 10px 12px;
+  box-sizing: border-box;
+}
+
+html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container {
+  width: 100% !important;
+  max-width: none !important;
+  min-height: calc(100vh - 16px);
+  padding: 4px 2px 10px !important;
+}
+
+html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container.presentation-mode {
+  background: transparent;
+}
+
+html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .tabs-container {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  margin-bottom: 0.5rem !important;
+  padding: 6px 4px 8px !important;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .tab-content.active {
+  width: 100%;
+}
+
+html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .treatments-menu {
+  max-width: none !important;
+  margin-bottom: 0.5rem;
+}
+
+html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .comparison-container,
+html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .static-treatment-card,
+html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .thickness-demonstration-container,
+html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .photochromatic-controls {
+  max-width: none !important;
+  width: 100% !important;
+}
+
+html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .comparison-container {
+  max-height: none !important;
+  height: calc(100vh - 168px);
+  min-height: 360px;
+}
+
+html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .comparison-container::before {
+  padding-top: 0;
+  display: none;
+}
+
+/* Hide description block in presentation — maximize comparison stage */
+html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .treatment-description {
+  display: none !important;
+}
+
+html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .treatment-content .comparison-container,
+html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .static-treatment-card {
+  border-radius: 10px;
+}
+
+html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .static-treatment-image,
+html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .lens-comparison-chart {
+  width: 100%;
+}
+
+@media screen and (min-width: 768px) and (max-width: 1365px) {
+  html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .comparison-container {
+    height: calc(100vh - 150px);
+    min-height: 420px;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container {
+    padding: 6px 4px 8px !important;
+  }
+
+  html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .comparison-container {
+    height: calc(100vh - 190px);
+    min-height: 280px;
   }
 }
