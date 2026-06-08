@@ -47,7 +47,7 @@ body.clinic-lens-demo .presentation-mode-button {
   justify-content: center;
   gap: 8px;
   min-height: 42px;
-  margin-left: auto;
+  margin-left: 8px;
   margin-bottom: 0;
   padding: 0 14px;
   border: 1px solid rgba(5, 150, 105, 0.35);
@@ -176,10 +176,6 @@ body.clinic-lens-demo .lens-demonstration-container .crop-center-wrapper {
 
   body.clinic-lens-demo .lens-demonstration-container .comparison-container::before {
     padding-top: 48%;
-  }
-
-  body.clinic-lens-demo .presentation-mode-label {
-    display: none;
   }
 
   body.clinic-lens-demo .presentation-mode-button {

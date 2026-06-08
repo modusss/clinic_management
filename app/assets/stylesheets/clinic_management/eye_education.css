@@ -4,27 +4,18 @@
   padding: 20px;
 }
 
-/* Toolbar: condition tabs + focus/presentation control (mirrors lens demo pattern). */
-.eye-education-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 12px;
-  margin-bottom: 20px;
+/* Condition chips + presentation button share the same bar (button sits right after chips). */
+.eye-education-tabs {
+  align-items: center;
 }
 
-.eye-education-toolbar .eye-education-tabs {
-  flex: 1 1 auto;
-  margin-bottom: 0;
-}
-
-.eye-education-focus-button {
+.eye-education-presentation-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   min-height: 44px;
-  margin-left: auto;
+  margin-left: 8px;
   padding: 0 16px;
   border: 1px solid rgba(5, 150, 105, 0.35);
   border-radius: 999px;
@@ -43,13 +34,13 @@
     transform 0.18s ease;
 }
 
-.eye-education-focus-button i {
+.eye-education-presentation-button i {
   font-size: 22px;
   line-height: 1;
 }
 
-.eye-education-focus-button:hover,
-.eye-education-focus-button:focus-visible {
+.eye-education-presentation-button:hover,
+.eye-education-presentation-button:focus-visible {
   background: rgba(16, 185, 129, 0.16);
   border-color: rgba(5, 150, 105, 0.55);
   color: #065f46;
@@ -58,7 +49,7 @@
   transform: translateY(-1px);
 }
 
-.eye-education-focus-button.active {
+.eye-education-presentation-button.active {
   background: #065f46;
   border-color: #065f46;
   color: #ffffff;
@@ -228,11 +219,11 @@
     font-size: 30px;
   }
 
-  .eye-education-focus-label {
+  .eye-education-presentation-label {
     display: none;
   }
 
-  .eye-education-focus-button {
+  .eye-education-presentation-button {
     min-width: 44px;
     padding: 0 12px;
   }
@@ -288,12 +279,12 @@ html.eye-education-presentation-active .eye-education-page.presentation-mode .ey
   display: none;
 }
 
-html.eye-education-presentation-active .eye-education-toolbar {
+html.eye-education-presentation-active .eye-education-tabs {
   position: sticky;
   top: 0;
   z-index: 60;
   margin-bottom: 12px;
-  padding: 8px 6px;
+  padding: 10px;
   background: #f3f4f6;
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
