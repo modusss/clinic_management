@@ -8,19 +8,34 @@
     </p>
   </header>
 
-  <nav class="eye-education-tabs" aria-label="Tipos de condição visual">
-    <% @eye_conditions.each_with_index do |condition, index| %>
-      <button
-        type="button"
-        class="eye-education-tab <%= "active" if index.zero? %>"
-        data-eye-education-tabs-target="tab"
-        data-action="click->eye-education-tabs#selectTab"
-        data-tab-key="<%= condition[:key] %>"
-        aria-selected="<%= index.zero? %>">
-        <%= condition[:title] %>
-      </button>
-    <% end %>
-  </nav>
+  <div class="eye-education-toolbar">
+    <nav class="eye-education-tabs" aria-label="Tipos de condição visual">
+      <% @eye_conditions.each_with_index do |condition, index| %>
+        <button
+          type="button"
+          class="eye-education-tab <%= "active" if index.zero? %>"
+          data-eye-education-tabs-target="tab"
+          data-action="click->eye-education-tabs#selectTab"
+          data-tab-key="<%= condition[:key] %>"
+          aria-selected="<%= index.zero? %>">
+          <%= condition[:title] %>
+        </button>
+      <% end %>
+    </nav>
+
+    <%# ESSENTIAL: Focus mode behavior lives in eye_education_tabs_controller.js — patient presentation on tablet/desktop. %>
+    <button
+      type="button"
+      class="eye-education-focus-button"
+      data-action="click->eye-education-tabs#toggleFocusMode"
+      data-eye-education-tabs-target="focusButton"
+      aria-label="Ativar modo foco"
+      title="Ativar modo foco"
+      aria-pressed="false">
+      <i class="material-icons" data-eye-education-tabs-target="focusIcon" aria-hidden="true">fullscreen</i>
+      <span class="eye-education-focus-label" data-eye-education-tabs-target="focusLabel">Modo foco</span>
+    </button>
+  </div>
 
   <div class="eye-education-panels">
     <% @eye_conditions.each_with_index do |condition, index| %>

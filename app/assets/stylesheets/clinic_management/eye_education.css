@@ -4,6 +4,67 @@
   padding: 20px;
 }
 
+/* Toolbar: condition tabs + focus/presentation control (mirrors lens demo pattern). */
+.eye-education-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.eye-education-toolbar .eye-education-tabs {
+  flex: 1 1 auto;
+  margin-bottom: 0;
+}
+
+.eye-education-focus-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-left: auto;
+  padding: 0 16px;
+  border: 1px solid rgba(5, 150, 105, 0.35);
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.08);
+  color: #047857;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.eye-education-focus-button i {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.eye-education-focus-button:hover,
+.eye-education-focus-button:focus-visible {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: rgba(5, 150, 105, 0.55);
+  color: #065f46;
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.18);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.eye-education-focus-button.active {
+  background: #065f46;
+  border-color: #065f46;
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(6, 95, 70, 0.28);
+}
+
 .eye-education-header {
   margin-bottom: 20px;
 }
@@ -165,5 +226,139 @@
 
   .eye-education-content h2 {
     font-size: 30px;
+  }
+
+  .eye-education-focus-label {
+    display: none;
+  }
+
+  .eye-education-focus-button {
+    min-width: 44px;
+    padding: 0 12px;
+  }
+}
+
+/* ============================================================================
+   Modo foco — patient presentation (tablet / desktop)
+   ESSENTIAL: JS toggles html.eye-education-presentation-active in eye_education_tabs_controller.js
+   Present in: clinic_management/eye_educations/show.html.erb
+   ============================================================================ */
+
+html.eye-education-presentation-active,
+html.eye-education-presentation-active body {
+  overflow: auto;
+}
+
+html.eye-education-presentation-active body.clinic-app {
+  margin-bottom: 0 !important;
+}
+
+html.eye-education-presentation-active .clinic-navbar,
+html.eye-education-presentation-active .clinic-breadcrumb,
+html.eye-education-presentation-active footer,
+html.eye-education-presentation-active [data-controller="scroll"] {
+  display: none !important;
+}
+
+html.eye-education-presentation-active #main-container {
+  margin-top: 0 !important;
+  margin-left: 0 !important;
+  width: 100%;
+  max-width: none;
+  min-height: 100vh;
+}
+
+html.eye-education-presentation-active #main-container > .clinic-main-shell {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 10px 14px 16px;
+  box-sizing: border-box;
+}
+
+html.eye-education-presentation-active .eye-education-page.presentation-mode {
+  width: 100%;
+  max-width: none;
+  min-height: calc(100vh - 20px);
+  padding: 6px 4px 12px;
+  box-sizing: border-box;
+}
+
+html.eye-education-presentation-active .eye-education-page.presentation-mode .eye-education-header {
+  display: none;
+}
+
+html.eye-education-presentation-active .eye-education-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  margin-bottom: 12px;
+  padding: 8px 6px;
+  background: #f3f4f6;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+}
+
+html.eye-education-presentation-active .eye-education-tab {
+  font-size: clamp(1rem, 2vw, 1.35rem);
+  padding: 10px 20px;
+}
+
+html.eye-education-presentation-active .eye-education-panel.active {
+  min-height: calc(100vh - 110px);
+  grid-template-columns: 1.15fr 1fr;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.14);
+}
+
+html.eye-education-presentation-active .eye-education-panel--horizontal.active {
+  min-height: calc(100vh - 110px);
+}
+
+html.eye-education-presentation-active .eye-education-image {
+  min-height: calc(100vh - 150px);
+  max-height: calc(100vh - 130px);
+  object-fit: contain;
+  background: #f8f9fa;
+}
+
+html.eye-education-presentation-active .eye-education-panel--horizontal .eye-education-image {
+  min-height: 0;
+  max-height: calc(100vh - 320px);
+  width: 100%;
+}
+
+html.eye-education-presentation-active .eye-education-content {
+  padding: clamp(24px, 4vw, 48px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+html.eye-education-presentation-active .eye-education-content h2 {
+  font-size: clamp(2.25rem, 5vw, 3.75rem);
+}
+
+html.eye-education-presentation-active .eye-education-subtitle {
+  font-size: clamp(1.2rem, 2.4vw, 1.85rem);
+}
+
+html.eye-education-presentation-active .eye-education-description {
+  font-size: clamp(1.15rem, 2.1vw, 1.65rem);
+  line-height: 1.55;
+}
+
+@media (max-width: 900px) {
+  html.eye-education-presentation-active .eye-education-panel.active {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  html.eye-education-presentation-active .eye-education-image {
+    min-height: 42vh;
+    max-height: 48vh;
+  }
+
+  html.eye-education-presentation-active .eye-education-panel--horizontal .eye-education-image {
+    max-height: 40vh;
   }
 }
