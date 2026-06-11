@@ -1642,16 +1642,19 @@ module ClinicManagement
           patient_content += "<div class='text-sm text-gray-600 mt-1'>Resp: #{responsible_name}</div>".html_safe
         end
         
-        # Construir conteúdo da primeira coluna (Ordem + Checkbox se Evolution API ativo)
-        ordem_content = if can_use_evolution_api? || can_use_meta_bulk_for_absent?
+        # Construir conteúdo da primeira coluna (Ordem + Checkbox se Evolution ou Meta bulk ativo)
+        show_bulk_checkbox = can_use_evolution_api? || can_use_meta_bulk_for_absent?
+        safe_lead_name = ERB::Util.html_escape(lead.name.to_s)
+        safe_lead_phone = ERB::Util.html_escape(lead.phone.to_s)
+        ordem_content = if show_bulk_checkbox
           # Checkbox + número da ordem
           "<div class='flex items-center justify-center gap-2'>" \
           "<input type='checkbox' " \
           "class='w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer' " \
           "data-bulk-message-target='leadCheckbox' " \
           "data-lead-id='#{lead.id}' " \
-          "data-lead-phone='#{lead.phone}' " \
-          "data-lead-name='#{lead.name}' " \
+          "data-lead-phone=\"#{safe_lead_phone}\" " \
+          "data-lead-name=\"#{safe_lead_name}\" " \
           "data-action='change->bulk-message#updateCounter' />" \
           "<span class='font-semibold'>#{index + 1}</span>" \
           "</div>"

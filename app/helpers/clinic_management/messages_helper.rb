@@ -201,12 +201,30 @@ module ClinicManagement
       end
     end
 
+    # Meta bulk send on clinic absent patients screen (staff only).
+    # ESSENTIAL: Defined in the engine so absent flow works when clinic_management
+    # is deployed ahead of the host GeneralHelper release.
+    #
+    # @return [Boolean]
+    def can_use_meta_bulk_for_absent?
+      return false unless defined?(current_account) && current_account.present?
+      return false if referral?(current_user)
+      return false unless meta_bulk_whatsapp_accessible?
+      return false unless meta_bulk_account_operational?
+
+      default_meta_phone_for_bulk&.can_send_message?
+    rescue StandardError => e
+      Rails.logger.warn("[MessagesHelper] can_use_meta_bulk_for_absent? failed: #{e.class}: #{e.message}")
+      false
+    end
+
     # Approved Meta templates linked to global LeadMessages (staff absent bulk).
     #
     # @return [Array<Hash>] :template, :lead_message, :had_variation_blocks
     def absent_meta_bulk_templates
       return [] unless defined?(current_account) && current_account.present?
       return [] unless can_use_meta_bulk_for_absent?
+      return [] unless MetaTemplate.respond_to?(:from_lead_message)
 
       waba_ids = current_account.meta_business_accounts.active.pluck(:id)
       templates = MetaTemplate
@@ -214,8 +232,8 @@ module ClinicManagement
                     .from_lead_message
                     .approved
                     .current_versions
-                    .campaign_sendable
-                    .includes(:meta_business_account)
+      templates = templates.campaign_sendable if MetaTemplate.respond_to?(:campaign_sendable)
+      templates = templates.includes(:meta_business_account)
 
       lead_message_ids = templates.map(&:source_id).compact
       lead_messages = ClinicManagement::LeadMessage.where(id: lead_message_ids, referral_id: nil).index_by(&:id)
@@ -224,7 +242,7 @@ module ClinicManagement
         lead_message = lead_messages[template.source_id]
         next unless lead_message
 
-        { template: template, lead_message: lead_message, had_variation_blocks: template.had_variation_blocks? }
+        { template: template, lead_message: lead_message, had_variation_blocks: template.try(:had_variation_blocks?) }
       end.sort_by { |row| row[:lead_message].name.to_s.downcase }
     end
 
@@ -232,7 +250,7 @@ module ClinicManagement
     #
     # @return [Hash]
     def absent_meta_readiness
-      phone = current_account&.default_meta_phone_number
+      phone = default_meta_phone_for_bulk
       templates = absent_meta_bulk_templates
 
       {
@@ -241,6 +259,47 @@ module ClinicManagement
         templates_count: templates.size,
         meta_config_path: "/admin/accounts/#{current_account&.id}/meta_whatsapp"
       }
+    end
+
+    private
+
+    # @return [Boolean]
+    def meta_bulk_whatsapp_accessible?
+      if respond_to?(:can_access_meta_whatsapp?, true)
+        can_access_meta_whatsapp?
+      else
+        return false unless current_user.present?
+        return false if current_user.has_referral_role?
+        return false unless current_account&.meta_whatsapp_enabled?
+
+        role = current_user.memberships.first&.role
+        current_account.meta_whatsapp_role_allowed?(role)
+      end
+    end
+
+    # @return [Boolean]
+    def meta_bulk_account_operational?
+      return false unless current_account.respond_to?(:meta_inbox_operational?)
+
+      current_account.meta_inbox_operational?
+    end
+
+    # Resolves default Meta phone with fallback when host Account lacks the helper method.
+    #
+    # @return [MetaPhoneNumber, nil]
+    def default_meta_phone_for_bulk
+      account = current_account
+      return nil unless account
+
+      if account.respond_to?(:default_meta_phone_number)
+        account.default_meta_phone_number
+      else
+        MetaPhoneNumber
+          .joins(:meta_business_account)
+          .merge(MetaBusinessAccount.active.where(account_id: account.id))
+          .active
+          .find { |phone| phone.has_access_token? }
+      end
     end
 
   end
