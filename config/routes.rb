@@ -152,6 +152,7 @@ ClinicManagement::Engine.routes.draw do
       get 'absent_download'
       get 'check_phone'
       post 'send_bulk_messages'
+      post 'send_bulk_meta_messages'
       post 'cancel_scheduled_message'
       get 'load_scheduled_messages'
       delete 'clear_all_scheduled_messages'

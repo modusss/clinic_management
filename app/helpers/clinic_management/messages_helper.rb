@@ -201,5 +201,47 @@ module ClinicManagement
       end
     end
 
+    # Approved Meta templates linked to global LeadMessages (staff absent bulk).
+    #
+    # @return [Array<Hash>] :template, :lead_message, :had_variation_blocks
+    def absent_meta_bulk_templates
+      return [] unless defined?(current_account) && current_account.present?
+      return [] unless can_use_meta_bulk_for_absent?
+
+      waba_ids = current_account.meta_business_accounts.active.pluck(:id)
+      templates = MetaTemplate
+                    .where(meta_business_account_id: waba_ids)
+                    .from_lead_message
+                    .approved
+                    .current_versions
+                    .campaign_sendable
+                    .includes(:meta_business_account)
+
+      lead_message_ids = templates.map(&:source_id).compact
+      lead_messages = ClinicManagement::LeadMessage.where(id: lead_message_ids, referral_id: nil).index_by(&:id)
+
+      templates.filter_map do |template|
+        lead_message = lead_messages[template.source_id]
+        next unless lead_message
+
+        { template: template, lead_message: lead_message, had_variation_blocks: template.had_variation_blocks? }
+      end.sort_by { |row| row[:lead_message].name.to_s.downcase }
+    end
+
+    # Readiness summary for Meta bulk panel on absent screen.
+    #
+    # @return [Hash]
+    def absent_meta_readiness
+      phone = current_account&.default_meta_phone_number
+      templates = absent_meta_bulk_templates
+
+      {
+        ready: can_use_meta_bulk_for_absent? && templates.any? && phone&.can_send_message?,
+        phone_display: phone&.display_phone,
+        templates_count: templates.size,
+        meta_config_path: "/admin/accounts/#{current_account&.id}/meta_whatsapp"
+      }
+    end
+
   end
 end

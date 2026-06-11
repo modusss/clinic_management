@@ -37,8 +37,8 @@
     <% lead = leads[index] %>
     <div class="bg-white rounded shadow p-4 mb-4 relative flex-shrink-0 w-screen md:w-auto snap-start" id="lead-card-<%= lead.id %>">
       <% if rows.any? %>
-        <%# Checkbox de seleção (só aparece se Evolution API ativo) %>
-        <% if can_use_evolution_api? %>
+        <%# Checkbox de seleção (Evolution ou Meta bulk) %>
+        <% if can_use_evolution_api? || can_use_meta_bulk_for_absent? %>
           <div class="absolute top-2 left-2 z-10">
             <%= check_box_tag "lead_#{lead.id}", 
                   lead.id, 

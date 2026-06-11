@@ -1,0 +1,333 @@
+<%# Absent patients bulk messaging — Evolution and/or Meta WhatsApp tabs %>
+<% show_evolution = can_use_evolution_api? || Rails.env.development? %>
+<% show_meta = can_use_meta_bulk_for_absent? %>
+<% default_channel = show_evolution ? "evolution" : "meta" %>
+<% meta_readiness = absent_meta_readiness if show_meta %>
+<% meta_templates = @absent_meta_templates || absent_meta_bulk_templates %>
+
+<% if show_evolution || show_meta %>
+<div class="my-4 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-md border border-blue-200">
+
+  <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+    <i class="fas fa-paper-plane text-blue-600"></i>
+    Envio em Massa de Mensagens
+  </h3>
+
+  <% if show_evolution && show_meta %>
+    <div class="flex gap-2 mb-4 border-b border-blue-200 pb-2">
+      <button type="button"
+              class="px-4 py-2 text-sm font-semibold rounded-t border-b-2 transition-colors"
+              data-action="click->bulk-message#switchChannel"
+              data-bulk-message-channel-param="evolution"
+              data-bulk-message-target="evolutionTab">
+        Evolution
+      </button>
+      <button type="button"
+              class="px-4 py-2 text-sm font-semibold rounded-t border-b-2 transition-colors"
+              data-action="click->bulk-message#switchChannel"
+              data-bulk-message-channel-param="meta"
+              data-bulk-message-target="metaTab">
+        WhatsApp Meta
+      </button>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="lg:col-span-2">
+
+      <%# --- Evolution panel --- %>
+      <% if show_evolution %>
+      <div data-bulk-message-target="evolutionPanel" class="<%= 'hidden' if default_channel == 'meta' && show_meta %>">
+        <%= label_tag :bulk_message_id, "Escolha a mensagem:", class: "block text-sm font-medium text-gray-700 mb-2" %>
+        <% bulk_messages = if referral?(current_user)
+          ClinicManagement::LeadMessage.where(referral_id: user_referral.id)
+        else
+          ClinicManagement::LeadMessage.where(referral_id: nil)
+        end %>
+        <%= select_tag :bulk_message_id,
+              options_from_collection_for_select(bulk_messages.order(:name), :id, :name),
+              {
+                include_blank: "Selecione uma mensagem",
+                class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                data: {
+                  action: "change->bulk-message#updatePreview",
+                  bulk_message_target: "messageSelect"
+                }
+              } %>
+
+        <div class="mt-3 p-3 bg-white rounded border border-gray-200 min-h-[80px]"
+             data-bulk-message-target="messagePreview">
+          <p class="text-sm text-gray-500 italic">Selecione uma mensagem para ver a prévia</p>
+        </div>
+
+        <% sample_lead = @leads.first %>
+        <% sample_appointment = sample_lead&.appointments&.includes(:service)&.order('clinic_management_services.date DESC')&.first %>
+        <% if sample_appointment.present? %>
+          <% bulk_messages.each do |msg| %>
+            <div id="preview-message-<%= msg.id %>" class="hidden" data-message-preview>
+              <p class="text-sm font-semibold text-gray-700 mb-2"><%= msg.name %></p>
+              <% if msg.text.match(/\[([^\]]+\|[^\]]+)\]/) %>
+                <div class="space-y-3">
+                  <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <h6 class="text-xs font-semibold text-blue-800 mb-2">Variação 1:</h6>
+                    <div class="text-sm text-gray-800 whitespace-pre-wrap">
+                      <%= generate_random_variation(msg.text, sample_appointment, 1).gsub("\n", "<br>").html_safe %>
+                    </div>
+                  </div>
+                  <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <h6 class="text-xs font-semibold text-green-800 mb-2">Variação 2:</h6>
+                    <div class="text-sm text-gray-800 whitespace-pre-wrap">
+                      <%= generate_random_variation(msg.text, sample_appointment, 2).gsub("\n", "<br>").html_safe %>
+                    </div>
+                  </div>
+                  <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-2">
+                    <p class="text-xs text-yellow-800">
+                      <i class="fas fa-info-circle text-xs mr-1"></i>
+                      O Evolution sorteia aleatoriamente entre as variações [a|b] ao enviar.
+                    </p>
+                  </div>
+                </div>
+              <% else %>
+                <div class="bg-green-50 p-3 rounded border border-green-200">
+                  <div class="text-sm text-gray-800 whitespace-pre-wrap">
+                    <%= format_placeholder_preview(msg.text, sample_appointment).gsub("\n", "<br>").html_safe %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        <% end %>
+
+        <div class="mt-4 mb-4" data-bulk-message-target="intervalSection">
+          <%= label_tag :bulk_interval_seconds, "Intervalo entre mensagens (segundos):", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= number_field_tag :bulk_interval_seconds,
+                bulk_interval_default_seconds,
+                min: bulk_interval_min_seconds,
+                max: bulk_interval_max_seconds,
+                step: 1,
+                class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                data: {
+                  bulk_message_target: "intervalInput",
+                  action: "change->bulk-message#saveIntervalToCookie"
+                } %>
+          <p class="mt-1 text-xs text-gray-500">
+            Margem aleatória de até <strong><%= bulk_interval_margin_percent %>%</strong> para evitar bloqueios.
+          </p>
+        </div>
+      </div>
+      <% end %>
+
+      <%# --- Meta panel --- %>
+      <% if show_meta %>
+      <div data-bulk-message-target="metaPanel" class="<%= 'hidden' if show_evolution && default_channel != 'meta' %>">
+        <% if meta_readiness[:ready] %>
+          <div class="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+            <i class="fas fa-check-circle mr-1"></i>
+            Meta operacional — <%= meta_readiness[:phone_display] %> —
+            <%= meta_readiness[:templates_count] %> template(s) aprovado(s) vinculado(s) às mensagens clínicas.
+          </div>
+        <% else %>
+          <div class="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
+            <i class="fas fa-exclamation-triangle mr-1"></i>
+            WhatsApp Meta indisponível ou sem templates aprovados vinculados às mensagens clínicas.
+            <% if meta_templates.blank? %>
+              Use <strong>Importar das mensagens</strong> em WhatsApp Meta → Templates para sincronizar LeadMessages.
+            <% end %>
+          </div>
+        <% end %>
+
+        <%= label_tag :bulk_meta_template_id, "Template Meta (vinculado à mensagem clínica):", class: "block text-sm font-medium text-gray-700 mb-2" %>
+        <%= select_tag :bulk_meta_template_id,
+              options_for_select(
+                meta_templates.map { |row|
+                  ["#{row[:lead_message].name} (Meta: #{row[:template].name})", row[:template].id]
+                }
+              ),
+              {
+                include_blank: "Selecione um template aprovado",
+                class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500",
+                data: {
+                  action: "change->bulk-message#updateMetaPreview",
+                  bulk_message_target: "metaTemplateSelect"
+                }
+              } %>
+
+        <div class="mt-3 p-3 bg-white rounded border border-gray-200 min-h-[80px]"
+             data-bulk-message-target="metaMessagePreview">
+          <p class="text-sm text-gray-500 italic">Selecione um template Meta para ver a prévia</p>
+        </div>
+
+        <div class="hidden mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-900"
+             data-bulk-message-target="metaVariationNotice">
+          <i class="fas fa-info-circle mr-1"></i>
+          No WhatsApp Meta, variações [a|b] usam <strong>somente a primeira opção</strong> (texto fixo aprovado).
+          No Evolution, o sistema sorteia entre elas.
+        </div>
+
+        <% meta_templates.each do |row| %>
+          <div id="preview-meta-template-<%= row[:template].id %>" class="hidden" data-meta-template-preview
+               data-had-variation="<%= row[:had_variation_blocks] ? 'true' : 'false' %>">
+            <p class="text-sm font-semibold text-gray-700 mb-2"><%= row[:lead_message].name %></p>
+            <div class="bg-green-50 p-3 rounded border border-green-200">
+              <div class="text-sm text-gray-800 whitespace-pre-wrap"><%= row[:template].preview_text %></div>
+            </div>
+          </div>
+        <% end %>
+
+        <p class="mt-3 text-xs text-gray-600">
+          <i class="fas fa-bolt mr-1"></i>
+          Envio em lote pela API oficial — sem intervalo manual. Leads marcados "Sem WhatsApp" também são incluídos;
+          números inválidos aparecem como falha na campanha.
+        </p>
+      </div>
+      <% end %>
+    </div>
+
+    <%# Shared actions column %>
+    <div class="flex flex-col justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-700 mb-2">Leads selecionados:</p>
+        <div class="text-4xl font-bold text-blue-600 mb-4" data-bulk-message-target="counter">0</div>
+      </div>
+
+      <%= button_tag type: "button",
+            class: "w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none",
+            disabled: true,
+            data: {
+              action: "click->bulk-message#sendBulkMessages",
+              bulk_message_target: "sendButton"
+            } do %>
+        <i class="fas fa-paper-plane mr-2"></i>
+        <span data-bulk-message-target="sendButtonLabel">Enviar para Selecionados</span>
+      <% end %>
+
+      <a href="#" target="_blank" rel="noopener"
+         class="hidden mt-2 text-center text-sm text-blue-600 hover:underline"
+         data-bulk-message-target="metaCampaignLink">
+        Ver campanha completa
+      </a>
+
+      <div class="mt-2 space-y-2">
+        <%= button_tag type: "button",
+              class: "w-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm py-2 px-4 rounded transition-all",
+              data: { action: "click->bulk-message#selectAll" } do %>
+          <i class="fas fa-check-double mr-1"></i> Selecionar Todos
+        <% end %>
+        <%= button_tag type: "button",
+              class: "w-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm py-2 px-4 rounded transition-all",
+              data: { action: "click->bulk-message#deselectAll" } do %>
+          <i class="fas fa-times mr-1"></i> Desmarcar Todos
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <% if show_evolution %>
+  <div class="mt-4 flex flex-wrap justify-center gap-3" data-bulk-message-target="evolutionQueueActions">
+    <button type="button"
+            class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-2.5 px-5 rounded-lg shadow-md transition-all duration-200 flex items-center gap-2"
+            data-action="click->bulk-message#loadPreviousMessages"
+            data-bulk-message-target="loadPreviousBtn">
+      <i class="fas fa-history"></i>
+      Carregar Pré-Agendadas
+    </button>
+    <button type="button"
+            class="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-semibold py-2.5 px-5 rounded-lg shadow-md transition-all duration-200 flex items-center gap-2"
+            data-action="click->bulk-message#clearAllScheduledMessages">
+      <i class="fas fa-trash-alt"></i>
+      Limpar Toda a Fila
+    </button>
+  </div>
+  <% end %>
+
+  <%= turbo_stream_from "bulk_message_logs" if show_evolution %>
+
+  <div class="mt-6 hidden" data-bulk-message-target="logsContainer">
+    <div class="bg-gray-900 rounded-lg shadow-lg overflow-hidden">
+      <div class="bg-gradient-to-r from-gray-800 to-gray-900 px-4 py-3 border-b border-gray-700">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h4 class="text-white font-semibold flex items-center gap-2">
+            <i class="fas fa-terminal text-green-400"></i>
+            <span data-bulk-message-target="logsTitle">Logs de Envio em Tempo Real</span>
+          </h4>
+          <div class="flex items-center gap-4 text-sm flex-wrap">
+            <span class="text-gray-400">
+              <i class="fas fa-paper-plane mr-1"></i>
+              <span data-bulk-message-target="sentCount">0</span> enviados
+            </span>
+            <span class="text-gray-400" data-bulk-message-target="pendingStat">
+              <i class="fas fa-clock mr-1"></i>
+              <span data-bulk-message-target="pendingCount">0</span> na fila
+            </span>
+            <span class="text-yellow-400" data-bulk-message-target="skippedStat">
+              <i class="fab fa-whatsapp mr-1"></i>
+              <span data-bulk-message-target="skippedCount">0</span> sem zap
+            </span>
+            <span class="text-gray-400">
+              <i class="fas fa-exclamation-triangle mr-1"></i>
+              <span data-bulk-message-target="errorCount">0</span> erros
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-gray-800 px-4 py-2 border-b border-gray-700">
+        <div class="flex items-center gap-3">
+          <div class="flex-1 bg-gray-700 rounded-full h-3 overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-500 to-green-500 h-full transition-all duration-500"
+                 data-bulk-message-target="progressBar"
+                 style="width: 0%"></div>
+          </div>
+          <span class="text-white text-sm font-mono" data-bulk-message-target="progressText">0%</span>
+        </div>
+      </div>
+
+      <div class="bg-gradient-to-r from-yellow-900/50 to-orange-900/50 px-4 py-3 border-b border-yellow-600/30 hidden"
+           data-bulk-message-target="timerContainer">
+        <div class="flex items-center justify-center gap-4">
+          <div class="flex items-center gap-2 text-yellow-400">
+            <i class="fas fa-clock text-2xl animate-pulse"></i>
+            <div class="text-left">
+              <div class="text-xs text-yellow-300/70">Próxima mensagem para:</div>
+              <div class="text-sm font-semibold timer-lead-name">--</div>
+            </div>
+          </div>
+          <div class="bg-black/30 px-4 py-2 rounded-lg">
+            <span class="font-mono text-3xl font-bold text-yellow-300" data-bulk-message-target="timer">--:--</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="bulk-logs-content"
+           class="bg-black p-4 font-mono text-sm text-green-400 max-h-[600px] overflow-y-auto"
+           data-bulk-message-target="logsContent"
+           style="min-height: 400px;">
+        <div class="text-gray-500">
+          <i class="fas fa-info-circle mr-2"></i>Aguardando início do envio...
+        </div>
+      </div>
+
+      <div class="bg-gray-800 px-4 py-3 border-t border-gray-700 flex justify-between items-center">
+        <div class="flex gap-3">
+          <button type="button"
+                  class="text-sm text-gray-400 hover:text-white transition-colors"
+                  data-action="click->bulk-message#clearLogs">
+            <i class="fas fa-trash mr-1"></i> Limpar Logs
+          </button>
+          <button type="button"
+                  class="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                  onclick="window.location.reload()">
+            <i class="fas fa-sync-alt mr-1"></i> Recarregar Página
+          </button>
+        </div>
+        <button type="button"
+                class="text-sm text-gray-400 hover:text-white transition-colors"
+                data-action="click->bulk-message#toggleAutoScroll">
+          <i class="fas fa-arrow-down mr-1"></i>
+          <span data-bulk-message-target="autoScrollText">Auto-scroll: ON</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<% end %>

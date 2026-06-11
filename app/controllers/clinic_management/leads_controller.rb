@@ -13,7 +13,9 @@ module ClinicManagement
     
     # Make can_use_evolution_api? available in views
     helper_method :can_use_evolution_api?
+    helper_method :can_use_meta_bulk_for_absent?
     helper_method :bulk_interval_margin_percent, :bulk_interval_default_seconds, :bulk_interval_min_seconds, :bulk_interval_max_seconds
+    helper_method :absent_meta_bulk_templates, :absent_meta_readiness
 
     # ==========================================================================
     # BULK MESSAGE INTERVAL CONFIGURATION (envio em massa)
@@ -624,6 +626,8 @@ module ClinicManagement
       cleanup_expired_views if should_cleanup?
 
       # 6) Renderização
+      @absent_meta_templates = absent_meta_bulk_templates if can_use_meta_bulk_for_absent?
+
       respond_to do |format|
         format.html { render :absent }
         format.html { render :absent_download if params[:view] == 'download' }
@@ -881,6 +885,44 @@ module ClinicManagement
           error: "Erro ao processar envio em massa: #{e.message}"
         }, status: :internal_server_error
       end
+    end
+
+    # POST /leads/send_bulk_meta_messages
+    # Starts a Meta WhatsApp campaign for selected absent leads.
+    def send_bulk_meta_messages
+      unless can_use_meta_bulk_for_absent?
+        render json: { success: false, error: "Meta WhatsApp não está disponível para envio em massa." }, status: :forbidden
+        return
+      end
+
+      lead_ids = params[:lead_ids] || []
+      meta_template_id = params[:meta_template_id]
+
+      if lead_ids.blank?
+        render json: { success: false, error: "Nenhum lead selecionado" }, status: :unprocessable_entity
+        return
+      end
+
+      if meta_template_id.blank?
+        render json: { success: false, error: "Nenhum template Meta selecionado" }, status: :unprocessable_entity
+        return
+      end
+
+      result = ClinicAbsentMetaBulkService.call(
+        account: current_account,
+        user: current_user,
+        lead_ids: lead_ids,
+        meta_template_id: meta_template_id
+      )
+
+      if result[:success]
+        render json: result
+      else
+        render json: result, status: :unprocessable_entity
+      end
+    rescue StandardError => e
+      Rails.logger.error "❌ [BULK META] Erro: #{e.message}"
+      render json: { success: false, error: e.message }, status: :internal_server_error
     end
 
     # POST /leads/cancel_scheduled_message
@@ -1601,7 +1643,7 @@ module ClinicManagement
         end
         
         # Construir conteúdo da primeira coluna (Ordem + Checkbox se Evolution API ativo)
-        ordem_content = if can_use_evolution_api?
+        ordem_content = if can_use_evolution_api? || can_use_meta_bulk_for_absent?
           # Checkbox + número da ordem
           "<div class='flex items-center justify-center gap-2'>" \
           "<input type='checkbox' " \
