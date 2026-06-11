@@ -43,6 +43,9 @@ module ClinicManagement
     # Callback para definir o usuário atual se não foi especificado
     before_save :set_registered_by_user_fallback, if: -> { registered_by_user_id.blank? && read_attribute(:registered_by_user).blank? }
 
+    # ESSENTIAL: Keep ServiceStatistic snapshots fresh without blocking the request (GoodJob).
+    after_commit :enqueue_service_statistics_refresh
+
     # Método helper para exibir o nome do usuário que registrou
     def registered_by_user_name
       if registered_by_user_id.present?
@@ -74,6 +77,20 @@ module ClinicManagement
     end
 
     private
+
+    # Enqueues statistic refresh for this appointment's service (and previous service on reschedule moves).
+    # @return [void]
+    def enqueue_service_statistics_refresh
+      service_ids = []
+      service_ids << service_id if service_id.present?
+      if saved_change_to_service_id? && service_id_before_last_save.present?
+        service_ids << service_id_before_last_save
+      end
+
+      service_ids.uniq.each do |id|
+        ClinicManagement::RefreshServiceStatisticsJob.perform_later(id)
+      end
+    end
 
     def set_registered_by_user_fallback
       # Fallback para "Sistema" quando não há usuário definido

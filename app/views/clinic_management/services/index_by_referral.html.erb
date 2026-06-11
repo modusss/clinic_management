@@ -65,7 +65,13 @@
     </div>
 
     <div class="overflow-hidden border-gray-200 sm:rounded-lg">
-      <%= data_table(@rows) %>
+      <% if @aggregated_stats.present? %>
+        <%= render "clinic_management/services/aggregated_stats_table",
+                   stats: @aggregated_stats,
+                   period_header: (@view_type == "weekly" ? "Período" : "Mês") %>
+      <% else %>
+        <%= data_table(@rows) %>
+      <% end %>
     </div>
     <br>
     

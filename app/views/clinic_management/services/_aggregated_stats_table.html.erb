@@ -1,0 +1,130 @@
+<%# ESSENTIAL: Aggregated weekly/monthly funnel table — manager/owner only (see services#index). %>
+<% return if stats.blank? %>
+
+<%
+  max_patients = stats.map { |row| row[:patients].to_i }.max.to_i
+  max_attended = stats.map { |row| row[:attended].to_i }.max.to_i
+  max_sales = stats.map { |row| row[:sales].to_i }.max.to_i
+  show_sales = stats.any? { |row| row[:show_sales] }
+%>
+
+<div class="services-stats-table-wrapper">
+  <table class="services-stats-table">
+    <thead>
+      <tr>
+        <th><%= period_header %></th>
+        <th>Serviços</th>
+        <th>Pacientes</th>
+        <th>Compareceram</th>
+        <th>Conversão</th>
+        <% if show_sales %>
+          <th>Vendas</th>
+          <th>Montante de vendas</th>
+          <th>Recebimentos</th>
+          <th>Conversão</th>
+          <th>
+            <span class="services-stats-header-hint">
+              Conversão final
+              <span class="services-stats-header-hint__icon" title="Percentual de pacientes agendados que compareceram e compraram">ⓘ</span>
+            </span>
+          </th>
+        <% end %>
+        <th>Remarcados</th>
+        <th>Cancelados</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% stats.each do |row| %>
+        <%
+          patients = row[:patients].to_i
+          attended = row[:attended].to_i
+          sales = row[:sales].to_i
+          attendance_rate = services_conversion_rate(attended, patients)
+          sales_rate = services_conversion_rate(sales, attended)
+          final_rate = services_conversion_rate(sales, patients)
+        %>
+        <tr>
+          <td class="services-stats-period"><%= row[:period_label] %></td>
+          <td><%= row[:services_count] %></td>
+          <td class="services-stats-metric">
+            <span class="services-stats-metric__value"><%= patients %></span>
+            <span class="services-stats-metric__bar services-stats-metric__bar--patients"
+                  style="width: <%= services_stats_bar_width(patients, max_patients) %>"></span>
+          </td>
+          <td class="services-stats-metric">
+            <span class="services-stats-metric__value"><%= attended %></span>
+            <span class="services-stats-metric__bar services-stats-metric__bar--attended"
+                  style="width: <%= services_stats_bar_width(attended, max_attended) %>"></span>
+          </td>
+          <td>
+            <%= services_conversion_cell(
+                  attendance_rate,
+                  attended,
+                  patients,
+                  tone: services_attendance_rate_tone(attendance_rate)
+                ) %>
+          </td>
+          <% if show_sales %>
+            <td class="services-stats-metric">
+              <span class="services-stats-metric__value services-stats-metric__value--sales"><%= sales %></span>
+              <span class="services-stats-metric__bar services-stats-metric__bar--sales"
+                    style="width: <%= services_stats_bar_width(sales, max_sales) %>"></span>
+            </td>
+            <td class="services-stats-amount services-stats-amount--sales">
+              <%= number_to_currency(row[:sales_amount]) %>
+            </td>
+            <td class="services-stats-amount services-stats-amount--receipts">
+              <%= number_to_currency(row[:receipts_amount]) %>
+            </td>
+            <td>
+              <%= services_conversion_cell(
+                    sales_rate,
+                    sales,
+                    attended,
+                    tone: services_sales_rate_tone(sales_rate)
+                  ) %>
+            </td>
+            <td>
+              <%= services_conversion_cell(
+                    final_rate,
+                    sales,
+                    patients,
+                    tone: services_final_rate_tone(final_rate)
+                  ) %>
+            </td>
+          <% end %>
+          <td class="services-stats-count services-stats-count--rescheduled"><%= row[:rescheduled] %></td>
+          <td class="services-stats-count services-stats-count--canceled"><%= row[:canceled] %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<div class="services-stats-legend">
+  <div class="services-stats-legend__box">
+    <p class="services-stats-legend__title">Como ler as conversões</p>
+    <ul class="services-stats-legend__list">
+      <li><strong>Pacientes → Compareceram:</strong> percentual de pacientes agendados que compareceram ao atendimento.</li>
+      <% if show_sales %>
+        <li><strong>Compareceram → Vendas:</strong> percentual de quem compareceu e realizou compra (até 30 dias após o atendimento).</li>
+        <li><strong>Conversão final (Pacientes → Vendas):</strong> percentual total de pacientes agendados que compareceram e compraram.</li>
+        <li><strong>Montante de vendas:</strong> valor total dos pedidos atribuídos ao período.</li>
+        <li><strong>Recebimentos:</strong> valor já recebido (entrada, retirada e parcelas pagas) desses pedidos.</li>
+      <% end %>
+    </ul>
+  </div>
+  <div class="services-stats-legend__box">
+    <p class="services-stats-legend__title">Performance das taxas</p>
+    <div class="services-stats-legend__dots">
+      <span class="services-stats-legend__dot services-stats-legend__dot--red">Abaixo de 30%</span>
+      <span class="services-stats-legend__dot services-stats-legend__dot--orange">Entre 30% e 50%</span>
+      <span class="services-stats-legend__dot services-stats-legend__dot--green">Acima de 50%</span>
+    </div>
+    <% if show_sales %>
+      <p class="services-stats-legend__list" style="margin-top: 0.65rem; padding-left: 0; list-style: none;">
+        A conversão final usa faixas menores: abaixo de 10% (vermelho), 10–20% (laranja), acima de 20% (verde).
+      </p>
+    <% end %>
+  </div>
+</div>

@@ -23,14 +23,12 @@ module ClinicManagement
       when 'weekly'
         @week_periods = paginated_week_starts(@services)
         weekly_services = services_for_week_starts(@services, @week_periods)
-        @rows = process_weekly_data(weekly_services)
-        @chart_data = generate_weekly_chart_data(weekly_services)
+        load_manager_aggregated_view(weekly_services, :weekly)
       when 'monthly'
         @available_years = available_years(@services)
         @selected_year = resolve_selected_year(@available_years)
         monthly_services = services_for_year(@services, @selected_year)
-        @rows = process_monthly_data(monthly_services)
-        @chart_data = generate_monthly_chart_data(monthly_services)
+        load_manager_aggregated_view(monthly_services, :monthly)
       else # daily
         @services = @services.page(params[:page]).per(20)
         @rows = process_services_data(@services)
@@ -50,14 +48,12 @@ module ClinicManagement
       when 'weekly'
         @week_periods = paginated_week_starts(@services)
         weekly_services = services_for_week_starts(@services, @week_periods)
-        @rows = process_weekly_data_by_referral(weekly_services)
-        @chart_data = generate_weekly_chart_data_by_referral(weekly_services)
+        load_manager_aggregated_view(weekly_services, :weekly)
       when 'monthly'
         @available_years = available_years(@services)
         @selected_year = resolve_selected_year(@available_years)
         monthly_services = services_for_year(@services, @selected_year)
-        @rows = process_monthly_data_by_referral(monthly_services)
-        @chart_data = generate_monthly_chart_data_by_referral(monthly_services)
+        load_manager_aggregated_view(monthly_services, :monthly)
       else # daily
         @services = @services.page(params[:page]).per(20)
         @rows = process_services_data(@services)
@@ -503,7 +499,42 @@ module ClinicManagement
     end
   
     def percentage(count, total)
+      return 0.0 if total.to_i.zero?
+
       (count.to_f / total * 100).round(2)
+    end
+
+    # ESSENTIAL: Manager/owner aggregated views — one Rollup pass; skips legacy per-service sales queries.
+    # @param services [Enumerable<Service>]
+    # @param period [Symbol] :weekly or :monthly
+    # @return [void]
+    def load_manager_aggregated_view(services, period)
+      if helpers.is_manager_above?
+        referral = action_name == "index_by_referral" ? @referral : nil
+        include_sales = include_sales_metrics?
+        rollup = ServiceStatistics::Rollup.new(referral: referral, include_sales: include_sales)
+        @aggregated_stats = rollup.period_rows(services, period)
+        @chart_data = rollup.chart_data(
+          @aggregated_stats,
+          include_sales: include_sales
+        )
+        @rows = []
+      else
+        @aggregated_stats = nil
+        @rows = period == :weekly ? process_weekly_data(services) : process_monthly_data(services)
+        @chart_data = period == :weekly ? generate_weekly_chart_data(services) : generate_monthly_chart_data(services)
+      end
+    end
+
+    # @deprecated Use load_manager_aggregated_view — kept for callers that still reference it.
+    def build_aggregated_stats(services, period)
+      return nil unless helpers.is_manager_above?
+
+      referral = action_name == "index_by_referral" ? @referral : nil
+      ServiceStatistics::Rollup.new(
+        referral: referral,
+        include_sales: include_sales_metrics?
+      ).period_rows(services, period)
     end
 
     # ESSENTIAL: Weekly aggregated view loads at most this many week rows per page (not all history).

@@ -1,0 +1,214 @@
+/*
+ * clinic_management/services/_aggregated_stats_table.html.erb
+ * Monthly/weekly funnel statistics for manager/owner roles.
+ */
+
+.services-stats-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  background: #fff;
+}
+
+.services-stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.services-stats-table thead th {
+  padding: 0.85rem 1rem;
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b7280;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.services-stats-table tbody td {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+
+.services-stats-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.services-stats-period {
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+}
+
+.services-stats-metric {
+  min-width: 6.5rem;
+}
+
+.services-stats-metric__value {
+  display: block;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.2;
+}
+
+.services-stats-metric__bar {
+  display: block;
+  height: 4px;
+  border-radius: 999px;
+  margin-top: 0.35rem;
+  max-width: 120px;
+}
+
+.services-stats-metric__bar--patients {
+  background: linear-gradient(90deg, #a855f7, #c084fc);
+}
+
+.services-stats-metric__bar--attended {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+}
+
+.services-stats-metric__bar--sales {
+  background: linear-gradient(90deg, #22c55e, #4ade80);
+}
+
+.services-stats-metric__value--sales {
+  color: #7e22ce;
+}
+
+.services-stats-amount {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.services-stats-amount--sales {
+  color: #15803d;
+}
+
+.services-stats-amount--receipts {
+  color: #0f766e;
+}
+
+.services-stats-count {
+  font-weight: 600;
+}
+
+.services-stats-count--rescheduled {
+  color: #15803d;
+}
+
+.services-stats-count--canceled {
+  color: #dc2626;
+}
+
+.services-stats-conversion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.services-stats-conversion__rate {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.services-stats-conversion__ratio {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.services-stats-conversion--red .services-stats-conversion__rate {
+  color: #dc2626;
+}
+
+.services-stats-conversion--orange .services-stats-conversion__rate {
+  color: #ea580c;
+}
+
+.services-stats-conversion--green .services-stats-conversion__rate {
+  color: #16a34a;
+}
+
+.services-stats-legend {
+  margin-top: 1.25rem;
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .services-stats-legend {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.services-stats-legend__box {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1rem 1.15rem;
+  background: #fafafa;
+}
+
+.services-stats-legend__title {
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.services-stats-legend__list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #4b5563;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.services-stats-legend__dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  font-size: 0.8125rem;
+  color: #4b5563;
+}
+
+.services-stats-legend__dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.services-stats-legend__dot::before {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.services-stats-legend__dot--red::before {
+  background: #dc2626;
+}
+
+.services-stats-legend__dot--orange::before {
+  background: #ea580c;
+}
+
+.services-stats-legend__dot--green::before {
+  background: #16a34a;
+}
+
+.services-stats-header-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.services-stats-header-hint__icon {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  cursor: help;
+}
