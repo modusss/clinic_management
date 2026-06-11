@@ -52,6 +52,21 @@ module ClinicManagement
       def cache_enabled_for_scope?(referral:)
         referral.nil?
       end
+
+      # ESSENTIAL: Retail sales metrics (vendas, montante, recebimentos) are disabled in clinic_only
+      # (Apenas Clínica). Matches services_sales_metrics_available? / referral_commissions_ui_available?.
+      # Jobs have no HTTP context — uses Account.first (one tenant per deploy in practice).
+      # @return [Boolean]
+      def retail_sales_enabled?
+        account = Account.first
+        account.nil? || account.retail_module_enabled?
+      end
+
+      # @param service_date [Date]
+      # @return [Boolean]
+      def persist_sales?(service_date)
+        retail_sales_enabled? && refresh_sales?(service_date)
+      end
     end
   end
 end

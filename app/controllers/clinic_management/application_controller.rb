@@ -59,10 +59,11 @@ module ClinicManagement
         paginate(scope, **options.merge(theme: "clinic"))
       end
 
-      # ESSENTIAL: Retail financial columns on services tables (Vendas, Montante, Recebimentos) — hidden when clinic_only.
-      def services_sales_metrics_available?
-        referral_commissions_ui_available?
-      end
+    # ESSENTIAL: Retail financial columns on services tables (Vendas, Montante, Recebimentos) — hidden when clinic_only.
+    # ServiceStatistics sales persist/read/jobs also gate on ServiceStatistics::Policy.retail_sales_enabled?.
+    def services_sales_metrics_available?
+      referral_commissions_ui_available?
+    end
 
       # ESSENTIAL: Captador switcher on services#index_by_referral — managers/owners in retail mode only (not clinic_only).
       def show_services_referrals_nav?

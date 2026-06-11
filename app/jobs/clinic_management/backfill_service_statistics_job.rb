@@ -17,7 +17,7 @@ module ClinicManagement
           ServiceStatistics::Refresher.call(service)
         end
 
-      return unless refresh_current_month_sales
+      return unless refresh_current_month_sales && ServiceStatistics::Policy.retail_sales_enabled?
 
       ClinicManagement::Service
         .where(date: Date.current.beginning_of_month...Date.current)

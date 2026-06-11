@@ -33,7 +33,7 @@ module ClinicManagement
           statistic.appointment_counts_computed_at = now
         end
 
-        if Policy.refresh_sales?(@service.date)
+        if Policy.persist_sales?(@service.date)
           metrics = sales_metrics
           statistic.sales_customers_count = metrics[:sales_customers_count]
           statistic.sales_amount = metrics[:sales_amount]
@@ -60,6 +60,7 @@ module ClinicManagement
       # @param customer_id [Integer]
       def self.enqueue_for_customer(customer_id)
         return if customer_id.blank?
+        return unless Policy.retail_sales_enabled?
 
         lead_ids = ClinicManagement::Conversion.where(customers_id: customer_id).pluck(:lead_id)
         return if lead_ids.empty?

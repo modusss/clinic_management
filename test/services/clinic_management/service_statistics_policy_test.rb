@@ -35,4 +35,17 @@ class ClinicManagement::ServiceStatisticsPolicyTest < ActiveSupport::TestCase
       assert ClinicManagement::ServiceStatistics::Policy.refreshable?(Date.new(2026, 6, 10))
     end
   end
+
+  test "persist_sales is false when retail module is disabled" do
+    account = Account.first
+    skip "Account fixture required" unless account
+
+    account.update!(retail_module_enabled: false, clinic_module_enabled: true)
+    travel_to Date.new(2026, 6, 11) do
+      assert_not ClinicManagement::ServiceStatistics::Policy.retail_sales_enabled?
+      assert_not ClinicManagement::ServiceStatistics::Policy.persist_sales?(Date.new(2026, 5, 1))
+    end
+  ensure
+    account&.update!(retail_module_enabled: true, clinic_module_enabled: true)
+  end
 end

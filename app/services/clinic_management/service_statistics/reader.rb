@@ -106,7 +106,7 @@ module ClinicManagement
       end
 
       def resolve_sales_metrics(service, statistic)
-        return [0, 0, 0] unless @include_sales
+        return [0, 0, 0] unless @include_sales && Policy.retail_sales_enabled?
 
         if cached_sales?(service, statistic)
           [statistic.sales_customers_count, statistic.sales_amount, statistic.receipts_amount]
@@ -120,8 +120,8 @@ module ClinicManagement
       end
 
       # ESSENTIAL: Prefer persisted snapshot (kept fresh by jobs) over per-request Order queries.
-      # Fully frozen rows are never recomputed on read; open-window rows use last job snapshot.
       def cached_sales?(service, statistic)
+        return false unless Policy.retail_sales_enabled?
         return false unless @cache_enabled && statistic.present?
 
         if Policy.sales_frozen?(service.date)
@@ -132,6 +132,8 @@ module ClinicManagement
       end
 
       def live_sales_metrics(service)
+        return [0, 0, 0] unless Policy.retail_sales_enabled?
+
         metrics = Refresher.new(service).sales_metrics
         [
           metrics[:sales_customers_count],
