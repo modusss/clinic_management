@@ -11,6 +11,12 @@
     </div>
   <% end %>
 
+  <% if @view_type.in?(%w[weekly monthly]) && is_manager_above? && (@service_statistics_backfill_enqueued || ClinicManagement::ServiceStatistics::Bootstrap.backfill_pending?) %>
+    <div class="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded text-sm" role="status">
+      Estatísticas históricas estão sendo calculadas em segundo plano. Recarregue a página em alguns minutos para ver os totais consolidados com melhor desempenho.
+    </div>
+  <% end %>
+
   <section class="mb-8">
     <header class="flex items-center justify-between mb-4">
       <h1 class="text-2xl font-bold">Atendimentos de <%= @referral.name %></h1>

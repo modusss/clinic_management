@@ -510,6 +510,8 @@ module ClinicManagement
     # @return [void]
     def load_manager_aggregated_view(services, period)
       if helpers.is_manager_above?
+        @service_statistics_backfill_enqueued = ServiceStatistics::Bootstrap.enqueue_once!
+
         referral = action_name == "index_by_referral" ? @referral : nil
         include_sales = include_sales_metrics?
         rollup = ServiceStatistics::Rollup.new(referral: referral, include_sales: include_sales)
