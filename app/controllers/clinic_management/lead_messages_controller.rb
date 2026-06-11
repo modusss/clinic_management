@@ -6,6 +6,7 @@ module ClinicManagement
     skip_before_action :redirect_referral_users
     include GeneralHelper
     include MessagesHelper
+    include ::MetaTemplateMessageSync
     require 'httparty'
 
     # ESSENTIAL: Order by created_at ASC so numbering (#1, #2, #3)
@@ -66,6 +67,9 @@ module ClinicManagement
       end
 
       @messages_by_type = @messages.group_by(&:message_type)
+
+      load_lead_message_meta_templates_index if show_lead_message_meta_column?
+      @show_lead_message_meta_column = show_lead_message_meta_column?
     end
   
     def new
@@ -104,7 +108,12 @@ module ClinicManagement
       end
 
       if @message.save
-        redirect_to lead_messages_path, notice: 'Mensagem customizada criada com sucesso.'
+        notice = "Mensagem customizada criada com sucesso."
+        if @message.referral_id.nil? && meta_message_template_sync_enabled?
+          enqueue_message_meta_template_sync!(@message)
+          notice = "Mensagem criada. Enviada para aprovação como template na Meta — o status pode levar alguns segundos para atualizar."
+        end
+        redirect_to lead_messages_path, notice: notice
       else
         # Log validation errors for debugging
         Rails.logger.error "LeadMessage validation errors: #{@message.errors.full_messages.join(', ')}"
@@ -116,6 +125,7 @@ module ClinicManagement
     end
   
     def edit
+      @meta_template = MetaTemplate.current_for_source(@message) if show_lead_message_meta_column? && @message.referral_id.nil?
     end
   
     def update
@@ -141,10 +151,18 @@ module ClinicManagement
         
         @message.save if @message.changed?
 
+        notice = "Mensagem customizada atualizada com sucesso."
+        if @message.referral_id.nil? &&
+           (@message.saved_change_to_text? || @message.saved_change_to_name?) &&
+           meta_message_template_sync_enabled?
+          enqueue_message_meta_template_sync!(@message)
+          notice = "Mensagem atualizada. A alteração foi enviada para análise na Meta — o status pode levar alguns segundos para atualizar."
+        end
+
         # Preserve referral context when redirecting back (location comes from navbar)
         redirect_path = @message.referral_id.present? ?
           lead_messages_path(referral_id: @message.referral_id) : lead_messages_path
-        redirect_to redirect_path
+        redirect_to redirect_path, notice: notice
       else
         render :edit
       end
@@ -418,6 +436,23 @@ module ClinicManagement
     end
   
     private
+
+    # Meta column + auto-sync apply only to global staff messages (referral_id nil).
+    def show_lead_message_meta_column?
+      return false if referral?(current_user)
+      return false if @viewing_referral.present?
+      return false unless current_account&.meta_whatsapp_enabled?
+
+      true
+    end
+
+    def load_lead_message_meta_templates_index
+      global_messages = @messages.select { |m| m.referral_id.nil? }
+      @meta_templates_by_lead_message_id = MetaTemplate.current_index_for_sources(
+        MetaTemplate::LEAD_MESSAGE_SOURCE,
+        global_messages
+      )
+    end
 
     # register that this message was sent to this appointment
     def add_message_sent(appointment, name)

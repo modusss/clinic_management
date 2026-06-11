@@ -1,4 +1,6 @@
 <% service_types = ClinicManagement::ServiceType.where(removed: false).order(:name) %>
+<% show_meta_column = local_assigns.fetch(:show_meta_column, false) %>
+<% meta_templates_by_lead_message_id = local_assigns.fetch(:meta_templates_by_lead_message_id, {}) %>
 
 <% service_types.each do |service_type| %>
   <%# IMPORTANTE: Ordenar por created_at ASC para que a numeração (#1, #2, #3) corresponda à ordem de envio nos jobs %>
@@ -14,6 +16,9 @@
           <% end %>
           <th class="px-4 py-2">Nome da Mensagem</th>
           <th class="px-4 py-2">Texto da Mensagem</th>
+          <% if show_meta_column %>
+            <th class="px-4 py-2">Meta</th>
+          <% end %>
           <th class="px-4 py-2">Mídia Anexada</th>
           <th class="px-4 py-2">Ações</th>
         </tr>
@@ -31,6 +36,20 @@
               <td class="px-4 py-2"><%= message.name %></td>
               
               <td class="px-4 py-2"><%= message.text.gsub(/\n/, '<br>').html_safe %></td>
+
+              <% if show_meta_column %>
+                <td class="px-4 py-2">
+                  <% if message.referral_id.nil? %>
+                    <%= render partial: "shared/meta_template_source_status",
+                               locals: {
+                                 source: message,
+                                 meta_template: meta_templates_by_lead_message_id[message.id]
+                               } %>
+                  <% else %>
+                    <span class="text-gray-400 text-xs">—</span>
+                  <% end %>
+                </td>
+              <% end %>
               
               <td class="px-4 py-2">
                 <% if message.has_media? %>
@@ -113,6 +132,9 @@
         <% end %>
         <th class="px-4 py-2">Nome da Mensagem</th>
         <th class="px-4 py-2">Texto da Mensagem</th>
+        <% if show_meta_column %>
+          <th class="px-4 py-2">Meta</th>
+        <% end %>
         <th class="px-4 py-2">Mídia Anexada</th>
         <th class="px-4 py-2">Ações</th>
       </tr>
@@ -130,6 +152,20 @@
             <td class="px-4 py-2"><%= message.name %></td>
             
             <td class="px-4 py-2"><%= message.text.gsub(/\n/, '<br>').html_safe %></td>
+
+            <% if show_meta_column %>
+              <td class="px-4 py-2">
+                <% if message.referral_id.nil? %>
+                  <%= render partial: "shared/meta_template_source_status",
+                             locals: {
+                               source: message,
+                               meta_template: meta_templates_by_lead_message_id[message.id]
+                             } %>
+                <% else %>
+                  <span class="text-gray-400 text-xs">—</span>
+                <% end %>
+              </td>
+            <% end %>
             
             <td class="px-4 py-2">
               <% if message.has_media? %>

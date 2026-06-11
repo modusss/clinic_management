@@ -14,6 +14,12 @@
     <p class="text-sm text-gray-600">Estas são as mensagens customizadas criadas por você.</p>
   <% else %>
     <h5 class="text-2xl font-bold">Mensagens Customizadas</h5>
+    <% if @show_lead_message_meta_column %>
+      <p class="text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mt-3">
+        Com WhatsApp Meta ativo, mensagens globais salvas são enviadas automaticamente para aprovação como template
+        (mesmo fluxo das mensagens manuais de pedidos). Mensagens de captador permanecem só no Evolution.
+      </p>
+    <% end %>
   <% end %>
 </div>
 
@@ -62,7 +68,7 @@
 
 <% if @current_referral %>
   <%# REFERRALS: Show all their messages, no tabs, no dropdown (unchanged) %>
-  <%= render partial: 'messages_table', locals: { messages_to_show: @messages, show_type_column: false } %>
+  <%= render partial: 'messages_table', locals: { messages_to_show: @messages, show_type_column: false, show_meta_column: false } %>
 
 <% elsif @viewing_referral.present? %>
   <%# MANAGER VIEWING A REFERRAL'S MESSAGES: No tabs needed (referrals only have "outro" type) %>
@@ -70,7 +76,7 @@
     Mensagens customizadas criadas por <strong><%= @viewing_referral.name %></strong>.
     Você pode editar e excluir estas mensagens.
   </p>
-  <%= render partial: 'messages_table', locals: { messages_to_show: @messages, show_type_column: false } %>
+  <%= render partial: 'messages_table', locals: { messages_to_show: @messages, show_type_column: false, show_meta_column: false } %>
 
 <% else %>
   <%# GLOBAL VIEW: Tabs for Personalizadas / Globais (Stimulus-powered) %>
@@ -106,7 +112,12 @@
           <div class="mb-8">
             <h6 class="text-lg font-semibold text-gray-800 mb-3 pb-2 border-b border-gray-200"><%= location.name %></h6>
             <% if globais.any? %>
-              <%= render partial: 'messages_table', locals: { messages_to_show: globais, show_type_column: true } %>
+              <%= render partial: 'messages_table', locals: {
+                    messages_to_show: globais,
+                    show_type_column: true,
+                    show_meta_column: @show_lead_message_meta_column,
+                    meta_templates_by_lead_message_id: @meta_templates_by_lead_message_id
+                  } %>
             <% else %>
               <p class="text-sm text-gray-500 italic">Nenhuma mensagem de sistema.</p>
             <% end %>
@@ -114,7 +125,12 @@
         <% end %>
       <% else %>
         <% globais = @messages.select { |m| m.message_type != 'outro' } %>
-        <%= render partial: 'messages_table', locals: { messages_to_show: globais, show_type_column: true } %>
+        <%= render partial: 'messages_table', locals: {
+              messages_to_show: globais,
+              show_type_column: true,
+              show_meta_column: @show_lead_message_meta_column,
+              meta_templates_by_lead_message_id: @meta_templates_by_lead_message_id
+            } %>
       <% end %>
     </div>
 
@@ -127,7 +143,12 @@
           <div class="mb-8">
             <h6 class="text-lg font-semibold text-gray-800 mb-3 pb-2 border-b border-gray-200"><%= location.name %></h6>
             <% if personalizadas.any? %>
-              <%= render partial: 'messages_table', locals: { messages_to_show: personalizadas, show_type_column: false } %>
+              <%= render partial: 'messages_table', locals: {
+                    messages_to_show: personalizadas,
+                    show_type_column: false,
+                    show_meta_column: @show_lead_message_meta_column,
+                    meta_templates_by_lead_message_id: @meta_templates_by_lead_message_id
+                  } %>
             <% else %>
               <p class="text-sm text-gray-500 italic">Nenhuma mensagem personalizada.</p>
             <% end %>
@@ -135,7 +156,12 @@
         <% end %>
       <% else %>
         <% personalizadas = @messages.select { |m| m.message_type == 'outro' } %>
-        <%= render partial: 'messages_table', locals: { messages_to_show: personalizadas, show_type_column: false } %>
+        <%= render partial: 'messages_table', locals: {
+              messages_to_show: personalizadas,
+              show_type_column: false,
+              show_meta_column: @show_lead_message_meta_column,
+              meta_templates_by_lead_message_id: @meta_templates_by_lead_message_id
+            } %>
       <% end %>
     </div>
   </div>
