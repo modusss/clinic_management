@@ -6,7 +6,12 @@
           clinic_management.edit_organization_path,
           class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md flex items-center gap-2 #{'bg-emerald-950 text-white' if controller_name == 'organization'}" %>
     <% end %>
-    <% if is_manager_above? && current_account&.whatsapp_integration_enabled? %>
+    <%# ESSENTIAL: Captador WhatsApp is personal connection (retail route), not clinic staff settings. %>
+    <% if referral?(current_user) && whatsapp_integration_enabled? && user_referral&.can_connect_whatsapp %>
+      <%= link_to "Whatsapp",
+          referral_whatsapp_connection_path,
+          class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md flex items-center gap-2 #{'bg-emerald-950 text-white' if controller_name == 'referral_whatsapp'}" %>
+    <% elsif is_manager_above? && current_account&.whatsapp_integration_enabled? %>
       <%= link_to "Whatsapp",
           clinic_management.whatsapp_path,
           class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md flex items-center gap-2 #{'bg-emerald-950 text-white' if controller_name == 'whatsapp'}" %>

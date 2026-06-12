@@ -180,6 +180,9 @@ ClinicManagement::Engine.routes.draw do
   # ESSENTIAL: WhatsApp (Evolution instances) in clinic-only mode — embedded Tailwind UI.
   get "whatsapp", to: "whatsapp#index", as: :whatsapp
 
+  # ESSENTIAL: Captador personal WhatsApp connections — clinic Tailwind layout (not retail Materialize).
+  get "meu-whatsapp", to: "referral_whatsapp#index", as: :referral_whatsapp
+
   mount ActionCable.server => '/cable'
 end
 

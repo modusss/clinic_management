@@ -1,0 +1,183 @@
+<% content_for :footer, @company_name.presence || "Clínica" %>
+
+<%= breadcrumb(
+  { title: "Painel de conversões", path: referral_clinic_home_path },
+  { title: "Whatsapp", path: nil }
+) %>
+
+<%# ESSENTIAL: Instance cards reuse main-app partials — keep styles aligned with referral_evolution_instances/_content. %>
+<style>
+  .instance-block { padding: 16px; border-radius: 8px; border-left: 4px solid #e0e0e0; background: #fafafa; }
+  .instance-block--connected { border-left-color: #4caf50; background: #f8fff8; }
+  .instance-block--connecting { border-left-color: #ff9800; background: #fffbf5; }
+  .instance-block--disconnected { border-left-color: #f44336; background: #fffafa; }
+  .instance-block--inactive { opacity: 0.85; }
+  .preloader-wrapper.inline-block { display: inline-block; }
+</style>
+
+<div class="max-w-4xl mx-auto space-y-6">
+  <%# Header %>
+  <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+    <div class="bg-gradient-to-r from-emerald-800 to-emerald-700 px-6 py-4">
+      <h1 class="text-xl font-semibold text-white flex items-center gap-2">
+        <i class="fab fa-whatsapp" aria-hidden="true"></i>
+        Conectar WhatsApp
+      </h1>
+      <p class="text-emerald-100 text-sm mt-1">
+        Configure suas conexões para enviar mensagens automáticas aos seus pacientes.
+      </p>
+    </div>
+
+    <%# Stats %>
+    <div class="px-6 py-5 border-b border-gray-100">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+        <div>
+          <p class="text-2xl font-bold <%= @connected_with_legacy.positive? ? 'text-emerald-600' : 'text-gray-400' %>">
+            <%= @connected_with_legacy %>
+          </p>
+          <p class="text-xs text-gray-500 uppercase tracking-wide">Conectado(s)</p>
+        </div>
+        <div>
+          <p class="text-2xl font-bold text-sky-600"><%= @total_with_legacy %></p>
+          <p class="text-xs text-gray-500 uppercase tracking-wide">Total</p>
+        </div>
+        <div class="col-span-2 sm:col-span-2 flex items-center justify-center">
+          <% if @connected_with_legacy > 1 %>
+            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-sm font-medium">
+              <i class="fas fa-sync-alt" aria-hidden="true"></i>
+              Rotação ativa: intervalo ÷ <%= @connected_with_legacy %>
+            </span>
+          <% elsif @connected_with_legacy == 1 %>
+            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-sm font-medium">
+              <i class="fas fa-check" aria-hidden="true"></i>
+              Pronto para enviar
+            </span>
+          <% else %>
+            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100 text-amber-900 text-sm font-medium">
+              <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+              Conecte um WhatsApp
+            </span>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <% if @connected_with_legacy > 1 %>
+      <div class="mx-6 mb-4 p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-sm">
+        <strong>Ótimo!</strong> Com <%= @connected_with_legacy %> conexões, o intervalo entre mensagens cai de
+        <strong>45–70s</strong> para
+        <strong><%= (45.0 / @connected_with_legacy).round %>–<%= (70.0 / @connected_with_legacy).round %>s</strong>.
+      </div>
+    <% elsif @total_with_legacy.zero? %>
+      <div class="mx-6 mb-4 p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-sm">
+        <strong>Dica:</strong> Conecte múltiplos WhatsApp para alternar envios e reduzir o tempo de espera.
+      </div>
+    <% end %>
+
+    <%# Instances list %>
+    <div class="px-6 pb-6">
+      <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
+        <i class="fas fa-list text-emerald-700" aria-hidden="true"></i>
+        Minhas Conexões
+      </h2>
+
+      <div class="instances-list space-y-4">
+        <% @instances.each do |instance| %>
+          <%= render partial: "referral_evolution_instances/single_instance_card",
+                     locals: { instance: instance, referral: @referral, show_manager_actions: false } %>
+        <% end %>
+
+        <% if @has_legacy %>
+          <%= render partial: "referral_evolution_instances/legacy_instance_card",
+                     locals: { referral: @referral, show_manager_actions: false } %>
+        <% end %>
+
+        <% if @instances.empty? && !@has_legacy %>
+          <div class="text-center py-12 text-gray-500">
+            <i class="fas fa-phone-slash text-4xl mb-3 text-gray-300" aria-hidden="true"></i>
+            <p class="font-medium text-gray-700">Nenhuma conexão configurada</p>
+            <p class="text-sm mt-1">Use o botão abaixo para conectar seu WhatsApp.</p>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="mt-6 pt-6 border-t border-gray-200 text-center">
+        <% if @can_add_instance %>
+          <%= form_with url: main_app.referral_evolution_instances_path, method: :post, local: true, class: "inline-block" do |f| %>
+            <%= f.hidden_field :referral_id, value: @referral.id %>
+            <% if evolution_proxy_configured?(current_account) %>
+              <%= f.hidden_field :with_proxy, value: "true" %>
+            <% end %>
+            <%= f.submit "+ Nova Conexão",
+                class: "inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-md transition-colors cursor-pointer",
+                data: { disable_with: "Criando..." } %>
+          <% end %>
+        <% else %>
+          <p class="text-sm text-gray-500">
+            <i class="fas fa-info-circle mr-1" aria-hidden="true"></i>
+            Conecte a conexão pendente antes de adicionar uma nova.
+          </p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <%# Help %>
+  <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100">
+      <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+        <i class="fas fa-question-circle text-emerald-700" aria-hidden="true"></i>
+        Como funciona?
+      </h2>
+    </div>
+    <ol class="divide-y divide-gray-100">
+      <li class="px-6 py-4">
+        <p class="font-medium text-gray-800">1. Adicione uma conexão</p>
+        <p class="text-sm text-gray-600 mt-1">Clique em &quot;Nova Conexão&quot; para criar uma nova instância.</p>
+      </li>
+      <li class="px-6 py-4">
+        <p class="font-medium text-gray-800">2. Escaneie o QR Code</p>
+        <p class="text-sm text-gray-600 mt-1">Use o WhatsApp do celular para escanear o código exibido.</p>
+      </li>
+      <li class="px-6 py-4">
+        <p class="font-medium text-gray-800">3. Pronto para enviar!</p>
+        <p class="text-sm text-gray-600 mt-1">Após conectar, as mensagens automáticas ficam disponíveis.</p>
+      </li>
+    </ol>
+  </div>
+</div>
+
+<%= turbo_stream_from "referral_evolution_instances_#{@referral.id}" %>
+
+<script>
+  if (typeof App !== 'undefined' && App.cable) {
+    App.referral_evolution_instances = App.cable.subscriptions.create(
+      { channel: "ReferralEvolutionInstancesChannel", referral_id: <%= @referral.id %> },
+      {
+        received(data) {
+          if (data.action === "qr_updated" && data.referral_id === <%= @referral.id %>) {
+            const qrImage = document.getElementById("qr-code-referral-" + data.referral_id);
+            if (qrImage) {
+              qrImage.src = data.qr_base64;
+              const legacyContainer = qrImage.closest(".qrcode-container");
+              if (legacyContainer) legacyContainer.style.display = "";
+            }
+            const instanceQr = document.getElementById("qr-code-instance-" + data.instance_name);
+            if (instanceQr) {
+              instanceQr.src = data.qr_base64;
+              const container = document.getElementById("qr-container-" + data.instance_name);
+              if (container) container.style.display = "";
+              const confirmDiv = document.getElementById("qr-confirm-" + data.instance_name);
+              if (confirmDiv) confirmDiv.style.display = "";
+              const loadingDiv = document.getElementById("qr-loading-" + data.instance_name);
+              if (loadingDiv) loadingDiv.style.display = "none";
+            }
+          }
+          if (data.action === "connection_status") {
+            setTimeout(() => window.location.reload(), 1000);
+          }
+        }
+      }
+    );
+  }
+</script>

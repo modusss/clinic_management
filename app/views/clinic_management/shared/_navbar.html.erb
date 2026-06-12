@@ -60,7 +60,9 @@
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex flex-wrap justify-between items-center">
         <h1 class="text-white text-xl font-bold mb-4 sm:mb-0 w-full sm:w-auto text-center sm:text-left flex items-center gap-2">
-          <%= link_to raw("Lipepay <span class='ml-1 text-xs bg-white text-emerald-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"), main_app.root_path, class: "text-white hover:text-emerald-300" %>
+          <%= link_to raw("Lipepay <span class='ml-1 text-xs bg-white text-emerald-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"),
+                      (current_account&.clinic_only? ? clinic_management.index_by_referral_services_path(user_referral) : main_app.root_path),
+                      class: "text-white hover:text-emerald-300" %>
           <%# ESSENTIAL: Referrals with assigned external locations can switch context like staff. %>
           <% if referral_service_location_options.present? && referral_service_location_options.size > 1 %>
             <%= form_with url: clinic_management.switch_service_locations_path, method: :post, local: true, data: { turbo: false }, class: "inline ml-3" do |f| %>
@@ -82,6 +84,9 @@
             <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'lead_messages'}" %>
             <%= link_to "Convites", clinic_management.invitations_path(referral_id: user_referral.id), class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'invitations'}" %>
             <% if current_account&.clinic_only? %>
+              <% if whatsapp_integration_enabled? && user_referral&.can_connect_whatsapp %>
+                <%= link_to "Whatsapp", referral_whatsapp_connection_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'referral_whatsapp'}" %>
+              <% end %>
               <%= link_to "Perfil", clinic_management.edit_profile_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'profiles'}" %>
             <% end %>
             

@@ -1,5 +1,6 @@
 <% if referral? current_user %>
-  <%= breadcrumb({title: "Painel de conversões", path: main_app.referral_path(user_referral)},  {title: "Atendimentos de " + @referral.name, path: nil}) %>
+  <% referral_home_path = clinic_only_referrals_ui? ? index_by_referral_services_path(user_referral) : main_app.referral_path(user_referral) %>
+  <%= breadcrumb({title: "Painel de conversões", path: referral_home_path},  {title: "Atendimentos de " + @referral.name, path: nil}) %>
 <% else %>
 <%= breadcrumb({title: "Todos os atendimentos", path: services_path}, {title: "Atendimentos de " + @referral.name, path: nil}) %>
 <% end %>

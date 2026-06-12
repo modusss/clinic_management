@@ -145,6 +145,15 @@ module ClinicManagement
     end
     helper_method :self_booking_enabled_for_current_user?
 
+    # ESSENTIAL: Mirrors main ApplicationController — captador sidebar Whatsapp link in clinic-only mode.
+    # @return [Boolean] true when Evolution API WhatsApp is enabled for current_account
+    def whatsapp_integration_enabled?
+      return false if current_account.nil?
+
+      current_account.whatsapp_integration_enabled?
+    end
+    helper_method :whatsapp_integration_enabled?
+
     # ESSENTIAL: Service location context for multi-region support.
     # nil = internal (default); ServiceLocation = external.
     # Persists in session + cookie so selection survives page refresh.
@@ -277,7 +286,11 @@ module ClinicManagement
         membership = helpers.current_membership
         if membership.role == "referral"
           referral = Referral.find_by(code: membership.code)
-          redirect_to main_app.referral_path(referral)
+          if current_account&.clinic_only?
+            redirect_to clinic_management.index_by_referral_services_path(referral)
+          else
+            redirect_to main_app.referral_path(referral)
+          end
         end
       end
     end    
@@ -322,12 +335,16 @@ module ClinicManagement
       clinic_only_profile_page? || clinic_only_referral_indicators_page? || clinic_only_organization_page? || clinic_only_whatsapp_page?
     end
 
-    # ESSENTIAL: Redirect /clinic_management (invitations#new) to prescriptions/index_today in Apenas Clínica.
+    # ESSENTIAL: Redirect /clinic_management (invitations#new) to staff or captador home in Apenas Clínica.
     def redirect_clinic_only_home_from_engine_root
       return unless current_account&.clinic_only?
       return unless controller_name == "invitations" && action_name == "new"
 
-      redirect_to clinic_management.index_today_path
+      if helpers.referral?(current_user) && helpers.user_referral.present?
+        redirect_to clinic_management.index_by_referral_services_path(helpers.user_referral)
+      else
+        redirect_to clinic_management.index_today_path
+      end
     end
 
   end
