@@ -592,6 +592,8 @@ module ClinicManagement
     def absent
       # Store the URL, potentially modified, in the session on GET requests
       store_absent_leads_state_in_session
+
+      @regions = Region.active.order(:name)
       
       # 1) Carregar a coleção base (com base se é referral ou não)
       @all_leads = base_absent_leads_scope
@@ -602,6 +604,7 @@ module ClinicManagement
       @all_leads = filter_by_hidden_status(@all_leads)  # Filtro de ocultação/interesse
       @all_leads = filter_by_patient_type(@all_leads)
       @all_leads = filter_by_date(@all_leads)
+      @all_leads = filter_by_region(@all_leads)
       @all_leads = filter_by_contact_status(@all_leads)
       @all_leads = filter_by_referral(@all_leads)  # Novo filtro aqui
       @all_leads = filter_by_page_views(@all_leads)  # 🆕 Filtrar leads visualizados por outros
@@ -1396,6 +1399,18 @@ module ClinicManagement
       else
         scope
       end
+    end
+
+    # Filters by patient capture region on the lead's latest appointment (main_apt) invitation.
+    # ESSENTIAL: region lives on invitation, not on appointment or lead directly.
+    def filter_by_region(scope)
+      return scope if params[:region_id].blank?
+
+      region_id = params[:region_id].to_i
+      return scope if region_id <= 0
+
+      scope.joins("INNER JOIN clinic_management_invitations AS main_inv ON main_inv.id = main_apt.invitation_id")
+           .where("main_inv.region_id = ?", region_id)
     end
 
     # Filtra por status de contato, se especificado

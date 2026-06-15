@@ -131,6 +131,16 @@
           class: "border rounded p-2"
       %>
     </div>
+
+    <!-- Região de captação do último atendimento (convite do main_apt) -->
+    <div>
+      <%= f.label :region_id, "Região:", class: "block font-semibold mb-1" %>
+      <%= f.select :region_id,
+          options_from_collection_for_select(@regions, :id, :name, params[:region_id]),
+          { include_blank: "Todas as regiões" },
+          class: "border rounded p-2"
+      %>
+    </div>
     
     <!-- Filtro de Tipo de Paciente -->
     <div>
