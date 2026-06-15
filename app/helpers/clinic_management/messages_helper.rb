@@ -202,14 +202,14 @@ module ClinicManagement
     end
 
     # Meta bulk send on clinic absent patients screen (staff only).
-    # ESSENTIAL: Defined in the engine so absent flow works when clinic_management
-    # is deployed ahead of the host GeneralHelper release.
+    # ESSENTIAL: Uses meta_bulk_absent_allowed_roles — NOT meta_whatsapp_role_allowed? (campaigns separate).
     #
     # @return [Boolean]
     def can_use_meta_bulk_for_absent?
       return false unless defined?(current_account) && current_account.present?
       return false if referral?(current_user)
-      return false unless meta_bulk_whatsapp_accessible?
+      return false unless current_account.meta_whatsapp_enabled?
+      return false unless meta_bulk_absent_role_allowed?
       return false unless meta_bulk_account_operational?
 
       default_meta_phone_for_bulk&.can_send_message?
@@ -264,17 +264,13 @@ module ClinicManagement
     private
 
     # @return [Boolean]
-    def meta_bulk_whatsapp_accessible?
-      if respond_to?(:can_access_meta_whatsapp?, true)
-        can_access_meta_whatsapp?
-      else
-        return false unless current_user.present?
-        return false if current_user.has_referral_role?
-        return false unless current_account&.meta_whatsapp_enabled?
+    def meta_bulk_absent_role_allowed?
+      return false unless current_user.present?
 
-        role = current_user.memberships.first&.role
-        current_account.meta_whatsapp_role_allowed?(role)
-      end
+      role = current_user.memberships.order(:id).first&.role
+      return false unless current_account.respond_to?(:meta_bulk_absent_role_allowed?)
+
+      current_account.meta_bulk_absent_role_allowed?(role)
     end
 
     # @return [Boolean]
