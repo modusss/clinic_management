@@ -13,6 +13,13 @@ module ClinicManagement
       # ESSENTIAL: Optional - nil = global (applies to all locations).
       # When set, message is specific to that ServiceLocation (e.g. Ótica Light).
       belongs_to :service_location, optional: true, class_name: "ClinicManagement::ServiceLocation"
+      # ESSENTIAL: Explicit Meta template for automation when account channel is meta.
+      belongs_to :meta_template, optional: true, class_name: "MetaTemplate"
+
+      DELIVERY_CHANNELS = %w[evolution meta].freeze
+
+      validates :delivery_channel, inclusion: { in: DELIVERY_CHANNELS }, allow_nil: true
+      validate :meta_template_must_be_valid_for_slot, if: -> { meta_template_id.present? }
       
       # Active Storage attachment for media files (images, audio, video, pdf)
       has_one_attached :media_file
@@ -94,6 +101,24 @@ module ClinicManagement
           'document'
         else
           'document'
+        end
+      end
+
+      # ESSENTIAL: Hybrid channel — account default + slot override + media → Evolution.
+      #
+      # @param account [Account]
+      # @return [Symbol] :evolution | :meta
+      def effective_delivery_channel(account)
+        ClinicAutomationChannelResolver.resolve(account: account, lead_message: self)
+      end
+
+      private
+
+      def meta_template_must_be_valid_for_slot
+        return if meta_template.blank?
+
+        unless meta_template.approved?
+          errors.add(:meta_template, "deve estar aprovado na Meta")
         end
       end
     end

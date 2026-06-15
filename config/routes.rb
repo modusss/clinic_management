@@ -70,6 +70,11 @@ ClinicManagement::Engine.routes.draw do
     collection do
       post :send_evolution_message
       post :refresh_preview
+      patch :update_automation_channel
+      get :meta_template_options
+    end
+    member do
+      patch :meta_assignment
     end
   end
 

@@ -1,0 +1,80 @@
+<%# Meta automation slot grid — link approved templates to LeadMessage slots %>
+<% messages = local_assigns.fetch(:messages) %>
+<% templates_by_type = local_assigns.fetch(:templates_by_type, {}) %>
+
+<p class="text-sm text-gray-600 mb-4">
+  Associe cada mensagem automática a um template Meta <strong>aprovado</strong>
+  com finalidade correspondente (configure em Templates Meta → Configuração interna).
+</p>
+
+<% service_types = ClinicManagement::ServiceType.where(removed: false).order(:name) %>
+
+<% service_types.each do |service_type| %>
+  <% type_messages = messages.select { |m| m.service_type_id == service_type.id && m.message_type != 'outro' && m.referral_id.nil? }.sort_by(&:created_at) %>
+  <% next if type_messages.empty? %>
+
+  <h6 class="text-lg font-bold mt-6 mb-3"><%= service_type.name %></h6>
+
+  <table class="w-full table-auto border-collapse border border-gray-300 text-left text-sm">
+    <thead>
+      <tr class="bg-gray-100">
+        <th class="px-3 py-2">Tipo</th>
+        <th class="px-3 py-2">Slot (Evolution)</th>
+        <th class="px-3 py-2">Template Meta</th>
+        <th class="px-3 py-2">Override</th>
+        <th class="px-3 py-2">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% ClinicManagement::LeadMessage.message_types.keys.reject { |t| t == 'outro' }.each do |message_type| %>
+        <% slots = type_messages.select { |m| m.message_type == message_type } %>
+        <% slots.each_with_index do |message, index| %>
+          <% options = templates_by_type[message_type] || [] %>
+          <tr class="border-b border-gray-200 hover:bg-gray-50">
+            <td class="px-3 py-2"><%= "#{message_type.humanize} ##{index + 1}" %></td>
+            <td class="px-3 py-2">
+              <%= message.name %>
+              <% if message.has_media? %>
+                <span class="text-xs text-amber-700 bg-amber-50 px-1 rounded">Só Evolution (mídia)</span>
+              <% end %>
+            </td>
+            <td class="px-3 py-2">
+              <% if message.has_media? %>
+                <span class="text-gray-400 text-xs">—</span>
+              <% else %>
+                <%= form_with url: meta_assignment_lead_message_path(message), method: :patch, local: true, class: "flex flex-col gap-1" do %>
+                  <select name="meta_template_id" class="browser-default border rounded px-2 py-1 w-full max-w-md text-sm">
+                    <option value="">— Nenhum —</option>
+                    <% options.each do |tpl| %>
+                      <option value="<%= tpl.id %>" <%= "selected" if message.meta_template_id == tpl.id %>>
+                        <%= tpl.name %><%= tpl.clinic_automation_ready? ? "" : " (mapeamento incompleto)" %>
+                      </option>
+                    <% end %>
+                  </select>
+                  <button type="submit" class="text-xs text-blue-600 hover:underline self-start">Salvar vínculo</button>
+                <% end %>
+              <% end %>
+            </td>
+            <td class="px-3 py-2">
+              <%= form_with url: meta_assignment_lead_message_path(message), method: :patch, local: true do %>
+                <%= hidden_field_tag :meta_template_id, message.meta_template_id %>
+                <select name="delivery_channel" class="browser-default border rounded px-2 py-1 text-sm" onchange="this.form.submit()">
+                  <option value="" <%= "selected" if message.delivery_channel.blank? %>>Herda conta</option>
+                  <option value="evolution" <%= "selected" if message.delivery_channel == "evolution" %>>Evolution</option>
+                  <option value="meta" <%= "selected" if message.delivery_channel == "meta" %>>Meta</option>
+                </select>
+              <% end %>
+            </td>
+            <td class="px-3 py-2">
+              <% if message.meta_template.present? %>
+                <%= link_to "Ver template", main_app.meta_template_path(message.meta_template), class: "text-blue-600 text-xs", target: "_blank" %>
+              <% else %>
+                <%= link_to "Criar template", main_app.new_meta_template_path, class: "text-blue-600 text-xs", target: "_blank" %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>

@@ -14,12 +14,6 @@
     <p class="text-sm text-gray-600">Estas são as mensagens customizadas criadas por você.</p>
   <% else %>
     <h5 class="text-2xl font-bold">Mensagens Customizadas</h5>
-    <% if @show_lead_message_meta_column %>
-      <p class="text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mt-3">
-        Com WhatsApp Meta ativo, mensagens globais salvas são enviadas automaticamente para aprovação como template
-        (mesmo fluxo das mensagens manuais de pedidos). Mensagens de captador permanecem só no Evolution.
-      </p>
-    <% end %>
   <% end %>
 </div>
 
@@ -79,11 +73,20 @@
   <%= render partial: 'messages_table', locals: { messages_to_show: @messages, show_type_column: false, show_meta_column: false } %>
 
 <% else %>
-  <%# GLOBAL VIEW: Tabs for Personalizadas / Globais (Stimulus-powered) %>
-  <div data-controller="referral-messages">
+  <%# GLOBAL VIEW %>
+  <% if @show_automation_channel_ui %>
+    <%= render partial: "automation_channel_header",
+               locals: {
+                 clinic_automation_channel: @clinic_automation_channel,
+                 meta_automation_available: @meta_automation_available
+               } %>
+  <% end %>
+
+  <div data-controller="referral-messages lead-messages-automation"
+       data-lead-messages-automation-active-tab-value="<%= @automation_tab || 'evolution' %>">
     <div class="mb-6">
       <div class="border-b border-gray-200">
-        <nav class="-mb-px flex space-x-4">
+        <nav class="-mb-px flex space-x-4 flex-wrap">
           <button data-referral-messages-target="tab"
                   data-tab="globais"
                   data-action="click->referral-messages#switchTab"
@@ -100,41 +103,62 @@
       </div>
     </div>
 
-    <%# TAB: Mensagens Globais (first/default) %>
+    <% if @show_automation_channel_ui %>
+      <div class="mb-4 flex gap-2">
+        <button type="button"
+                data-lead-messages-automation-target="evolutionTab"
+                data-action="click->lead-messages-automation#switchChannelTab"
+                data-channel="evolution"
+                class="px-3 py-1.5 text-sm rounded border font-medium">
+          Evolution (texto/mídia)
+        </button>
+        <button type="button"
+                data-lead-messages-automation-target="metaTab"
+                data-action="click->lead-messages-automation#switchChannelTab"
+                data-channel="meta"
+                class="px-3 py-1.5 text-sm rounded border font-medium">
+          Meta (templates)
+        </button>
+      </div>
+    <% end %>
+
     <div data-referral-messages-target="tabContent" data-tab-name="globais">
-      <p class="text-sm text-gray-600 mb-4">
-        Mensagens de sistema (Confirmação, Remarcação, Lembrete, etc.).
-        <%= can_manage_lead_messages? ? 'Você pode editá-las.' : 'Apenas operadores e gerentes podem editar estas mensagens.' %>
-      </p>
-      <% if @viewing_all_externals && @messages_by_location.present? %>
-        <% @messages_by_location.each do |location, location_messages| %>
-          <% globais = location_messages.select { |m| m.message_type != 'outro' } %>
-          <div class="mb-8">
-            <h6 class="text-lg font-semibold text-gray-800 mb-3 pb-2 border-b border-gray-200"><%= location.name %></h6>
-            <% if globais.any? %>
-              <%= render partial: 'messages_table', locals: {
-                    messages_to_show: globais,
-                    show_type_column: true,
-                    show_meta_column: @show_lead_message_meta_column,
-                    meta_templates_by_lead_message_id: @meta_templates_by_lead_message_id
-                  } %>
-            <% else %>
-              <p class="text-sm text-gray-500 italic">Nenhuma mensagem de sistema.</p>
-            <% end %>
-          </div>
-        <% end %>
-      <% else %>
+      <div data-lead-messages-automation-target="evolutionPanel">
+        <p class="text-sm text-gray-600 mb-4">
+          Mensagens de sistema (Confirmação, Remarcação, Lembrete, etc.) enviadas via WhatsApp próprio quando o canal da conta está em Evolution ou quando o slot tem mídia.
+          <%= can_manage_lead_messages? ? 'Você pode editá-las.' : 'Apenas operadores e gerentes podem editar estas mensagens.' %>
+        </p>
         <% globais = @messages.select { |m| m.message_type != 'outro' } %>
-        <%= render partial: 'messages_table', locals: {
-              messages_to_show: globais,
-              show_type_column: true,
-              show_meta_column: @show_lead_message_meta_column,
-              meta_templates_by_lead_message_id: @meta_templates_by_lead_message_id
-            } %>
+        <% if @viewing_all_externals && @messages_by_location.present? %>
+          <% @messages_by_location.each do |location, location_messages| %>
+            <% loc_globais = location_messages.select { |m| m.message_type != 'outro' } %>
+            <div class="mb-8">
+              <h6 class="text-lg font-semibold text-gray-800 mb-3 pb-2 border-b border-gray-200"><%= location.name %></h6>
+              <% if loc_globais.any? %>
+                <%= render partial: 'messages_table', locals: { messages_to_show: loc_globais, show_type_column: true, show_meta_column: false } %>
+              <% else %>
+                <p class="text-sm text-gray-500 italic">Nenhuma mensagem de sistema.</p>
+              <% end %>
+            </div>
+          <% end %>
+        <% elsif globais.any? %>
+          <%= render partial: 'messages_table', locals: { messages_to_show: globais, show_type_column: true, show_meta_column: false } %>
+        <% else %>
+          <p class="text-sm text-gray-500 italic">Nenhuma mensagem de sistema.</p>
+        <% end %>
+      </div>
+
+      <% if @show_automation_channel_ui %>
+        <div data-lead-messages-automation-target="metaPanel" style="display: none;">
+          <%= render partial: "meta_automation_slots",
+                     locals: {
+                       messages: @messages,
+                       templates_by_type: @approved_meta_templates_by_type
+                     } %>
+        </div>
       <% end %>
     </div>
 
-    <%# TAB: Personalizadas %>
     <div data-referral-messages-target="tabContent" data-tab-name="personalizadas" style="display: none;">
       <p class="text-sm text-gray-600 mb-4">Mensagens personalizadas que você criou. Você pode editar e excluir estas mensagens.</p>
       <% if @viewing_all_externals && @messages_by_location.present? %>
@@ -146,8 +170,7 @@
               <%= render partial: 'messages_table', locals: {
                     messages_to_show: personalizadas,
                     show_type_column: false,
-                    show_meta_column: @show_lead_message_meta_column,
-                    meta_templates_by_lead_message_id: @meta_templates_by_lead_message_id
+                    show_meta_column: false
                   } %>
             <% else %>
               <p class="text-sm text-gray-500 italic">Nenhuma mensagem personalizada.</p>
@@ -159,8 +182,7 @@
         <%= render partial: 'messages_table', locals: {
               messages_to_show: personalizadas,
               show_type_column: false,
-              show_meta_column: @show_lead_message_meta_column,
-              meta_templates_by_lead_message_id: @meta_templates_by_lead_message_id
+              show_meta_column: false
             } %>
       <% end %>
     </div>

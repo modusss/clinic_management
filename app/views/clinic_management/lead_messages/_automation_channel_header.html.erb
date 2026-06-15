@@ -1,0 +1,37 @@
+<%# Channel toggle: Evolution vs Meta for clinic automation (staff global view) %>
+<% return unless local_assigns.fetch(:show, true) %>
+
+<div class="lead-messages-automation-header mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg"
+     data-controller="lead-messages-automation"
+     data-lead-messages-automation-channel-value="<%= clinic_automation_channel %>"
+     data-lead-messages-automation-meta-available-value="<%= meta_automation_available %>">
+
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h6 class="text-lg font-semibold text-gray-800">Canal das automações clínicas</h6>
+      <p class="text-sm text-gray-600 mt-1">
+        Confirmação, lembrete e recuperações usam o canal selecionado.
+        Crie templates em <%= link_to "Templates Meta", main_app.meta_templates_path, class: "text-blue-600 underline" %>
+        e vincule na aba Meta abaixo.
+      </p>
+    </div>
+
+    <div class="flex rounded-lg border border-gray-300 overflow-hidden shrink-0" role="group" aria-label="Canal de automação">
+      <%= button_to "WhatsApp próprio",
+                    update_automation_channel_lead_messages_path(clinic_automation_channel: "evolution", tab: "evolution"),
+                    method: :patch,
+                    class: "px-4 py-2 text-sm font-medium #{clinic_automation_channel == 'evolution' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}" %>
+      <%= button_to "WhatsApp Meta",
+                    update_automation_channel_lead_messages_path(clinic_automation_channel: "meta", tab: "meta"),
+                    method: :patch,
+                    disabled: !meta_automation_available,
+                    class: "px-4 py-2 text-sm font-medium #{clinic_automation_channel == 'meta' ? 'bg-green-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'} #{meta_automation_available ? '' : 'opacity-50 cursor-not-allowed'}" %>
+    </div>
+  </div>
+
+  <% unless meta_automation_available %>
+    <p class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 mt-3">
+      WhatsApp Meta não está operacional — automações permanecem no Evolution até conectar o número oficial.
+    </p>
+  <% end %>
+</div>

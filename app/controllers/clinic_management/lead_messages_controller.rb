@@ -6,7 +6,6 @@ module ClinicManagement
     skip_before_action :redirect_referral_users
     include GeneralHelper
     include MessagesHelper
-    include ::MetaTemplateMessageSync
     require 'httparty'
 
     # ESSENTIAL: Order by created_at ASC so numbering (#1, #2, #3)
@@ -68,8 +67,9 @@ module ClinicManagement
 
       @messages_by_type = @messages.group_by(&:message_type)
 
-      load_lead_message_meta_templates_index if show_lead_message_meta_column?
-      @show_lead_message_meta_column = show_lead_message_meta_column?
+      load_automation_index_state if show_automation_channel_ui?
+      @show_automation_channel_ui ||= false
+      @automation_tab ||= "evolution"
     end
   
     def new
@@ -108,12 +108,7 @@ module ClinicManagement
       end
 
       if @message.save
-        notice = "Mensagem customizada criada com sucesso."
-        if @message.referral_id.nil? && meta_message_template_sync_enabled?
-          enqueue_message_meta_template_sync!(@message)
-          notice = "Mensagem criada. Enviada para aprovação como template na Meta — o status pode levar alguns segundos para atualizar."
-        end
-        redirect_to lead_messages_path, notice: notice
+        redirect_to lead_messages_path, notice: "Mensagem customizada criada com sucesso."
       else
         # Log validation errors for debugging
         Rails.logger.error "LeadMessage validation errors: #{@message.errors.full_messages.join(', ')}"
@@ -125,7 +120,6 @@ module ClinicManagement
     end
   
     def edit
-      @meta_template = MetaTemplate.current_for_source(@message) if show_lead_message_meta_column? && @message.referral_id.nil?
     end
   
     def update
@@ -152,12 +146,6 @@ module ClinicManagement
         @message.save if @message.changed?
 
         notice = "Mensagem customizada atualizada com sucesso."
-        if @message.referral_id.nil? &&
-           (@message.saved_change_to_text? || @message.saved_change_to_name?) &&
-           meta_message_template_sync_enabled?
-          enqueue_message_meta_template_sync!(@message)
-          notice = "Mensagem atualizada. A alteração foi enviada para análise na Meta — o status pode levar alguns segundos para atualizar."
-        end
 
         # Preserve referral context when redirecting back (location comes from navbar)
         redirect_path = @message.referral_id.present? ?
@@ -176,6 +164,70 @@ module ClinicManagement
       redirect_path = referral_id.present? ?
         lead_messages_path(referral_id: referral_id) : lead_messages_path
       redirect_to redirect_path, notice: 'Mensagem customizada excluída com sucesso.'
+    end
+
+    # PATCH collection — toggle account-wide clinic automation channel.
+    def update_automation_channel
+      unless can_manage_lead_messages?
+        redirect_to lead_messages_path, alert: "Sem permissão."
+        return
+      end
+
+      channel = params[:clinic_automation_channel].to_s
+      unless Account::CLINIC_AUTOMATION_CHANNELS.include?(channel)
+        redirect_to lead_messages_path, alert: "Canal inválido."
+        return
+      end
+
+      if channel == "meta" && !current_account.clinic_automation_meta_available?
+        redirect_to lead_messages_path, alert: "WhatsApp Meta não está operacional."
+        return
+      end
+
+      current_account.update!(clinic_automation_channel: channel)
+      redirect_to lead_messages_path(tab: params[:tab].presence || "meta"),
+                  notice: channel == "meta" ? "Automações clínicas usarão WhatsApp Meta." : "Automações clínicas usarão WhatsApp próprio (Evolution)."
+    end
+
+    # PATCH member — assign Meta template to a LeadMessage slot.
+    def meta_assignment
+      unless can_manage_lead_messages?
+        redirect_to lead_messages_path, alert: "Sem permissão."
+        return
+      end
+
+      @message = LeadMessage.find(params[:id])
+      attrs = {
+        meta_template_id: params[:meta_template_id].presence,
+        delivery_channel: params[:delivery_channel].presence
+      }
+
+      if @message.update(attrs)
+        redirect_to lead_messages_path(tab: "meta"), notice: "Template Meta vinculado a '#{@message.name}'."
+      else
+        redirect_to lead_messages_path(tab: "meta"), alert: @message.errors.full_messages.to_sentence
+      end
+    end
+
+    # GET collection — JSON options for Meta template picker.
+    def meta_template_options
+      unless can_manage_lead_messages?
+        render json: { templates: [] }, status: :forbidden
+        return
+      end
+
+      message_type = params[:message_type].to_s
+      templates = meta_templates_for_slot(message_type).map do |t|
+        {
+          id: t.id,
+          name: t.name,
+          status: t.status,
+          body_preview: t.body_text.to_s.truncate(120),
+          ready: t.clinic_automation_ready?
+        }
+      end
+
+      render json: { templates: templates }
     end
 
     def build_message
@@ -437,8 +489,8 @@ module ClinicManagement
   
     private
 
-    # Meta column + auto-sync apply only to global staff messages (referral_id nil).
-    def show_lead_message_meta_column?
+    # Staff global view with Meta operational — show Evolution/Meta automation UI.
+    def show_automation_channel_ui?
       return false if referral?(current_user)
       return false if @viewing_referral.present?
       return false unless current_account&.meta_whatsapp_enabled?
@@ -446,12 +498,40 @@ module ClinicManagement
       true
     end
 
+    def load_automation_index_state
+      @show_automation_channel_ui = show_automation_channel_ui?
+      @clinic_automation_channel = current_account.effective_clinic_automation_channel
+      @meta_automation_available = current_account.clinic_automation_meta_available?
+      @automation_tab = params[:tab].presence_in(%w[evolution meta]) || "evolution"
+      @approved_meta_templates_by_type = {}
+      if @show_automation_channel_ui && @meta_automation_available
+        ClinicManagement::LeadMessage.message_types.keys.each do |mt|
+          @approved_meta_templates_by_type[mt] = meta_templates_for_slot(mt)
+        end
+      end
+    end
+
+    # Approved Meta templates matching clinic slot message_type.
+    #
+    # @param message_type [String]
+    # @return [ActiveRecord::Relation]
+    def meta_templates_for_slot(message_type)
+      waba_ids = current_account.meta_business_accounts.active.select(:id)
+      MetaTemplate
+        .joins(:meta_business_account)
+        .where(meta_business_accounts: { id: waba_ids })
+        .clinic_automation_candidates(message_type)
+        .order(:name)
+        .select { |t| t.clinic_automation_ready? || t.approved? }
+    end
+
+    # Meta column + auto-sync apply only to global staff messages (referral_id nil).
+    def show_lead_message_meta_column?
+      false
+    end
+
     def load_lead_message_meta_templates_index
-      global_messages = @messages.select { |m| m.referral_id.nil? }
-      @meta_templates_by_lead_message_id = MetaTemplate.current_index_for_sources(
-        MetaTemplate::LEAD_MESSAGE_SOURCE,
-        global_messages
-      )
+      @meta_templates_by_lead_message_id = {}
     end
 
     # register that this message was sent to this appointment
