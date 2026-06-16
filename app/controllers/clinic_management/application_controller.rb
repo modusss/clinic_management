@@ -19,6 +19,7 @@ module ClinicManagement
     helper ::CommissionsHelper
     helper ::GeneralHelper
     helper ::MembershipRolesHelper
+    helper ::MetaTemplatesHelper
     helper ClinicManagement::ServicesStatsHelper
 
     # ESSENTIAL: Must override ::GeneralHelper#breadcrumb — define methods directly on last helper module.

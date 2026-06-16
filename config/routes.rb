@@ -71,6 +71,7 @@ ClinicManagement::Engine.routes.draw do
       post :send_evolution_message
       post :refresh_preview
       patch :update_automation_channel
+      patch :toggle_meta_template_automation
       get :meta_template_options
     end
     member do

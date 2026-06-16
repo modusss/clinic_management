@@ -150,10 +150,10 @@
 
       <% if @show_automation_channel_ui %>
         <div data-lead-messages-automation-target="metaPanel" style="display: none;">
-          <%= render partial: "meta_automation_slots",
+          <%= render partial: "meta_automation_templates",
                      locals: {
-                       messages: @messages,
-                       templates_by_type: @approved_meta_templates_by_type
+                       templates_by_purpose: @clinic_meta_automation_by_purpose,
+                       clinic_automation_channel: @clinic_automation_channel
                      } %>
         </div>
       <% end %>

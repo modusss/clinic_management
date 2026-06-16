@@ -189,7 +189,32 @@ module ClinicManagement
                   notice: channel == "meta" ? "Automações clínicas usarão WhatsApp Meta." : "Automações clínicas usarão WhatsApp próprio (Evolution)."
     end
 
-    # PATCH member — assign Meta template to a LeadMessage slot.
+    # PATCH collection — enable/disable a Meta template in clinic automation.
+    def toggle_meta_template_automation
+      unless can_manage_lead_messages?
+        redirect_to lead_messages_path, alert: "Sem permissão."
+        return
+      end
+
+      template = MetaTemplate.find_by(id: params[:meta_template_id])
+      unless template
+        redirect_to lead_messages_path(tab: "meta"), alert: "Template não encontrado."
+        return
+      end
+
+      holder = template.root_template
+      cfg = holder.internal_config_hash.dup
+      cfg["automation_enabled"] = params[:enabled].to_s == "1"
+
+      if holder.update(internal_config: cfg)
+        state = cfg["automation_enabled"] ? "ativado" : "desativado"
+        redirect_to lead_messages_path(tab: "meta"), notice: "Template '#{holder.name}' #{state} na automação Meta."
+      else
+        redirect_to lead_messages_path(tab: "meta"), alert: holder.errors.full_messages.to_sentence
+      end
+    end
+
+    # PATCH member — assign Meta template to a LeadMessage slot (legacy — UI removed).
     def meta_assignment
       unless can_manage_lead_messages?
         redirect_to lead_messages_path, alert: "Sem permissão."
@@ -503,12 +528,10 @@ module ClinicManagement
       @clinic_automation_channel = current_account.effective_clinic_automation_channel
       @meta_automation_available = current_account.clinic_automation_meta_available?
       @automation_tab = params[:tab].presence_in(%w[evolution meta]) || "evolution"
-      @approved_meta_templates_by_type = {}
-      if @show_automation_channel_ui && @meta_automation_available
-        ClinicManagement::LeadMessage.message_types.keys.each do |mt|
-          @approved_meta_templates_by_type[mt] = meta_templates_for_slot(mt)
-        end
-      end
+      @clinic_meta_automation_by_purpose = {}
+      return unless @show_automation_channel_ui && @meta_automation_available
+
+      @clinic_meta_automation_by_purpose = ClinicMetaAutomationQuery.grouped_by_purpose(current_account)
     end
 
     # Approved Meta templates matching clinic slot message_type.

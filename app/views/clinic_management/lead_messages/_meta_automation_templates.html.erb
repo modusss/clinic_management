@@ -1,0 +1,101 @@
+<%# Independent Meta automation templates for clinic — NOT paired with Evolution slots.
+    Locals: templates_by_purpose, clinic_automation_channel %>
+<% templates_by_purpose = local_assigns.fetch(:templates_by_purpose, {}) %>
+<% channel_meta = local_assigns.fetch(:clinic_automation_channel) == "meta" %>
+<% purposes = ClinicManagement::LeadMessage.message_types.keys.reject { |t| t == "outro" } %>
+
+<div class="meta-clinic-automation-panel">
+  <p class="text-sm text-gray-600 mb-4">
+    Templates Meta para automação clínica são <strong>independentes</strong> das mensagens Evolution.
+    Crie e configure cada template em
+    <%= link_to "Templates Meta", main_app.meta_templates_path, class: "text-blue-600 underline" %>
+    (seção 6: domínio Atendimento, modo Automação, finalidade e mapeamento {{n}}).
+    Botões, header e footer entram só no template Meta — não espelham o texto Evolution.
+  </p>
+
+  <% if channel_meta %>
+    <p class="text-sm text-green-800 bg-green-50 border border-green-200 rounded px-3 py-2 mb-4">
+      Canal da conta: <strong>WhatsApp Meta</strong> — jobs agendados enviam os templates abaixo (quando ativos e aprovados).
+    </p>
+  <% else %>
+    <p class="text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-4">
+      Canal da conta: <strong>Evolution</strong> — a aba acima edita as mensagens de texto/mídia. Os templates Meta ficam preparados para quando você alternar o canal.
+    </p>
+  <% end %>
+
+  <table class="w-full table-auto border-collapse border border-gray-300 text-left text-sm">
+    <thead>
+      <tr class="bg-gray-100">
+        <th class="px-3 py-2">Finalidade (automação)</th>
+        <th class="px-3 py-2">Template Meta</th>
+        <th class="px-3 py-2">Status</th>
+        <th class="px-3 py-2">Ativo</th>
+        <th class="px-3 py-2">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% purposes.each do |purpose| %>
+        <% templates = templates_by_purpose[purpose] || [] %>
+        <tr class="border-b border-gray-200 hover:bg-gray-50">
+          <td class="px-3 py-2 align-top font-medium">
+            <%= MetaTemplatePlaceholderRegistry.clinic_purpose_label(purpose) %>
+            <div class="text-xs text-gray-500 font-normal"><%= purpose %></div>
+          </td>
+          <% if templates.any? %>
+            <td class="px-3 py-2 align-top" colspan="4">
+              <ul class="space-y-3 list-none m-0 p-0">
+                <% templates.each do |template| %>
+                  <li class="flex flex-wrap items-start gap-3 border-b border-gray-100 pb-3 last:border-0 last:pb-0">
+                    <div class="min-w-[12rem] flex-1">
+                      <strong><%= template.name %></strong>
+                      <p class="text-xs text-gray-500 mt-1"><%= truncate(template.body_text.to_s, length: 100) %></p>
+                    </div>
+                    <div class="shrink-0">
+                      <%= meta_template_automation_status_badge(template) %>
+                    </div>
+                    <div class="shrink-0">
+                      <% if can_manage_lead_messages? %>
+                        <%= form_with url: toggle_meta_template_automation_lead_messages_path,
+                                      method: :patch,
+                                      local: true,
+                                      class: "inline-flex items-center gap-2" do %>
+                          <%= hidden_field_tag :meta_template_id, template.id %>
+                          <%= hidden_field_tag :enabled, template.clinic_automation_enabled? ? "1" : "0", id: "meta_automation_enabled_#{template.id}" %>
+                          <label class="inline-flex items-center gap-1 text-xs cursor-pointer">
+                            <input type="checkbox"
+                                   <%= "checked" if template.clinic_automation_enabled? %>
+                                   onchange="document.getElementById('meta_automation_enabled_<%= template.id %>').value = this.checked ? '1' : '0'; this.form.requestSubmit();">
+                            <span>Usar na automação</span>
+                          </label>
+                        <% end %>
+                      <% else %>
+                        <span class="text-xs <%= template.clinic_automation_enabled? ? 'text-green-700' : 'text-gray-400' %>">
+                          <%= template.clinic_automation_enabled? ? "Ativo" : "Inativo" %>
+                        </span>
+                      <% end %>
+                    </div>
+                    <div class="shrink-0 flex gap-2">
+                      <%= link_to "Ver", main_app.meta_template_path(template), class: "text-blue-600 text-xs", target: "_blank" %>
+                      <%= link_to "Editar", main_app.edit_meta_template_path(template), class: "text-blue-600 text-xs", target: "_blank" %>
+                    </div>
+                  </li>
+                <% end %>
+              </ul>
+            </td>
+          <% else %>
+            <td class="px-3 py-2 text-gray-400 italic" colspan="3">Nenhum template configurado</td>
+            <td class="px-3 py-2">
+              <%= link_to "Criar template", main_app.new_meta_template_path, class: "text-blue-600 text-xs", target: "_blank" %>
+            </td>
+          <% end %>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .meta-clinic-automation-panel table ul li:last-child {
+    margin-bottom: 0;
+  }
+</style>
