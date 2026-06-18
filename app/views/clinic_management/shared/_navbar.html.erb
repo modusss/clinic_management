@@ -174,7 +174,7 @@
     </div>
   </header>
 
-  <aside class="hidden md:block w-64 bg-emerald-950 text-white fixed top-0 left-0 h-screen pt-4 p-4 z-40 overflow-y-auto clinic-sidebar" style="padding-top: 100px;">
+  <aside class="hidden md:block w-64 bg-emerald-950 text-white fixed top-0 left-0 h-screen pt-4 p-4 z-40 overflow-y-auto clinic-sidebar" style="padding-top: 150px;">
     <%# ESSENTIAL: Brand is in the top header on desktop — no duplicate logo in sidebar. %>
     <nav class="flex flex-col space-y-3 text-lg clinic-sidebar__nav">
         <% if allowed_to_access_leads?(current_user) %>
@@ -370,7 +370,7 @@
   </div>
 </header>
 
-<aside class="hidden md:block w-64 bg-emerald-950 text-white fixed top-0 left-0 h-screen pt-4 p-4 z-40 overflow-y-auto clinic-sidebar" style="padding-top: 100px;">
+<aside class="hidden md:block w-64 bg-emerald-950 text-white fixed top-0 left-0 h-screen pt-4 p-4 z-40 overflow-y-auto clinic-sidebar" style="padding-top: 150px;">
   <%# ESSENTIAL: Brand is in the top header (clinic-navbar__brand) on desktop — do not duplicate logo in sidebar. %>
   <nav class="flex flex-col space-y-3 text-lg clinic-sidebar__nav">
     <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if request.path == clinic_management.index_today_path}", data: { turbo: false } %>
