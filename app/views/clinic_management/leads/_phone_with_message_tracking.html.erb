@@ -67,14 +67,23 @@
   </div>
   
   <!-- Estatísticas das interações com dropdown -->
-  <% if lead.lead_interactions.any? %>
+  <%# ESSENTIAL: Use the controller-preloaded collection on the absent page so
+      interaction counters/history do not execute several queries per lead. %>
+  <% interactions = if lead.association(:lead_interactions).loaded?
+                      lead.lead_interactions.to_a
+                    else
+                      lead.lead_interactions.includes(:user).to_a
+                    end %>
+  <% recent_interactions = interactions.sort_by(&:occurred_at).reverse %>
+  <% latest_interaction = recent_interactions.first %>
+  <% if interactions.any? %>
     <div class="text-xs text-gray-500 mt-1 relative">
       <div class="flex items-center gap-2">
         <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
-          📞 <%= lead.lead_interactions.whatsapp_click.count %>x
+          📞 <%= interactions.count(&:whatsapp_click?) %>x
         </span>
         <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
-          <i class="fab fa-whatsapp text-xs"></i> <%= lead.lead_interactions.phone_call.count %>x
+          <i class="fab fa-whatsapp text-xs"></i> <%= interactions.count(&:phone_call?) %>x
         </span>
         
         <!-- Botão discreto para abrir histórico -->
@@ -86,17 +95,17 @@
         </button>
       </div>
       
-      <% if lead.lead_interactions.recent.first %>
+      <% if latest_interaction %>
         <div class="text-xs mt-1">
-          Última: <%= time_ago_in_words(lead.lead_interactions.recent.first.occurred_at) %> atrás 
-          por <%= lead.lead_interactions.recent&.first&.user&.name %>
+          Última: <%= time_ago_in_words(latest_interaction.occurred_at) %> atrás
+          por <%= latest_interaction.user&.name %>
         </div>
         
         <!-- Destacar quando o usuário atual enviou a última mensagem -->
-        <% if lead.lead_interactions.recent.first.user == current_user %>
+        <% if latest_interaction.user == current_user %>
           <div class="text-xs mt-1 bg-blue-50 text-blue-700 px-2 py-1 rounded inline-block">
             <i class="fas fa-user-check text-xs mr-1"></i>
-            Você enviou há <%= time_ago_in_words(lead.lead_interactions.recent.first.occurred_at) %>
+            Você enviou há <%= time_ago_in_words(latest_interaction.occurred_at) %>
           </div>
         <% end %>
       <% end %>
@@ -115,7 +124,7 @@
           </div>
           
           <div class="max-h-64 overflow-y-auto">
-            <% lead.lead_interactions.recent.limit(20).each do |interaction| %>
+            <% recent_interactions.first(20).each do |interaction| %>
               <div class="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
                 <div class="flex items-center gap-2">
                   <% if interaction.whatsapp_click? %>
@@ -140,9 +149,9 @@
               </div>
             <% end %>
             
-            <% if lead.lead_interactions.count > 20 %>
+            <% if interactions.size > 20 %>
               <div class="text-center py-2 text-xs text-gray-500">
-                ... e mais <%= lead.lead_interactions.count - 20 %> interações
+                ... e mais <%= interactions.size - 20 %> interações
               </div>
             <% end %>
           </div>
@@ -156,4 +165,4 @@
       por <%= appointment.last_message_sent_by %>
     </div>
   <% end %>
-</div> 
+</div>

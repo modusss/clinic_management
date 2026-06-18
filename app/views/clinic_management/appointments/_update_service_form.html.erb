@@ -8,8 +8,12 @@
               } do |f| %>
   
   <%# ESSENTIAL: Reminder only when multi-locations mode enabled. Always uses navbar selection — flexible. %>
-  <% if current_account&.multi_service_locations_enabled? && ClinicManagement::ServiceLocation.any? %>
-    <% current_location_label = current_service_location_id.blank? ? "Interno" : (current_service_location_id.to_s == "all" ? "Todos externos" : (ClinicManagement::ServiceLocation.find_by(id: current_service_location_id)&.name || "Interno")) %>
+  <%# ESSENTIAL: This partial is rendered up to 50 times on absent leads. Reuse
+      one loaded location collection instead of querying locations per row. %>
+  <% service_locations = @reschedule_service_locations ||= ClinicManagement::ServiceLocation.order(:name).to_a %>
+  <% if current_account&.multi_service_locations_enabled? && service_locations.any? %>
+    <% selected_location = service_locations.find { |location| location.id.to_s == current_service_location_id.to_s } %>
+    <% current_location_label = current_service_location_id.blank? ? "Interno" : (current_service_location_id.to_s == "all" ? "Todos externos" : (selected_location&.name || "Interno")) %>
     <div class="flex items-center gap-1.5 mb-2 px-2 py-1.5 bg-amber-50 border border-amber-200 rounded text-amber-800 text-xs w-full basis-full" role="status" aria-live="polite">
       <i class="fas fa-map-marker-alt text-amber-600 flex-shrink-0" aria-hidden="true"></i>
       <span><strong>Local ativo:</strong> <%= current_location_label %> — a remarcação será para este local</span>
@@ -18,7 +22,7 @@
 
   <%# ESSENTIAL: Local selector only when navbar is "Todos externos" — user needs to pick which external.
       When navbar has specific location or Interno, the reminder above is enough; select would be redundant. %>
-  <% show_location_select = current_account&.multi_service_locations_enabled? && ClinicManagement::ServiceLocation.any? && old_appointment.present? && current_service_location_id.to_s == "all" %>
+  <% show_location_select = current_account&.multi_service_locations_enabled? && service_locations.any? && old_appointment.present? && current_service_location_id.to_s == "all" %>
   <% if show_location_select %>
     <% default_location_id = old_appointment.service&.service_location_id.to_s %>
     <div class="w-full sm:w-auto">
@@ -27,7 +31,7 @@
               class="w-full shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline reschedule-location-filter"
               data-appointment-id="<%= old_appointment.id %>">
         <option value="" <%= 'selected' if default_location_id.blank? %>>Interno</option>
-        <% ClinicManagement::ServiceLocation.order(:name).each do |loc| %>
+        <% service_locations.each do |loc| %>
           <option value="<%= loc.id %>" <%= 'selected' if default_location_id == loc.id.to_s %>><%= loc.name %></option>
         <% end %>
       </select>

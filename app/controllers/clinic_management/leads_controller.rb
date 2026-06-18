@@ -617,7 +617,14 @@ module ClinicManagement
       if params[:tab] == 'download'
         @date_range = (Date.current - 1.year)..Date.current
       else
-        @leads = @leads.page(params[:page]).per(50)
+        @leads = @leads
+          .page(params[:page])
+          .per(50)
+          .preload(
+            :invitations,
+            { customer: :orders },
+            { lead_interactions: :user }
+          )
         
         # 🆕 Registrar visualização dos leads desta página
         register_page_views(@leads)
@@ -1591,15 +1598,22 @@ module ClinicManagement
     end
 
     def load_leads_data(leads, context = nil)
+      # ESSENTIAL: Resolve every current appointment in one query. The previous
+      # implementation issued multiple appointment queries for each of 50 rows.
+      appointments_by_id = ClinicManagement::Appointment
+        .where(id: leads.map(&:current_appointment_id))
+        .includes(:prescription, :service, invitation: :referral)
+        .index_by(&:id)
+
       leads.map.with_index do |lead, index|
-        last_invitation = lead.invitations.last
+        last_invitation = lead.invitations.max_by(&:id)
         
         # ✅ CORREÇÃO: SEMPRE buscar o appointment real para determinar attendance correto
         # A página "absent" pode conter:
         # 1. Leads que faltaram no último atendimento (attendance = false)
         # 2. Leads que compareceram há mais de 1 ano (attendance = true, mas antiga)
         # Portanto, NÃO podemos assumir attendance baseado apenas no contexto!
-        real_appointment = ClinicManagement::Appointment.find_by(id: lead.current_appointment_id)
+        real_appointment = appointments_by_id[lead.current_appointment_id]
         attendance_value = real_appointment&.attendance || false
         
         # Criar um objeto appointment que usa os dados já carregados da query
@@ -1610,15 +1624,15 @@ module ClinicManagement
           attendance: attendance_value
         )
         
-        # Para funcionalidades que precisam do appointment completo, buscar quando necessário
-        full_appointment = nil
+        # The complete appointment and associations were loaded in bulk above.
+        full_appointment = real_appointment
         
         # ESSENTIAL: Retail-only order line in Status; skip DB hit in Apenas Clínica.
         clinic_only_mode = current_account&.clinic_only?
         order_count = if clinic_only_mode
                         0
                       else
-                        lead&.customer&.orders&.count || 0
+                        lead&.customer&.orders&.size || 0
                       end
         
         # Determine the patient's status with order info on a separate line
@@ -1640,7 +1654,7 @@ module ClinicManagement
 
         # Função helper para buscar appointment completo quando necessário
         get_full_appointment = lambda do
-          full_appointment ||= ClinicManagement::Appointment.find(lead.current_appointment_id)
+          full_appointment || ClinicManagement::Appointment.find(lead.current_appointment_id)
         end
 
         # Removida a diferenciação - usar sempre a estrutura completa para todos
@@ -1880,12 +1894,25 @@ module ClinicManagement
       # ESSENTIAL: When multi_service_locations_enabled, filter by navbar location. When navbar has
       # specific location or Interno, Local select is hidden — so we pre-filter here.
       def available_services(service)
-        scope = ClinicManagement::Service.where(canceled: [nil, false]).where("date >= ?", Date.current).order(date: :asc)
-        scope = scope.where.not(id: service.id) if service&.id.present?
+        scope = ClinicManagement::Service
+          .where(canceled: [nil, false])
+          .where("date >= ?", Date.current)
+          .order(date: :asc)
+
+        location_cache_key = nil
         if current_account&.multi_service_locations_enabled?
-          scope = scope.merge(ClinicManagement::Service.for_location(current_service_location_id.to_s))
+          location_cache_key = current_service_location_id.to_s
+          scope = scope.merge(ClinicManagement::Service.for_location(location_cache_key))
         end
-        scope.includes(:service_location)
+
+        # ESSENTIAL: The absent page renders this form up to 50 times. Cache the
+        # common service collection once and only remove the row's current service
+        # in memory.
+        @available_services_cache ||= {}
+        available = @available_services_cache[location_cache_key] ||= scope.includes(:service_location).to_a
+        return available unless service&.id.present?
+
+        available.reject { |candidate| candidate.id == service.id }
       end
 
       # 🆕 Filtrar leads que estão sendo visualizados por outros usuários
