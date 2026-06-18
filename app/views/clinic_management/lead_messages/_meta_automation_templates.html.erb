@@ -77,6 +77,11 @@
                     <div class="shrink-0 flex gap-2">
                       <%= link_to "Ver", main_app.meta_template_path(template), class: "text-blue-600 text-xs", target: "_blank" %>
                       <%= link_to "Editar", main_app.edit_meta_template_path(template), class: "text-blue-600 text-xs", target: "_blank" %>
+                      <% unless template.internal_usage_mode.in?(%w[automation both]) %>
+                        <span class="text-xs text-orange-700" title="Seção 6 → Modo de uso">
+                          → use Automação ou Automação e manual
+                        </span>
+                      <% end %>
                     </div>
                   </li>
                 <% end %>
