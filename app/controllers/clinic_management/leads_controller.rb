@@ -1543,10 +1543,6 @@ module ClinicManagement
         is_current_referral_invitation = current_referral && invitation&.referral_id == current_referral.id
         new_appointment = ClinicManagement::Appointment.new
 
-        # #region agent log
-        File.open("/Users/fillypefarias/Desktop/lipepay/.cursor/debug-9b2acf.log", "a") { |f| f.puts({ sessionId: "9b2acf", runId: "post-fix", hypothesisId: "H1", location: "leads_controller.rb:get_lead_data", message: "appointment invitation state", data: { appointment_id: ap.id, lead_id: ap.lead_id, invitation_id: invitation&.id, invitation_nil: invitation.nil? }, timestamp: (Time.now.to_f * 1000).to_i }.to_json) }
-        # #endregion
-
         row = [
           {header: "#", content: index + 1},
           {
@@ -1665,8 +1661,8 @@ module ClinicManagement
         
         # Construir conteúdo do paciente com responsável integrado
         patient_content = render_to_string(
-          partial: "clinic_management/leads/patient_name_with_edit_button", 
-          locals: { invitation: last_invitation }
+          partial: "clinic_management/leads/patient_name_with_edit_button",
+          locals: { invitation: last_invitation, lead: lead }
         ).html_safe
         
         # Adicionar responsável se for diferente do paciente
