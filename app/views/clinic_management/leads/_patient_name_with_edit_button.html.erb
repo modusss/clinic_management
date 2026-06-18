@@ -1,10 +1,20 @@
+<%# ESSENTIAL: Legacy appointments may exist without invitation — guard nil before invitation.id (500 on leads#show). %>
+<% lead_record = local_assigns.fetch(:lead, invitation&.lead) %>
+<% if invitation.present? %>
 <div id="patient-name-<%= invitation.id %>" class="flex items-center">
-  <span style="font-size: 20px;"><%= link_to invitation&.patient_name, lead_path(invitation.lead), class: "text-blue-500 hover:text-blue-700 nowrap size_20" %></span>
-  <%= button_to edit_patient_name_invitation_path(invitation), 
+  <span style="font-size: 20px;"><%= link_to invitation.patient_name, lead_path(invitation.lead), class: "text-blue-500 hover:text-blue-700 nowrap size_20" %></span>
+  <%= button_to edit_patient_name_invitation_path(invitation),
       method: :get,
-      class: "ml-2 text-gray-500 hover:text-blue-500 border-0 bg-transparent", 
-      remote: true, 
+      class: "ml-2 text-gray-500 hover:text-blue-500 border-0 bg-transparent",
+      remote: true,
       form: { data: { turbo_stream: true } } do %>
     <i class="fas fa-edit text-sm"></i>
   <% end %>
-</div> 
+</div>
+<% elsif lead_record.present? %>
+<div id="patient-name-lead-<%= lead_record.id %>" class="flex items-center">
+  <span style="font-size: 20px;"><%= link_to lead_record.name, lead_path(lead_record), class: "text-blue-500 hover:text-blue-700 nowrap size_20" %></span>
+</div>
+<% else %>
+<span class="text-gray-500">—</span>
+<% end %> 
