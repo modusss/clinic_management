@@ -179,7 +179,7 @@
 
     <% if user_signed_in? %>
       <div class="clinic-compact-only clinic-sidebar__user-compact px-3 py-3 border-t border-emerald-800 mt-4 mb-4">
-        <span class="text-emerald-100 text-sm block mb-2">Olá, <%= current_user.name %></span>
+        <%# ESSENTIAL: Greeting lives in navbar user chip on phone — drawer only needs logout. %>
         <%= link_to "Sair",
             main_app.destroy_user_session_path,
             method: :delete,
@@ -378,7 +378,7 @@
 
   <% if user_signed_in? %>
     <div class="clinic-compact-only clinic-sidebar__user-compact px-3 py-3 border-t border-emerald-800 mt-4 mb-4">
-      <span class="text-emerald-100 text-sm block mb-2">Olá, <%= current_user.name %></span>
+      <%# ESSENTIAL: Greeting lives in navbar user chip on phone — drawer only needs logout. %>
       <%= link_to "Sair",
           main_app.destroy_user_session_path,
           data: { turbo_method: :delete },

@@ -358,7 +358,7 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
   }
 
   body.clinic-app:not(.doctor-view):not(.clinic-lens-demo) {
-    padding-top: 7rem;
+    padding-top: 7.5rem;
   }
 
   /* ESSENTIAL: Tablet navbar — menu+logo+user row1; location+go-to+search row2 (reference layout). */
@@ -368,22 +368,27 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
     grid-template-columns: auto minmax(0, max-content) 1fr;
     grid-template-areas:
       "menu logo user"
-      "menu location actions";
+      ". location actions";
     gap: 0.35rem 0.75rem;
     align-items: center;
     padding-right: 0.25rem;
     flex-wrap: nowrap !important;
   }
 
-  .clinic-navbar__row:has(.clinic-navbar__location:empty) {
+  /*
+   * ESSENTIAL: ERB whitespace means the location wrapper is not CSS :empty even
+   * when no selector is rendered. Detect the form itself so the actions begin
+   * directly below the brand instead of reserving a phantom tablet column.
+   */
+  .clinic-navbar__row:not(:has(.clinic-navbar__location-form)) {
     grid-template-areas:
       "menu logo user"
-      "menu actions actions";
+      ". actions actions";
   }
 
   .clinic-navbar__menu {
     grid-area: menu;
-    grid-row: 1 / span 2;
+    grid-row: 1;
     align-self: center;
     position: static;
     z-index: auto;
@@ -405,7 +410,7 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
     min-width: 0;
   }
 
-  .clinic-navbar__location:empty {
+  .clinic-navbar__location:not(:has(.clinic-navbar__location-form)) {
     display: none !important;
   }
 
@@ -483,7 +488,7 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
     padding-left: 1rem;
     padding-right: 1rem;
     padding-top: 0.5rem;
-    scroll-margin-top: 7rem;
+    scroll-margin-top: 7.5rem;
     width: 100%;
     box-sizing: border-box;
   }
@@ -507,7 +512,7 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
     gap: 0.35rem 0.5rem;
   }
 
-  .clinic-navbar__row:has(.clinic-navbar__location:empty) {
+  .clinic-navbar__row:not(:has(.clinic-navbar__location-form)) {
     grid-template-areas: "menu logo user";
   }
 
