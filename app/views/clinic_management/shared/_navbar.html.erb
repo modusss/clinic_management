@@ -560,9 +560,19 @@
     overflow: hidden;
     transform: scale(0.95);
     transition: transform 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
   .go-to-service-modal[aria-hidden="false"] .go-to-service-modal-dialog {
     transform: scale(1);
+  }
+  .go-to-service-modal-content {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
   }
   .go-to-service-modal-header {
     display: flex;
@@ -571,6 +581,7 @@
     padding: 1.25rem 1.5rem;
     background: linear-gradient(135deg, #065f46 0%, #047857 100%);
     color: white;
+    flex-shrink: 0;
   }
   .go-to-service-modal-title {
     margin: 0;
@@ -597,8 +608,12 @@
   }
   .go-to-service-modal-body {
     padding: 0.75rem;
-    max-height: 700px;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y !important;
   }
   .go-to-service-modal-empty {
     font-size: 0.9375rem;
@@ -698,11 +713,14 @@
       min-width: 10rem;
       max-width: 100%;
     }
-    .go-to-service-modal-dialog {
-      max-height: 85vh;
+    .go-to-service-modal {
+      padding: 0.75rem;
     }
-    .go-to-service-modal-body {
-      max-height: 50%;
+    .go-to-service-modal-dialog {
+      max-height: calc(100vh - 1.5rem);
+      max-height: calc(100dvh - 1.5rem);
+      border-bottom-left-radius: 1rem;
+      border-bottom-right-radius: 1rem;
     }
 
     .navbar-search {
