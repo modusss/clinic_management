@@ -56,16 +56,36 @@
     referral_share_loc_label = current_service_location_id.blank? ? "Interno" : (current_service_location_id.to_s == "all" ? "Todos externos" : (ClinicManagement::ServiceLocation.find_by(id: current_service_location_id)&.name || "Interno"))
   %>
   <% end %>
-  <header class="navbar-fixed relative bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 py-4 shadow-md md:pl-64 z-50" style="width:100%;">
+  <div data-controller="clinic-sidenav go-to-service-modal" data-go-to-service-modal-modal-id-value="go-to-service-modal-referral">
+    <div class="clinic-sidenav-overlay clinic-compact-only"
+         data-clinic-sidenav-target="overlay"
+         data-action="click->clinic-sidenav#close"
+         aria-hidden="true"></div>
+
+  <header class="navbar-fixed clinic-navbar clinic-navbar--referral clinic-navbar--with-sidebar relative bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 py-4 shadow-md z-50" style="width:100%;">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex flex-wrap justify-between items-center">
-        <h1 class="text-white text-xl font-bold mb-4 sm:mb-0 w-full sm:w-auto text-center sm:text-left flex items-center gap-2">
-          <%= link_to raw("Lipepay <span class='ml-1 text-xs bg-white text-emerald-700 rounded px-2 py-0.5 font-medium shadow-sm'>atendimentos</span>"),
-                      (current_account&.clinic_only? ? clinic_management.index_by_referral_services_path(user_referral) : main_app.root_path),
-                      class: "text-white hover:text-emerald-300" %>
+      <div class="clinic-navbar__row">
+        <button type="button"
+                class="clinic-sidenav-trigger clinic-compact-only clinic-navbar__menu"
+                data-clinic-sidenav-target="trigger"
+                data-action="click->clinic-sidenav#toggle"
+                aria-label="Abrir menu"
+                aria-expanded="false">
+          <i class="material-icons" aria-hidden="true">menu</i>
+        </button>
+
+        <div class="clinic-navbar__logo">
+          <h1 class="clinic-navbar__brand-title text-white text-xl font-bold m-0">
+            <%= link_to raw("Lipepay <span class='clinic-navbar__badge ml-1'>atendimentos</span>"),
+                        (current_account&.clinic_only? ? clinic_management.index_by_referral_services_path(user_referral) : main_app.root_path),
+                        class: "text-white hover:text-emerald-300 clinic-navbar__brand-name" %>
+          </h1>
+        </div>
+
+        <div class="clinic-navbar__location">
           <%# ESSENTIAL: Referrals with assigned external locations can switch context like staff. %>
           <% if referral_service_location_options.present? && referral_service_location_options.size > 1 %>
-            <%= form_with url: clinic_management.switch_service_locations_path, method: :post, local: true, data: { turbo: false }, class: "inline ml-3" do |f| %>
+            <%= form_with url: clinic_management.switch_service_locations_path, method: :post, local: true, data: { turbo: false }, class: "clinic-navbar__location-form m-0" do |f| %>
               <label for="navbar-location-select-referral" class="sr-only">Local de atendimento</label>
               <span class="navbar-location-badge inline-flex items-center gap-2">
                 <i class="fas fa-map-marker-alt text-emerald-600 text-sm flex-shrink-0" aria-hidden="true"></i>
@@ -73,108 +93,77 @@
               </span>
             <% end %>
           <% end %>
-        </h1>
-
-        <% if user_signed_in? %>
-          <nav class="text-lg w-full order-3 sm:order-2 sm:w-auto mt-4 sm:mt-0 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 md:hidden">
-            <%= link_to "Pacientes ausentes", 
-                session[:absent_leads_state] || clinic_management.absent_leads_path, 
-                class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'leads'}" %>
-            <%= link_to "Atendimentos", clinic_management.index_by_referral_services_path(user_referral), class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'services'}" %>
-            <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'lead_messages'}" %>
-            <%= link_to "Convites", clinic_management.invitations_path(referral_id: user_referral.id), class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'invitations'}" %>
-            <% if current_account&.clinic_only? %>
-              <% if whatsapp_integration_enabled? && user_referral&.can_connect_whatsapp %>
-                <%= link_to "Whatsapp", referral_whatsapp_connection_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'referral_whatsapp'}" %>
-              <% end %>
-              <%= link_to "Perfil", clinic_management.edit_profile_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'profiles'}" %>
-            <% end %>
-            
-            <%# Mobile share buttons - Referral (only when self_booking_enabled) %>
-            <% if self_booking_enabled_for_current_user? %>
-            <div class="mt-4 pt-4 border-t border-emerald-600 flex flex-col gap-2 share-booking-block" 
-                 data-base-url="<%= referral_share_url %>" 
-                 data-base-message="<%= ERB::Util.url_encode(referral_share_message) %>">
-              <p class="text-emerald-200 text-xs font-semibold uppercase tracking-wide">Compartilhar</p>
-              <p class="text-white text-xs leading-relaxed -mt-1">
-                <span class="inline-flex items-center rounded bg-sky-500/25 text-sky-100 px-2 py-0.5 font-semibold border border-sky-400/40 mr-1">Link aberto</span>
-                Novo contato: nome e WhatsApp, depois escolhe <strong>qualquer</strong> dia e horário. (Dia fixo = tela do atendimento; ficha = quem já está cadastrado.)
-              </p>
-              <% if current_account&.multi_service_locations_enabled? && ClinicManagement::ServiceLocation.any? %>
-              <div class="share-loc-info">
-                <span class="text-emerald-200 text-xs">Compartilhando para:</span>
-                <span class="text-white font-medium"><i class="fas fa-map-marker-alt text-emerald-400 mr-1"></i><%= referral_share_loc_label %></span>
-              </div>
-              <% end %>
-              <a href="https://wa.me/?text=<%= ERB::Util.url_encode(referral_share_message) %>" 
-                 target="_blank"
-                 class="navbar-share-btn share-whatsapp-link flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg shadow-lg">
-                <i class="fab fa-whatsapp text-lg"></i>
-                <span class="font-medium">Enviar via WhatsApp</span>
-              </a>
-              <button type="button"
-                      onclick="copyShareLink(this, this.getAttribute('data-share-url'))"
-                      class="navbar-copy-btn share-copy-btn flex items-center justify-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm"
-                      data-share-url="<%= referral_share_url %>">
-                <i class="fas fa-copy"></i>
-                <span>Copiar link</span>
-              </button>
-            </div>
-            <% end %>
-          </nav>
-        <% end %>
-
-        <div class="relative order-2 sm:order-3 w-full sm:w-auto flex-grow sm:flex-grow-0 mx-auto sm:mx-4 mb-4 sm:mb-0" style="max-width: 500px;">
-          <%= form_with url: search_leads_path, method: :post, data: { remote: true, controller: "debounce" }, class: "flex justify-center" do |search| %>
-            <div class="input-field relative w-full navbar-search" >
-              <%= search.search_field :q,
-                  data: { debounce_target: "input" },
-                  id: "search_lead",
-                  placeholder: "Busque pelo nome ou telefone...",
-                  autocomplete: "off",
-                  spellcheck: false,
-                  class: "bg-white rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent",
-                  style: "font-size: 16px; padding: 12px;" %>
-              <label class="absolute right-2 top-1/2 transform -translate-y-1/2" for="search_lead">
-                <i class="fas fa-search text-gray-500"></i>
-              </label>
-            </div>
-          <% end %>
-          <div id="lead-results" class="absolute mt-1 w-full bg-white shadow-lg rounded-b" style="z-index: 1000"></div>
         </div>
 
-        <%# ESSENTIAL: Referral "Ir para atendimento" lists ALL upcoming services for the current location
-            # (same plane as staff quick-nav), not only slots where this referral already has appointments.
-            # So indicadores can open empty days to encaixar patients or share self-booking. %>
-        <%# ESSENTIAL: Bulk appointment counts (2 queries) for modal — total per service + this referral_code. %>
+        <%# ESSENTIAL: Referral "Ir para atendimento" lists ALL upcoming services for the current location. %>
         <% referral_services = ClinicManagement::Service.upcoming.for_location(current_service_location_id).includes(:service_location).order(date: :asc, start_time: :asc).limit(20).to_a %>
         <% referral_slot_ids = referral_services.map(&:id) %>
         <% referral_appt_total_by_service = referral_slot_ids.blank? ? {} : ClinicManagement::Appointment.where(service_id: referral_slot_ids).group(:service_id).count %>
         <% referral_appt_mine_by_service = referral_slot_ids.blank? ? {} : ClinicManagement::Appointment.where(service_id: referral_slot_ids, referral_code: user_referral.code).group(:service_id).count %>
         <% referral_services_with_urls = referral_services.map { |s| { service: s, url: clinic_management.show_by_referral_services_path(referral_id: user_referral.id, id: s.id), appointments_total: referral_appt_total_by_service[s.id] || 0, appointments_for_referral: referral_appt_mine_by_service[s.id] || 0 } } %>
         <% referral_grouped_by_day = referral_services_with_urls.group_by { |i| i[:service].date }.sort_by { |date, _| date }.map { |date, items| wd = date.wday == 6 ? 7 : date.wday + 1; { date: date, weekday: (ClinicManagement::TimeSlotsHelper::WEEKDAY_NAMES[wd] || ""), date_str: date.strftime("%d/%m/%Y"), items: items.sort_by { |i| i[:service].start_time&.to_s || "00:00" } } } %>
-        <div data-controller="go-to-service-modal" data-go-to-service-modal-modal-id-value="go-to-service-modal-referral">
-          <div class="flex items-center order-4 ml-4 mt-4 sm:mt-0">
+
+        <div class="clinic-navbar__actions">
+          <div class="clinic-navbar__go-to-service">
             <button type="button" id="go-to-service-trigger-referral" class="go-to-service-trigger" data-modal="go-to-service-modal-referral" data-action="click->go-to-service-modal#open" aria-haspopup="dialog" aria-expanded="false">
               <i class="fas fa-calendar-check text-white/90 mr-2" aria-hidden="true"></i>
               <span>Ir para atendimento...</span>
               <i class="fas fa-chevron-down text-white/80 ml-2 text-sm" aria-hidden="true"></i>
             </button>
           </div>
-          <%= render "clinic_management/shared/go_to_service_modal", modal_id: "go-to-service-modal-referral", trigger_id: "go-to-service-trigger-referral", grouped_by_day: referral_grouped_by_day, current_path: request.path, slot_counts_mode: :referral %>
+          <div class="relative clinic-navbar__search" id="search_lead_container">
+            <%= form_with url: search_leads_path, method: :post, data: { remote: true, controller: "debounce" }, class: "w-full" do |search| %>
+              <div class="input-field relative w-full navbar-search">
+                <%= search.search_field :q,
+                    data: { debounce_target: "input" },
+                    id: "search_lead",
+                    placeholder: "Busque pelo nome ou telefone...",
+                    autocomplete: "off",
+                    spellcheck: false,
+                    class: "bg-white rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent",
+                    style: "font-size: 16px; padding: 12px;" %>
+                <label class="absolute right-2 top-1/2 transform -translate-y-1/2" for="search_lead">
+                  <i class="fas fa-search text-gray-500"></i>
+                </label>
+              </div>
+            <% end %>
+            <div id="lead-results" class="absolute mt-1 w-full bg-white shadow-lg rounded-b" style="z-index: 1000"></div>
+          </div>
         </div>
 
         <% if user_signed_in? %>
-          <div class="flex items-center order-1 sm:order-4 mt-4 sm:mt-0">
-            <span class="text-white mr-4">Olá, <%= current_user.name %></span>
-            <%= link_to "Sair", main_app.destroy_user_session_path, method: :delete, class: "text-sm px-4 py-2 border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white" %>
+          <div class="clinic-navbar__user">
+            <div class="clinic-navbar__user-chip clinic-phone-only">
+              <span class="clinic-navbar__avatar" aria-hidden="true"><%= current_user.name.to_s.strip.first&.upcase || "?" %></span>
+              <span class="clinic-navbar__greeting">Olá, <%= current_user.name.to_s.split.first %></span>
+            </div>
+            <div class="clinic-navbar__user-full clinic-phone-hidden">
+              <span class="text-white mr-4">Olá, <%= current_user.name %></span>
+              <%= link_to "Sair", main_app.destroy_user_session_path, method: :delete, class: "text-sm px-4 py-2 border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white" %>
+            </div>
           </div>
         <% end %>
       </div>
+      <%= render "clinic_management/shared/go_to_service_modal", modal_id: "go-to-service-modal-referral", trigger_id: "go-to-service-trigger-referral", grouped_by_day: referral_grouped_by_day, current_path: request.path, slot_counts_mode: :referral %>
     </div>
   </header>
 
-  <aside class="hidden md:block w-64 bg-emerald-950 text-white fixed top-0 left-0 h-screen pt-4 p-4 z-40 overflow-y-auto clinic-sidebar" style="padding-top: 150px;">
+  <aside class="clinic-sidebar bg-emerald-950 text-white">
+    <button type="button"
+            class="clinic-sidenav-close-btn clinic-compact-only"
+            data-action="click->clinic-sidenav#close"
+            aria-label="Fechar menu">
+      <i class="material-icons" aria-hidden="true">close</i>
+    </button>
+    <div class="clinic-sidebar__go-to-service clinic-compact-only px-3 mb-4">
+      <button type="button"
+              class="go-to-service-trigger w-full justify-center"
+              data-action="click->go-to-service-modal#open click->clinic-sidenav#close"
+              aria-haspopup="dialog">
+        <i class="fas fa-calendar-check text-white/90 mr-2" aria-hidden="true"></i>
+        <span>Ir para atendimento...</span>
+      </button>
+    </div>
     <%# ESSENTIAL: Brand is in the top header on desktop — no duplicate logo in sidebar. %>
     <nav class="flex flex-col space-y-3 text-lg clinic-sidebar__nav">
         <% if allowed_to_access_leads?(current_user) %>
@@ -187,6 +176,16 @@
         <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'lead_messages'}" %>
         <%= render "clinic_management/shared/clinic_only_nav_links" %>
     </nav>
+
+    <% if user_signed_in? %>
+      <div class="clinic-compact-only clinic-sidebar__user-compact px-3 py-3 border-t border-emerald-800 mt-4 mb-4">
+        <span class="text-emerald-100 text-sm block mb-2">Olá, <%= current_user.name %></span>
+        <%= link_to "Sair",
+            main_app.destroy_user_session_path,
+            method: :delete,
+            class: "inline-block text-sm px-4 py-2 border rounded text-white border-emerald-500 hover:bg-emerald-800" %>
+      </div>
+    <% end %>
     
     <%# ================================================================
         SHARE BOOKING LINK - Referral User (only when self_booking_enabled)
@@ -233,6 +232,7 @@
     </div>
     <% end %>
   </aside>
+  </div>
 
 <% else %>
 <%# Build share link for staff users - uses navbar location (current_service_location_id). %>
@@ -245,132 +245,112 @@
   staff_share_loc_label = current_service_location_id.blank? ? "Interno" : (current_service_location_id.to_s == "all" ? "Todos externos" : (ClinicManagement::ServiceLocation.find_by(id: current_service_location_id)&.name || "Interno"))
 %>
 <% end %>
-<header class="navbar-fixed clinic-navbar clinic-navbar--staff relative bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 py-4 shadow-md md:pl-64 z-50">
+<div data-controller="clinic-sidenav go-to-service-modal" data-go-to-service-modal-modal-id-value="go-to-service-modal-staff">
+  <div class="clinic-sidenav-overlay clinic-compact-only"
+       data-clinic-sidenav-target="overlay"
+       data-action="click->clinic-sidenav#close"
+       aria-hidden="true"></div>
+
+<header class="navbar-fixed clinic-navbar clinic-navbar--staff clinic-navbar--with-sidebar relative bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 py-4 shadow-md z-50">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 clinic-navbar__container">
-    <div class="clinic-navbar__row flex flex-wrap justify-between items-center gap-3">
-      <div class="clinic-navbar__brand mb-4 md:mb-0 w-full md:w-auto text-center md:text-left">
-      <h1 class="clinic-navbar__brand-title text-white text-2xl font-bold m-0">
-         <%= link_to "Lipepay", main_app.root_path, class: "text-white hover:text-emerald-300 clinic-navbar__brand-name" %>
-         <span class="clinic-navbar__badge">atendimentos</span>
-      </h1>
-         <%# ESSENTIAL: Location selector visible to all staff when multi-regions enabled. High prominence for user context. %>
-         <% if current_account&.multi_service_locations_enabled? && ClinicManagement::ServiceLocation.any? %>
-         <%= form_with url: clinic_management.switch_service_locations_path, method: :post, local: true, data: { turbo: false }, class: "inline ml-3" do |f| %>
-           <label for="navbar-location-select-staff" class="sr-only">Local de atendimento</label>
-           <span class="navbar-location-badge inline-flex items-center gap-2">
-             <i class="fas fa-map-marker-alt text-emerald-600 text-sm flex-shrink-0" aria-hidden="true"></i>
-             <%= f.select :location_id, options_for_select([["Interno", ""], ["Todos externos", "all"]] + ClinicManagement::ServiceLocation.order(:name).map { |loc| [loc.name, loc.id.to_s] }, current_service_location_id.to_s), {}, { id: "navbar-location-select-staff", class: "navbar-location-select", onchange: "this.form.submit()" } %>
-           </span>
-         <% end %>
-         <% end %>
+    <div class="clinic-navbar__row">
+      <button type="button"
+              class="clinic-sidenav-trigger clinic-compact-only clinic-navbar__menu"
+              data-clinic-sidenav-target="trigger"
+              data-action="click->clinic-sidenav#toggle"
+              aria-label="Abrir menu"
+              aria-expanded="false">
+        <i class="material-icons" aria-hidden="true">menu</i>
+      </button>
+
+      <div class="clinic-navbar__logo">
+        <h1 class="clinic-navbar__brand-title text-white text-2xl font-bold m-0">
+          <%= link_to "Lipepay", main_app.root_path, class: "text-white hover:text-emerald-300 clinic-navbar__brand-name" %>
+          <span class="clinic-navbar__badge">atendimentos</span>
+        </h1>
       </div>
 
-      <nav class="text-xl order-3 sm:order-2 w-full sm:w-auto mt-4 sm:mt-0 flex flex-col sm:flex-row sm:flex-wrap justify-center space-y-4 sm:space-y-0 sm:space-x-4 md:hidden">
-         <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-white hover:text-emerald-300 #{'active' if request.path == clinic_management.index_today_path}", data: { turbo: false } %>
-         <%= link_to "Próximo atendimento", clinic_management.index_next_path, class: "text-white hover:text-emerald-300 #{'active' if request.path == clinic_management.index_next_path }", data: { turbo: false } %>
-         <%= link_to "Atendimento anterior", clinic_management.index_before_path, class: "text-white hover:text-emerald-300 #{'active' if request.path == clinic_management.index_before_path }", data: { turbo: false } %>
-         <% unless clinical_assistant?(current_user) %>
-         <%= link_to "Pacientes ausentes",
-             session[:absent_leads_state] || clinic_management.absent_leads_path,
-             class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'leads'}" %>
-         <% end %>
-         <% if is_manager_above? %>
-           <%= link_to "Convites", clinic_management.invitations_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'invitations'}" %>
-           <%= link_to "Tipos de serviço", clinic_management.service_types_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'service_types'}" %>
-         <% end %>
-         <%= link_to "Atendimentos", clinic_management.services_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'services'}" %>
-         <%= link_to "Meus Agendamentos", clinic_management.my_reschedules_appointments_path, class: "text-white hover:text-emerald-300 #{'active' if action_name == 'my_reschedules'}" %>
-         <% unless clinical_assistant?(current_user) %>
-         <%= link_to "Regiões de captação", clinic_management.regions_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'regions'}" %>
-         <%= link_to "Locais de Atendimento", clinic_management.service_locations_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'service_locations'}" if current_account&.multi_service_locations_enabled? %>
-         <%= link_to "Horários de marcações", clinic_management.time_slots_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'time_slots'}" %>
-         <%= link_to "Mensagens customizadas", clinic_management.lead_messages_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'lead_messages'}"  %>
-         <% end %>
-         <% if current_account&.clinic_only? %>
-           <%= link_to "Perfil", clinic_management.edit_profile_path, class: "text-white hover:text-emerald-300 #{'active' if controller_name == 'profiles'}" %>
-         <% end %>
-         
-         <%# Mobile share buttons - Staff (only when self_booking_enabled) %>
-         <% if self_booking_enabled_for_current_user? %>
-         <div class="mt-4 pt-4 border-t border-emerald-600 flex flex-col gap-2 share-booking-block" 
-              data-base-url="<%= staff_share_url %>" 
-              data-base-message="<%= ERB::Util.url_encode(staff_share_message) %>">
-           <p class="text-emerald-200 text-xs font-semibold uppercase tracking-wide">Compartilhar</p>
-           <p class="text-white text-xs leading-relaxed -mt-1">
-             <span class="inline-flex items-center rounded bg-sky-500/25 text-sky-100 px-2 py-0.5 font-semibold border border-sky-400/40 mr-1">Link aberto</span>
-             Novo contato: nome e WhatsApp, depois escolhe <strong>qualquer</strong> dia e horário. (Dia fixo = tela do atendimento; ficha = quem já está cadastrado.)
-           </p>
-           <% if current_account&.multi_service_locations_enabled? && ClinicManagement::ServiceLocation.any? %>
-           <div class="share-loc-info">
-             <span class="text-emerald-200 text-xs">Compartilhando para:</span>
-             <span class="text-white font-medium"><i class="fas fa-map-marker-alt text-emerald-400 mr-1"></i><%= staff_share_loc_label %></span>
-           </div>
-           <% end %>
-           <a href="https://wa.me/?text=<%= ERB::Util.url_encode(staff_share_message) %>" 
-              target="_blank"
-              class="navbar-share-btn share-whatsapp-link flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg shadow-lg">
-             <i class="fab fa-whatsapp text-lg"></i>
-             <span class="font-medium">Enviar via WhatsApp</span>
-           </a>
-           <button type="button"
-                   onclick="copyShareLink(this, this.getAttribute('data-share-url'))"
-                   class="navbar-copy-btn share-copy-btn flex items-center justify-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm"
-                   data-share-url="<%= staff_share_url %>">
-             <i class="fas fa-copy"></i>
-             <span>Copiar link</span>
-           </button>
-         </div>
-         <% end %>
-      </nav>
-
-      <div class="relative order-2 sm:order-3 w-full sm:w-auto flex-grow sm:flex-grow-0 mx-auto sm:mx-4 mb-4 sm:mb-0" id="search_lead_container" style="max-width: 500px;">
-        <%= form_with url: search_leads_path, method: :post, data: { remote: true, controller: "debounce" }, class: "w-full flex justify-center sm:justify-start" do |search| %>
-          <div class="input-field relative w-full navbar-search">
-            <%= search.search_field :q,
-                data: { debounce_target: "input" },
-                id: "search_lead",
-                placeholder: "Busque pelo nome ou telefone...",
-                autocomplete: "off",
-                spellcheck: false,
-                class: "bg-white rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent",
-                style: "font-size: 16px; padding: 12px;" %>
-            <label class="absolute right-2 top-1/2 transform -translate-y-1/2" for="search_lead">
-              <i class="fas fa-search text-gray-500"></i>
-            </label>
-          </div>
+      <div class="clinic-navbar__location">
+        <%# ESSENTIAL: Location selector visible to all staff when multi-regions enabled. %>
+        <% if current_account&.multi_service_locations_enabled? && ClinicManagement::ServiceLocation.any? %>
+          <%= form_with url: clinic_management.switch_service_locations_path, method: :post, local: true, data: { turbo: false }, class: "clinic-navbar__location-form m-0" do |f| %>
+            <label for="navbar-location-select-staff" class="sr-only">Local de atendimento</label>
+            <span class="navbar-location-badge inline-flex items-center gap-2">
+              <i class="fas fa-map-marker-alt text-emerald-600 text-sm flex-shrink-0" aria-hidden="true"></i>
+              <%= f.select :location_id, options_for_select([["Interno", ""], ["Todos externos", "all"]] + ClinicManagement::ServiceLocation.order(:name).map { |loc| [loc.name, loc.id.to_s] }, current_service_location_id.to_s), {}, { id: "navbar-location-select-staff", class: "navbar-location-select", onchange: "this.form.submit()" } %>
+            </span>
+          <% end %>
         <% end %>
-        <div id="lead-results" class="absolute mt-1 w-full bg-white shadow-lg rounded-b" style="z-index: 1000"></div>
       </div>
 
-      <%# ESSENTIAL: Button trigger + modal for "Ir para atendimento". Stimulus controller for reliable open/close (Turbo-safe). %>
-      <%# ESSENTIAL: Same bulk counts pattern as referral modal; staff sees only total (:staff mode in partial). %>
       <% staff_services = ClinicManagement::Service.for_location(current_service_location_id).includes(:service_location).where("date >= ?", Date.current).order(date: :asc, start_time: :asc).limit(20).to_a %>
       <% staff_slot_ids = staff_services.map(&:id) %>
       <% staff_appt_total_by_service = staff_slot_ids.blank? ? {} : ClinicManagement::Appointment.where(service_id: staff_slot_ids).group(:service_id).count %>
       <% staff_services_with_urls = staff_services.map { |s| { service: s, url: clinic_management.service_path(s), appointments_total: staff_appt_total_by_service[s.id] || 0 } } %>
       <% staff_grouped_by_day = staff_services_with_urls.group_by { |i| i[:service].date }.sort_by { |date, _| date }.map { |date, items| wd = date.wday == 6 ? 7 : date.wday + 1; { date: date, weekday: (ClinicManagement::TimeSlotsHelper::WEEKDAY_NAMES[wd] || ""), date_str: date.strftime("%d/%m/%Y"), items: items.sort_by { |i| i[:service].start_time&.to_s || "00:00" } } } %>
-      <div data-controller="go-to-service-modal" data-go-to-service-modal-modal-id-value="go-to-service-modal-staff">
-        <div class="flex items-center order-4 ml-4 mt-4 sm:mt-0">
+
+      <div class="clinic-navbar__actions">
+        <div class="clinic-navbar__go-to-service">
           <button type="button" id="go-to-service-trigger-staff" class="go-to-service-trigger" data-modal="go-to-service-modal-staff" data-action="click->go-to-service-modal#open" aria-haspopup="dialog" aria-expanded="false">
             <i class="fas fa-calendar-check text-white/90 mr-2" aria-hidden="true"></i>
             <span>Ir para atendimento...</span>
             <i class="fas fa-chevron-down text-white/80 ml-2 text-sm" aria-hidden="true"></i>
           </button>
         </div>
-        <%= render "clinic_management/shared/go_to_service_modal", modal_id: "go-to-service-modal-staff", trigger_id: "go-to-service-trigger-staff", grouped_by_day: staff_grouped_by_day, current_path: request.path, slot_counts_mode: :staff %>
+        <div class="relative clinic-navbar__search" id="search_lead_container">
+          <%= form_with url: search_leads_path, method: :post, data: { remote: true, controller: "debounce" }, class: "w-full" do |search| %>
+            <div class="input-field relative w-full navbar-search">
+              <%= search.search_field :q,
+                  data: { debounce_target: "input" },
+                  id: "search_lead",
+                  placeholder: "Busque pelo nome ou telefone...",
+                  autocomplete: "off",
+                  spellcheck: false,
+                  class: "bg-white rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent",
+                  style: "font-size: 16px; padding: 12px;" %>
+              <label class="absolute right-2 top-1/2 transform -translate-y-1/2" for="search_lead">
+                <i class="fas fa-search text-gray-500"></i>
+              </label>
+            </div>
+          <% end %>
+          <div id="lead-results" class="absolute mt-1 w-full bg-white shadow-lg rounded-b" style="z-index: 1000"></div>
+        </div>
       </div>
 
       <% if user_signed_in? %>
-        <div class="clinic-navbar__user flex items-center text-white order-1 sm:order-5 w-full sm:w-auto justify-center sm:justify-end">
-           <span class="mr-4">Olá, <%= current_user.name %></span>
-           <%= link_to "Sair", main_app.destroy_user_session_path, data: { turbo_method: :delete }, class: "text-sm px-4 py-2 border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white" %>
+        <div class="clinic-navbar__user">
+          <div class="clinic-navbar__user-chip clinic-phone-only">
+            <span class="clinic-navbar__avatar" aria-hidden="true"><%= current_user.name.to_s.strip.first&.upcase || "?" %></span>
+            <span class="clinic-navbar__greeting">Olá, <%= current_user.name.to_s.split.first %></span>
+          </div>
+          <div class="clinic-navbar__user-full clinic-phone-hidden">
+            <span class="mr-4">Olá, <%= current_user.name %></span>
+            <%= link_to "Sair", main_app.destroy_user_session_path, data: { turbo_method: :delete }, class: "text-sm px-4 py-2 border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white" %>
+          </div>
         </div>
       <% end %>
     </div>
+    <%= render "clinic_management/shared/go_to_service_modal", modal_id: "go-to-service-modal-staff", trigger_id: "go-to-service-trigger-staff", grouped_by_day: staff_grouped_by_day, current_path: request.path, slot_counts_mode: :staff %>
   </div>
 </header>
 
-<aside class="hidden md:block w-64 bg-emerald-950 text-white fixed top-0 left-0 h-screen pt-4 p-4 z-40 overflow-y-auto clinic-sidebar" style="padding-top: 150px;">
+<aside class="clinic-sidebar bg-emerald-950 text-white">
+  <button type="button"
+          class="clinic-sidenav-close-btn clinic-compact-only"
+          data-action="click->clinic-sidenav#close"
+          aria-label="Fechar menu">
+    <i class="material-icons" aria-hidden="true">close</i>
+  </button>
+  <%# ESSENTIAL: Compact-tier quick nav — modal markup lives in header (always in DOM). %>
+  <div class="clinic-sidebar__go-to-service clinic-compact-only px-3 mb-4">
+    <button type="button"
+            class="go-to-service-trigger w-full justify-center"
+            data-action="click->go-to-service-modal#open click->clinic-sidenav#close"
+            aria-haspopup="dialog">
+      <i class="fas fa-calendar-check text-white/90 mr-2" aria-hidden="true"></i>
+      <span>Ir para atendimento...</span>
+    </button>
+  </div>
   <%# ESSENTIAL: Brand is in the top header (clinic-navbar__brand) on desktop — do not duplicate logo in sidebar. %>
   <nav class="flex flex-col space-y-3 text-lg clinic-sidebar__nav">
     <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if request.path == clinic_management.index_today_path}", data: { turbo: false } %>
@@ -395,6 +375,16 @@
     <% end %>
     <%= render "clinic_management/shared/clinic_only_nav_links" %>
   </nav>
+
+  <% if user_signed_in? %>
+    <div class="clinic-compact-only clinic-sidebar__user-compact px-3 py-3 border-t border-emerald-800 mt-4 mb-4">
+      <span class="text-emerald-100 text-sm block mb-2">Olá, <%= current_user.name %></span>
+      <%= link_to "Sair",
+          main_app.destroy_user_session_path,
+          data: { turbo_method: :delete },
+          class: "inline-block text-sm px-4 py-2 border rounded text-white border-emerald-500 hover:bg-emerald-800" %>
+    </div>
+  <% end %>
   
   <%# ================================================================
       SHARE BOOKING LINK - Staff User (only when self_booking_enabled)
@@ -437,6 +427,7 @@
   </div>
   <% end %>
 </aside>
+</div>
 
 <% end %>
 
@@ -495,7 +486,7 @@
     }
   }
 
-  @media (min-width: 960px) {
+  @media (min-width: 1366px) {
     #search_lead {
       width: 500px;
     }
