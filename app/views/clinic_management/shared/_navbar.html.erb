@@ -6,7 +6,7 @@
       <div class="clinic-navbar__row">
         <div class="clinic-navbar__brand">
           <h1 class="clinic-navbar__brand-title text-white text-xl font-bold m-0">
-            <%= link_to "Lipepay", clinic_management.index_today_path, class: "text-white hover:text-emerald-300 clinic-navbar__brand-name" %>
+            <%= link_to "LPóticas", clinic_management.index_today_path, class: "text-white hover:text-emerald-300 clinic-navbar__brand-name" %>
             <span class="clinic-navbar__badge">atendimentos</span>
           </h1>
           <%# ESSENTIAL: Location selector for doctors - Interno + their allowed externals. High prominence for context. %>
@@ -76,7 +76,7 @@
 
         <div class="clinic-navbar__logo">
           <h1 class="clinic-navbar__brand-title text-white text-xl font-bold m-0">
-            <%= link_to raw("Lipepay <span class='clinic-navbar__badge ml-1'>atendimentos</span>"),
+            <%= link_to raw("LPóticas <span class='clinic-navbar__badge ml-1'>atendimentos</span>"),
                         (current_account&.clinic_only? ? clinic_management.index_by_referral_services_path(user_referral) : main_app.root_path),
                         class: "text-white hover:text-emerald-300 clinic-navbar__brand-name" %>
           </h1>
@@ -265,7 +265,7 @@
 
       <div class="clinic-navbar__logo">
         <h1 class="clinic-navbar__brand-title text-white text-2xl font-bold m-0">
-          <%= link_to "Lipepay", main_app.root_path, class: "text-white hover:text-emerald-300 clinic-navbar__brand-name" %>
+          <%= link_to "LPóticas", main_app.root_path, class: "text-white hover:text-emerald-300 clinic-navbar__brand-name" %>
           <span class="clinic-navbar__badge">atendimentos</span>
         </h1>
       </div>
