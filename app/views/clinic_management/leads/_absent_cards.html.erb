@@ -10,6 +10,8 @@
       class="bg-gray-800 bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-3 shadow-lg transition-all duration-200"
       onclick="scrollCardsLeft()"
       id="scroll-left-btn"
+      aria-label="Ver card anterior"
+      aria-controls="cards-container"
       style="display: none;">
       <i class="fas fa-chevron-left text-xl"></i>
     </button>
@@ -22,7 +24,9 @@
       type="button"
       class="bg-gray-800 bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-3 shadow-lg transition-all duration-200"
       onclick="scrollCardsRight()"
-      id="scroll-right-btn">
+      id="scroll-right-btn"
+      aria-label="Ver próximo card"
+      aria-controls="cards-container">
       <i class="fas fa-chevron-right text-xl"></i>
     </button>
   </div>
@@ -32,10 +36,13 @@
     id="cards-container"
     class="overflow-x-auto snap-x snap-mandatory md:overflow-visible md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4"
     onscroll="updateNavigationButtons()">
-    <div class="flex md:contents md:gap-0">
+    <div class="flex w-full md:contents md:gap-0">
     <% rows.each_with_index do |row, index| %>
     <% lead = leads[index] %>
-    <div class="bg-white rounded shadow p-4 mb-4 relative flex-shrink-0 w-screen md:w-auto snap-start" id="lead-card-<%= lead.id %>">
+    <%# ESSENTIAL: Mobile slides must match the carousel viewport, not 100vw.
+        The page shell has horizontal gutters, so w-screen makes every card wider
+        than #cards-container and clips the right edge. %>
+    <div class="bg-white rounded shadow p-4 mb-4 relative flex-shrink-0 w-full min-w-0 max-w-full md:w-auto md:max-w-none snap-start" id="lead-card-<%= lead.id %>">
       <% if rows.any? %>
         <%# Checkbox de seleção (Evolution ou Meta bulk) %>
         <% if can_use_evolution_api? || can_use_meta_bulk_for_absent? %>
@@ -147,30 +154,22 @@
 // Funções de navegação do carrossel mobile
 function scrollCardsLeft() {
   const container = document.getElementById('cards-container');
-  const card = container.querySelector('.bg-white');
-  if (!card) return;
+  if (!container) return;
   
-  // Pegar a largura exata do card (100vw no mobile)
-  const cardWidth = card.offsetWidth;
-  
-  // Scroll instantâneo (sem behavior: 'smooth')
+  // ESSENTIAL: One navigation step equals the visible carousel viewport.
   container.scrollBy({
-    left: -cardWidth,
+    left: -container.clientWidth,
     behavior: 'auto'
   });
 }
 
 function scrollCardsRight() {
   const container = document.getElementById('cards-container');
-  const card = container.querySelector('.bg-white');
-  if (!card) return;
+  if (!container) return;
   
-  // Pegar a largura exata do card (100vw no mobile)
-  const cardWidth = card.offsetWidth;
-  
-  // Scroll instantâneo (sem behavior: 'smooth')
+  // ESSENTIAL: One navigation step equals the visible carousel viewport.
   container.scrollBy({
-    left: cardWidth,
+    left: container.clientWidth,
     behavior: 'auto'
   });
 }
