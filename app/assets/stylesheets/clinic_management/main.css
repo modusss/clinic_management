@@ -358,7 +358,11 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
   }
 
   body.clinic-app:not(.doctor-view):not(.clinic-lens-demo) {
-    padding-top: 7.5rem;
+    /*
+     * ESSENTIAL: The compact tablet navbar is fixed and renders two rows.
+     * Match its measured 130px height so every engine view starts below it.
+     */
+    padding-top: 8.125rem;
   }
 
   /* ESSENTIAL: Tablet navbar — menu+logo+user row1; location+go-to+search row2 (reference layout). */
@@ -488,7 +492,7 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
     padding-left: 1rem;
     padding-right: 1rem;
     padding-top: 0.5rem;
-    scroll-margin-top: 7.5rem;
+    scroll-margin-top: 8.125rem;
     width: 100%;
     box-sizing: border-box;
   }
@@ -571,12 +575,25 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
   }
 
   body.clinic-app:not(.doctor-view):not(.clinic-lens-demo) {
-    padding-top: 5.5rem;
+    /*
+     * ESSENTIAL: Phone navbar height depends on whether the location selector
+     * renders a second row. Keep both fixed-header variants in sync with the
+     * content offset instead of letting the first view controls sit underneath.
+     */
+    padding-top: 4.25rem;
+  }
+
+  body.clinic-app:not(.doctor-view):not(.clinic-lens-demo):has(.clinic-navbar__location-form) {
+    padding-top: 6.875rem;
   }
 
   #main-container > .clinic-main-shell {
     padding-top: 0.75rem;
-    scroll-margin-top: 5.5rem;
+    scroll-margin-top: 4.25rem;
+  }
+
+  body.clinic-app:not(.doctor-view):not(.clinic-lens-demo):has(.clinic-navbar__location-form) #main-container > .clinic-main-shell {
+    scroll-margin-top: 6.875rem;
   }
 }
 
