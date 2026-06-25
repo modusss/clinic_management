@@ -79,11 +79,14 @@
   <% if interactions.any? %>
     <div class="text-xs text-gray-500 mt-1 relative">
       <div class="flex items-center gap-2">
-        <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
-          📞 <%= interactions.count(&:whatsapp_click?) %>x
+        <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs" title="WhatsApp">
+          <i class="fab fa-whatsapp text-xs"></i> <%= interactions.count(&:whatsapp_click?) %>x
         </span>
-        <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
-          <i class="fab fa-whatsapp text-xs"></i> <%= interactions.count(&:phone_call?) %>x
+        <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs" title="Tentativas de ligação">
+          <i class="fas fa-phone text-xs"></i> <%= interactions.count(&:phone_call?) %>x
+        </span>
+        <span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-xs" title="Atendeu">
+          <i class="fas fa-phone-volume text-xs"></i> <%= interactions.count(&:phone_call_answered?) %>x
         </span>
         
         <!-- Botão discreto para abrir histórico -->
@@ -128,9 +131,11 @@
               <div class="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
                 <div class="flex items-center gap-2">
                   <% if interaction.whatsapp_click? %>
-                    <span class="text-green-600" title="WhatsApp">📱</span>
+                    <span class="text-green-600" title="WhatsApp"><i class="fab fa-whatsapp text-xs"></i></span>
+                  <% elsif interaction.phone_call_answered? %>
+                    <span class="text-emerald-700" title="Atendeu"><i class="fas fa-phone-volume text-xs"></i></span>
                   <% else %>
-                    <span class="text-blue-600" title="Ligação">📞</span>
+                    <span class="text-red-600" title="Tentativa"><i class="fas fa-phone text-xs"></i></span>
                   <% end %>
                   
                   <div class="text-xs">

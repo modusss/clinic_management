@@ -36,6 +36,7 @@ module ClinicManagement
         @total_reschedules = @annual_monthly_data.sum { |m| m[:reschedules] }
         @total_whatsapp = @annual_monthly_data.sum { |m| m[:whatsapp_count] || 0 }
         @total_phone = @annual_monthly_data.sum { |m| m[:phone_count] || 0 }
+        @total_phone_answered = @annual_monthly_data.sum { |m| m[:phone_answered_count] || 0 }
         @referral_period_totals = calculate_annual_referral_totals(@selected_year, referral_id_for_filter)
       else
         # Monthly view: show detailed daily data
@@ -82,6 +83,7 @@ module ClinicManagement
         interaction_totals = calculate_period_interaction_totals(@interactions)
         @total_whatsapp = interaction_totals[:whatsapp]
         @total_phone = interaction_totals[:phone]
+        @total_phone_answered = interaction_totals[:phone_answered]
         
         # Calculate totals per referral for the period summary
         # Note: For referral users, @invitations and @appointments already contain ALL data
@@ -736,8 +738,17 @@ module ClinicManagement
         available_dates.reverse
       end
 
+      # ESSENTIAL: Count unique leads per interaction type (same rule as Indicators panel).
+      def interaction_lead_counts(user_ints)
+        {
+          whatsapp: user_ints.select { |i| i.interaction_type == 'whatsapp_click' }.map(&:lead_id).uniq.count,
+          phone_attempt: user_ints.select { |i| i.interaction_type == 'phone_call' }.map(&:lead_id).uniq.count,
+          phone_answered: user_ints.select { |i| i.interaction_type == 'phone_call_answered' }.map(&:lead_id).uniq.count
+        }
+      end
+
       def prepare_invitations_reschedules_data(invitations, appointments, interactions)
-        # Structure: { date => { referral_or_local_user_key => { invitations: [], reschedules: [], whatsapp_count: 0, phone_count: 0 } } }
+        # Structure: { date => { referral_or_local_user_key => { invitations: [], reschedules: [], whatsapp_count: 0, phone_count: 0, phone_answered_count: 0 } } }
         # ESSENTIAL: Keys can be Referral (normal) or { local_user: User } for non-referral users who had interactions.
         # Non-referral users (Local) are displayed as "Vanessa (Local)", "Rose (Local)" - only users who participated.
         data = {}
@@ -787,20 +798,20 @@ module ClinicManagement
             if referral
               # Referral user: attribute to their referral
               referral_data[referral] ||= init_referral_data
-              whatsapp_leads = user_ints.select { |i| i.interaction_type == 'whatsapp_click' }.map(&:lead_id).uniq
-              phone_leads = user_ints.select { |i| i.interaction_type == 'phone_call' }.map(&:lead_id).uniq
-              referral_data[referral][:whatsapp_count] += whatsapp_leads.count
-              referral_data[referral][:phone_count] += phone_leads.count
+              counts = interaction_lead_counts(user_ints)
+              referral_data[referral][:whatsapp_count] += counts[:whatsapp]
+              referral_data[referral][:phone_count] += counts[:phone_attempt]
+              referral_data[referral][:phone_answered_count] += counts[:phone_answered]
             else
               # Non-referral user (Local): create per-user row "Vanessa (Local)", "Rose (Local)"
               user = users_by_id[user_id]
               next unless user
               local_user_key = { local_user: user }
               referral_data[local_user_key] ||= init_referral_data
-              whatsapp_leads = user_ints.select { |i| i.interaction_type == 'whatsapp_click' }.map(&:lead_id).uniq
-              phone_leads = user_ints.select { |i| i.interaction_type == 'phone_call' }.map(&:lead_id).uniq
-              referral_data[local_user_key][:whatsapp_count] += whatsapp_leads.count
-              referral_data[local_user_key][:phone_count] += phone_leads.count
+              counts = interaction_lead_counts(user_ints)
+              referral_data[local_user_key][:whatsapp_count] += counts[:whatsapp]
+              referral_data[local_user_key][:phone_count] += counts[:phone_attempt]
+              referral_data[local_user_key][:phone_answered_count] += counts[:phone_answered]
             end
           end
           
@@ -811,14 +822,15 @@ module ClinicManagement
       end
 
       def init_referral_data
-        { invitations: [], reschedules: [], whatsapp_count: 0, phone_count: 0 }
+        { invitations: [], reschedules: [], whatsapp_count: 0, phone_count: 0, phone_answered_count: 0 }
       end
 
       def calculate_period_interaction_totals(interactions)
-        whatsapp_leads = interactions.select { |i| i.interaction_type == 'whatsapp_click' }.map(&:lead_id).uniq
-        phone_leads = interactions.select { |i| i.interaction_type == 'phone_call' }.map(&:lead_id).uniq
-        
-        { whatsapp: whatsapp_leads.count, phone: phone_leads.count }
+        {
+          whatsapp: interactions.select { |i| i.interaction_type == 'whatsapp_click' }.map(&:lead_id).uniq.count,
+          phone: interactions.select { |i| i.interaction_type == 'phone_call' }.map(&:lead_id).uniq.count,
+          phone_answered: interactions.select { |i| i.interaction_type == 'phone_call_answered' }.map(&:lead_id).uniq.count
+        }
       end
 
       def calculate_referral_period_totals(invitations, appointments)
@@ -827,14 +839,14 @@ module ClinicManagement
         # Count invitations per referral
         invitations.group_by(&:referral).each do |referral, invites|
           next unless referral
-          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0, whatsapp_count: 0, phone_count: 0 }
+          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0, whatsapp_count: 0, phone_count: 0, phone_answered_count: 0 }
           totals[referral.id][:invitations] = invites.count
         end
         
         # Count reschedules per referral
         appointments.group_by { |apt| apt.invitation&.referral }.each do |referral, apts|
           next unless referral
-          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0, whatsapp_count: 0, phone_count: 0 }
+          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0, whatsapp_count: 0, phone_count: 0, phone_answered_count: 0 }
           totals[referral.id][:reschedules] = apts.count
         end
         
@@ -847,14 +859,12 @@ module ClinicManagement
           referral = user_referral_map[user_id] || local_referral
           next unless referral
           
-          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0, whatsapp_count: 0, phone_count: 0 }
+          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0, whatsapp_count: 0, phone_count: 0, phone_answered_count: 0 }
           
-          # Count unique leads per interaction type
-          whatsapp_leads = user_ints.select { |i| i.interaction_type == 'whatsapp_click' }.map(&:lead_id).uniq
-          phone_leads = user_ints.select { |i| i.interaction_type == 'phone_call' }.map(&:lead_id).uniq
-          
-          totals[referral.id][:whatsapp_count] += whatsapp_leads.count
-          totals[referral.id][:phone_count] += phone_leads.count
+          counts = interaction_lead_counts(user_ints)
+          totals[referral.id][:whatsapp_count] += counts[:whatsapp]
+          totals[referral.id][:phone_count] += counts[:phone_attempt]
+          totals[referral.id][:phone_answered_count] += counts[:phone_answered]
         end
         
         # Calculate sales amount per referral for the period
@@ -942,6 +952,7 @@ module ClinicManagement
             total: invitations_count + appointments.count,
             whatsapp_count: interaction_totals[:whatsapp],
             phone_count: interaction_totals[:phone],
+            phone_answered_count: interaction_totals[:phone_answered],
             sales_amount: clinic_sales,
             total_store_sales: total_store_sales,
             referral_totals: referral_totals
@@ -970,14 +981,14 @@ module ClinicManagement
         # Count invitations per referral
         invitations.group_by(&:referral).each do |referral, invites|
           next unless referral
-          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0, whatsapp_count: 0, phone_count: 0 }
+          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0, whatsapp_count: 0, phone_count: 0, phone_answered_count: 0 }
           totals[referral.id][:invitations] = invites.count
         end
         
         # Count reschedules per referral
         appointments.group_by { |apt| apt.invitation&.referral }.each do |referral, apts|
           next unless referral
-          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0, whatsapp_count: 0, phone_count: 0 }
+          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0, whatsapp_count: 0, phone_count: 0, phone_answered_count: 0 }
           totals[referral.id][:reschedules] = apts.count
         end
         
@@ -992,14 +1003,12 @@ module ClinicManagement
           referral = user_referral_map[user_id] || local_referral
           next unless referral
           
-          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0, whatsapp_count: 0, phone_count: 0 }
+          totals[referral.id] ||= { referral: referral, invitations: 0, reschedules: 0, sales_amount: 0, whatsapp_count: 0, phone_count: 0, phone_answered_count: 0 }
           
-          # Count unique leads per interaction type
-          whatsapp_leads = user_ints.select { |i| i.interaction_type == 'whatsapp_click' }.map(&:lead_id).uniq
-          phone_leads = user_ints.select { |i| i.interaction_type == 'phone_call' }.map(&:lead_id).uniq
-          
-          totals[referral.id][:whatsapp_count] += whatsapp_leads.count
-          totals[referral.id][:phone_count] += phone_leads.count
+          counts = interaction_lead_counts(user_ints)
+          totals[referral.id][:whatsapp_count] += counts[:whatsapp]
+          totals[referral.id][:phone_count] += counts[:phone_attempt]
+          totals[referral.id][:phone_answered_count] += counts[:phone_answered]
         end
         
         # Calculate sales amount per referral for this month

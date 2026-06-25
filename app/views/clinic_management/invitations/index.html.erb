@@ -146,7 +146,7 @@
           </div>
         </div>
         
-        <% if (@total_whatsapp || 0) > 0 || (@total_phone || 0) > 0 %>
+        <% if (@total_whatsapp || 0) > 0 || (@total_phone || 0) > 0 || (@total_phone_answered || 0) > 0 %>
           <div class="period-total-separator"></div>
           
           <div class="period-total-item period-total-interactions">
@@ -161,8 +161,15 @@
               <div class="interaction-total-item phone">
                 <i class="material-icons">phone</i>
                 <div class="period-total-info">
-                  <span class="period-total-label">Ligações</span>
+                  <span class="period-total-label">Tentativas</span>
                   <span class="period-total-value"><%= @total_phone || 0 %></span>
+                </div>
+              </div>
+              <div class="interaction-total-item phone-answered">
+                <i class="material-icons">phone_in_talk</i>
+                <div class="period-total-info">
+                  <span class="period-total-label">Atendeu</span>
+                  <span class="period-total-value"><%= @total_phone_answered || 0 %></span>
                 </div>
               </div>
             </div>
@@ -214,7 +221,7 @@
                       <%= data[:invitations] + data[:reschedules] %>
                     </span>
                   </div>
-                  <% if (data[:whatsapp_count] || 0) > 0 || (data[:phone_count] || 0) > 0 %>
+                  <% if (data[:whatsapp_count] || 0) > 0 || (data[:phone_count] || 0) > 0 || (data[:phone_answered_count] || 0) > 0 %>
                     <div class="referral-performance-interactions">
                       <% if (data[:whatsapp_count] || 0) > 0 %>
                         <span class="stat-whatsapp" title="WhatsApp">
@@ -223,9 +230,15 @@
                         </span>
                       <% end %>
                       <% if (data[:phone_count] || 0) > 0 %>
-                        <span class="stat-phone" title="Ligações">
+                        <span class="stat-phone" title="Tentativas">
                           <i class="material-icons">phone</i>
                           <%= data[:phone_count] %>
+                        </span>
+                      <% end %>
+                      <% if (data[:phone_answered_count] || 0) > 0 %>
+                        <span class="stat-phone-answered" title="Atendeu">
+                          <i class="material-icons">phone_in_talk</i>
+                          <%= data[:phone_answered_count] %>
                         </span>
                       <% end %>
                     </div>
@@ -271,15 +284,19 @@
             </div>
           </div>
           
-          <% if (month_data[:whatsapp_count] || 0) > 0 || (month_data[:phone_count] || 0) > 0 %>
+          <% if (month_data[:whatsapp_count] || 0) > 0 || (month_data[:phone_count] || 0) > 0 || (month_data[:phone_answered_count] || 0) > 0 %>
             <div class="monthly-card-interactions">
               <div class="monthly-interaction whatsapp" title="WhatsApp">
                 <i class="material-icons">chat</i>
                 <span><%= month_data[:whatsapp_count] || 0 %></span>
               </div>
-              <div class="monthly-interaction phone" title="Ligações">
+              <div class="monthly-interaction phone" title="Tentativas">
                 <i class="material-icons">phone</i>
                 <span><%= month_data[:phone_count] || 0 %></span>
+              </div>
+              <div class="monthly-interaction phone-answered" title="Atendeu">
+                <i class="material-icons">phone_in_talk</i>
+                <span><%= month_data[:phone_answered_count] || 0 %></span>
               </div>
             </div>
           <% end %>
@@ -355,7 +372,7 @@
                             <%= ref_data[:invitations] + ref_data[:reschedules] %>
                           </span>
                         </div>
-                        <% if (ref_data[:whatsapp_count] || 0) > 0 || (ref_data[:phone_count] || 0) > 0 %>
+                        <% if (ref_data[:whatsapp_count] || 0) > 0 || (ref_data[:phone_count] || 0) > 0 || (ref_data[:phone_answered_count] || 0) > 0 %>
                           <div class="referral-interactions-stats">
                             <% if (ref_data[:whatsapp_count] || 0) > 0 %>
                               <span class="mini-stat whatsapp" title="WhatsApp">
@@ -364,9 +381,15 @@
                               </span>
                             <% end %>
                             <% if (ref_data[:phone_count] || 0) > 0 %>
-                              <span class="mini-stat phone" title="Ligações">
+                              <span class="mini-stat phone" title="Tentativas">
                                 <i class="material-icons">phone</i>
                                 <%= ref_data[:phone_count] %>
+                              </span>
+                            <% end %>
+                            <% if (ref_data[:phone_answered_count] || 0) > 0 %>
+                              <span class="mini-stat phone-answered" title="Atendeu">
+                                <i class="material-icons">phone_in_talk</i>
+                                <%= ref_data[:phone_answered_count] %>
                               </span>
                             <% end %>
                           </div>
@@ -980,16 +1003,29 @@
 }
 
 .interaction-total-item.phone {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
 }
 
 .interaction-total-item.phone i {
-  color: #2563eb;
+  color: #dc2626;
   font-size: 1.75rem;
 }
 
 .interaction-total-item.phone .period-total-value {
-  color: #1e40af;
+  color: #991b1b;
+}
+
+.interaction-total-item.phone-answered {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+}
+
+.interaction-total-item.phone-answered i {
+  color: #059669;
+  font-size: 1.75rem;
+}
+
+.interaction-total-item.phone-answered .period-total-value {
+  color: #065f46;
 }
 
 /* Responsive Design for Period Totals */
@@ -1193,7 +1229,11 @@
 }
 
 .stat-phone {
-  color: #2563eb;
+  color: #dc2626;
+}
+
+.stat-phone-answered {
+  color: #059669;
 }
 
 /* Referral Performance Interactions */
@@ -1381,12 +1421,21 @@
 }
 
 .monthly-interaction.phone {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-  color: #1e40af;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
 }
 
 .monthly-interaction.phone i {
-  color: #2563eb;
+  color: #dc2626;
+}
+
+.monthly-interaction.phone-answered {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+}
+
+.monthly-interaction.phone-answered i {
+  color: #059669;
 }
 
 /* Sales Comparison Container */
@@ -1615,7 +1664,11 @@
 }
 
 .mini-stat.phone {
-  color: #2563eb;
+  color: #dc2626;
+}
+
+.mini-stat.phone-answered {
+  color: #059669;
 }
 
 /* Referral Interactions Stats */

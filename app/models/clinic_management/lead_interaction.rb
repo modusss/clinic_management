@@ -9,9 +9,11 @@ module ClinicManagement
     validates :interaction_type, presence: true
     validates :occurred_at, presence: true
     
+    # ESSENTIAL: phone_call = dial attempt on "Ligar"; phone_call_answered = user confirmed pickup on "Sim".
     enum interaction_type: {
       whatsapp_click: 'whatsapp_click',
-      phone_call: 'phone_call'
+      phone_call: 'phone_call',
+      phone_call_answered: 'phone_call_answered'
     }
     
     scope :recent, -> { order(occurred_at: :desc) }

@@ -82,14 +82,14 @@
               </tr>
             </thead>
             <tbody>
-              <% if referrals_data.blank? || referrals_data.all? { |_, data| data[:invitations].blank? && data[:reschedules].blank? && data[:whatsapp_count] == 0 && data[:phone_count] == 0 } %>
+              <% if referrals_data.blank? || referrals_data.all? { |_, data| data[:invitations].blank? && data[:reschedules].blank? && data[:whatsapp_count] == 0 && data[:phone_count] == 0 && (data[:phone_answered_count] || 0) == 0 } %>
                 <tr class="empty-row">
                   <td colspan="7">
                     <span class="empty-message">Sem lançamentos</span>
                   </td>
                 </tr>
               <% else %>
-                <% referrals_data.sort_by { |_, data| -(data[:invitations].size + data[:reschedules].size + (data[:whatsapp_count] || 0) + (data[:phone_count] || 0)) }.each do |referral, data| %>
+                <% referrals_data.sort_by { |_, data| -(data[:invitations].size + data[:reschedules].size + (data[:whatsapp_count] || 0) + (data[:phone_count] || 0) + (data[:phone_answered_count] || 0)) }.each do |referral, data| %>
                   <tr class="data-row">
                     <!-- Referral Name (or "Vanessa (Local)" for non-referral users) -->
                     <td class="referral-cell">
@@ -106,16 +106,20 @@
                       </span>
                     </td>
 
-                    <!-- Interactions Count (WhatsApp / Phone) -->
+                    <!-- Interactions Count (WhatsApp / Phone attempts / Answered) -->
                     <td class="count-cell">
                       <div class="interactions-cell">
                          <div class="interaction-item whatsapp" title="WhatsApp">
                            <i class="material-icons">chat</i>
                            <span><%= data[:whatsapp_count] %></span>
                          </div>
-                         <div class="interaction-item phone" title="Ligação">
+                         <div class="interaction-item phone" title="Tentativas">
                            <i class="material-icons">phone</i>
                            <span><%= data[:phone_count] %></span>
+                         </div>
+                         <div class="interaction-item phone-answered" title="Atendeu">
+                           <i class="material-icons">phone_in_talk</i>
+                           <span><%= data[:phone_answered_count] || 0 %></span>
                          </div>
                       </div>
                     </td>
@@ -193,12 +197,12 @@
 
         <!-- Referrals Cards (Mobile) -->
         <div class="referrals-cards-wrapper mobile-only">
-          <% if referrals_data.blank? || referrals_data.all? { |_, data| data[:invitations].blank? && data[:reschedules].blank? && data[:whatsapp_count] == 0 && data[:phone_count] == 0 } %>
+          <% if referrals_data.blank? || referrals_data.all? { |_, data| data[:invitations].blank? && data[:reschedules].blank? && data[:whatsapp_count] == 0 && data[:phone_count] == 0 && (data[:phone_answered_count] || 0) == 0 } %>
             <div class="empty-card">
               <span class="empty-message">Sem lançamentos</span>
             </div>
           <% else %>
-            <% referrals_data.sort_by { |_, data| -(data[:invitations].size + data[:reschedules].size + (data[:whatsapp_count] || 0) + (data[:phone_count] || 0)) }.each do |referral, data| %>
+            <% referrals_data.sort_by { |_, data| -(data[:invitations].size + data[:reschedules].size + (data[:whatsapp_count] || 0) + (data[:phone_count] || 0) + (data[:phone_answered_count] || 0)) }.each do |referral, data| %>
               <div class="referral-card">
                 <!-- Card Header: Referral Name + Total -->
                 <div class="card-header">
@@ -220,9 +224,15 @@
                     </div>
                   </div>
                   <div class="card-stat">
-                    <div class="interaction-item phone" title="Ligação">
+                    <div class="interaction-item phone" title="Tentativas">
                       <i class="material-icons">phone</i>
                       <span><%= data[:phone_count] %></span>
+                    </div>
+                  </div>
+                  <div class="card-stat">
+                    <div class="interaction-item phone-answered" title="Atendeu">
+                      <i class="material-icons">phone_in_talk</i>
+                      <span><%= data[:phone_answered_count] || 0 %></span>
                     </div>
                   </div>
                   <div class="card-stat">
@@ -596,6 +606,12 @@
   background-color: #fee2e2;
   color: #991b1b;
   border: 1px solid #fecaca;
+}
+
+.interaction-item.phone-answered {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
 }
 
 /* Names Cell */
