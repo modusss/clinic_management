@@ -496,6 +496,22 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
     width: 100%;
     box-sizing: border-box;
   }
+
+  /*
+   * ESSENTIAL: Tablet compact tier — use full viewport width for tables.
+   * Tailwind CDN `container` caps too early; nested `.container` in views doubles the constraint.
+   */
+  #main-container > .clinic-main-shell.container,
+  #main-container .container {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .clinic-main-shell .container {
+    max-width: 100% !important;
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
 
 /* ESSENTIAL: Phone compact — 2-row navbar (menu+logo+user / location); actions live in drawer. */

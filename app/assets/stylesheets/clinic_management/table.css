@@ -7,7 +7,7 @@
   font-size: 16px !important;
 }
 
-/* Estilo para os cabeçalhos fixos */
+/* Table header styling — tablet and desktop */
 @media screen and (min-width: 768px) {
   .table-container table thead {
     border-bottom: 1px solid #e5e7eb;
@@ -18,7 +18,13 @@
   .table-container table th {
     border-bottom: 1px solid #e5e7eb !important;
   }
+}
 
+/*
+ * ESSENTIAL: Horizontal sticky columns — desktop only (≥1366px).
+ * Compact tier (768–1365px tablet) scrolls all columns together for easier horizontal pan.
+ */
+@media screen and (min-width: 1366px) {
   .table-container table th.sticky-column {
     position: sticky;
     background-color: #fff;
@@ -26,7 +32,6 @@
     top: 0;
   }
 
-  /* Estilo para as células fixas */
   .table-container table td.sticky-column {
     position: sticky;
     background-color: #fff;
@@ -34,7 +39,6 @@
     border-right: none;
   }
 
-  /* Sombra suave para última coluna fixa */
   .table-container table td.sticky-column:nth-last-child(n+2),
   .table-container table th.sticky-column:nth-last-child(n+2) {
     box-shadow: 4px 0 8px -6px rgba(0,0,0,0.2);
@@ -46,13 +50,18 @@
   border-bottom: 1px solid #e5e7eb !important;
 }
 
-/* Reset para dispositivos móveis */
-@media screen and (max-width: 767px) {
+/*
+ * ESSENTIAL: Compact tier (tablet + phone) — disable horizontal sticky columns.
+ * !important overrides inline left/position from table_controller.js and legacy scripts.
+ */
+@media screen and (max-width: 1365px) {
   .table-container table th.sticky-column,
-  .table-container table td.sticky-column {
-    position: static;
-    left: auto;
-    box-shadow: none;
+  .table-container table td.sticky-column,
+  .table-container table th.sticky,
+  .table-container table td.sticky {
+    position: static !important;
+    left: auto !important;
+    box-shadow: none !important;
     border-right: none;
   }
 }
