@@ -55,6 +55,43 @@
   padding: 0 0.1rem;
 }
 
+/*
+ * ESSENTIAL: Breadcrumb horizontal alignment — must mirror #main-container offsets.
+ * Breadcrumb renders outside #main-container (application.html.erb); without these
+ * rules it sits flush-left on tablet and under the sidebar on desktop.
+ */
+.clinic-breadcrumb__inner {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  box-sizing: border-box;
+}
+
+@media screen and (min-width: 1366px) {
+  body.clinic-app:not(.doctor-view):not(.clinic-lens-demo) .clinic-breadcrumb {
+    margin-left: 258px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Match layout shell gutters: px-4 sm:px-6 lg:px-8 */
+  .clinic-breadcrumb__inner {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+@media screen and (max-width: 1365px) {
+  .clinic-breadcrumb__inner {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    /* Same 1rem gutter as #main-container > .clinic-main-shell on compact tier */
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+}
+
 /* ============================================================================
    Pagination — kaminari/* (clinic_management engine)
    ESSENTIAL: Main app uses Materialize .pagination; clinic layout has no Materialize.
