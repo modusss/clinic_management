@@ -551,7 +551,7 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
   }
 }
 
-/* ESSENTIAL: Phone compact — 2-row navbar (menu+logo+user / location); actions live in drawer. */
+/* ESSENTIAL: Phone compact — menu+logo+user / location / lead search; go-to stays in drawer. */
 @media screen and (max-width: 767px) {
   .clinic-navbar--staff.navbar-fixed,
   .clinic-navbar--referral.navbar-fixed,
@@ -565,12 +565,15 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
     grid-template-columns: auto 1fr auto;
     grid-template-areas:
       "menu logo user"
-      "pad location location";
+      "pad location location"
+      "search search search";
     gap: 0.35rem 0.5rem;
   }
 
   .clinic-navbar__row:not(:has(.clinic-navbar__location-form)) {
-    grid-template-areas: "menu logo user";
+    grid-template-areas:
+      "menu logo user"
+      "search search search";
   }
 
   .clinic-navbar__menu {
@@ -583,9 +586,36 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
     justify-self: start;
   }
 
-  /* ESSENTIAL: Lead search + go-to stay in drawer on phone — matches reference mockup. */
+  /* ESSENTIAL: Lead search visible on phone; "Ir para atendimento" remains in sidenav only. */
   .clinic-navbar__actions {
+    display: flex !important;
+    grid-area: search;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    margin: 0 !important;
+  }
+
+  .clinic-navbar__go-to-service {
     display: none !important;
+  }
+
+  .clinic-navbar__search,
+  #search_lead_container {
+    flex: 1;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    order: unset !important;
+  }
+
+  #search_lead {
+    width: 100% !important;
+  }
+
+  .navbar-search {
+    margin-top: 0 !important;
   }
 
   .clinic-navbar__user-chip {
@@ -629,24 +659,23 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
 
   body.clinic-app:not(.doctor-view):not(.clinic-lens-demo) {
     /*
-     * ESSENTIAL: Phone navbar height depends on whether the location selector
-     * renders a second row. Keep both fixed-header variants in sync with the
-     * content offset instead of letting the first view controls sit underneath.
+     * ESSENTIAL: Phone navbar — row1 brand/user + row2 lead search (and optional location row).
+     * Keep padding in sync so content never sits under the fixed header.
      */
-    padding-top: 4.25rem;
+    padding-top: 5.75rem;
   }
 
   body.clinic-app:not(.doctor-view):not(.clinic-lens-demo):has(.clinic-navbar__location-form) {
-    padding-top: 6.875rem;
+    padding-top: 8.75rem;
   }
 
   #main-container > .clinic-main-shell {
     padding-top: 0.75rem;
-    scroll-margin-top: 4.25rem;
+    scroll-margin-top: 5.75rem;
   }
 
   body.clinic-app:not(.doctor-view):not(.clinic-lens-demo):has(.clinic-navbar__location-form) #main-container > .clinic-main-shell {
-    scroll-margin-top: 6.875rem;
+    scroll-margin-top: 8.75rem;
   }
 }
 
