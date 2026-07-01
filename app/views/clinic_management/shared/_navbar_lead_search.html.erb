@@ -1,0 +1,29 @@
+<%# ESSENTIAL: Lead search in clinic navbar — shared by staff + referral navbars. %>
+<div class="relative clinic-navbar__search" id="search_lead_container">
+  <%= form_with url: search_leads_path,
+                method: :post,
+                data: { remote: true, controller: "debounce" },
+                class: "w-full clinic-lead-search-form" do |search| %>
+    <div class="input-field relative w-full navbar-search clinic-lead-search-field">
+      <%= search.search_field :q,
+          data: {
+            debounce_target: "input",
+            action: "keydown->debounce#handleKeyDown"
+          },
+          id: "search_lead",
+          placeholder: "Busque pelo nome ou telefone...",
+          autocomplete: "off",
+          spellcheck: false,
+          class: "clinic-lead-search-input bg-white rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent",
+          style: "font-size: 16px; padding: 12px 3rem 12px 12px;" %>
+      <button type="button"
+              class="clinic-lead-search-btn"
+              data-action="click->debounce#submitImmediately"
+              aria-label="Buscar paciente">
+        <i class="fas fa-search" aria-hidden="true"></i>
+        <span class="clinic-lead-search-btn-label">Buscar</span>
+      </button>
+    </div>
+  <% end %>
+  <div id="lead-results" class="absolute mt-1 w-full bg-white shadow-lg rounded-b" style="z-index: 1000"></div>
+</div>
