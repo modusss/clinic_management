@@ -299,6 +299,46 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* ============================================================================
+   Sidebar location selector — clinic_management/shared/_navbar.html.erb
+   ESSENTIAL: Location selector was relocated from the header into the sidebar
+   (staff + referral). Shown on every breakpoint: desktop fixed panel and the
+   mobile/tablet drawer. Reuses .navbar-location-badge / .navbar-location-select
+   (defined in the navbar inline <style>); here we only handle sidebar spacing
+   and make the control span the full drawer width for easy tapping.
+   ============================================================================ */
+
+.clinic-sidebar__location {
+  width: 100%;
+}
+
+.clinic-sidebar__location-label {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6ee7b7;
+}
+
+/* Full-width badge so the whole row is tappable in the drawer and legible in the panel. */
+.clinic-sidebar__location .clinic-navbar__location-form {
+  display: block;
+  width: 100%;
+}
+
+.clinic-sidebar__location .navbar-location-badge {
+  display: flex;
+  width: 100%;
+  max-width: none;
+}
+
+.clinic-sidebar__location .navbar-location-select {
+  flex: 1;
+  min-width: 0;
+}
+
 .clinic-sidenav-close-btn {
   display: none;
   position: absolute;
@@ -446,17 +486,11 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
     min-width: 0;
   }
 
-  .clinic-navbar__location {
-    grid-area: location;
-    min-width: 0;
-  }
-
-  .clinic-navbar__location:not(:has(.clinic-navbar__location-form)) {
-    display: none !important;
-  }
-
-  .clinic-navbar__location-form,
-  .navbar-location-badge {
+  /* ESSENTIAL: Location selector lives in the sidebar now (.clinic-sidebar__location).
+     Scope the header form rules to the navbar row so they never override the sidebar
+     control (the doctor header form is inside .clinic-navbar__row, so it stays covered). */
+  .clinic-navbar__row .clinic-navbar__location-form,
+  .clinic-navbar__row .navbar-location-badge {
     display: inline-flex !important;
     margin: 0;
   }
@@ -581,11 +615,6 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
     align-self: center;
   }
 
-  .clinic-navbar__location {
-    grid-column: 2 / -1;
-    justify-self: start;
-  }
-
   /* ESSENTIAL: Lead search visible on phone; "Ir para atendimento" remains in sidenav only. */
   .clinic-navbar__actions {
     display: flex !important;
@@ -647,8 +676,10 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
     text-overflow: ellipsis;
   }
 
-  .clinic-navbar__location-form,
-  .navbar-location-badge {
+  /* ESSENTIAL: Scoped to the navbar row — the sidebar location badge (.clinic-sidebar__location)
+     must stay full width in the drawer; only the header/doctor form keeps the compact cap. */
+  .clinic-navbar__row .clinic-navbar__location-form,
+  .clinic-navbar__row .navbar-location-badge {
     width: auto;
     max-width: 14rem;
   }
@@ -665,7 +696,9 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
     padding-top: 5.75rem;
   }
 
-  body.clinic-app:not(.doctor-view):not(.clinic-lens-demo):has(.clinic-navbar__location-form) {
+  /* ESSENTIAL: Only reserve the taller header when the location selector is IN the navbar row.
+     The selector now lives in the sidebar (still in the DOM), so scope :has to the navbar row. */
+  body.clinic-app:not(.doctor-view):not(.clinic-lens-demo):has(.clinic-navbar__row .clinic-navbar__location-form) {
     padding-top: 8.75rem;
   }
 
@@ -674,7 +707,7 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
     scroll-margin-top: 5.75rem;
   }
 
-  body.clinic-app:not(.doctor-view):not(.clinic-lens-demo):has(.clinic-navbar__location-form) #main-container > .clinic-main-shell {
+  body.clinic-app:not(.doctor-view):not(.clinic-lens-demo):has(.clinic-navbar__row .clinic-navbar__location-form) #main-container > .clinic-main-shell {
     scroll-margin-top: 8.75rem;
   }
 }
@@ -756,12 +789,6 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
   }
 
   .clinic-navbar__logo {
-    display: flex;
-    flex-shrink: 0;
-    align-items: center;
-  }
-
-  .clinic-navbar__location {
     display: flex;
     flex-shrink: 0;
     align-items: center;
