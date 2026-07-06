@@ -92,6 +92,7 @@ ClinicManagement::Engine.routes.draw do
       patch :update_comments
       patch :set_attendance
       patch :cancel_attendance
+      patch :restore_cancel
       post :reschedule
       post :search
       patch :toggle_confirmation

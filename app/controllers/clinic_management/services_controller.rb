@@ -311,7 +311,7 @@ module ClinicManagement
             { header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id.to_s}" },
             { header: "Mensagens enviadas:", content: ap.messages_sent&.join(', '), id: "messages-sent-#{ap.id.to_s}" },
             { header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500" },
-            { header: "Cancelar?", content: set_cancel_button(ap), id: "cancel-attendance-button-#{ap.id}", class: "pt-2 pb-0" }
+            { header: "Cancelar?", content: helpers.cancel_attendance_button(ap), id: "cancel-attendance-button-#{ap.id}", class: "pt-2 pb-0" }
           ]
         end                 
       end.compact
@@ -1126,15 +1126,6 @@ module ClinicManagement
         datasets: datasets
       }
     end
-
-    def set_cancel_button(ap)
-      if ap.status == "agendado"
-        helpers.button_to('Cancelar', cancel_attendance_appointment_path(ap), method: :patch, remote: true, class: "py-2 px-4 bg-red-500 text-white rounded hover:bg-red-700")
-      else
-        "--"
-      end
-    end
-    
 
       # Use callbacks to share common setup or constraints between actions.
       def set_service

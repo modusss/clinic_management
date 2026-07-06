@@ -123,16 +123,27 @@ module ClinicManagement
 
     def cancel_attendance
       @appointment = Appointment.find(params[:id])
-      button_id = "cancel-attendance-button-#{@appointment.id}"
-      status_id = "status-#{@appointment.id}"
-      @appointment.status = "cancelado"
-      @appointment.save
+      @appointment.update!(status: "cancelado")
       respond_to do |format|
         format.turbo_stream do
-          render turbo_stream: [ 
-                                turbo_stream.update(button_id, "--"),
-                                turbo_stream.replace(status_id, partial: 'clinic_management/appointments/status_table', locals: { status: @appointment.status })
-                               ]
+          render turbo_stream: cancel_attendance_turbo_streams(@appointment)
+        end
+      end
+    end
+
+    # ESSENTIAL: Undo cancellation — restores agendado and re-shows Cancelar when date allows.
+    def restore_cancel
+      @appointment = Appointment.find(params[:id])
+      unless @appointment.status == "cancelado"
+        head :unprocessable_entity
+        return
+      end
+
+      @appointment.update!(status: "agendado")
+
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: cancel_attendance_turbo_streams(@appointment)
         end
       end
     end
@@ -332,6 +343,17 @@ module ClinicManagement
       # Use callbacks to share common setup or constraints between actions.
       def set_appointment
         @appointment = Appointment.find(params[:id])
+      end
+
+      # Turbo targets for cancel / undo on lead show and service day tables.
+      def cancel_attendance_turbo_streams(appointment)
+        [
+          turbo_stream.update(
+            "cancel-attendance-button-#{appointment.id}",
+            helpers.cancel_attendance_button(appointment)
+          ),
+          turbo_stream.update("status-#{appointment.id}", appointment.status)
+        ]
       end
 
       # Only allow a list of trusted parameters through.

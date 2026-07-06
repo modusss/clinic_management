@@ -1554,17 +1554,18 @@ module ClinicManagement
             class: "nowrap size_20 patient-name"
           },          
           {header: "Data do atendimento", content: service_content_link(ap), class: "nowrap"},
+          {header: "Cancelar?", content: helpers.cancel_attendance_button(ap), id: "cancel-attendance-button-#{ap.id}", class: "pt-2 pb-0"},
           {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: ap, message: "" }), id: "appointment-comments-#{ap.id}"},                   
           {header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500"},
           {header: "Comparecimento", content: (ap.attendance == true ? "Sim" : "Não"), class: helpers.attendance_class(ap)},
-          {header: "Status", content: ap.status, class: "size_20 " + helpers.status_class(ap)},
+          {header: "Status", content: ap.status, id: "status-#{ap.id}", class: "size_20 " + helpers.status_class(ap)},
           {header: "Data do convite", content: invitation&.created_at&.strftime("%d/%m/%Y")},
           {header: "Região", content: invitation&.region&.name},
           {header: "Mensagem", content: generate_message_content(@lead, ap, 'show'), id: "whatsapp-link-#{@lead.id}"}
         ]
 
         unless helpers.referral?(current_user)
-          row.insert(5, {header: "Receita", content: prescription_link(ap), class: "nowrap"})
+          row.insert(6, {header: "Receita", content: prescription_link(ap), class: "nowrap"})
           row << {header: "Convidado por", content: invitation&.referral&.name}
           #row << {header: "Mensagem", content: generate_message_content(@lead, ap), id: "whatsapp-link-#{@lead.id}"}
         end
