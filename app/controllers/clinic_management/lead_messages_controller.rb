@@ -189,7 +189,7 @@ module ClinicManagement
                   notice: channel == "meta" ? "Automações clínicas usarão WhatsApp Meta." : "Automações clínicas usarão WhatsApp próprio (Evolution)."
     end
 
-    # PATCH collection — enable/disable a Meta template in clinic automation.
+    # PATCH collection — enable/disable a Meta template in clinic automation for a service location.
     def toggle_meta_template_automation
       unless can_manage_lead_messages?
         redirect_to lead_messages_path, alert: "Sem permissão."
@@ -202,16 +202,19 @@ module ClinicManagement
         return
       end
 
-      holder = template.root_template
-      cfg = holder.internal_config_hash.dup
-      cfg["automation_enabled"] = params[:enabled].to_s == "1"
+      service_location_id = normalize_meta_automation_service_location_id(params[:service_location_id])
+      enabled = params[:enabled].to_s == "1"
 
-      if holder.update(internal_config: cfg)
-        state = cfg["automation_enabled"] ? "ativado" : "desativado"
-        redirect_to lead_messages_path(tab: "meta"), notice: "Template '#{holder.name}' #{state} na automação Meta."
-      else
-        redirect_to lead_messages_path(tab: "meta"), alert: holder.errors.full_messages.to_sentence
-      end
+      ClinicMetaAutomationPreference.upsert_enabled!(
+        template: template,
+        service_location_id: service_location_id,
+        enabled: enabled
+      )
+
+      state = enabled ? "ativado" : "desativado"
+      location_name = meta_automation_location_label(service_location_id)
+      redirect_to lead_messages_path(tab: "meta"),
+                  notice: "Template '#{template.root_template.name}' #{state} na automação Meta (#{location_name})."
     end
 
     # PATCH member — assign Meta template to a LeadMessage slot (legacy — UI removed).
@@ -529,9 +532,60 @@ module ClinicManagement
       @meta_automation_available = current_account.clinic_automation_meta_available?
       @automation_tab = params[:tab].presence_in(%w[evolution meta]) || "evolution"
       @clinic_meta_automation_by_purpose = {}
+      @meta_automation_viewing_all_externals = false
+      @meta_automation_by_location = []
+      @meta_automation_service_location_id = nil
+      @meta_automation_location_label = "Interno"
+      @meta_automation_enabled_map = {}
       return unless @show_automation_channel_ui && @meta_automation_available
 
       @clinic_meta_automation_by_purpose = ClinicMetaAutomationQuery.grouped_by_purpose(current_account)
+      template_ids = @clinic_meta_automation_by_purpose.values.flatten.map(&:id)
+
+      if multi_service_locations_enabled? && @viewing_referral.nil? && !referral?(current_user)
+        loc_id = current_service_location_id.to_s
+        if loc_id == "all"
+          @meta_automation_viewing_all_externals = true
+          @meta_automation_by_location = ServiceLocation.order(:name).map do |location|
+            [
+              location,
+              ClinicMetaAutomationPreference.enabled_map_for(
+                template_ids: template_ids,
+                service_location_id: location.id
+              )
+            ]
+          end
+        else
+          @meta_automation_service_location_id = loc_id.blank? ? nil : loc_id.to_i
+          @meta_automation_location_label = meta_automation_location_label(@meta_automation_service_location_id)
+          @meta_automation_enabled_map = ClinicMetaAutomationPreference.enabled_map_for(
+            template_ids: template_ids,
+            service_location_id: @meta_automation_service_location_id
+          )
+        end
+      else
+        @meta_automation_enabled_map = ClinicMetaAutomationPreference.enabled_map_for(
+          template_ids: template_ids,
+          service_location_id: nil
+        )
+      end
+    end
+
+    # @param raw [String, Integer, nil]
+    # @return [Integer, nil]
+    def normalize_meta_automation_service_location_id(raw)
+      return nil if raw.blank? || raw.to_s == "internal"
+      return raw.to_i if raw.to_s.match?(/\A\d+\z/)
+
+      nil
+    end
+
+    # @param service_location_id [Integer, nil]
+    # @return [String]
+    def meta_automation_location_label(service_location_id)
+      return "Interno" if service_location_id.blank?
+
+      ServiceLocation.find_by(id: service_location_id)&.name || "Local desconhecido"
     end
 
     # Approved Meta templates matching clinic slot message_type.

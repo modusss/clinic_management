@@ -1,27 +1,41 @@
 <%# Independent Meta automation templates for clinic — NOT paired with Evolution slots.
-    Locals: templates_by_purpose, clinic_automation_channel %>
+    Locals:
+      templates_by_purpose, clinic_automation_channel,
+      service_location_id (nil = Interno), location_label,
+      enabled_map (Hash template_id => true) %>
 <% templates_by_purpose = local_assigns.fetch(:templates_by_purpose, {}) %>
 <% channel_meta = local_assigns.fetch(:clinic_automation_channel) == "meta" %>
+<% service_location_id = local_assigns.fetch(:service_location_id, nil) %>
+<% location_label = local_assigns.fetch(:location_label, "Interno") %>
+<% enabled_map = local_assigns.fetch(:enabled_map, {}) %>
+<% location_key = service_location_id.present? ? service_location_id.to_s : "internal" %>
 <% purposes = ClinicManagement::LeadMessage.message_types.keys.reject { |t| t == "outro" } %>
 
 <div class="meta-clinic-automation-panel">
-  <p class="text-sm text-gray-600 mb-4">
-    Templates Meta para automação clínica são <strong>independentes</strong> das mensagens Evolution.
-    Crie e configure cada template em
-    <%= link_to "Templates Meta", main_app.meta_templates_path, class: "text-blue-600 underline" %>
-    (seção 6: domínio Atendimento, modo Automação, finalidade e mapeamento {{n}}).
-    Botões, header e footer entram só no template Meta — não espelham o texto Evolution.
-  </p>
+  <% unless local_assigns.fetch(:hide_intro, false) %>
+    <p class="text-sm text-gray-600 mb-4">
+      Templates Meta para automação clínica são <strong>independentes</strong> das mensagens Evolution.
+      Crie e configure cada template em
+      <%= link_to "Templates Meta", main_app.meta_templates_path, class: "text-blue-600 underline" %>
+      (seção 6: domínio Atendimento, modo Automação, finalidade e mapeamento {{n}}).
+      Botões, header e footer entram só no template Meta — não espelham o texto Evolution.
+    </p>
 
-  <% if channel_meta %>
-    <p class="text-sm text-green-800 bg-green-50 border border-green-200 rounded px-3 py-2 mb-4">
-      Canal da conta: <strong>WhatsApp Meta</strong> — jobs agendados enviam os templates abaixo (quando ativos e aprovados).
-    </p>
-  <% else %>
-    <p class="text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-4">
-      Canal da conta: <strong>Evolution</strong> — a aba acima edita as mensagens de texto/mídia. Os templates Meta ficam preparados para quando você alternar o canal.
-    </p>
+    <% if channel_meta %>
+      <p class="text-sm text-green-800 bg-green-50 border border-green-200 rounded px-3 py-2 mb-4">
+        Canal da conta: <strong>WhatsApp Meta</strong> — jobs agendados enviam os templates abaixo (quando ativos e aprovados).
+      </p>
+    <% else %>
+      <p class="text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-4">
+        Canal da conta: <strong>Evolution</strong> — a aba acima edita as mensagens de texto/mídia. Os templates Meta ficam preparados para quando você alternar o canal.
+      </p>
+    <% end %>
   <% end %>
+
+  <p class="text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded px-3 py-2 mb-4">
+    Configurando automação Meta para: <strong><%= location_label %></strong>
+    <span class="text-xs text-gray-500 block mt-1">Use o seletor <em>Local de atendimento</em> na barra lateral para trocar de região.</span>
+  </p>
 
   <table class="w-full table-auto border-collapse border border-gray-300 text-left text-sm">
     <thead>
@@ -45,6 +59,8 @@
             <td class="px-3 py-2 align-top" colspan="4">
               <ul class="space-y-3 list-none m-0 p-0">
                 <% templates.each do |template| %>
+                  <% template_enabled = enabled_map[template.id] == true %>
+                  <% checkbox_dom_id = "meta_automation_enabled_#{location_key}_#{template.id}" %>
                   <li class="flex flex-wrap items-start gap-3 border-b border-gray-100 pb-3 last:border-0 last:pb-0">
                     <div class="min-w-[12rem] flex-1">
                       <strong><%= template.name %></strong>
@@ -60,17 +76,18 @@
                                       local: true,
                                       class: "inline-flex items-center gap-2" do %>
                           <%= hidden_field_tag :meta_template_id, template.id %>
-                          <%= hidden_field_tag :enabled, template.clinic_automation_enabled? ? "1" : "0", id: "meta_automation_enabled_#{template.id}" %>
+                          <%= hidden_field_tag :service_location_id, service_location_id %>
+                          <%= hidden_field_tag :enabled, template_enabled ? "1" : "0", id: checkbox_dom_id %>
                           <label class="inline-flex items-center gap-1 text-xs cursor-pointer">
                             <input type="checkbox"
-                                   <%= "checked" if template.clinic_automation_enabled? %>
-                                   onchange="document.getElementById('meta_automation_enabled_<%= template.id %>').value = this.checked ? '1' : '0'; this.form.requestSubmit();">
+                                   <%= "checked" if template_enabled %>
+                                   onchange="document.getElementById('<%= checkbox_dom_id %>').value = this.checked ? '1' : '0'; this.form.requestSubmit();">
                             <span>Usar na automação</span>
                           </label>
                         <% end %>
                       <% else %>
-                        <span class="text-xs <%= template.clinic_automation_enabled? ? 'text-green-700' : 'text-gray-400' %>">
-                          <%= template.clinic_automation_enabled? ? "Ativo" : "Inativo" %>
+                        <span class="text-xs <%= template_enabled ? 'text-green-700' : 'text-gray-400' %>">
+                          <%= template_enabled ? "Ativo" : "Inativo" %>
                         </span>
                       <% end %>
                     </div>

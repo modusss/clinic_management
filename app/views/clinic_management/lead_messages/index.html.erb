@@ -150,11 +150,31 @@
 
       <% if @show_automation_channel_ui %>
         <div data-lead-messages-automation-target="metaPanel" style="display: none;">
-          <%= render partial: "meta_automation_templates",
-                     locals: {
-                       templates_by_purpose: @clinic_meta_automation_by_purpose,
-                       clinic_automation_channel: @clinic_automation_channel
-                     } %>
+          <% if @meta_automation_viewing_all_externals && @meta_automation_by_location.present? %>
+            <% @meta_automation_by_location.each_with_index do |(location, enabled_map), index| %>
+              <div class="mb-8">
+                <h6 class="text-lg font-semibold text-gray-800 mb-3 pb-2 border-b border-gray-200"><%= location.name %></h6>
+                <%= render partial: "meta_automation_templates",
+                           locals: {
+                             templates_by_purpose: @clinic_meta_automation_by_purpose,
+                             clinic_automation_channel: @clinic_automation_channel,
+                             service_location_id: location.id,
+                             location_label: location.name,
+                             enabled_map: enabled_map,
+                             hide_intro: index > 0
+                           } %>
+              </div>
+            <% end %>
+          <% else %>
+            <%= render partial: "meta_automation_templates",
+                       locals: {
+                         templates_by_purpose: @clinic_meta_automation_by_purpose,
+                         clinic_automation_channel: @clinic_automation_channel,
+                         service_location_id: @meta_automation_service_location_id,
+                         location_label: @meta_automation_location_label,
+                         enabled_map: @meta_automation_enabled_map
+                       } %>
+          <% end %>
         </div>
       <% end %>
     </div>
