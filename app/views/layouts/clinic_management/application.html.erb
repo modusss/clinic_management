@@ -382,7 +382,15 @@
       </div>
     <% else %>
       <%# ESSENTIAL: Match navbar/breadcrumb gutters — `container` alone has no horizontal padding on mobile. %>
-      <div class="container mx-auto px-4 sm:px-6 lg:px-8 clinic-main-shell">
+      <%
+        # ESSENTIAL: Table-heavy clinic pages should progressively use wide desktop
+        # screens; form/education pages keep the standard readable container.
+        wide_table_shell = controller_name.in?(%w[
+          prescriptions services leads invitations service_locations time_slots
+          regions service_types lead_messages referral_indicators whatsapp
+        ])
+      %>
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8 clinic-main-shell <%= 'clinic-main-shell--wide' if wide_table_shell %>">
         <%= render "clinic_management/shared/flash_messages" %>
         <%= yield %>
       </div>

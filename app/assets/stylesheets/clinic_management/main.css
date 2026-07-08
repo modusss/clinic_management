@@ -935,6 +935,45 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
   }
 }
 
+/*
+ * ESSENTIAL: Large-screen clinic tables should grow with the workspace.
+ * Tailwind's `.container` stops at a fixed max-width, which makes service and
+ * daily attendance tables feel cramped on 1700px+ displays. Scope this to
+ * table-heavy pages only via .clinic-main-shell--wide so forms stay readable.
+ */
+@media screen and (min-width: 1700px) {
+  body.clinic-app:not(.doctor-view):not(.clinic-lens-demo) #main-container > .clinic-main-shell--wide {
+    box-sizing: border-box;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    max-width: none !important;
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+    width: 100% !important;
+  }
+
+  body.clinic-app:not(.doctor-view):not(.clinic-lens-demo) #main-container > .clinic-main-shell--wide .container {
+    box-sizing: border-box;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    max-width: none !important;
+    padding-left: 0;
+    padding-right: 0;
+    width: 100% !important;
+  }
+
+  body.clinic-app:not(.doctor-view):not(.clinic-lens-demo) #main-container > .clinic-main-shell--wide .table-container {
+    width: 100%;
+  }
+}
+
+@media screen and (min-width: 2200px) {
+  body.clinic-app:not(.doctor-view):not(.clinic-lens-demo) #main-container > .clinic-main-shell--wide {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}
+
 .nowrap {
     white-space: nowrap !important;
 }
