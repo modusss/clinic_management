@@ -72,7 +72,8 @@
   <%# ESSENTIAL: Results and prescription in flow (not absolute) so prescription is never cut off by overlay. %>
   <div class="search-and-results-wrapper">
     <div class="relative">
-      <%= form_with url: search_index_today_path, method: :post, data: { remote: true, controller: "debounce" }, class: "w-full sm:w-auto flex justify-center sm:justify-start mt-4 sm:mt-0" do |search| %>
+      <% search_context_params = { service_location_id: current_service_location_id.to_s, service_ids: @services.map(&:id) } %>
+      <%= form_with url: search_index_today_path(search_context_params), method: :post, data: { remote: true, controller: "debounce" }, class: "w-full sm:w-auto flex justify-center sm:justify-start mt-4 sm:mt-0" do |search| %>
         <%# ESSENTIAL: Search must use the same Local de Atendimento currently rendered on the page. %>
         <%= hidden_field_tag :service_location_id, current_service_location_id.to_s %>
         <% @services.each do |service| %>

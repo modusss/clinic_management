@@ -209,17 +209,17 @@
       end
 
       def search_index_today
-        if params[:q].present?
-          # ESSENTIAL: Search inside the same service rows rendered on the page.
-          # This keeps Turbo results aligned with the visible Local de Atendimento,
-          # including specific external locations and "Todos externos".
-          appointments = Appointment.where(service_id: search_service_ids)
-          # find the appointments with the given patient_name on params[:q]
-          @appointments = appointments.select { |appointment| appointment.invitation.patient_name.downcase.include?(params[:q].downcase) }
-          # display via turbo_stream a tabel of results on div id #appointment-results
-            @rows = process_appointments_data(@appointments)
+        query = params[:q].to_s.strip
+
+        if query.present?
+          # ESSENTIAL: Search through SQL instead of Ruby filtering. Production can have many
+          # appointments per day, and loading all rows before matching makes the external-location
+          # search fragile and harder to diagnose.
+          @appointments = today_search_appointments(query)
+          @rows = process_appointments_data(@appointments)
         else
-            @rows = "" 
+          @appointments = []
+          @rows = []
         end
         respond_to do |format|
           prescription = @appointments&.first&.prescription
@@ -383,6 +383,32 @@
         return visible_scope.where(id: service_ids).pluck(:id) if service_ids.any?
 
         visible_scope.pluck(:id)
+      end
+
+      # Finds today's appointments matching the patient name inside the same location context as
+      # index_today. The endpoint receives service_ids from the rendered page, but production may
+      # temporarily submit older cached markup without those hidden fields; in that case the scope
+      # falls back to the location param/session through search_service_ids.
+      #
+      # @param query [String] patient name fragment typed by the user
+      # @return [Array<ClinicManagement::Appointment>]
+      def today_search_appointments(query)
+        service_ids = search_service_ids
+        return [] if service_ids.blank?
+
+        escaped_query = ActiveRecord::Base.sanitize_sql_like(query.downcase)
+
+        Appointment
+          .joins(:service, :invitation)
+          .includes(
+            :prescription,
+            :service,
+            invitation: { lead: [:leads_conversion, { lead_interactions: :user }] }
+          )
+          .where(service_id: service_ids)
+          .where("LOWER(clinic_management_invitations.patient_name) LIKE ?", "%#{escaped_query}%")
+          .order("clinic_management_services.start_time ASC, clinic_management_invitations.patient_name ASC")
+          .to_a
       end
 
       def set_view_type
