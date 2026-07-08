@@ -69,11 +69,13 @@ module ClinicManagement
 
     def search_appointment
       if params[:q].present?
-      service = Service.find(params[:service_id])
-      appointments = service.appointments
-      # find the appointments with the given patient_name on params[:q]
-      @appointments = appointments.select { |appointment| appointment.invitation.patient_name.downcase.include?(params[:q].downcase) }
-      # display via turbo_stream a tabel of results on div id #appointment-results
+        service = Service.find(params[:service_id])
+        appointments = service.appointments
+        query = params[:q].downcase
+        # ESSENTIAL: invitation may be nil on legacy/orphan rows — same guard as process_appointments_data.
+        @appointments = appointments.select do |appointment|
+          appointment.invitation&.patient_name&.downcase&.include?(query)
+        end
         @rows = process_appointments_data(@appointments)
       else
         @rows = []
