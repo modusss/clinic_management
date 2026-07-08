@@ -1,0 +1,37 @@
+<%# ESSENTIAL: Owner-only inline editor for appointment referral attribution. %>
+<% invitation = appointment.invitation %>
+<% current_referral = invitation&.referral %>
+<% current_name = current_referral&.name.to_s.upcase.presence || "SEM CAPTADOR" %>
+
+<% if is_owner? && invitation.present? %>
+  <span class="appointment-referral-selector"
+        data-controller="appointment-referral-selector"
+        data-appointment-referral-selector-url-value="<%= update_referral_appointment_path(appointment) %>"
+        data-appointment-referral-selector-current-referral-id-value="<%= current_referral&.id %>">
+    <span class="appointment-referral-selector__name"
+          data-appointment-referral-selector-target="name"><%= current_name %></span>
+
+    <button type="button"
+            class="appointment-referral-selector__edit"
+            title="Alterar captador"
+            aria-label="Alterar captador"
+            data-action="appointment-referral-selector#open">
+      <i class="fas fa-pen" aria-hidden="true"></i>
+    </button>
+
+    <%= select_tag "appointment_referral_#{appointment.id}",
+          grouped_options_for_select(referral_grouped_options, current_referral&.id),
+          class: "appointment-referral-selector__select hidden",
+          aria: { label: "Selecionar captador" },
+          data: {
+            appointment_referral_selector_target: "select",
+            action: "change->appointment-referral-selector#save blur->appointment-referral-selector#closeIfUnchanged"
+          } %>
+
+    <span class="appointment-referral-selector__status"
+          aria-live="polite"
+          data-appointment-referral-selector-target="status"></span>
+  </span>
+<% else %>
+  <%= current_name %>
+<% end %>

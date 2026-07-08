@@ -1,7 +1,8 @@
 module ClinicManagement
   class AppointmentsController < ApplicationController
-    before_action :set_appointment, only: %i[ show edit update destroy ]
+    before_action :set_appointment, only: %i[ show edit update destroy update_referral ]
     before_action :set_reschedules_view_type, only: [:my_reschedules]
+    before_action :authorize_owner!, only: [:update_referral]
     skip_before_action :redirect_referral_users, only: [:reschedule, :create, :update, :update_comments]
 
     # POST /appointments
@@ -163,6 +164,31 @@ module ClinicManagement
       else
         head :unprocessable_entity
       end
+    end
+
+    # Updates the appointment indicator from the service-show table.
+    # ESSENTIAL: keep invitation.referral_id and appointment.referral_code in sync,
+    # because referral-scoped appointment lists use referral_code while the visible
+    # "Indicação" label comes from the invitation referral.
+    def update_referral
+      referral = Referral.find_by(id: params.dig(:appointment, :referral_id))
+
+      unless referral && @appointment.invitation
+        render json: { error: "Captador inválido para este agendamento." }, status: :unprocessable_entity
+        return
+      end
+
+      ActiveRecord::Base.transaction do
+        @appointment.invitation.update!(referral: referral)
+        @appointment.update!(referral_code: referral.code)
+      end
+
+      render json: {
+        referral_id: referral.id,
+        referral_name: referral.name.to_s.upcase
+      }
+    rescue ActiveRecord::RecordInvalid => exception
+      render json: { error: exception.record.errors.full_messages.to_sentence }, status: :unprocessable_entity
     end
 
     def toggle_confirmation
@@ -343,6 +369,14 @@ module ClinicManagement
       # Use callbacks to share common setup or constraints between actions.
       def set_appointment
         @appointment = Appointment.find(params[:id])
+      end
+
+      # ESSENTIAL: Inline indicator changes affect commission attribution, so only
+      # the account owner can use this JSON endpoint.
+      def authorize_owner!
+        return if helpers.is_owner?
+
+        render json: { error: "Apenas o proprietário pode alterar o captador." }, status: :forbidden
       end
 
       # Turbo targets for cancel / undo on lead show and service day tables.

@@ -90,6 +90,7 @@ ClinicManagement::Engine.routes.draw do
     end
     member do
       patch :update_comments
+      patch :update_referral
       patch :set_attendance
       patch :cancel_attendance
       patch :restore_cancel
@@ -192,5 +193,4 @@ ClinicManagement::Engine.routes.draw do
 
   mount ActionCable.server => '/cable'
 end
-
 

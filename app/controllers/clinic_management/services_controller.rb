@@ -306,7 +306,12 @@ module ClinicManagement
             { header: "Endereço", content: invitation.lead.address },
             { header: "Região", content: invitation.region.name.upcase },
             { header: "Localização", content: get_location_link(lead) },
-            { header: "Indicação", content: invitation.referral.name.upcase },
+            {
+              header: "Indicação",
+              content: appointment_referral_cell(ap),
+              id: "appointment-referral-#{ap.id}",
+              class: "nowrap"
+            },
             { header: "Nº de Comparecimentos", content: lead.appointments.count },
             { header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id.to_s}" },
             { header: "Mensagens enviadas:", content: ap.messages_sent&.join(', '), id: "messages-sent-#{ap.id.to_s}" },
@@ -352,6 +357,41 @@ module ClinicManagement
         partial: "clinic_management/lead_messages/lead_message_form",
         locals: { lead: lead, appointment: appointment }
       )
+    end
+
+    # Renders the owner-only inline indicator editor used on services#show.
+    # @param appointment [ClinicManagement::Appointment]
+    # @return [ActiveSupport::SafeBuffer] HTML for the indication cell
+    def appointment_referral_cell(appointment)
+      render_to_string(
+        partial: "clinic_management/appointments/referral_selector",
+        locals: {
+          appointment: appointment,
+          referral_grouped_options: appointment_referral_grouped_options
+        }
+      ).html_safe
+    end
+
+    # Referrals for the service-show inline selector: Local first, then active
+    # captadores, then inactive captadores. Memoized per request to avoid rebuilding
+    # the same grouped select for every appointment row.
+    # @return [Array<Array(String, Array<Array(String, Integer)>)>]
+    def appointment_referral_grouped_options
+      @appointment_referral_grouped_options ||= begin
+        local = Referral.find_by(name: "Local")
+        referrals = Referral.all.to_a
+        active_ids = Referral.active.pluck(:id)
+        active = referrals.select { |referral| active_ids.include?(referral.id) && referral.name != "Local" }
+                          .sort_by { |referral| referral.name.to_s.downcase }
+        inactive = referrals.reject { |referral| active_ids.include?(referral.id) || referral.name == "Local" }
+                            .sort_by { |referral| referral.name.to_s.downcase }
+
+        [].tap do |options|
+          options << ["Local", [[local.name, local.id]]] if local
+          options << ["Captadores ativos", active.map { |referral| [referral.name, referral.id] }] if active.any?
+          options << ["Demais captadores", inactive.map { |referral| [referral.name, referral.id] }] if inactive.any?
+        end
+      end
     end
 
     def process_services_data(services)

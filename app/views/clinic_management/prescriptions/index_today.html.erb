@@ -73,6 +73,11 @@
   <div class="search-and-results-wrapper">
     <div class="relative">
       <%= form_with url: search_index_today_path, method: :post, data: { remote: true, controller: "debounce" }, class: "w-full sm:w-auto flex justify-center sm:justify-start mt-4 sm:mt-0" do |search| %>
+        <%# ESSENTIAL: Search must use the same Local de Atendimento currently rendered on the page. %>
+        <%= hidden_field_tag :service_location_id, current_service_location_id.to_s %>
+        <% @services.each do |service| %>
+          <%= hidden_field_tag "service_ids[]", service.id %>
+        <% end %>
         <div class="input-field relative" id="search-results-container">
           <%= search.search_field :q,
               data: { debounce_target: "input" },

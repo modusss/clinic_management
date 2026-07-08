@@ -210,9 +210,10 @@
 
       def search_index_today
         if params[:q].present?
-          # ESSENTIAL: Filter by current_service_location_id so search respects selected location.
-          base_services = Service.for_location(current_service_location_id).where(date: Date.current)
-          appointments = Appointment.where(service_id: base_services.pluck(:id))
+          # ESSENTIAL: Search inside the same service rows rendered on the page.
+          # This keeps Turbo results aligned with the visible Local de Atendimento,
+          # including specific external locations and "Todos externos".
+          appointments = Appointment.where(service_id: search_service_ids)
           # find the appointments with the given patient_name on params[:q]
           @appointments = appointments.select { |appointment| appointment.invitation.patient_name.downcase.include?(params[:q].downcase) }
           # display via turbo_stream a tabel of results on div id #appointment-results
@@ -362,6 +363,26 @@
           .where("date > ?", Date.current)
           .order(:date)
           .pick(:date)
+      end
+
+      # Location used by the today search endpoint.
+      # @return [String, nil] explicit location param, "all", or current navbar location
+      def search_service_location_id
+        return current_service_location_id if doctor_user? || referral_user?
+        return current_service_location_id unless params.key?(:service_location_id)
+
+        params[:service_location_id].presence
+      end
+
+      # Services searched by index_today. Prefer explicit IDs from the rendered page
+      # and fall back to the selected location when older cached markup submits.
+      # @return [Array<Integer>]
+      def search_service_ids
+        service_ids = Array.wrap(params[:service_ids]).reject(&:blank?)
+        visible_scope = Service.for_location(search_service_location_id).where(date: Date.current)
+        return visible_scope.where(id: service_ids).pluck(:id) if service_ids.any?
+
+        visible_scope.pluck(:id)
       end
 
       def set_view_type
