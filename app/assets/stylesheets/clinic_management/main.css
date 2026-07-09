@@ -688,14 +688,6 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
     padding-top: 6rem;
   }
 
-  body.clinic-app:not(.doctor-view):not(.clinic-lens-demo) {
-    /*
-     * ESSENTIAL: Phone navbar — row1 brand/user + row2 lead search (and optional location row).
-     * Keep padding in sync so content never sits under the fixed header.
-     */
-    padding-top: 5.75rem;
-  }
-
   /* ESSENTIAL: Only reserve the taller header when the location selector is IN the navbar row.
      The selector now lives in the sidebar (still in the DOM), so scope :has to the navbar row. */
   body.clinic-app:not(.doctor-view):not(.clinic-lens-demo):has(.clinic-navbar__row .clinic-navbar__location-form) {
