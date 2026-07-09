@@ -2,6 +2,70 @@ module ClinicManagement
   module ApplicationHelper
     include ReferralDisplayLabelsHelper
 
+    CLINIC_PAGE_TITLE_OVERRIDES = {
+      "clinic_management/appointments#index" => "agendamentos",
+      "clinic_management/appointments#show" => "agendamento",
+      "clinic_management/invitations#new" => "novo paciente",
+      "clinic_management/lead_messages#index" => "mensagens customizadas",
+      "clinic_management/leads#index" => "pacientes",
+      "clinic_management/prescriptions#index_today" => "lista de hoje",
+      "clinic_management/prescriptions#index_next" => "próximo atendimento",
+      "clinic_management/prescriptions#index_before" => "atendimento anterior",
+      "clinic_management/referral_indicators#index" => "captadores",
+      "clinic_management/regions#index" => "regiões de captação",
+      "clinic_management/service_locations#index" => "locais de atendimento",
+      "clinic_management/service_types#index" => "tipos de serviço",
+      "clinic_management/services#index" => "atendimentos",
+      "clinic_management/services#show" => "atendimento",
+      "clinic_management/time_slots#index" => "horários de marcações"
+    }.freeze
+
+    CLINIC_CONTROLLER_BROWSER_LABELS = {
+      "appointments" => ["agendamentos", "agendamento"],
+      "invitations" => ["convites", "convite"],
+      "lead_messages" => ["mensagens customizadas", "mensagem customizada"],
+      "leads" => ["pacientes", "paciente"],
+      "prescriptions" => ["atendimentos", "atendimento"],
+      "referral_indicators" => ["captadores", "captador"],
+      "regions" => ["regiões de captação", "região de captação"],
+      "service_locations" => ["locais de atendimento", "local de atendimento"],
+      "service_types" => ["tipos de serviço", "tipo de serviço"],
+      "services" => ["atendimentos", "atendimento"],
+      "time_slots" => ["horários de marcações", "horário de marcação"]
+    }.freeze
+
+    CLINIC_BROWSER_TITLE_TERM_TRANSLATIONS = {
+      "appointments" => "agendamentos",
+      "booking" => "agendamento",
+      "bookings" => "agendamentos",
+      "edit" => "editar",
+      "index" => "lista",
+      "invitations" => "convites",
+      "leads" => "pacientes",
+      "new" => "novo",
+      "prescriptions" => "atendimentos",
+      "referral" => "captação",
+      "regions" => "regiões",
+      "self" => "auto",
+      "service" => "atendimento",
+      "services" => "atendimentos",
+      "show" => "detalhes",
+      "slots" => "horários",
+      "time" => "horários"
+    }.freeze
+
+    # Builds the clinic browser tab title using the same convention as the main app:
+    # environment prefix + clinic product name + current page label.
+    #
+    # @param default_page_title [String, nil]
+    # @return [String]
+    def clinic_browser_title(default_page_title: nil)
+      page_title = clinic_browser_page_title(default_page_title)
+      title = page_title.present? ? "LP atendimento - #{page_title}" : "LP atendimento"
+
+      "#{clinic_browser_environment_title_prefix}#{title}"
+    end
+
     # ESSENTIAL: Display name for Service in dropdowns (navbar "Ir para atendimento...").
     # Format: "Quinta-feira, 05/03/2026 - 08:00h às 12:00h".
     # When "Todos externos" selected: Local as FIRST param so user can distinguish services from different locations.
@@ -33,6 +97,93 @@ module ClinicManagement
       rescue StandardError => e
         Rails.logger.error "Erro ao converter imagem para base64: #{e.message}"
         nil
+      end
+    end
+
+    # @param default_page_title [String, nil]
+    # @return [String, nil]
+    def clinic_browser_page_title(default_page_title)
+      explicit_title = translated_clinic_browser_title(clinic_normalized_content_for_browser_title)
+      return explicit_title if explicit_title.present?
+      return translated_clinic_browser_title(default_page_title) if default_page_title.present?
+
+      translated_clinic_browser_title(CLINIC_PAGE_TITLE_OVERRIDES[clinic_page_title_key] || inferred_clinic_browser_page_title)
+    end
+
+    # @return [String]
+    def clinic_browser_environment_title_prefix
+      if Rails.env.development?
+        "DEV/ "
+      elsif Rails.env.production?
+        ""
+      else
+        "STAG/ "
+      end
+    end
+
+    # @return [String]
+    def clinic_page_title_key
+      "#{controller_path}##{action_name}"
+    end
+
+    # @return [String, nil]
+    def clinic_normalized_content_for_browser_title
+      return nil unless content_for?(:title)
+
+      content_for(:title).to_s
+        .squish
+        .sub(/\A(?:DEV|STAG)\s*[-\/]\s*/i, "")
+        .sub(/\s*(?:\||-|—)\s*LP atendimento\z/i, "")
+        .presence
+    end
+
+    # Keeps clinic browser titles in pt-BR even when a fallback sees internal names.
+    #
+    # @param raw_title [String, nil]
+    # @return [String, nil]
+    def translated_clinic_browser_title(raw_title, fallback: nil, strict: false)
+      title = raw_title.to_s.squish
+      return nil if title.blank?
+
+      source = title.tr("_", " ").squish
+      translated = source.split(/\b/).map do |token|
+        CLINIC_BROWSER_TITLE_TERM_TRANSLATIONS.fetch(token.downcase, token)
+      end.join.squish
+
+      if translated == source
+        return fallback if fallback.present? || strict
+      end
+
+      translated
+    end
+
+    # @return [String]
+    def inferred_clinic_browser_page_title
+      plural_label, singular_label = CLINIC_CONTROLLER_BROWSER_LABELS.fetch(controller_name) do
+        label = translated_clinic_browser_title(controller_name, strict: true)
+        [label, label&.singularize]
+      end
+      return nil if plural_label.blank? && singular_label.blank?
+
+      case action_name
+      when "index"
+        plural_label
+      when "show"
+        singular_label
+      when "new"
+        return nil if singular_label.blank?
+
+        "novo #{singular_label}"
+      when "edit"
+        return nil if singular_label.blank?
+
+        "editar #{singular_label}"
+      else
+        action_label = translated_clinic_browser_title(action_name, strict: true)
+        return plural_label if action_label.blank?
+        return plural_label if action_label == plural_label
+
+        "#{action_label} - #{plural_label}"
       end
     end
 
