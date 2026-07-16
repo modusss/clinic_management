@@ -5,7 +5,7 @@ module ClinicManagement
     # GET /time_slots
     def index
       TimeSlot.delete_invalid_time_slots!
-      @time_slots = TimeSlot.for_location(current_service_location_id)
+      @time_slots = TimeSlot.for_location(current_service_location_id).includes(:service_types)
       @view_location_id = params[:view_location].presence
 
       if current_service_location_id.to_s == "all"
@@ -171,8 +171,18 @@ module ClinicManagement
       end
 
       def slot_configuration_params
-        permitted = params.require(:time_slot).permit(:start_time, :end_time, :booking_mode, :interval_minutes)
+        permitted = params.require(:time_slot).permit(
+          :start_time,
+          :end_time,
+          :booking_mode,
+          :interval_minutes,
+          :all_service_types,
+          service_type_ids: []
+        )
         permitted[:interval_minutes] = nil unless permitted[:booking_mode] == "scheduled"
+        if ActiveModel::Type::Boolean.new.cast(permitted[:all_service_types])
+          permitted[:service_type_ids] = []
+        end
         permitted
       end
 

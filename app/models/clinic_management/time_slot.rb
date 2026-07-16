@@ -6,6 +6,13 @@ module ClinicManagement
     INTERVAL_OPTIONS = [10, 15, 20, 30, 60].freeze
 
     belongs_to :service_location, optional: true, class_name: "ClinicManagement::ServiceLocation"
+    has_many :time_slot_service_types,
+             class_name: "ClinicManagement::TimeSlotServiceType",
+             dependent: :destroy,
+             inverse_of: :time_slot
+    has_many :service_types,
+             through: :time_slot_service_types,
+             source: :service_type
 
     before_validation :parse_time_attributes
     validates :start_time, :end_time, presence: true
@@ -14,9 +21,14 @@ module ClinicManagement
     validates :interval_minutes, inclusion: { in: INTERVAL_OPTIONS }, if: :scheduled?
     validate :end_time_after_start_time
     validate :unique_slot_per_location
+    validate :specific_service_type_required
 
     def scheduled?
       booking_mode == "scheduled"
+    end
+
+    def applies_to_service_type?(service_type_id)
+      all_service_types? || service_type_ids.include?(service_type_id.to_i)
     end
 
     # Scope for filtering by service_location_id.
@@ -96,6 +108,12 @@ module ClinicManagement
       scope = scope.where.not(id: id) if persisted?
       return unless scope.exists?
       errors.add(:base, "Já existe um horário idêntico para este local (#{service_location&.name || 'Interno'})")
+    end
+
+    def specific_service_type_required
+      return if all_service_types? || service_type_ids.any?
+
+      errors.add(:base, "Selecione ao menos um tipo de atendimento ou aplique o horário a todos")
     end
   end
 end

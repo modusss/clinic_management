@@ -8,13 +8,19 @@ module ClinicManagement
     # Returns array of { date:, time_slot:, formatted_date:, formatted_time: } for new service form.
     # ESSENTIAL: Filters by current_service_location_id (nil = internal, "all" = all externals, id = specific).
     # ESSENTIAL: Excludes slots where a Service already exists for that date+time+location (prevents duplicates).
-    def available_time_slots_for_next_30_days
-      time_slots = ClinicManagement::TimeSlot.for_location(current_service_location_id)
+    def available_time_slots_for_next_30_days(service_type_id:)
+      time_slots = ClinicManagement::TimeSlot
+        .for_location(current_service_location_id)
+        .includes(:service_types)
+        .select { |slot| slot.applies_to_service_type?(service_type_id) }
       slots_by_weekday = time_slots.group_by(&:weekday)
 
-      # Build set of occupied (date, start_time_str, service_location_id) to exclude
+      # Build the occupied set only for the selected service type.
+      # ESSENTIAL: The same date/time/location may host one Optometrista service and
+      # one Oftalmo service; only an existing service of the same type consumes the option.
       existing_services = Service.for_location(current_service_location_id)
         .where(date: Date.current..Date.current + 29.days)
+        .where(service_type_id: service_type_id)
         .pluck(:date, :start_time, :service_location_id)
       format_time_for_key = ->(t) { t.respond_to?(:strftime) ? t.strftime("%H:%M") : t.to_s[0, 5] }
       existing_key = ->(date, start_time, loc_id) { [date, format_time_for_key.call(start_time), loc_id] }

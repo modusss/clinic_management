@@ -31,4 +31,9 @@
       <%= end_time_label %>
     </p>
   <% end %>
+
+  <p>
+    <strong class="font-semibold">Tipos de atendimento:</strong>
+    <%= time_slot.all_service_types? ? "Todos" : time_slot.service_types.map(&:name).sort_by(&:downcase).join(", ") %>
+  </p>
 </div>

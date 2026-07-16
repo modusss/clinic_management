@@ -14,6 +14,18 @@ module ClinicManagement
       assert_predicate slot.errors[:end_time], :any?
     end
 
+    test "requires a service type when the range does not apply to all" do
+      slot = TimeSlot.new(
+        weekday: 2,
+        start_time: "09:00",
+        end_time: "10:00",
+        all_service_types: false
+      )
+
+      assert_not slot.valid?
+      assert_includes slot.errors[:base], "Selecione ao menos um tipo de atendimento ou aplique o horário a todos"
+    end
+
     test "rejects save when weekday is missing" do
       slot = TimeSlot.new(weekday: nil, start_time: "09:00", end_time: "10:00")
       assert_not slot.valid?
