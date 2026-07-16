@@ -65,6 +65,9 @@ module ClinicManagement
     end
 
     def build_sample_appointment_fallback
+      scheduled_start = Time.parse("14:20")
+      scheduled_end = Time.parse("14:40")
+
       OpenStruct.new(
         invitation: OpenStruct.new(
           patient_name: "João Silva Santos",
@@ -74,7 +77,9 @@ module ClinicManagement
           date: Date.current + 3.days,
           start_time: Time.parse("14:00"),
           end_time: Time.parse("17:30")
-        )
+        ),
+        effective_start_time: scheduled_start,
+        effective_end_time: scheduled_end
       )
     end
 
@@ -84,30 +89,30 @@ module ClinicManagement
       lead_name = appointment.invitation&.lead&.name || appointment.invitation&.patient_name || "Nome do Paciente"
       first_name = lead_name.split.first || "Primeiro"
       service_date = appointment.service&.date || Date.current
-      start_time = appointment.service&.start_time || Time.parse("14:00")
-      end_time = appointment.service&.end_time || Time.parse("17:30")
+      time_variables = AppointmentMessageTimeResolver.resolve(appointment)
 
       # Format date components
       weekday = I18n.l(service_date, format: '%A').capitalize
       formatted_date = service_date.strftime('%d/%m/%y')
       month_name = I18n.l(service_date, format: '%B').capitalize
       day_number = service_date.strftime('%d')
-      start_hour = start_time.strftime('%H:%M')
-      end_hour = end_time.strftime('%H:%M')
-
       # Generate sample self-booking link for preview (only when account has self_booking_enabled)
       sample_booking_link = (defined?(current_account) && current_account&.self_booking_enabled?) ? generate_sample_self_booking_link(appointment) : ""
 
       # Replace placeholders
-      text.gsub('{NOME_COMPLETO_PACIENTE}', lead_name)
-          .gsub('{PRIMEIRO_NOME_PACIENTE}', first_name)
-          .gsub('{DIA_SEMANA_ATENDIMENTO}', weekday)
-          .gsub('{DATA_DO_ATENDIMENTO}', formatted_date)
-          .gsub('{MES_DO_ATENDIMENTO}', month_name)
-          .gsub('{DIA_ATENDIMENTO_NUMERO}', day_number)
-          .gsub('{HORARIO_DE_INICIO}', start_hour)
-          .gsub('{HORARIO_DE_TERMINO}', end_hour)
-          .gsub('{LINK_AUTO_MARCACAO}', sample_booking_link)
+      result = text.gsub('{NOME_COMPLETO_PACIENTE}', lead_name)
+                   .gsub('{PRIMEIRO_NOME_PACIENTE}', first_name)
+                   .gsub('{DIA_SEMANA_ATENDIMENTO}', weekday)
+                   .gsub('{DATA_DO_ATENDIMENTO}', formatted_date)
+                   .gsub('{MES_DO_ATENDIMENTO}', month_name)
+                   .gsub('{DIA_ATENDIMENTO_NUMERO}', day_number)
+                   .gsub('{LINK_AUTO_MARCACAO}', sample_booking_link)
+
+      time_variables.each do |placeholder, value|
+        result = result.gsub("{#{placeholder}}", value)
+      end
+
+      result
     end
 
     # ============================================================================

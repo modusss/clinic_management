@@ -69,13 +69,20 @@
             <i class="material-icons text-yellow-500">add_circle_outline</i>
         </button>
         
+        <div class="md:col-span-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+            <div class="font-semibold text-slate-800">Faixa geral do atendimento</div>
+            <div class="text-sm text-slate-600">
+                Mantém o comportamento tradicional e informa todo o período, como 08:00 às 12:00.
+            </div>
+        </div>
+
         <button type="button" 
                 class="placeholder-btn flex items-center justify-between p-3 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-lg transition-colors duration-200"
                 data-placeholder="{HORARIO_DE_INICIO}"
                 data-action="click->placeholder-inserter#insertPlaceholder">
             <div class="text-left">
                 <div class="font-semibold text-teal-800">{HORARIO_DE_INICIO}</div>
-                <div class="text-sm text-teal-600">Horário de início (13:00)</div>
+                <div class="text-sm text-teal-600">Início da faixa geral (08:00)</div>
             </div>
             <i class="material-icons text-teal-500">add_circle_outline</i>
         </button>
@@ -86,9 +93,59 @@
                 data-action="click->placeholder-inserter#insertPlaceholder">
             <div class="text-left">
                 <div class="font-semibold text-orange-800">{HORARIO_DE_TERMINO}</div>
-                <div class="text-sm text-orange-600">Horário de término (16:30)</div>
+                <div class="text-sm text-orange-600">Término da faixa geral (12:00)</div>
             </div>
             <i class="material-icons text-orange-500">add_circle_outline</i>
+        </button>
+
+        <div class="md:col-span-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
+            <div class="flex items-center gap-2 font-semibold text-blue-900">
+                Horário individual agendado
+                <span class="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">Novo</span>
+            </div>
+            <div class="text-sm text-blue-700">
+                Usa a vaga escolhida pelo paciente. Em atendimentos por ordem de chegada, utiliza a faixa geral como fallback.
+            </div>
+        </div>
+
+        <button type="button"
+                class="placeholder-btn flex items-center justify-between p-3 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg transition-colors duration-200"
+                data-placeholder="{HORARIO_AGENDADO_INICIO}"
+                data-action="click->placeholder-inserter#insertPlaceholder">
+            <div class="text-left">
+                <div class="font-semibold text-cyan-800">{HORARIO_AGENDADO_INICIO}</div>
+                <div class="text-sm text-cyan-700">Início da vaga individual (08:20)</div>
+            </div>
+            <i class="material-icons text-cyan-600">add_circle_outline</i>
+        </button>
+
+        <button type="button"
+                class="placeholder-btn flex items-center justify-between p-3 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-lg transition-colors duration-200"
+                data-placeholder="{HORARIO_AGENDADO_TERMINO}"
+                data-action="click->placeholder-inserter#insertPlaceholder">
+            <div class="text-left">
+                <div class="font-semibold text-sky-800">{HORARIO_AGENDADO_TERMINO}</div>
+                <div class="text-sm text-sky-700">Término previsto da vaga (08:40)</div>
+            </div>
+            <i class="material-icons text-sky-600">add_circle_outline</i>
+        </button>
+
+        <div class="md:col-span-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+            <div class="font-semibold text-emerald-900">Correspondência automática — recomendado</div>
+            <div class="text-sm text-emerald-700">
+                Retorna 8h ou 8:45h no horário agendado; em ordem de chegada, mantém 08:00h às 12:00h.
+            </div>
+        </div>
+
+        <button type="button"
+                class="placeholder-btn md:col-span-2 flex items-center justify-between p-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors duration-200"
+                data-placeholder="{CORRESPONDENCIA_DO_HORARIO}"
+                data-action="click->placeholder-inserter#insertPlaceholder">
+            <div class="text-left">
+                <div class="font-semibold text-emerald-800">{CORRESPONDENCIA_DO_HORARIO}</div>
+                <div class="text-sm text-emerald-700">Texto completo decidido automaticamente pelo backend</div>
+            </div>
+            <i class="material-icons text-emerald-600">add_circle_outline</i>
         </button>
         
         <%# LINK_AUTO_MARCACAO - only show when account has self_booking_enabled (Adicionais toggle) %>

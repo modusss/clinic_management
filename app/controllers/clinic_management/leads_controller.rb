@@ -805,7 +805,7 @@ module ClinicManagement
             Rails.logger.info "📤 [BULK] Enfileirando #{lead.name} (#{phone}) via #{instance_name} - verificação de WhatsApp será feita no job"
 
             # Gerar mensagem personalizada
-            message_data = get_message(message, lead, appointment.service)
+            message_data = get_message(message, lead, appointment)
             message_text = message_data[:text]
             media_details = message_data[:media]
 
@@ -1974,7 +1974,8 @@ module ClinicManagement
       
       # Gera mensagem personalizada com substituições de placeholders
       # Copiado do LeadMessagesController para uso no envio em massa
-      def get_message(message, lead, service)
+      def get_message(message, lead, appointment)
+        service = appointment&.service
         Rails.logger.debug "Entering get_message method"
         Rails.logger.debug "Message: #{message.inspect}"
         Rails.logger.debug "Lead: #{lead.inspect}"
@@ -1994,6 +1995,7 @@ module ClinicManagement
         end
 
         # Substituições de texto padrão
+        time_variables = AppointmentMessageTimeResolver.resolve(appointment)
         result = result.gsub("{PRIMEIRO_NOME_PACIENTE}", lead.name.split(" ").first)
                  .gsub("{NOME_COMPLETO_PACIENTE}", lead.name)
                  .gsub("\n", "%0A")
@@ -2004,9 +2006,11 @@ module ClinicManagement
           result = result.gsub("{DIA_SEMANA_ATENDIMENTO}", I18n.l(service&.date, format: "%A").to_s)
                          .gsub("{MES_DO_ATENDIMENTO}", I18n.l(service.date, format: "%B").to_s)
                          .gsub("{DIA_ATENDIMENTO_NUMERO}", service&.date&.strftime("%d").to_s)
-                         .gsub("{HORARIO_DE_INICIO}", appointment.effective_start_time.strftime("%H:%M").to_s)
-                         .gsub("{HORARIO_DE_TERMINO}", appointment.effective_end_time.strftime("%H:%M").to_s)
                          .gsub("{DATA_DO_ATENDIMENTO}", service&.date&.strftime("%d/%m/%Y").to_s)
+        end
+
+        time_variables.each do |placeholder, value|
+          result = result.gsub("{#{placeholder}}", value)
         end
 
         # Extract media details (both from attached files and URL-based media)

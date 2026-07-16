@@ -266,7 +266,7 @@ module ClinicManagement
         # when the message is actually SENT (via send_evolution_message or manual send)
         # not when the user just selects a message from the dropdown
         lead = Lead.find_by(id: params[:lead_id])
-        message_data = get_message(message, lead, appointment.service)
+        message_data = get_message(message, lead, appointment)
         context = params[:context] || 'other'  # Capturar contexto
         
         # Check if we can use Evolution API for automatic sending (with error handling)
@@ -341,7 +341,7 @@ module ClinicManagement
         
         Rails.logger.info "📋 Found records - Message: #{message&.id}, Appointment: #{appointment&.id}, Lead: #{lead&.id}, Context: #{context}"
         
-        message_data = get_message(message, lead, appointment.service)
+        message_data = get_message(message, lead, appointment)
         message_text = message_data[:text]
         media_details = message_data[:media]
         
@@ -619,7 +619,8 @@ module ClinicManagement
       end
     end
 
-    def get_message(message, lead, service)
+    def get_message(message, lead, appointment)
+      service = appointment&.service
       Rails.logger.debug "Entering get_message method"
       Rails.logger.debug "Message: #{message.inspect}"
       Rails.logger.debug "Lead: #{lead.inspect}"
@@ -640,6 +641,7 @@ module ClinicManagement
 
       # Substituições de texto padrão (LINK_AUTO_MARCACAO only when account has self_booking_enabled)
       link_value = (defined?(current_account) && current_account&.self_booking_enabled?) ? generate_self_booking_link(lead) : ""
+      time_variables = AppointmentMessageTimeResolver.resolve(appointment)
       result = result.gsub("{PRIMEIRO_NOME_PACIENTE}", lead.name.split(" ").first)
                .gsub("{NOME_COMPLETO_PACIENTE}", lead.name)
                .gsub("{LINK_AUTO_MARCACAO}", link_value)
@@ -651,9 +653,11 @@ module ClinicManagement
         result = result.gsub("{DIA_SEMANA_ATENDIMENTO}", I18n.l(service&.date, format: "%A").to_s)
                        .gsub("{MES_DO_ATENDIMENTO}", I18n.l(service.date, format: "%B").to_s)
                        .gsub("{DIA_ATENDIMENTO_NUMERO}", service&.date&.strftime("%d").to_s)
-                       .gsub("{HORARIO_DE_INICIO}", appointment.effective_start_time.strftime("%H:%M").to_s)
-                       .gsub("{HORARIO_DE_TERMINO}", appointment.effective_end_time.strftime("%H:%M").to_s)
                        .gsub("{DATA_DO_ATENDIMENTO}", service&.date&.strftime("%d/%m/%Y").to_s)
+      end
+
+      time_variables.each do |placeholder, value|
+        result = result.gsub("{#{placeholder}}", value)
       end
 
       # Extract media details (both from attached files and URL-based media)
