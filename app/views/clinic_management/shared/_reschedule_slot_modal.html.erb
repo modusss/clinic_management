@@ -4,6 +4,8 @@
     Slot click fills the active form's hidden service_id via reschedule-slot-modal Stimulus. %>
 <% modal_id = local_assigns.fetch(:modal_id, "reschedule-slot-modal") %>
 <% grouped_by_day = local_assigns.fetch(:grouped_by_day, []) %>
+<% modal_title = local_assigns.fetch(:modal_title, "Remarcar atendimento") %>
+<% empty_message = local_assigns.fetch(:empty_message, "Nenhum atendimento disponível para remarcação.") %>
 <div id="<%= modal_id %>"
      class="go-to-service-modal"
      role="dialog"
@@ -18,7 +20,7 @@
       <div class="go-to-service-modal-header">
         <h2 id="<%= modal_id %>-title" class="go-to-service-modal-title">
           <i class="fas fa-calendar-alt mr-2" aria-hidden="true"></i>
-          Remarcar atendimento
+          <%= modal_title %>
         </h2>
         <button type="button" class="go-to-service-modal-close" data-action="click->reschedule-slot-modal#close" aria-label="Fechar">
           <i class="fas fa-times"></i>
@@ -28,7 +30,7 @@
         <% if grouped_by_day.blank? %>
           <p class="go-to-service-modal-empty text-gray-500 text-center py-8">
             <i class="fas fa-inbox text-4xl mb-3 block opacity-50"></i>
-            Nenhum atendimento disponível para remarcação.
+            <%= empty_message %>
           </p>
         <% else %>
           <% grouped_by_day.each do |group| %>
@@ -42,7 +44,68 @@
                   <% loc_name = service.service_location&.name %>
                   <% appt_total = item[:appointments_total].to_i %>
                   <% label = item[:label].presence || display_service_name(service) %>
+                  <% occupied_counts = item[:occupied_counts] || {} %>
                   <% aria_counts = "#{appt_total} #{appt_total == 1 ? 'agendado' : 'agendados'} no horário" %>
+                  <% if service.scheduled? %>
+                    <% free_times, occupied_times = item[:appointment_times].partition { |time| occupied_counts[time.change(sec: 0)].to_i.zero? } %>
+                    <li class="go-to-service-scheduled-group">
+                      <div class="go-to-service-item go-to-service-item--static">
+                        <span class="go-to-service-item-main">
+                          <strong><%= time_str %></strong>
+                          <span class="go-to-service-item-counts">Escolha um horário — disponíveis primeiro</span>
+                        </span>
+                      </div>
+                      <div class="appointment-time-grid">
+                        <% if service.date == Date.current %>
+                          <button type="button"
+                                  class="appointment-time-option appointment-time-option--now"
+                                  data-action="click->reschedule-slot-modal#select"
+                                  data-service-id="<%= service.id %>"
+                                  data-service-location-id="<%= service.service_location_id.to_s %>"
+                                  data-scheduled-at="now"
+                                  data-allow-overbooking="true"
+                                  data-label="<%= "#{label} — Para agora" %>">
+                            Para agora
+                          </button>
+                        <% end %>
+                        <% free_times.each do |time| %>
+                          <button type="button"
+                                  class="appointment-time-option"
+                                  data-action="click->reschedule-slot-modal#select"
+                                  data-service-id="<%= service.id %>"
+                                  data-service-location-id="<%= service.service_location_id.to_s %>"
+                                  data-scheduled-at="<%= time.iso8601 %>"
+                                  data-allow-overbooking="false"
+                                  data-label="<%= "#{label} — #{time.strftime('%H:%M')}" %>">
+                            <%= time.strftime("%H:%M") %>
+                            <small>livre</small>
+                          </button>
+                        <% end %>
+                      </div>
+                      <% if occupied_times.any? %>
+                        <details class="appointment-overbooking-options">
+                          <summary>Encaixar em horário ocupado</summary>
+                          <div class="appointment-time-grid">
+                            <% occupied_times.each do |time| %>
+                              <% count = occupied_counts[time.change(sec: 0)].to_i %>
+                              <button type="button"
+                                      class="appointment-time-option appointment-time-option--occupied"
+                                      data-action="click->reschedule-slot-modal#select"
+                                      data-service-id="<%= service.id %>"
+                                      data-service-location-id="<%= service.service_location_id.to_s %>"
+                                      data-scheduled-at="<%= time.iso8601 %>"
+                                      data-allow-overbooking="true"
+                                      data-confirm-overbooking="true"
+                                      data-label="<%= "#{label} — #{time.strftime('%H:%M')} (encaixe)" %>">
+                                <%= time.strftime("%H:%M") %>
+                                <small><%= count %> <%= count == 1 ? "pessoa" : "pessoas" %></small>
+                              </button>
+                            <% end %>
+                          </div>
+                        </details>
+                      <% end %>
+                    </li>
+                  <% else %>
                   <li role="option">
                     <button type="button"
                             class="go-to-service-item"
@@ -72,6 +135,7 @@
                       </span>
                     </button>
                   </li>
+                  <% end %>
                 <% end %>
               </ul>
             </div>

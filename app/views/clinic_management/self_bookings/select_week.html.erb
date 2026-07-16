@@ -57,7 +57,7 @@
         </div>
         <div class="existing-appointment-time">
           <i class="fas fa-clock text-emerald-500 mr-2"></i>
-          <span><%= appointment.service.start_time.strftime('%H:%M') %> - <%= appointment.service.end_time.strftime('%H:%M') %></span>
+          <span><%= appointment.scheduled_at.present? ? appointment.scheduled_at.strftime("%H:%M") : "#{appointment.service.start_time.strftime('%H:%M')} - #{appointment.service.end_time.strftime('%H:%M')}" %></span>
         </div>
         <% if appointment.invitation&.referral&.name.present? %>
           <div class="existing-appointment-referral">

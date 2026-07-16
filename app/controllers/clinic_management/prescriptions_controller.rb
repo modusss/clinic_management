@@ -407,7 +407,11 @@
           )
           .where(service_id: service_ids)
           .where("LOWER(clinic_management_invitations.patient_name) LIKE ?", "%#{escaped_query}%")
-          .order("clinic_management_services.start_time ASC, clinic_management_invitations.patient_name ASC")
+          .order(Arel.sql(
+            "clinic_management_services.start_time ASC, " \
+            "clinic_management_appointments.scheduled_at ASC NULLS FIRST, " \
+            "clinic_management_invitations.patient_name ASC"
+          ))
           .to_a
       end
 
@@ -425,7 +429,7 @@
           # Filtra as appointments para remover aquelas onde appointment.invitation é nil
           appointments = service.appointments
                                 .select { |ap| ap.invitation.present? }
-                                .sort_by { |ap| ap.invitation.patient_name }
+                                .sort_by { |ap| [ap.scheduled_at || Time.zone.at(0), ap.invitation.patient_name] }
           process_appointments_data(appointments)
         end
       end
@@ -450,6 +454,7 @@
                 attendance_status: attendance_status
               },
               {header: "Paciente", content: invitation.patient_name, class: "size_20 nowrap patient-name"},
+              {header: "Horário definido", content: ap.scheduled_time_label, class: "nowrap"},
               {header: "Comparecimento", content: ap.attendance == true ? "sim" : "--"},
               {header: "Receita", content: prescription_link(ap), class: "nowrap"}
             ]
@@ -465,6 +470,7 @@
                 class: "nowrap size_20 patient-name"
               },   
               {header: "Status", content: helpers.format_status_and_attendance(ap), id: "status-#{ap.id}", class: helpers.status_class(ap) },          
+              {header: "Horário definido", content: ap.scheduled_time_label, class: "nowrap"},
               {header: "Confirmado", content: render_to_string(
                 partial: 'clinic_management/services/confirmation_toggle',
                 locals: { appointment: ap }

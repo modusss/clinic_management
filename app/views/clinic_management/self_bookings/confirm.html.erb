@@ -32,6 +32,22 @@
 
 <!-- Main card -->
 <div class="booking-card">
+  <% if @service.scheduled? && @scheduled_at.blank? %>
+    <h2 class="text-xl font-bold text-gray-900 text-center mb-2">Escolha o horário</h2>
+    <p class="text-gray-600 text-center mb-6">
+      <%= @is_multi_patient_booking ? "Serão reservados #{@selected_patient_names.size} horários consecutivos." : "Selecione um horário disponível." %>
+    </p>
+    <div class="grid grid-cols-2 gap-3">
+      <% @available_start_times.each do |time| %>
+        <%= link_to time.strftime("%H:%M"),
+                    self_booking_confirm_path(@lead.self_booking_token, service_id: @service.id, scheduled_at: time.iso8601),
+                    class: "option-btn justify-center" %>
+      <% end %>
+    </div>
+    <% if @available_start_times.blank? %>
+      <p class="text-center text-amber-700">Não há horários consecutivos suficientes para esta seleção.</p>
+    <% end %>
+  <% else %>
   <div class="text-center mb-6">
     <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-4">
       <i class="fas fa-calendar-check text-emerald-600 text-2xl"></i>
@@ -105,7 +121,7 @@
   </div>
   
   <!-- Confirm button -->
-  <%= button_to self_booking_create_path(@lead.self_booking_token, service_id: @service.id),
+  <%= button_to self_booking_create_path(@lead.self_booking_token, service_id: @service.id, scheduled_at: @scheduled_at&.iso8601),
                 method: :post,
                 class: "btn-primary mb-4",
                 data: { turbo_confirm: @is_multi_patient_booking ? "Confirmar agendamento para #{@selected_patient_names.size} pessoas em #{@formatted_date}?" : "Confirmar agendamento para #{@formatted_date}?" } do %>
@@ -117,6 +133,7 @@
   <%= link_to self_booking_path(@lead.self_booking_token), 
               class: "block text-center text-gray-500 hover:text-gray-700" do %>
     Cancelar e voltar ao início
+  <% end %>
   <% end %>
 </div>
 

@@ -144,10 +144,7 @@ module ClinicManagement
             @invitation.destroy
             raise ActiveRecord::RecordInvalid.new(@lead)
           else
-            @appointment = @invitation.appointments.build(appointment_params)
-            @appointment.referral_code = @invitation&.referral&.code
-            @appointment.registered_by_user_id = current_user&.id
-            @appointment.save!
+            @appointment = create_manual_appointment!(@invitation, appointment_params)
           end
         end
         @lead.update(last_appointment_id: @appointment.id)
@@ -155,6 +152,8 @@ module ClinicManagement
         render_turbo_stream
       rescue ActiveRecord::RecordInvalid => exception
         render_validation_errors(exception)
+      rescue ClinicManagement::AppointmentBooking::UnavailableTime => exception
+        render_booking_error(exception.message)
       end
     end
 
@@ -206,10 +205,7 @@ module ClinicManagement
             @lead.errors.add(:base, "Este paciente chamado #{@lead.name} já está agendado para este atendimento.")
             raise ActiveRecord::RecordInvalid.new(@lead)
           else
-            @appointment = @invitation.appointments.build(appointment_params)
-            @appointment.referral_code = @invitation&.referral&.code
-            @appointment.registered_by_user_id = current_user&.id
-            @appointment.save!
+            @appointment = create_manual_appointment!(@invitation, appointment_params)
           end
         end
         
@@ -224,6 +220,8 @@ module ClinicManagement
         end
       rescue ActiveRecord::RecordInvalid => exception
         render_validation_errors(exception)
+      rescue ClinicManagement::AppointmentBooking::UnavailableTime => exception
+        render_booking_error(exception.message)
       end
     end
     
@@ -544,6 +542,13 @@ module ClinicManagement
         format.turbo_stream do
           render turbo_stream: turbo_stream.update("validation", validation_content)
         end
+      end
+    end
+
+    def render_booking_error(message)
+      respond_to do |format|
+        format.turbo_stream { render turbo_stream: turbo_stream.update("validation", message) }
+        format.html { redirect_back fallback_location: new_invitation_path, alert: message }
       end
     end
 
@@ -1296,7 +1301,9 @@ module ClinicManagement
           :referral_id,
           appointments_attributes: [
             :id,
-            :service_id
+            :service_id,
+            :scheduled_at,
+            :allow_overbooking
           ],
           lead_attributes: [
             :name,
@@ -1307,6 +1314,29 @@ module ClinicManagement
           ]
         )      
       end      
+
+      def create_manual_appointment!(invitation, appointment_params)
+        service = Service.find(appointment_params[:service_id])
+        scheduled_at = Time.zone.parse(appointment_params[:scheduled_at]) if appointment_params[:scheduled_at].present?
+        allow_overbooking = ActiveModel::Type::Boolean.new.cast(appointment_params[:allow_overbooking])
+        attributes = {
+          invitation: invitation,
+          lead: @lead,
+          status: "agendado",
+          referral_code: invitation.referral&.code,
+          registered_by_user_id: current_user&.id
+        }
+
+        ClinicManagement::AppointmentBooking.new(
+          service: service,
+          allow_overbooking: allow_overbooking
+        ).create_consecutive!(
+          appointment_attributes: [attributes],
+          starting_at: scheduled_at
+        ).first
+      rescue ArgumentError
+        raise ClinicManagement::AppointmentBooking::UnavailableTime, "Escolha um horário válido."
+      end
 
     # ============================================================================
     # Associate invitation with an existing lead by phone number

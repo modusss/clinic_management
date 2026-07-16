@@ -1150,3 +1150,92 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
 .appointment-referral-selector__status--error {
   color: #dc2626;
 }
+.invitation-form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #374151;
+  font-weight: 700;
+}
+
+.invitation-form-control {
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.65rem;
+  background: #fff;
+  color: #1f2937;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.invitation-form-control:focus {
+  border-color: #3b82f6;
+  outline: 3px solid rgba(59, 130, 246, 0.16);
+}
+
+.invitation-form-help {
+  margin: 0.55rem 0 0;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.invitation-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.invitation-form-section {
+  padding: 1.35rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.invitation-form-section__title {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1.25rem;
+  color: #0f172a;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.invitation-form-section__title span {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.9rem;
+}
+
+.invitation-form input:not([type="hidden"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+.invitation-form select,
+.invitation-form textarea {
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.7rem;
+  background: #fff;
+  box-shadow: none;
+}
+
+.invitation-form textarea {
+  min-height: 6rem;
+}
+
+.invitation-form input:not([type="submit"]):not([type="button"]):focus,
+.invitation-form select:focus,
+.invitation-form textarea:focus {
+  border-color: #3b82f6;
+  outline: 3px solid rgba(59, 130, 246, 0.14);
+}
+
+.invitation-schedule-trigger {
+  width: 100%;
+  min-height: 3.25rem;
+}

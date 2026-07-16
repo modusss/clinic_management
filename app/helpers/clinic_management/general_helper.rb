@@ -244,7 +244,12 @@ module ClinicManagement
           return "" unless service.present?
           
           date_info = "#{show_week_day(service.weekday)}, #{service.date.strftime('%d/%m/%Y')}"
-          time_info = "#{service.start_time.strftime('%H:%M')}h às #{service.end_time.strftime('%H:%M')}h"
+          range_info = "#{service.start_time.strftime('%H:%M')}h às #{service.end_time.strftime('%H:%M')}h"
+          time_info = if appointment.scheduled_at.present?
+            appointment.overbooked? ? "#{appointment.scheduled_at.strftime('%H:%M')}h · encaixe" : "#{appointment.scheduled_at.strftime('%H:%M')}h"
+          else
+            "Ordem de chegada"
+          end
           
           # Create a card with better organized elements
           html = "<div class=\"appointment-card\">
@@ -254,7 +259,11 @@ module ClinicManagement
             </div>
             <div class=\"appointment-time\">
               <i class=\"far fa-clock\"></i>
-              <span>#{time_info}</span>
+              <span><strong>Horário definido:</strong> #{time_info}</span>
+            </div>
+            <div class=\"appointment-range\">
+              <i class=\"fas fa-hourglass-half\"></i>
+              <span><strong>Faixa:</strong> #{range_info}</span>
             </div>
           </div>"
           
@@ -269,17 +278,17 @@ module ClinicManagement
               margin: 10px 0;
               border-left: 4px solid #4285f4;
             }
-            .appointment-date, .appointment-time {
+            .appointment-date, .appointment-time, .appointment-range {
               display: flex;
               align-items: center;
               color: #4285f4;
               margin: 6px 0;
             }
-            .appointment-date i, .appointment-time i {
+            .appointment-date i, .appointment-time i, .appointment-range i {
               margin-right: 10px;
               font-size: 18px;
             }
-            .appointment-date span, .appointment-time span {
+            .appointment-date span, .appointment-time span, .appointment-range span {
               font-size: 16px;
               font-weight: 500;
             }

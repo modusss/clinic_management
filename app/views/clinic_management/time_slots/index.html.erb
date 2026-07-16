@@ -56,6 +56,9 @@
                 <% slots.each do |time_slot| %>
                   <div class="bg-white p-4 rounded-lg shadow-md">
                     <%= render time_slot, hide_location: true, hide_weekday: true %>
+                    <p class="mt-2 text-sm text-gray-600">
+                      <%= time_slot.scheduled? ? "Horários agendados a cada #{time_slot.interval_minutes} minutos" : "Ordem de chegada" %>
+                    </p>
                     <div class="mt-2">
                       <%= link_to "Detalhes e edições", time_slot, class: "text-blue-600 hover:text-blue-800" %>
                     </div>

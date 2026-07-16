@@ -35,6 +35,8 @@ module ClinicManagement
     # ============================================================================
     scope :self_booked, -> { where(self_booked: true) }
     scope :manually_booked, -> { where(self_booked: [false, nil]) }
+
+    validate :scheduled_at_matches_service
     
     # ESSENTIAL: Prevents duplicate appointments for the same service + same patient (same name + same phone).
     # Covers both: same lead booked twice in same service, and different leads with identical name/phone.
@@ -53,6 +55,23 @@ module ClinicManagement
       else
         read_attribute(:registered_by_user).presence || "Sistema"
       end
+    end
+
+    def effective_start_time
+      scheduled_at || service&.start_time
+    end
+
+    def effective_end_time
+      return service&.end_time if scheduled_at.blank? || service&.interval_minutes.blank?
+
+      scheduled_at + service.interval_minutes.minutes
+    end
+
+    def scheduled_time_label
+      return "Ordem de chegada" if scheduled_at.blank?
+
+      label = scheduled_at.strftime("%H:%M")
+      overbooked? ? "#{label} · encaixe" : label
     end
     
     # Verifica se é remarcação (existe appointment anterior remarcado do mesmo lead)
@@ -77,6 +96,15 @@ module ClinicManagement
     end
 
     private
+
+    def scheduled_at_matches_service
+      return if scheduled_at.blank?
+      return errors.add(:scheduled_at, "não pode ser usado em atendimento por ordem de chegada") unless service&.scheduled?
+      return errors.add(:scheduled_at, "deve pertencer à data do atendimento") unless scheduled_at.to_date == service.date
+
+      valid_minute = service.appointment_times.any? { |time| time.change(sec: 0) == scheduled_at.change(sec: 0) }
+      errors.add(:scheduled_at, "não pertence aos horários configurados para este atendimento") unless valid_minute || overbooked?
+    end
 
     # Enqueues statistic refresh for this appointment's service (and previous service on reschedule moves).
     # @return [void]

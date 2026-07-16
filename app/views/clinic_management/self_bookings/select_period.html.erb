@@ -35,6 +35,17 @@
     <div class="space-y-3">
       <% if @morning_services.any? %>
         <% @morning_services.each do |service| %>
+          <% if service.scheduled? %>
+            <% service.available_start_times(required_slots: @required_slots).each do |time| %>
+              <%= link_to self_booking_confirm_path(@lead.self_booking_token, service_id: service.id, scheduled_at: time.iso8601, week: @week, day: @day), class: "option-btn" do %>
+                <div class="flex items-center">
+                  <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center mr-3"><i class="fas fa-clock text-emerald-600"></i></div>
+                  <div class="text-left"><div class="font-semibold text-gray-900"><%= time.strftime("%H:%M") %></div><div class="text-sm text-gray-500"><%= I18n.l(service.date, format: '%A, %d/%m') %></div></div>
+                </div>
+                <i class="fas fa-chevron-right icon"></i>
+              <% end %>
+            <% end %>
+          <% else %>
           <%= link_to self_booking_confirm_path(@lead.self_booking_token, 
                                                  service_id: service.id,
                                                  week: @week,
@@ -55,11 +66,23 @@
             </div>
             <i class="fas fa-chevron-right icon"></i>
           <% end %>
+          <% end %>
         <% end %>
       <% end %>
       
       <% if @afternoon_services.any? %>
         <% @afternoon_services.each do |service| %>
+          <% if service.scheduled? %>
+            <% service.available_start_times(required_slots: @required_slots).each do |time| %>
+              <%= link_to self_booking_confirm_path(@lead.self_booking_token, service_id: service.id, scheduled_at: time.iso8601, week: @week, day: @day), class: "option-btn" do %>
+                <div class="flex items-center">
+                  <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center mr-3"><i class="fas fa-clock text-emerald-600"></i></div>
+                  <div class="text-left"><div class="font-semibold text-gray-900"><%= time.strftime("%H:%M") %></div><div class="text-sm text-gray-500"><%= I18n.l(service.date, format: '%A, %d/%m') %></div></div>
+                </div>
+                <i class="fas fa-chevron-right icon"></i>
+              <% end %>
+            <% end %>
+          <% else %>
           <%= link_to self_booking_confirm_path(@lead.self_booking_token, 
                                                  service_id: service.id,
                                                  week: @week,
@@ -79,6 +102,7 @@
               </div>
             </div>
             <i class="fas fa-chevron-right icon"></i>
+          <% end %>
           <% end %>
         <% end %>
       <% end %>

@@ -79,7 +79,7 @@ module ClinicManagement
                     when 'select'
                         concat f.select field[:input], 
                                         field[:options], 
-                                        prompt: "Selecione um dia", 
+                                        prompt: field.fetch(:prompt, "Selecione uma opção"),
                                         class: "#{form_class}", 
                                         selected: field[:selected]
                     when 'date'

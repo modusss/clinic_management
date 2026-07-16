@@ -1,7 +1,11 @@
+<% displayed_service_id = service.respond_to?(:id) ? service.id : service %>
+<% displayed_appointment = local_assigns[:appointment] ||
+     invitation.appointments.find { |item| item.service_id.to_s == displayed_service_id.to_s } ||
+     invitation.appointments.last %>
 <tr>
   <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm" style="white-space: nowrap;"><%= invitation.patient_name %></td>
   <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm" style="white-space: nowrap;"><%= add_phone_mask(invitation&.lead&.phone) %></td>
-  <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm" style="white-space: nowrap;"><%= link_to(invite_day(invitation.appointments.last), show_by_referral_services_path(referral_id: referral, id: service), class: "text-blue-500 hover:text-blue-700" ) %></td>
+  <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm" style="white-space: nowrap;"><%= link_to(invite_day(displayed_appointment), show_by_referral_services_path(referral_id: referral, id: service), class: "text-blue-500 hover:text-blue-700" ) %></td>
   <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm" style="white-space: nowrap;"><%= link_to 'Editar', edit_lead_path(invitation.lead), class: "text-blue-500 hover:text-blue-700" %></td>
   <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm justify-center">
     <%= button_to lead_path(invitation.lead), method: :delete, data: { confirm: 'Are you sure?' } do %>

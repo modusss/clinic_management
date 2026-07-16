@@ -123,12 +123,24 @@ module ClinicManagement
 
       ids = list.map(&:id)
       counts = ClinicManagement::Appointment.where(service_id: ids).group(:service_id).count
+      occupied_counts = ClinicManagement::Appointment
+        .where(service_id: ids)
+        .where.not(status: %w[cancelado remarcado])
+        .where.not(scheduled_at: nil)
+        .group(:service_id, :scheduled_at)
+        .count
 
       items = list.map do |service|
         {
           service: service,
           label: display_service_name(service),
-          appointments_total: counts[service.id] || 0
+          appointments_total: counts[service.id] || 0,
+          appointment_times: service.scheduled? ? service.appointment_times : [],
+          occupied_counts: occupied_counts.each_with_object({}) do |((service_id, scheduled_at), count), memo|
+            next unless service_id == service.id
+
+            memo[scheduled_at.change(sec: 0)] = count
+          end
         }
       end
 

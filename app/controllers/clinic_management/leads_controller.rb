@@ -1554,6 +1554,7 @@ module ClinicManagement
             class: "nowrap size_20 patient-name"
           },          
           {header: "Data do atendimento", content: service_content_link(ap), class: "nowrap"},
+          {header: "Horário definido", content: ap.scheduled_time_label, class: "nowrap"},
           {header: "Cancelar?", content: helpers.cancel_attendance_button(ap), id: "cancel-attendance-button-#{ap.id}", class: "pt-2 pb-0"},
           {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: ap, message: "" }), id: "appointment-comments-#{ap.id}"},                   
           {header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500"},
@@ -2003,8 +2004,8 @@ module ClinicManagement
           result = result.gsub("{DIA_SEMANA_ATENDIMENTO}", I18n.l(service&.date, format: "%A").to_s)
                          .gsub("{MES_DO_ATENDIMENTO}", I18n.l(service.date, format: "%B").to_s)
                          .gsub("{DIA_ATENDIMENTO_NUMERO}", service&.date&.strftime("%d").to_s)
-                         .gsub("{HORARIO_DE_INICIO}", service.start_time.strftime("%H:%M").to_s)
-                         .gsub("{HORARIO_DE_TERMINO}", service.end_time.strftime("%H:%M").to_s)
+                         .gsub("{HORARIO_DE_INICIO}", appointment.effective_start_time.strftime("%H:%M").to_s)
+                         .gsub("{HORARIO_DE_TERMINO}", appointment.effective_end_time.strftime("%H:%M").to_s)
                          .gsub("{DATA_DO_ATENDIMENTO}", service&.date&.strftime("%d/%m/%Y").to_s)
         end
 

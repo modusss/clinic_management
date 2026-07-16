@@ -51,6 +51,8 @@
   <div class="w-full sm:w-auto">
     <%= f.label :service_id, "Escolha o dia:", class: "block text-gray-700 text-sm font-bold mb-1" %>
     <%= f.hidden_field :service_id, value: "", id: "reschedule-service-id-#{old_appointment ? old_appointment.id : (defined?(lead) && lead ? lead.id : 'new')}" %>
+    <%= f.hidden_field :scheduled_at, value: "" %>
+    <%= f.hidden_field :allow_overbooking, value: "0" %>
     <button type="button"
             class="reschedule-slot-trigger"
             data-reschedule-slot-trigger

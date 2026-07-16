@@ -1,4 +1,4 @@
-<%= form_for(invitation, url: create_patient_fitted_invitations_path, method: :post, html: {multipart: true, class: "w-full max-w-lg mx-auto mt-6", id: "new_invitation"}) do |form| %>
+<%= form_for(invitation, url: create_patient_fitted_invitations_path, method: :post, html: {multipart: true, class: "invitation-form w-full max-w-2xl mx-auto mt-6", id: "new_invitation"}) do |form| %>
   <% if invitation.errors.any? %>
     <div class="bg-red-200 border-red-600 border-l-4 p-4 mb-6">
       <h2 class="text-red-800 font-bold"><%= pluralize(invitation.errors.count, "erro") %> impediram que o convite fosse salvo:</h2>
@@ -14,21 +14,22 @@
        data-phone-checker-check-url-value="<%= check_existing_phone_invitations_path %>"
        data-phone-checker-csrf-token-value="<%= form_authenticity_token %>">
 
-    <h2 class="text-lg font-bold mb-4">1. Dados da marcação</h2>
+    <section class="invitation-form-section">
+    <h2 class="invitation-form-section__title"><span>1</span> Dados da marcação</h2>
     <div class="mb-4">
       <%= form.label :referral_id, "Captador", class: "block text-gray-700 font-bold" %>
       <%= form.collection_select :referral_id, referrals, :id, :name, {selected: local_referral.id}, {class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline"} %>
     </div>
 
     <%= form.fields_for :appointments do |appointment_fields| %>
-      <div class="mb-4">
-        <%= appointment_fields.hidden_field :service_id, value: service.id %>
-      </div>
+      <%= render "appointment_schedule_fields",
+                 appointment_fields: appointment_fields,
+                 services: [service],
+                 fixed_service: service %>
     <% end %>
-    
-    <br>
-    <br>
-    <h2 class="text-lg font-bold mb-4">2. Dados do convidado</h2>
+    </section>
+    <section class="invitation-form-section">
+    <h2 class="invitation-form-section__title"><span>2</span> Dados do convidado</h2>
     <%= form.fields_for :lead do |lead_fields| %>
       <div class="mb-4">
         <label for="lead_phone" class="block text-gray-700 font-bold mb-2">Telefone</label>
@@ -61,7 +62,7 @@
                 <!-- Informações do lead serão inseridas aqui -->
               </div>
               <div class="mt-4">
-                <div class="flex space-x-2">
+                <div class="flex flex-wrap gap-2">
                   <button type="button" 
                           data-action="click->phone-checker#associate"
                           class="phone-action-button bg-green-500 hover:bg-green-600 text-white px-3 py-1 text-sm rounded transition-all">
@@ -119,29 +120,12 @@
     </div>
 
     <div class="my-4">
+      <div class="text-red-700 mb-3 text-sm font-medium" id="validation" role="alert" aria-live="polite"></div>
       <%= form.submit "Adicionar novo paciente", 
-          class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline",
+          class: "w-full sm:w-auto bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg focus:outline-none focus:shadow-outline",
           data: { phone_checker_target: "submitButton" } %>
-      <br>
-      <br>
-      <div class="text-red-700" id="validation"></div>
     </div>
+    </section>
 
   </div>
 <% end %>
-
-<style>
-  .selected-action {
-    @apply ring-2 ring-blue-500 ring-offset-2;
-  }
-  
-  .phone-action-button {
-    transition: all 0.2s ease-in-out;
-  }
-  
-  .phone-action-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
-</style>
-

@@ -2,13 +2,22 @@ module ClinicManagement
   # TimeSlot: template for service hours (weekday + start/end time).
   # service_location_id NULL = internal; filled = external location hours.
   class TimeSlot < ApplicationRecord
+    BOOKING_MODES = %w[arrival_order scheduled].freeze
+    INTERVAL_OPTIONS = [10, 15, 20, 30, 60].freeze
+
     belongs_to :service_location, optional: true, class_name: "ClinicManagement::ServiceLocation"
 
     before_validation :parse_time_attributes
     validates :start_time, :end_time, presence: true
     validates :weekday, presence: true, inclusion: { in: 1..7 }
+    validates :booking_mode, inclusion: { in: BOOKING_MODES }
+    validates :interval_minutes, inclusion: { in: INTERVAL_OPTIONS }, if: :scheduled?
     validate :end_time_after_start_time
     validate :unique_slot_per_location
+
+    def scheduled?
+      booking_mode == "scheduled"
+    end
 
     # Scope for filtering by service_location_id.
     # nil/blank = internal only; "all" = all externals; id = specific external.

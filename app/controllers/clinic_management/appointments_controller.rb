@@ -17,21 +17,27 @@ module ClinicManagement
         lead_id: @lead.id
       )
       if @invitation.save
-        @appointment = @lead.appointments.build(
+        appointment_attributes = {
+          lead: @lead,
           invitation: @invitation,
-          service: @service,
           referral_code: @invitation&.referral&.code,
           status: "agendado",
           registered_by_user_id: current_user&.id
-        )
-        if @appointment.save
-          redirect_to @service
-        else
-          @invitation.destroy
-          flash[:error] = @appointment.errors.full_messages.join(", ")
+        }
+        @appointment = ClinicManagement::AppointmentBooking.new(
+          service: @service,
+          allow_overbooking: allow_overbooking?
+        ).create_consecutive!(
+          appointment_attributes: [appointment_attributes],
+          starting_at: requested_scheduled_at
+        ).first
+        if @appointment.persisted?
           redirect_to @service
         end
       end
+    rescue ClinicManagement::AppointmentBooking::UnavailableTime, ActiveRecord::RecordInvalid => exception
+      @invitation&.destroy
+      redirect_back fallback_location: (@service || services_path), alert: exception.message
     end
 
     def reschedule
@@ -67,15 +73,22 @@ module ClinicManagement
       @next_service = Service.find_by(id: service_id)
       
       if before_appointment&.present? && @lead&.present? && @next_service&.present?
-        @appointment = @lead.appointments.build(
+        appointment_attributes = {
+          lead: @lead,
           invitation: invitation,
-          service: @next_service,
           status: "agendado",
           referral_code: invitation&.referral&.code,
           registered_by_user_id: current_user&.id
-        )
+        }
         
-        if @appointment.save
+        @appointment = ClinicManagement::AppointmentBooking.new(
+          service: @next_service,
+          allow_overbooking: allow_overbooking?
+        ).create_consecutive!(
+          appointment_attributes: [appointment_attributes],
+          starting_at: requested_scheduled_at
+        ).first
+        if @appointment.persisted?
           before_appointment.update(status: "remarcado")
           @lead.update(last_appointment_id: @appointment.id)
           
@@ -84,11 +97,11 @@ module ClinicManagement
           else
             redirect_to @next_service
           end
-        else
-          flash[:error] = @appointment.errors.full_messages.join(", ")
-          redirect_back(fallback_location: @next_service)
         end
       end
+    rescue ClinicManagement::AppointmentBooking::UnavailableTime, ActiveRecord::RecordInvalid => exception
+      invitation&.destroy
+      redirect_back fallback_location: (@next_service || services_path), alert: exception.message
     end
     
     # PATCH/PUT /appointments/1
@@ -275,6 +288,11 @@ module ClinicManagement
             class: "nowrap"
           },
           {
+            header: "Horário definido",
+            content: appointment.scheduled_time_label,
+            class: "nowrap"
+          },
+          {
             header: "Nome do paciente",
             content: render_to_string(partial: "clinic_management/appointments/reschedule_patient_name",
                                     locals: { invitation: invitation, lead: lead }),
@@ -337,6 +355,19 @@ module ClinicManagement
         else
           lead.invitations.last.region
         end
+      end
+
+      def requested_scheduled_at
+        value = params.dig(:appointment, :scheduled_at)
+        return nil if value.blank?
+
+        Time.zone.parse(value)
+      rescue ArgumentError
+        nil
+      end
+
+      def allow_overbooking?
+        ActiveModel::Type::Boolean.new.cast(params.dig(:appointment, :allow_overbooking))
       end
       
       # Verifica se o lead comprou após o appointment (até 4 meses depois)

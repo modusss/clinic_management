@@ -135,6 +135,8 @@ module ClinicManagement
         service.start_time = time_slot.start_time
         service.end_time = time_slot.end_time
         service.date = date
+        service.booking_mode = time_slot.booking_mode
+        service.interval_minutes = time_slot.interval_minutes
         # ESSENTIAL: Inherit location from time_slot (supports "all" mode where slots come from different externals)
         service.service_location_id = time_slot.service_location_id
         @services << service
@@ -208,7 +210,9 @@ module ClinicManagement
     end
 
     def process_appointments_by_referral_data(appointments)
-      sorted_appointments = appointments.select { |appointment| appointment.referral_code == @referral.code }
+      sorted_appointments = appointments
+        .select { |appointment| appointment.referral_code == @referral.code }
+        .sort_by { |appointment| [appointment.scheduled_at || Time.zone.at(0), appointment.invitation&.patient_name.to_s] }
       sorted_appointments.map.with_index(1) do |ap, index|
         lead = ap&.lead
         lead_phone = add_phone_mask(lead.phone)
@@ -228,6 +232,7 @@ module ClinicManagement
               class: "nowrap size_20 patient-name"
             },   
             { header: "Comparecimento", content: ap.attendance ? "Sim" : "Não", id: "attendance-#{ap.id}", class: helpers.attendance_class(ap) },          
+            { header: "Horário definido", content: ap.scheduled_time_label, class: "nowrap" },
             { header: "Observações", content: ap.comments },
             { header: "Responsável", content: ((lead.name == invitation&.patient_name) ? "" : lead.name) },
             {  
@@ -269,7 +274,7 @@ module ClinicManagement
 
     def process_appointments_data(appointments)
       sorted_appointments = appointments.select { |ap| ap&.invitation&.patient_name.present? }
-                                      .sort_by { |ap| ap.invitation.patient_name }
+                                      .sort_by { |ap| [ap.scheduled_at || Time.zone.at(0), ap.invitation.patient_name] }
       sorted_appointments.map.with_index(1) do |ap, index|
         new_appointment = ClinicManagement::Appointment.new
         lead = ap&.lead
@@ -288,7 +293,8 @@ module ClinicManagement
               ).html_safe, 
               class: "nowrap size_20 patient-name"
             },   
-            { header: "Status", content: helpers.format_status_and_attendance(ap), id: "status-#{ap.id}", class: helpers.status_class(ap) },          
+            { header: "Status", content: helpers.format_status_and_attendance(ap), id: "status-#{ap.id}", class: helpers.status_class(ap) },
+            { header: "Horário definido", content: ap.scheduled_time_label, class: "nowrap" },
             { header: "Confirmado", content: render_to_string(
               partial: 'confirmation_toggle',
               locals: { appointment: ap }

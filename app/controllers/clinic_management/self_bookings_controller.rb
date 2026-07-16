@@ -629,6 +629,7 @@ module ClinicManagement
       @patient_name = session[:self_booking_patient_name] || @lead.patient_first_name
       @week = params[:week]
       @day = params[:day].to_i
+      @required_slots = selected_patient_names_for_booking.size
       
       # Find services for this day
       base_services = @week == 'this' ? services_this_week : services_next_weeks
@@ -665,7 +666,23 @@ module ClinicManagement
       @from_pinned_service = session[:self_booking_pinned_service_id].present?
       
       @formatted_date = I18n.l(@service.date, format: '%A, %d de %B')
-      @formatted_time = "#{@service.start_time.strftime('%H:%M')} - #{@service.end_time.strftime('%H:%M')}"
+      @scheduled_at = Time.zone.parse(params[:scheduled_at]) if params[:scheduled_at].present?
+      if @service.scheduled?
+        required_slots = @selected_patient_names.size
+        @available_start_times = @service.available_start_times(required_slots: required_slots)
+        unless @scheduled_at.present?
+          @formatted_time = nil
+          return
+        end
+        unless @available_start_times.any? { |time| time.change(sec: 0) == @scheduled_at.change(sec: 0) }
+          redirect_to self_booking_confirm_path(@lead.self_booking_token, service_id: @service.id),
+                      alert: "Este horário não está mais disponível. Escolha outro."
+          return
+        end
+        @formatted_time = required_slots > 1 ? "#{@scheduled_at.strftime('%H:%M')} — #{required_slots} horários consecutivos" : @scheduled_at.strftime("%H:%M")
+      else
+        @formatted_time = "#{@service.start_time.strftime('%H:%M')} - #{@service.end_time.strftime('%H:%M')}"
+      end
     end
 
     # ============================================================================
@@ -714,6 +731,7 @@ module ClinicManagement
         
         created_appointments = []
         skipped_patient_names = []
+        appointment_attributes = []
 
         selected_patient_names.each do |patient_name|
           if appointment_exists_for_patient_and_service?(target_lead, patient_name, @service.id)
@@ -733,20 +751,22 @@ module ClinicManagement
             date: Date.current
           )
 
-          # Create appointment linked to TARGET lead
-          # ESSENTIAL: Include tracking fields:
-          # - registered_by_user_id: who shared the link (effort tracking)
-          # - self_booked: true to indicate this came from self-booking flow (channel tracking)
-          appointment = invitation.appointments.create!(
-            service: @service,
+          appointment_attributes << {
+            invitation: invitation,
             lead: target_lead,
             status: 'agendado',
             referral_code: referral.code,
             registered_by_user_id: registered_by_user_id,
-            self_booked: true # ESSENTIAL: Marks this appointment as created via self-booking
-          )
-          created_appointments << appointment
+            self_booked: true
+          }
         end
+
+        starting_at = params[:scheduled_at].present? ? Time.zone.parse(params[:scheduled_at]) : nil
+        created_appointments = ClinicManagement::AppointmentBooking.new(service: @service)
+          .create_consecutive!(
+            appointment_attributes: appointment_attributes,
+            starting_at: starting_at
+          )
 
         if created_appointments.blank?
           session[:self_booking_last_created_patient_names] = []
@@ -769,6 +789,7 @@ module ClinicManagement
 
       session[:self_booking_last_created_patient_names] = @created_patient_names
       session[:self_booking_last_skipped_patient_names] = @skipped_patient_names
+      session[:self_booking_last_created_appointment_ids] = created_appointments.map(&:id)
       
       # Clear session data
       session.delete(:self_booking_patient_name)
@@ -781,7 +802,7 @@ module ClinicManagement
       session.delete(:self_booking_pinned_service_id)
       
       redirect_to self_booking_success_path(@lead.self_booking_token)
-    rescue ActiveRecord::RecordInvalid => e
+    rescue ActiveRecord::RecordInvalid, ClinicManagement::AppointmentBooking::UnavailableTime => e
       Rails.logger.error "Self-booking failed: #{e.message}"
       redirect_to self_booking_path(@lead.self_booking_token), 
                   alert: "Não foi possível realizar o agendamento. Por favor, tente novamente."
@@ -809,10 +830,18 @@ module ClinicManagement
       @created_patient_names = Array(session[:self_booking_last_created_patient_names]).reject(&:blank?)
       @skipped_patient_names = Array(session[:self_booking_last_skipped_patient_names]).reject(&:blank?)
       @is_multi_patient_result = @created_patient_names.size > 1
+      created_appointments = Appointment.where(id: Array(session[:self_booking_last_created_appointment_ids]))
+                                        .order(:scheduled_at, :id)
       
       if @appointment&.service
         @formatted_date = I18n.l(@appointment.service.date, format: '%A, %d de %B')
-        @formatted_time = "#{@appointment.service.start_time.strftime('%H:%M')} - #{@appointment.service.end_time.strftime('%H:%M')}"
+        @formatted_time = if created_appointments.any? && created_appointments.first.scheduled_at.present?
+          first_time = created_appointments.first.scheduled_at.strftime("%H:%M")
+          last_time = created_appointments.last.scheduled_at.strftime("%H:%M")
+          created_appointments.size > 1 ? "#{first_time} a #{last_time}" : first_time
+        else
+          "#{@appointment.service.start_time.strftime('%H:%M')} - #{@appointment.service.end_time.strftime('%H:%M')}"
+        end
       end
       
       # Clear session data after showing success
@@ -826,6 +855,7 @@ module ClinicManagement
       session.delete(:self_booking_pinned_service_id)
       session.delete(:self_booking_last_created_patient_names)
       session.delete(:self_booking_last_skipped_patient_names)
+      session.delete(:self_booking_last_created_appointment_ids)
     end
 
     private

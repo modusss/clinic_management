@@ -1,0 +1,37 @@
+<% services = Array(local_assigns.fetch(:services)) %>
+<% selected_service = local_assigns[:fixed_service] || local_assigns[:selected_service] %>
+<% selected_service = services.find { |item| item.id.to_s == selected_service.to_s } unless selected_service.respond_to?(:id) %>
+<% form_id = "new_invitation" %>
+<% modal_id = "invitation-schedule-modal" %>
+<% selected_label = selected_service.present? ? display_service_name(selected_service) : nil %>
+
+<div class="invitation-schedule-field">
+  <%= appointment_fields.hidden_field :service_id, value: selected_service&.id %>
+  <%= appointment_fields.hidden_field :scheduled_at, value: "" %>
+  <%= appointment_fields.hidden_field :allow_overbooking, value: "0" %>
+
+  <label class="invitation-form-label">Dia e horário do atendimento</label>
+  <button type="button"
+          class="reschedule-slot-trigger invitation-schedule-trigger"
+          data-reschedule-slot-trigger
+          data-reschedule-form-id="<%= form_id %>"
+          data-modal="<%= modal_id %>"
+          aria-haspopup="dialog"
+          aria-expanded="false"
+          aria-controls="<%= modal_id %>">
+    <span class="reschedule-slot-trigger-label <%= 'is-placeholder' if selected_label.blank? %>" data-reschedule-slot-label>
+      <%= selected_label.presence || "Escolher dia e horário" %>
+    </span>
+    <i class="fas fa-chevron-down reschedule-slot-trigger-chevron" aria-hidden="true"></i>
+  </button>
+
+  <p class="invitation-form-help">
+    Horários livres aparecem primeiro. Encaixes ficam separados para evitar seleção acidental.
+  </p>
+</div>
+
+<%= render "clinic_management/shared/reschedule_slot_modal",
+           modal_id: modal_id,
+           modal_title: "Agendar atendimento",
+           empty_message: "Nenhum dia ou horário disponível para agendamento.",
+           grouped_by_day: group_services_for_slot_modal(services) %>

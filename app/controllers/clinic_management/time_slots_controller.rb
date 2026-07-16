@@ -61,7 +61,7 @@ module ClinicManagement
           return
         end
         # Parse times via model to match DB format (params may come as string or hash)
-        base_slot = TimeSlot.new(time_only_slot_params)
+        base_slot = TimeSlot.new(slot_configuration_params)
         base_slot.weekday = day_number
         start_t = base_slot.start_time
         end_t = base_slot.end_time
@@ -74,7 +74,7 @@ module ClinicManagement
             skipped_count += 1
             next
           end
-          slot = TimeSlot.new(time_only_slot_params)
+          slot = TimeSlot.new(slot_configuration_params)
           slot.weekday = day_number
           slot.service_location_id = loc.id
           if slot.save
@@ -84,7 +84,7 @@ module ClinicManagement
           end
         end
         if errors.any?
-          @time_slot = TimeSlot.new(time_only_slot_params)
+          @time_slot = TimeSlot.new(slot_configuration_params)
           @time_slot.weekday = day_number
           flash.now[:alert] = errors.uniq.join("; ")
           render :new, status: :unprocessable_entity
@@ -96,7 +96,7 @@ module ClinicManagement
           redirect_to time_slots_path, notice: msg.join(" ")
         end
       else
-        @time_slot = TimeSlot.new(time_only_slot_params)
+        @time_slot = TimeSlot.new(slot_configuration_params)
         @time_slot.weekday = day_number
         @time_slot.service_location_id = loc_id.presence
         if @time_slot.save
@@ -110,8 +110,15 @@ module ClinicManagement
     # PATCH/PUT /time_slots/1
     def update
       day_number = get_day_field(params[:time_slot][:weekday])
+      previous_configuration = {
+        weekday: @time_slot.weekday,
+        start_time: @time_slot.start_time,
+        end_time: @time_slot.end_time,
+        service_location_id: @time_slot.service_location_id
+      }
       @time_slot.weekday = day_number
-      if @time_slot.update(time_only_slot_params)
+      if @time_slot.update(slot_configuration_params)
+        propagate_configuration_to_future_services(previous_configuration)
         redirect_to time_slots_path, notice: "Horário atualizado com sucesso."
       else
         render :edit, status: :unprocessable_entity
@@ -163,8 +170,26 @@ module ClinicManagement
         params.require(:time_slot).permit(:weekday, :start_time, :end_time, :service_location_id)
       end
 
-      def time_only_slot_params
-        params.require(:time_slot).permit(:start_time, :end_time)
+      def slot_configuration_params
+        permitted = params.require(:time_slot).permit(:start_time, :end_time, :booking_mode, :interval_minutes)
+        permitted[:interval_minutes] = nil unless permitted[:booking_mode] == "scheduled"
+        permitted
+      end
+
+      # Keeps already-created future attendance ranges aligned with their recurring template.
+      # ESSENTIAL: Past services remain immutable and existing appointments are preserved.
+      def propagate_configuration_to_future_services(previous_configuration)
+        ClinicManagement::Service
+          .where(previous_configuration)
+          .where("date >= ?", Date.current)
+          .update_all(
+            weekday: @time_slot.weekday,
+            start_time: @time_slot.start_time,
+            end_time: @time_slot.end_time,
+            booking_mode: @time_slot.booking_mode,
+            interval_minutes: @time_slot.interval_minutes,
+            updated_at: Time.current
+          )
       end
   end
 end
