@@ -1,0 +1,83 @@
+<%# ESSENTIAL: Shared remarcação slot picker — one modal per page (not per form row).
+    Receives: modal_id (default reschedule-slot-modal), grouped_by_day
+    (from group_services_for_slot_modal). Each item: { service:, label:, appointments_total: }.
+    Slot click fills the active form's hidden service_id via reschedule-slot-modal Stimulus. %>
+<% modal_id = local_assigns.fetch(:modal_id, "reschedule-slot-modal") %>
+<% grouped_by_day = local_assigns.fetch(:grouped_by_day, []) %>
+<div id="<%= modal_id %>"
+     class="go-to-service-modal"
+     role="dialog"
+     aria-labelledby="<%= modal_id %>-title"
+     aria-modal="true"
+     aria-hidden="true"
+     data-controller="reschedule-slot-modal"
+     data-reschedule-slot-modal-modal-id-value="<%= modal_id %>">
+  <div class="go-to-service-modal-backdrop" data-action="click->reschedule-slot-modal#close" role="button" tabindex="-1" aria-label="Fechar modal"></div>
+  <div class="go-to-service-modal-dialog">
+    <div class="go-to-service-modal-content">
+      <div class="go-to-service-modal-header">
+        <h2 id="<%= modal_id %>-title" class="go-to-service-modal-title">
+          <i class="fas fa-calendar-alt mr-2" aria-hidden="true"></i>
+          Remarcar atendimento
+        </h2>
+        <button type="button" class="go-to-service-modal-close" data-action="click->reschedule-slot-modal#close" aria-label="Fechar">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="go-to-service-modal-body">
+        <% if grouped_by_day.blank? %>
+          <p class="go-to-service-modal-empty text-gray-500 text-center py-8">
+            <i class="fas fa-inbox text-4xl mb-3 block opacity-50"></i>
+            Nenhum atendimento disponível para remarcação.
+          </p>
+        <% else %>
+          <% grouped_by_day.each do |group| %>
+            <div class="go-to-service-day-group" data-reschedule-day-group>
+              <h3 class="go-to-service-day-header"><%= group[:weekday] %>, <%= group[:date_str] %></h3>
+              <ul class="go-to-service-list" role="listbox">
+                <% group[:items].each do |item| %>
+                  <% service = item[:service] %>
+                  <% times = [service.start_time&.strftime('%H:%M'), service.end_time&.strftime('%H:%M')].compact %>
+                  <% time_str = times.size == 2 ? "#{times[0]}h às #{times[1]}h" : "" %>
+                  <% loc_name = service.service_location&.name %>
+                  <% appt_total = item[:appointments_total].to_i %>
+                  <% label = item[:label].presence || display_service_name(service) %>
+                  <% aria_counts = "#{appt_total} #{appt_total == 1 ? 'agendado' : 'agendados'} no horário" %>
+                  <li role="option">
+                    <button type="button"
+                            class="go-to-service-item"
+                            data-action="click->reschedule-slot-modal#select"
+                            data-service-id="<%= service.id %>"
+                            data-service-location-id="<%= service.service_location_id.to_s %>"
+                            data-label="<%= label %>"
+                            aria-description="<%= aria_counts %>">
+                      <span class="go-to-service-item-icon">
+                        <i class="fas fa-clock text-emerald-500" aria-hidden="true"></i>
+                      </span>
+                      <span class="go-to-service-item-main">
+                        <% if time_str.present? %>
+                          <span class="go-to-service-item-time"><%= time_str %></span>
+                        <% end %>
+                        <% if loc_name.present? %>
+                          <span class="go-to-service-item-location">
+                            <i class="fas fa-map-marker-alt text-xs mr-1" aria-hidden="true"></i><%= loc_name %>
+                          </span>
+                        <% end %>
+                        <span class="go-to-service-item-counts">
+                          <span class="go-to-service-item-counts-total"><%= appt_total %> <%= appt_total == 1 ? "agendado" : "agendados" %> no horário</span>
+                        </span>
+                      </span>
+                      <span class="go-to-service-item-arrow">
+                        <i class="fas fa-chevron-right text-gray-400 text-sm" aria-hidden="true"></i>
+                      </span>
+                    </button>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

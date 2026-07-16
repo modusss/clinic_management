@@ -1,10 +1,20 @@
+<%# ESSENTIAL: Remarcação / agendamento form. "Escolha o dia" opens shared
+    _reschedule_slot_modal (one per page). Do NOT embed the modal here —
+    absent page renders this partial up to ~50 times. %>
+<% form_dom_id = if old_appointment.present?
+                   "reschedule-trigger-form-#{old_appointment.id}"
+                 elsif defined?(lead) && lead.present?
+                   "reschedule-trigger-form-new-#{lead.id}"
+                 else
+                   "reschedule-trigger-form-new"
+                 end %>
 <%= form_with model: new_appointment, 
               url: old_appointment.present? ? reschedule_appointment_path(old_appointment) : appointments_path, 
               method: :post, 
               local: true, 
               html: { 
                 class: "items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full",
-                id: old_appointment.present? ? "reschedule-trigger-form-#{old_appointment.id}" : nil
+                id: form_dom_id
               } do |f| %>
   
   <%# ESSENTIAL: Reminder only when multi-locations mode enabled. Always uses navbar selection — flexible. %>
@@ -40,16 +50,19 @@
 
   <div class="w-full sm:w-auto">
     <%= f.label :service_id, "Escolha o dia:", class: "block text-gray-700 text-sm font-bold mb-1" %>
-    <select name="appointment[service_id]" 
-            id="reschedule-service-select-<%= old_appointment ? old_appointment.id : 'new' %>"
-            class="w-full shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline reschedule-service-select"
-            data-appointment-id="<%= old_appointment&.id %>">
-      <option value="">Selecione...</option>
-      <% available_services.each do |svc| %>
-        <option value="<%= svc.id %>" 
-                data-service-location-id="<%= svc.service_location_id.to_s %>"><%= display_service_name(svc) %></option>
-      <% end %>
-    </select>
+    <%= f.hidden_field :service_id, value: "", id: "reschedule-service-id-#{old_appointment ? old_appointment.id : (defined?(lead) && lead ? lead.id : 'new')}" %>
+    <button type="button"
+            class="reschedule-slot-trigger"
+            data-reschedule-slot-trigger
+            data-reschedule-form-id="<%= form_dom_id %>"
+            data-modal="reschedule-slot-modal"
+            data-exclude-service-id="<%= old_appointment&.service_id %>"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            aria-controls="reschedule-slot-modal">
+      <span class="reschedule-slot-trigger-label is-placeholder" data-reschedule-slot-label>Selecione...</span>
+      <i class="fas fa-chevron-down reschedule-slot-trigger-chevron" aria-hidden="true"></i>
+    </button>
   </div>
 
   <% if (controller_name == "leads") && (action_name == "show") %>
@@ -83,31 +96,4 @@
     <% end %>
   <% end %>
 
-<% end %>
-
-<% if old_appointment.present? %>
-<script>
-  (function() {
-    // ESSENTIAL: Filter service options by selected Local when multi_service_locations_enabled.
-    // Each form has unique ids: reschedule-location-filter-{id}, reschedule-service-select-{id}.
-    var locationFilter = document.getElementById('reschedule-location-filter-<%= old_appointment.id %>');
-    var serviceSelect = document.getElementById('reschedule-service-select-<%= old_appointment.id %>');
-    if (locationFilter && serviceSelect) {
-      function filterServicesByLocation() {
-        var selectedLocId = locationFilter.value || '';
-        var options = serviceSelect.querySelectorAll('option[data-service-location-id]');
-        options.forEach(function(opt) {
-          var optLocId = opt.getAttribute('data-service-location-id') || '';
-          opt.style.display = (selectedLocId === optLocId) ? '' : 'none';
-          if (opt.style.display === 'none' && opt.selected) {
-            opt.selected = false;
-            serviceSelect.querySelector('option[value=""]') && (serviceSelect.querySelector('option[value=""]').selected = true);
-          }
-        });
-      }
-      locationFilter.addEventListener('change', filterServicesByLocation);
-      filterServicesByLocation(); // Apply on load (default = original appointment's location)
-    }
-  })();
-</script>
 <% end %>

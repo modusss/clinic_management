@@ -18,3 +18,8 @@
       data: { confirm: "Tem certeza que deseja excluir esta ficha?" } %>
   <% end %>
 </div>
+
+<%# ESSENTIAL: Shared remarcação slot modal for the lead ficha forms. %>
+<%= render "clinic_management/shared/reschedule_slot_modal",
+           modal_id: "reschedule-slot-modal",
+           grouped_by_day: group_services_for_slot_modal(reschedule_modal_services(@available_services)) %>

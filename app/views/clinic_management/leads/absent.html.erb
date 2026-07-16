@@ -335,6 +335,11 @@
     <%= render partial: "absent_table", locals: { rows: @rows, leads: @leads } %>
   <% end %>
 
+  <%# ESSENTIAL: One shared remarcação modal for all rows (not one per form). %>
+  <%= render "clinic_management/shared/reschedule_slot_modal",
+             modal_id: "reschedule-slot-modal",
+             grouped_by_day: group_services_for_slot_modal(reschedule_modal_services) %>
+
 <% end %>
 
 </div><%# Fecha o wrapper do bulk-message controller %>

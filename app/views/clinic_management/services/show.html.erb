@@ -102,6 +102,11 @@
     <br>
 </div>
 
+<%# ESSENTIAL: Shared remarcação slot modal for service show patient rows. %>
+<%= render "clinic_management/shared/reschedule_slot_modal",
+           modal_id: "reschedule-slot-modal",
+           grouped_by_day: group_services_for_slot_modal(reschedule_modal_services) %>
+
 <style>
 
 @media (max-width: 768px) {

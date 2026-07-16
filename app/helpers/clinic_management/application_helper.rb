@@ -84,6 +84,65 @@ module ClinicManagement
       base
     end
 
+    # ESSENTIAL: Services list for the shared remarcação slot modal (no per-row exclusion).
+    # Prefer request-cached collections from available_services / @available_services.
+    # @param services [Array, ActiveRecord::Relation, nil] optional explicit list
+    # @return [Array<ClinicManagement::Service>]
+    def reschedule_modal_services(services = nil)
+      return Array(services) if services.present?
+
+      if defined?(@available_services_cache) && @available_services_cache.is_a?(Hash) && @available_services_cache.present?
+        location_key = current_account&.multi_service_locations_enabled? ? current_service_location_id.to_s : nil
+        cached = @available_services_cache[location_key]
+        return cached if cached.present?
+        # Fallback: first non-empty cache bucket (single-location accounts use nil key)
+        first_cached = @available_services_cache.values.find(&:present?)
+        return first_cached if first_cached.present?
+      end
+
+      return Array(@available_services) if defined?(@available_services) && @available_services.present?
+
+      scope = ClinicManagement::Service
+        .where(canceled: [nil, false])
+        .where("date >= ?", Date.current)
+        .order(date: :asc)
+      if current_account&.multi_service_locations_enabled?
+        scope = scope.merge(ClinicManagement::Service.for_location(current_service_location_id.to_s))
+      end
+      scope.includes(:service_location).to_a
+    end
+
+    # Groups services by day for slot picker modals (go-to-service / remarcação).
+    # Each item: { service:, label:, appointments_total: Integer }
+    #
+    # @param services [Array, ActiveRecord::Relation]
+    # @return [Array<Hash>] [{ date:, weekday:, date_str:, items: [...] }, ...]
+    def group_services_for_slot_modal(services)
+      list = Array(services).compact
+      return [] if list.blank?
+
+      ids = list.map(&:id)
+      counts = ClinicManagement::Appointment.where(service_id: ids).group(:service_id).count
+
+      items = list.map do |service|
+        {
+          service: service,
+          label: display_service_name(service),
+          appointments_total: counts[service.id] || 0
+        }
+      end
+
+      items.group_by { |i| i[:service].date }.sort_by { |date, _| date }.map do |date, day_items|
+        wd = date.wday == 6 ? 7 : date.wday + 1
+        {
+          date: date,
+          weekday: (TimeSlotsHelper::WEEKDAY_NAMES[wd] || ""),
+          date_str: date.strftime("%d/%m/%Y"),
+          items: day_items.sort_by { |i| i[:service].start_time&.to_s || "00:00" }
+        }
+      end
+    end
+
     # Converte imagem do Active Storage para base64 para uso em PDFs
     def active_storage_image_base64(attachment)
       return nil unless attachment.attached?
