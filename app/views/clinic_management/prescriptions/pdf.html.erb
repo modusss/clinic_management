@@ -55,6 +55,22 @@
     .comment-info {
       margin-top: 12px;
     }
+    .trix-content {
+      margin: 0;
+      line-height: 1.6;
+    }
+    .trix-content p,
+    .trix-content div {
+      margin: 0 0 8px 0;
+    }
+    .trix-content strong {
+      font-weight: bold;
+    }
+    .trix-content ul,
+    .trix-content ol {
+      margin: 0 0 8px 20px;
+      padding: 0;
+    }
     .rotate-text {
       transform: rotate(-90deg); 
       margin: 0;
@@ -109,13 +125,10 @@
   </table>
 
   <div class="note">
-    <p class="footer-text">
-      Ao optar por confeccionar suas lentes conosco, você conta com a nossa 
-      garantia de resultados e assistência.
-      Caso não se adapte às novas lentes, nós as refaremos quantas vezes forem necessárias, 
-      <strong>sem nenhum custo adicional</strong>. Mas não nos responsabilizamos caso não se adapte e as lentes sejam produzidas em outros 
-      estabelecimentos. Em caso de dúvidas, nossa equipe está à disposição para ajudá-lo.
-    </p>
+    <%# ESSENTIAL: Guarantee paragraph — customizable in Organização > Preferências (Account#clinic_prescription_pdf_message). %>
+    <div class="footer-text trix-content">
+      <%= @account.clinic_prescription_pdf_message_html.html_safe %>
+    </div>
     <br>
     <div class="date-info">
       <% prescription_date = @prescription.appointment.service&.date || @prescription.appointment.created_at&.to_date || Date.current %>
