@@ -1,0 +1,39 @@
+<%#
+  Partial: single interaction count badge (WhatsApp / phone attempt / answered).
+  Params:
+    - variant: "whatsapp" | "phone" | "phone-answered"
+    - icon: Material icon name
+    - title: tooltip / aria label
+    - count: Integer badge value (unique leads)
+    - interaction_type: LeadInteraction type string
+    - date: Date for timeline query
+    - subject_type: "referral" | "local_user"
+    - subject_id: Integer id
+    - subject_label: Display name for modal header
+    - clickable: Boolean — manager_above with count > 0
+%>
+<% count = local_assigns.fetch(:count, 0).to_i %>
+<% clickable = local_assigns.fetch(:clickable, false) && count.positive? %>
+<% css_class = "interaction-item #{local_assigns.fetch(:variant)}#{' interaction-item--clickable' if clickable}" %>
+
+<% if clickable %>
+  <button type="button"
+          class="<%= css_class %>"
+          title="<%= title %> — ver horários"
+          aria-label="<%= title %>: <%= count %> — ver horários das tentativas"
+          data-action="click->interaction-timeline-modal#open"
+          data-interaction-timeline-modal-date-param="<%= date.iso8601 %>"
+          data-interaction-timeline-modal-subject-type-param="<%= subject_type %>"
+          data-interaction-timeline-modal-subject-id-param="<%= subject_id %>"
+          data-interaction-timeline-modal-interaction-type-param="<%= interaction_type %>"
+          data-interaction-timeline-modal-label-param="<%= subject_label %>"
+          data-interaction-timeline-modal-count-param="<%= count %>">
+    <i class="material-icons" aria-hidden="true"><%= icon %></i>
+    <span><%= count %></span>
+  </button>
+<% else %>
+  <div class="<%= css_class %>" title="<%= title %>">
+    <i class="material-icons" aria-hidden="true"><%= icon %></i>
+    <span><%= count %></span>
+  </div>
+<% end %>

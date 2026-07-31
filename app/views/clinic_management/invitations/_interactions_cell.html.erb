@@ -1,0 +1,50 @@
+<%#
+  Partial: interactions badges row (WhatsApp / phone / answered).
+  Params: date, referral (Referral or { local_user: User }), data (hash with counts)
+%>
+<%
+  if referral.is_a?(Hash) && referral.key?(:local_user)
+    subject_type = "local_user"
+    subject_id = referral[:local_user].id
+  else
+    subject_type = "referral"
+    subject_id = referral.id
+  end
+  subject_label = indicator_display_name(referral)
+  manager_can_drill_down = is_manager_above?
+%>
+<div class="interactions-cell">
+  <%= render "interaction_badge",
+             variant: "whatsapp",
+             icon: "chat",
+             title: "WhatsApp",
+             count: data[:whatsapp_count],
+             interaction_type: "whatsapp_click",
+             date: date,
+             subject_type: subject_type,
+             subject_id: subject_id,
+             subject_label: subject_label,
+             clickable: manager_can_drill_down %>
+  <%= render "interaction_badge",
+             variant: "phone",
+             icon: "phone",
+             title: "Tentativas",
+             count: data[:phone_count],
+             interaction_type: "phone_call",
+             date: date,
+             subject_type: subject_type,
+             subject_id: subject_id,
+             subject_label: subject_label,
+             clickable: manager_can_drill_down %>
+  <%= render "interaction_badge",
+             variant: "phone-answered",
+             icon: "phone_in_talk",
+             title: "Atendeu",
+             count: data[:phone_answered_count] || 0,
+             interaction_type: "phone_call_answered",
+             date: date,
+             subject_type: subject_type,
+             subject_id: subject_id,
+             subject_label: subject_label,
+             clickable: manager_can_drill_down %>
+</div>

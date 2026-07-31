@@ -1,0 +1,52 @@
+<%# ESSENTIAL: Shared modal for manager_above interaction timeline on invitations index. %>
+<div id="interaction-timeline-modal"
+     class="go-to-service-modal interaction-timeline-modal"
+     role="dialog"
+     aria-labelledby="interaction-timeline-modal-title"
+     aria-modal="true"
+     aria-hidden="true"
+     data-interaction-timeline-modal-target="modal">
+  <div class="go-to-service-modal-backdrop"
+       data-action="click->interaction-timeline-modal#close"
+       role="button"
+       tabindex="-1"
+       aria-label="Fechar modal"></div>
+  <div class="go-to-service-modal-dialog">
+    <div class="go-to-service-modal-content">
+      <div class="go-to-service-modal-header">
+        <h2 id="interaction-timeline-modal-title" class="go-to-service-modal-title interaction-timeline-modal__title">
+          <i class="material-icons interaction-timeline-modal__title-icon" aria-hidden="true">schedule</i>
+          <span data-interaction-timeline-modal-target="title">Horários de contato</span>
+        </h2>
+        <button type="button"
+                class="go-to-service-modal-close"
+                data-action="click->interaction-timeline-modal#close"
+                aria-label="Fechar">
+          <i class="material-icons" aria-hidden="true">close</i>
+        </button>
+      </div>
+      <div class="go-to-service-modal-body interaction-timeline-modal__body">
+        <p class="interaction-timeline-modal__note"
+           data-interaction-timeline-modal-target="note"
+           hidden></p>
+        <div class="interaction-timeline-modal__loading"
+             data-interaction-timeline-modal-target="loading"
+             hidden>
+          <i class="material-icons interaction-timeline-modal__loading-icon" aria-hidden="true">hourglass_top</i>
+          <span>Carregando horários…</span>
+        </div>
+        <p class="interaction-timeline-modal__empty"
+           data-interaction-timeline-modal-target="empty"
+           hidden>
+          Nenhuma tentativa registrada para este filtro.
+        </p>
+        <p class="interaction-timeline-modal__error"
+           data-interaction-timeline-modal-target="error"
+           hidden></p>
+        <ol class="interaction-timeline-modal__list"
+            data-interaction-timeline-modal-target="list"
+            role="list"></ol>
+      </div>
+    </div>
+  </div>
+</div>

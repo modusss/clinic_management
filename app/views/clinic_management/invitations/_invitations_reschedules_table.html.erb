@@ -6,7 +6,9 @@
   Keys can be Referral or { local_user: User } for "Vanessa (Local)" rows (non-referral users who had interactions).
 %>
 
-<div class="invitations-reschedules-container">
+<div class="invitations-reschedules-container"
+     data-controller="interaction-timeline-modal"
+     data-interaction-timeline-modal-url-value="<%= clinic_management.interaction_timeline_invitations_path(format: :json) %>">
   <% if invitations_data.blank? %>
     <div class="empty-state">
       <div class="empty-state-icon">
@@ -108,20 +110,7 @@
 
                     <!-- Interactions Count (WhatsApp / Phone attempts / Answered) -->
                     <td class="count-cell">
-                      <div class="interactions-cell">
-                         <div class="interaction-item whatsapp" title="WhatsApp">
-                           <i class="material-icons">chat</i>
-                           <span><%= data[:whatsapp_count] %></span>
-                         </div>
-                         <div class="interaction-item phone" title="Tentativas">
-                           <i class="material-icons">phone</i>
-                           <span><%= data[:phone_count] %></span>
-                         </div>
-                         <div class="interaction-item phone-answered" title="Atendeu">
-                           <i class="material-icons">phone_in_talk</i>
-                           <span><%= data[:phone_answered_count] || 0 %></span>
-                         </div>
-                      </div>
+                      <%= render "interactions_cell", date: date, referral: referral, data: data %>
                     </td>
 
                     <!-- Invitations Count -->
@@ -217,23 +206,8 @@
 
                 <!-- Card Stats Row -->
                 <div class="card-stats-row">
-                  <div class="card-stat">
-                    <div class="interaction-item whatsapp" title="WhatsApp">
-                      <i class="material-icons">chat</i>
-                      <span><%= data[:whatsapp_count] %></span>
-                    </div>
-                  </div>
-                  <div class="card-stat">
-                    <div class="interaction-item phone" title="Tentativas">
-                      <i class="material-icons">phone</i>
-                      <span><%= data[:phone_count] %></span>
-                    </div>
-                  </div>
-                  <div class="card-stat">
-                    <div class="interaction-item phone-answered" title="Atendeu">
-                      <i class="material-icons">phone_in_talk</i>
-                      <span><%= data[:phone_answered_count] || 0 %></span>
-                    </div>
+                  <div class="card-stat card-stat--interactions">
+                    <%= render "interactions_cell", date: date, referral: referral, data: data %>
                   </div>
                   <div class="card-stat">
                     <span class="stat-label">Convites</span>
@@ -300,6 +274,8 @@
       </div>
     <% end %>
   <% end %>
+
+  <%= render "interaction_timeline_modal" %>
 </div>
 
 <style>

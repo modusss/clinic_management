@@ -1,8 +1,12 @@
 module ClinicManagement
   class InvitationsController < ApplicationController
     before_action :set_invitation, only: %i[ show edit update destroy ]
+    before_action :require_manager_above!, only: [:interaction_timeline]
     skip_before_action :redirect_referral_users, only: [:new, :create, :update, :index, :edit_patient_name, :update_patient_name, :check_existing_phone]
     include GeneralHelper
+
+    INTERACTION_TIMELINE_TYPES = %w[whatsapp_click phone_call phone_call_answered].freeze
+    INTERACTION_TIMELINE_SUBJECT_TYPES = %w[referral local_user].freeze
 
     # GET /invitations
     def index
@@ -95,7 +99,51 @@ module ClinicManagement
     def performance_report
       @report_data = generate_performance_report
     end
-    
+
+    # GET /invitations/interaction_timeline.json
+    # ESSENTIAL: Manager-only JSON — chronological list of contact attempts for performance tracking.
+    def interaction_timeline
+      parsed_date = parse_interaction_timeline_date(params[:date])
+      interaction_type = params[:interaction_type].to_s
+      subject_type = params[:subject_type].to_s
+      subject_id = params[:subject_id].presence&.to_i
+
+      unless parsed_date &&
+             INTERACTION_TIMELINE_TYPES.include?(interaction_type) &&
+             INTERACTION_TIMELINE_SUBJECT_TYPES.include?(subject_type) &&
+             subject_id.present?
+        return render json: { error: "Parâmetros inválidos." }, status: :unprocessable_entity
+      end
+
+      user_ids = user_ids_for_interaction_timeline(subject_type, subject_id)
+      unless user_ids.any?
+        return render json: { error: "Captador não encontrado." }, status: :not_found
+      end
+
+      day_range = parsed_date.beginning_of_day..parsed_date.end_of_day
+      interactions = LeadInteraction
+        .where(user_id: user_ids, interaction_type: interaction_type)
+        .where(occurred_at: day_range)
+        .order(:occurred_at)
+        .includes(:lead)
+
+      subject_label = interaction_timeline_subject_label(subject_type, subject_id)
+      type_label = interaction_timeline_type_label(interaction_type)
+      date_label = I18n.l(parsed_date, format: :short)
+
+      render json: {
+        label: "#{subject_label} — #{type_label} — #{date_label}",
+        badge_count: interactions.map(&:lead_id).uniq.count,
+        attempt_count: interactions.size,
+        entries: interactions.map do |interaction|
+          {
+            time: I18n.l(interaction.occurred_at, format: "%H:%M"),
+            lead_name: interaction.lead&.name.to_s.presence || "—"
+          }
+        end
+      }
+    end
+
     # GET /invitations/1
     def show
     end
@@ -1162,6 +1210,58 @@ module ClinicManagement
             map[membership.user_id] = referral
           end
         end
+      end
+
+      # ESSENTIAL: Restrict interaction timeline JSON to manager/owner roles only.
+      def require_manager_above!
+        return if is_manager_above?
+
+        respond_to do |format|
+          format.json { head :forbidden }
+          format.any { head :forbidden }
+        end
+      end
+
+      def parse_interaction_timeline_date(raw_date)
+        return nil if raw_date.blank?
+
+        Date.iso8601(raw_date.to_s)
+      rescue ArgumentError
+        nil
+      end
+
+      def user_ids_for_interaction_timeline(subject_type, subject_id)
+        case subject_type
+        when "local_user"
+          User.exists?(id: subject_id) ? [subject_id] : []
+        when "referral"
+          referral = Referral.find_by(id: subject_id)
+          return [] unless referral
+
+          build_user_referral_map.select { |_, mapped_referral| mapped_referral.id == referral.id }.keys
+        else
+          []
+        end
+      end
+
+      def interaction_timeline_subject_label(subject_type, subject_id)
+        case subject_type
+        when "local_user"
+          user = User.find_by(id: subject_id)
+          user ? "#{user.name} (Local)" : "Local"
+        when "referral"
+          Referral.find_by(id: subject_id)&.name.to_s.presence || "Captador"
+        else
+          "Captador"
+        end
+      end
+
+      def interaction_timeline_type_label(interaction_type)
+        {
+          "whatsapp_click" => "WhatsApp",
+          "phone_call" => "Tentativas",
+          "phone_call_answered" => "Atendeu"
+        }.fetch(interaction_type, interaction_type)
       end
 
       def get_referral_from_user(user_id)

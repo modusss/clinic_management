@@ -60,6 +60,7 @@ ClinicManagement::Engine.routes.draw do
       get :cancel_edit_patient_name
     end
     collection do
+      get :interaction_timeline
       get 'new_patient_fitted/:service_id', action: "new_patient_fitted", as: "new_patient_fitted"
       post 'create_patient_fitted', action: "create_patient_fitted", as: "create_patient_fitted"
       post 'check_existing_phone', action: "check_existing_phone", as: "check_existing_phone"
