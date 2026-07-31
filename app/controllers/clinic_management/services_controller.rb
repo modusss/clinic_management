@@ -322,7 +322,7 @@ module ClinicManagement
             },
             { header: "Nº de Comparecimentos", content: lead.appointments.count },
             { header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id.to_s}" },
-            { header: "Mensagens enviadas:", content: ap.messages_sent&.join(', '), id: "messages-sent-#{ap.id.to_s}" },
+            { header: "Mensagens enviadas:", content: helpers.format_appointment_messages_sent(ap.messages_sent), id: "messages-sent-#{ap.id.to_s}" },
             { header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500" },
             { header: "Cancelar?", content: helpers.cancel_attendance_button(ap), id: "cancel-attendance-button-#{ap.id}", class: "pt-2 pb-0" }
           ]

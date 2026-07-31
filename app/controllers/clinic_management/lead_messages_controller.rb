@@ -449,7 +449,7 @@ module ClinicManagement
             },
             lead_id: lead.id,
             appointment_id: appointment.id,
-            messages_sent: appointment.reload.messages_sent.join(', ')  # Updated list for UI
+            messages_sent: format_appointment_messages_sent(appointment.reload.messages_sent)  # Updated list for UI
           }
         else
           # Marcar lead como "sem WhatsApp" quando houver erro

@@ -162,7 +162,7 @@ module ClinicManagement
           if params[:message_id].present?
             streams << turbo_stream.update(
               "messages-sent-#{@appointment.id}",
-              @appointment.reload.messages_sent.join(', ')
+              format_appointment_messages_sent(@appointment.reload.messages_sent)
             )
           end
           

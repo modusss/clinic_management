@@ -1,6 +1,32 @@
 module ClinicManagement
   module MessagesHelper
 
+    # Human-readable label for one value stored in appointment.messages_sent.
+    # ESSENTIAL: Meta automation persists meta:API_SLUG; UI must show display_title / LeadMessage name.
+    #
+    # @param stored_name [String]
+    # @return [String]
+    def appointment_message_sent_display_label(stored_name)
+      raw = stored_name.to_s.strip
+      meta_slug = raw.match(/\Ameta:(.+)\z/i)&.[](1)
+      return raw unless meta_slug
+
+      template = meta_template_for_appointment_message_label(meta_slug)
+      return template.display_title if template
+
+      humanize_meta_tracking_slug(meta_slug)
+    end
+
+    # Comma-separated labels for the "Mensagens enviadas" table column.
+    #
+    # @param messages_sent [Array<String>, nil]
+    # @return [String]
+    def format_appointment_messages_sent(messages_sent)
+      Array(messages_sent)
+        .filter_map { |name| name.presence && appointment_message_sent_display_label(name) }
+        .join(", ")
+    end
+
     def get_lead_messages(lead, appointment)
       # Only show messages for the current referral if user is a referral, otherwise show global messages
       if referral?(current_user)
@@ -267,6 +293,32 @@ module ClinicManagement
     end
 
     private
+
+    # @param slug [String]
+    # @return [MetaTemplate, nil]
+    def meta_template_for_appointment_message_label(slug)
+      account = current_account if respond_to?(:current_account)
+      return nil unless account
+
+      MetaTemplate
+        .joins(:meta_business_account)
+        .where(meta_business_accounts: { account_id: account.id })
+        .find_by("LOWER(meta_templates.name) = ?", slug.downcase)
+    end
+
+    # Fallback when MetaTemplate row was removed but tracking key remains on the appointment.
+    #
+    # @param slug [String]
+    # @return [String]
+    def humanize_meta_tracking_slug(slug)
+      slug.to_s
+        .sub(/\A[a-z]{2,3}_\d+_/i, "")
+        .sub(/_v\d+\z/i, "")
+        .tr("_", " ")
+        .split
+        .map(&:capitalize)
+        .join(" ")
+    end
 
     # @return [Boolean]
     def meta_bulk_absent_role_allowed?
