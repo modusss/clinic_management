@@ -13,9 +13,9 @@
   <%= link_to "Editar dados do responsável", edit_lead_path(@lead), 
       class: "w-full sm:w-auto text-center text-white bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 px-4 py-3 rounded-lg shadow-md transition-all duration-200 font-medium" %>
   <% unless referral?(current_user) %>
-  <%= button_to "Excluir esta ficha", @lead, method: :delete, 
-      class: "w-full sm:w-auto text-center text-white bg-red-500 hover:bg-red-600 active:bg-red-700 px-4 py-3 rounded-lg shadow-md transition-all duration-200 font-medium", 
-      data: { confirm: "Tem certeza que deseja excluir esta ficha?" } %>
+  <%= button_to "Excluir esta ficha", @lead, method: :delete,
+      class: "w-full sm:w-auto text-center text-white bg-red-500 hover:bg-red-600 active:bg-red-700 px-4 py-3 rounded-lg shadow-md transition-all duration-200 font-medium",
+      data: { turbo_confirm: "Tem certeza que deseja excluir esta ficha? Esta ação não pode ser desfeita." } %>
   <% end %>
 </div>
 
