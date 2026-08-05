@@ -19,7 +19,6 @@
   <% if @has_services %>
     <div class="space-y-3">
       <% if @this_week_services.any? %>
-        <% this_week_count = @this_week_services.sum { |service| service.scheduled? ? service.available_start_times.size : 1 } %>
         <%= link_to public_booking_select_day_path(week: "this"), class: "option-btn" do %>
           <div class="flex items-center">
             <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mr-4">
@@ -27,7 +26,7 @@
             </div>
             <div class="text-left">
               <div class="font-semibold text-gray-900">Esta semana</div>
-              <div class="text-sm text-gray-500"><%= pluralize(this_week_count, "horário disponível", "horários disponíveis") %></div>
+              <div class="text-sm text-gray-500">Horários disponíveis</div>
             </div>
           </div>
           <i class="fas fa-chevron-right icon" aria-hidden="true"></i>
@@ -35,7 +34,6 @@
       <% end %>
 
       <% if @next_week_services.any? %>
-        <% next_week_count = @next_week_services.sum { |service| service.scheduled? ? service.available_start_times.size : 1 } %>
         <%= link_to public_booking_select_day_path(week: "next"), class: "option-btn" do %>
           <div class="flex items-center">
             <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
@@ -43,7 +41,7 @@
             </div>
             <div class="text-left">
               <div class="font-semibold text-gray-900">Próximas semanas</div>
-              <div class="text-sm text-gray-500"><%= pluralize(next_week_count, "horário disponível", "horários disponíveis") %></div>
+              <div class="text-sm text-gray-500">Horários disponíveis</div>
             </div>
           </div>
           <i class="fas fa-chevron-right icon" aria-hidden="true"></i>

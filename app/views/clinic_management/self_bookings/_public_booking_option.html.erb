@@ -1,0 +1,37 @@
+<%# Renders one of the three public booking choices curated by the controller. %>
+<% service = option.fetch(:service) %>
+<% scheduled_at = option[:scheduled_at] %>
+
+<% if scheduled_at.present? %>
+  <%= link_to public_booking_path(
+        continue: 1,
+        service_id: service.id,
+        scheduled_at: scheduled_at.iso8601,
+        week: week,
+        day: day
+      ), class: "option-btn" do %>
+    <div class="flex items-center">
+      <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center mr-3">
+        <i class="fas fa-clock text-emerald-600" aria-hidden="true"></i>
+      </div>
+      <div class="text-left">
+        <div class="font-semibold text-gray-900"><%= scheduled_at.strftime("%H:%M") %></div>
+        <div class="text-sm text-gray-500 capitalize"><%= I18n.l(service.date, format: "%A, %d/%m") %></div>
+      </div>
+    </div>
+    <i class="fas fa-chevron-right icon" aria-hidden="true"></i>
+  <% end %>
+<% else %>
+  <%= link_to public_booking_path(continue: 1, service_id: service.id, week: week, day: day), class: "option-btn" do %>
+    <div class="flex items-center">
+      <div class="w-10 h-10 <%= service.start_time.hour < 12 ? 'bg-amber-100' : 'bg-blue-100' %> rounded-full flex items-center justify-center mr-3">
+        <i class="fas <%= service.start_time.hour < 12 ? 'fa-sun text-amber-500' : 'fa-moon text-blue-500' %>" aria-hidden="true"></i>
+      </div>
+      <div class="text-left">
+        <div class="font-semibold text-gray-900 capitalize"><%= I18n.l(service.date, format: "%A, %d/%m") %></div>
+        <div class="text-sm text-gray-500"><%= service.start_time.strftime("%H:%M") %> - <%= service.end_time.strftime("%H:%M") %></div>
+      </div>
+    </div>
+    <i class="fas fa-chevron-right icon" aria-hidden="true"></i>
+  <% end %>
+<% end %>

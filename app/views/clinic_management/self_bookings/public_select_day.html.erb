@@ -28,7 +28,7 @@
             </div>
             <div class="text-left">
               <div class="font-semibold text-gray-900"><%= day[:name] %></div>
-              <div class="text-sm text-gray-500"><%= pluralize(options_count, "horário", "horários") %></div>
+              <div class="text-sm text-gray-500"><%= options_count <= 3 ? "Poucos horários" : "Horários disponíveis" %></div>
             </div>
           </div>
           <i class="fas fa-chevron-right icon" aria-hidden="true"></i>

@@ -27,6 +27,9 @@ module ClinicManagement
   # ApplicationController are skipped to allow unauthenticated access.
   # ============================================================================
   class SelfBookingsController < ApplicationController
+    PUBLIC_BOOKING_OPTIONS_PER_PAGE = 3
+    PUBLIC_BOOKING_ALTERNATIVE_GAP = 60.minutes
+
     # Skip ALL authentication and redirect filters
     skip_before_action :authenticate_user!
     skip_before_action :redirect_referral_users
@@ -955,6 +958,91 @@ module ClinicManagement
       @morning_services = @day_services.select { |service| service.start_time.hour < 12 }
       @afternoon_services = @day_services.select { |service| service.start_time.hour >= 12 }
       @day_name = @day_services.first ? I18n.l(@day_services.first.date, format: "%A") : ""
+
+      all_options = public_booking_options_for(@day_services)
+      suggested_options = public_booking_suggested_options(all_options)
+      remaining_options = all_options.reject { |option| suggested_options.include?(option) }
+      option_pages = [suggested_options] + remaining_options.each_slice(PUBLIC_BOOKING_OPTIONS_PER_PAGE).to_a
+      option_pages = [[]] if option_pages.empty?
+
+      requested_page = [params[:slot_page].to_i, 0].max
+      @public_booking_slot_page = [requested_page, option_pages.size - 1].min
+      @public_booking_options = option_pages.fetch(@public_booking_slot_page)
+      @public_booking_total_options = all_options.size
+      @public_booking_has_next_page = @public_booking_slot_page < option_pages.size - 1
+    end
+
+    # Builds every currently bookable choice for the selected day.
+    # Scheduled services generate one option per free start; arrival-order
+    # services remain a single range option.
+    #
+    # @param services [Array<ClinicManagement::Service>]
+    # @return [Array<Hash>] hashes containing :service and :scheduled_at
+    def public_booking_options_for(services)
+      services.flat_map do |service|
+        if service.scheduled?
+          service.available_start_times.map do |time|
+            { service: service, scheduled_at: time }
+          end
+        else
+          [{ service: service, scheduled_at: nil }]
+        end
+      end.sort_by { |option| public_booking_option_time(option) }
+    end
+
+    # Selects at most three initial choices. When appointments already exist,
+    # two options closest to occupied times help close operational gaps and one
+    # later alternative preserves meaningful choice. Empty agendas start with
+    # the earliest three options.
+    #
+    # @param options [Array<Hash>]
+    # @return [Array<Hash>]
+    def public_booking_suggested_options(options)
+      return options.first(PUBLIC_BOOKING_OPTIONS_PER_PAGE) if options.size <= PUBLIC_BOOKING_OPTIONS_PER_PAGE
+
+      occupied_by_service_id = options.map { |option| option[:service] }.uniq.to_h do |service|
+        occupied_times = service.scheduled? ? service.occupied_appointment_times : []
+        [service.id, occupied_times]
+      end
+      has_occupied_times = occupied_by_service_id.values.any?(&:any?)
+      return options.first(PUBLIC_BOOKING_OPTIONS_PER_PAGE) unless has_occupied_times
+
+      primary_options = options.sort_by do |option|
+        occupied_times = occupied_by_service_id.fetch(option[:service].id, [])
+        proximity = occupied_times.map do |occupied_time|
+          (public_booking_option_time(option) - occupied_time).abs
+        end.min || Float::INFINITY
+        [proximity, public_booking_option_time(option)]
+      end.first(2)
+
+      remaining_options = options.reject { |option| primary_options.include?(option) }
+      latest_primary_time = primary_options.map { |option| public_booking_option_time(option) }.max
+      later_alternative = remaining_options.find do |option|
+        public_booking_option_time(option) >= latest_primary_time + PUBLIC_BOOKING_ALTERNATIVE_GAP
+      end
+      later_alternative ||= remaining_options[remaining_options.size / 2]
+
+      (primary_options + [later_alternative]).compact.sort_by do |option|
+        public_booking_option_time(option)
+      end
+    end
+
+    # Returns the chronological value used to order either an individual start
+    # or an arrival-order service range.
+    #
+    # @param option [Hash]
+    # @return [ActiveSupport::TimeWithZone]
+    def public_booking_option_time(option)
+      return option[:scheduled_at] if option[:scheduled_at].present?
+
+      service = option.fetch(:service)
+      Time.zone.local(
+        service.date.year,
+        service.date.month,
+        service.date.day,
+        service.start_time.hour,
+        service.start_time.min
+      )
     end
 
     # Loads and validates the appointment displayed above the personal-data form.
