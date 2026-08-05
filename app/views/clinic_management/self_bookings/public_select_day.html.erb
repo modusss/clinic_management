@@ -1,0 +1,45 @@
+<%# Public self-booking step 2: choose a weekday without creating a Lead. %>
+
+<div class="step-indicator" aria-label="Etapa 2 de 4">
+  <div class="step-dot completed"></div>
+  <div class="step-dot active"></div>
+  <div class="step-dot"></div>
+  <div class="step-dot"></div>
+</div>
+
+<%= link_to public_booking_path(continue: 1), class: "back-btn" do %>
+  <i class="fas fa-arrow-left" aria-hidden="true"></i>
+  Voltar
+<% end %>
+
+<div class="booking-card">
+  <h1 class="text-xl font-bold text-gray-900 text-center mb-2">Qual dia da semana?</h1>
+  <p class="text-gray-600 text-center mb-6"><%= @week == "this" ? "Esta semana" : "Próximas semanas" %></p>
+
+  <% if @days_of_week.any? %>
+    <div class="space-y-3">
+      <% @days_of_week.each do |day| %>
+        <% day_services = @available_days.fetch(day[:number], []) %>
+        <% options_count = day_services.sum { |service| service.scheduled? ? service.available_start_times.size : 1 } %>
+        <%= link_to public_booking_select_period_path(week: @week, day: day[:number]), class: "option-btn" do %>
+          <div class="flex items-center">
+            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
+              <span class="text-purple-600 font-bold text-lg" aria-hidden="true"><%= day[:name][0..2].upcase %></span>
+            </div>
+            <div class="text-left">
+              <div class="font-semibold text-gray-900"><%= day[:name] %></div>
+              <div class="text-sm text-gray-500"><%= pluralize(options_count, "horário", "horários") %></div>
+            </div>
+          </div>
+          <i class="fas fa-chevron-right icon" aria-hidden="true"></i>
+        <% end %>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="text-center py-8">
+      <i class="fas fa-calendar-times text-gray-400 text-3xl mb-3" aria-hidden="true"></i>
+      <h2 class="text-lg font-semibold text-gray-700 mb-2">Sem dias disponíveis</h2>
+      <p class="text-gray-500">Escolha outro período para continuar.</p>
+    </div>
+  <% end %>
+</div>

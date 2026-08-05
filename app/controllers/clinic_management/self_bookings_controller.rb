@@ -9,6 +9,8 @@ module ClinicManagement
   # experience without requiring login or technical knowledge.
   # 
   # FLOW:
+  # Open link: public week -> public day -> public time -> identification -> confirm
+  # Existing lead token:
   # 1. show       - Welcome screen with patient name confirmation
   # 2. select_week - Choose "this week" or "next weeks"
   # 3. select_day  - Choose specific day (Mon-Sat)
@@ -36,7 +38,15 @@ module ClinicManagement
     protect_from_forgery with: :exception
     
     # Load lead for all actions except public routes
-    before_action :set_lead_by_token, except: [:landing, :public_registration, :create_public_registration]
+    before_action :set_lead_by_token, except: [
+      :landing,
+      :public_registration,
+      :public_select_day,
+      :public_select_period,
+      :create_public_registration
+    ]
+    # ESSENTIAL: Capture the open-link context before availability is filtered.
+    before_action :capture_public_booking_context, only: [:public_registration]
     before_action :set_available_services
     # ESSENTIAL: Block entire flow when account has self_booking_enabled disabled (Adicionais toggle)
     before_action :ensure_self_booking_enabled_for_context
@@ -47,8 +57,9 @@ module ClinicManagement
     # ============================================================================
     # GET /public_booking
     # 
-    # Public registration page that doesn't require a lead token.
-    # Used by staff/referrals to share a generic booking link.
+    # Starts the public booking flow without requiring a lead token.
+    # Availability is shown first; identification is rendered only after a
+    # valid service/time has been selected.
     # 
     # Params:
     # - ref: referral_id (for commission attribution)
@@ -58,45 +69,45 @@ module ClinicManagement
     #        Used when sharing from service show view - patient will book for that day only.
     # ============================================================================
     def public_registration
-      # Capture referral attribution from URL
-      if params[:ref].present?
-        session[:self_booking_referral_id] = params[:ref].to_i
-        Rails.logger.info "[SelfBooking] Public registration - Referral ID #{params[:ref]} captured"
-      end
-      
-      # Capture who shared the link
-      if params[:reg_by].present?
-        session[:self_booking_registered_by_user_id] = params[:reg_by].to_i
-        Rails.logger.info "[SelfBooking] Public registration - Registered by User ID #{params[:reg_by]} captured"
-      end
-      
-      # ESSENTIAL: Capture service location for multi-region self-booking (default: internal)
-      # loc="" or absent = interno; loc=id = specific external location
-      if params[:loc].present? || params.key?(:loc)
-        session[:self_booking_service_location_id] = params[:loc].to_s
-        Rails.logger.info "[SelfBooking] Public registration - Service location #{params[:loc].inspect} captured"
-      else
-        session[:self_booking_service_location_id] = "" # Default: interno
-      end
-      
-      # ESSENTIAL: Capture pinned service when sharing from service show view
-      # When svc (service_id) is present, patient will book for that specific day only
-      if params[:svc].present?
-        pinned = Service.upcoming.find_by(id: params[:svc])
-        if pinned.present?
-          session[:self_booking_pinned_service_id] = pinned.id
-          @pinned_service = pinned
-          Rails.logger.info "[SelfBooking] Public registration - Pinned service ##{pinned.id} (#{pinned.date}) captured"
-        else
-          session.delete(:self_booking_pinned_service_id)
+      selected_service_id = params[:service_id].presence || session[:self_booking_pinned_service_id]
+
+      if selected_service_id.present?
+        prepare_public_registration(selected_service_id)
+        return if performed?
+
+        if @selected_service.scheduled? && @scheduled_at.blank?
+          prepare_public_period_selection(services: [@selected_service])
+          render :public_select_period
+          return
         end
-      else
-        session.delete(:self_booking_pinned_service_id)
+
+        render :public_registration
+        return
       end
-      
-      # Get referral name for display (if present)
-      @referral = Referral.find_by(id: params[:ref]) if params[:ref].present?
-      @sharer = User.find_by(id: params[:reg_by]) if params[:reg_by].present?
+
+      prepare_public_week_selection
+      render :public_select_week
+    end
+
+    # GET /public_booking/select_day
+    # Shows available weekdays before collecting any personal data.
+    def public_select_day
+      @week = normalized_public_week
+      services = @week == "this" ? services_this_week : services_next_weeks
+      @available_days = services.select { |service| public_service_has_availability?(service) }
+                                .group_by { |service| service.date.wday }
+      @days_of_week = day_names_for_display(@available_days.keys)
+    end
+
+    # GET /public_booking/select_period
+    # Shows individual booking options for the chosen weekday.
+    def public_select_period
+      @week = normalized_public_week
+      @day = params[:day].to_i
+      services = @week == "this" ? services_this_week : services_next_weeks
+      prepare_public_period_selection(
+        services: services.select { |service| service.date.wday == @day }
+      )
     end
 
     # ============================================================================
@@ -110,8 +121,8 @@ module ClinicManagement
     # Then redirect to the booking flow with proper attribution.
     # 
     # PINNED SERVICE (svc param): When sharing from service show view, svc pins the
-    # booking to that specific service. After registration, redirect directly to
-    # confirm (bypassing week/day/period selection) so patient books for that day only.
+    # booking to that day. Scheduled services ask for a time before registration;
+    # arrival-order services go directly to identification and confirmation.
     # 
     # MINOR PATIENT LOGIC:
     # When is_minor=1, the form includes guardian_name field:
@@ -126,11 +137,18 @@ module ClinicManagement
       patient_phone = params[:patient_phone]&.gsub(/\D/, '')
       is_minor = params[:is_minor] == "1"
       guardian_name = params[:guardian_name]&.strip
+      selected_service = public_booking_service(params[:service_id])
+      selected_scheduled_at = parsed_public_scheduled_at(params[:scheduled_at])
       
-      # Build redirect params for validation errors (preserve ref, reg_by, loc, svc)
-      redirect_params = { ref: params[:ref], reg_by: params[:reg_by] }
-      redirect_params[:loc] = params[:loc] if params[:loc].present? || params.key?(:loc)
-      redirect_params[:svc] = params[:svc] if params[:svc].present?
+      # Build redirect params for validation errors, including the appointment
+      # already chosen by the visitor.
+      redirect_params = public_registration_redirect_params
+
+      unless valid_public_booking_selection?(selected_service, selected_scheduled_at)
+        redirect_to public_booking_path(continue: 1),
+                    alert: "Este horário não está mais disponível. Escolha outro."
+        return
+      end
       
       # Validate patient name
       if patient_name.blank?
@@ -186,12 +204,20 @@ module ClinicManagement
       session[:self_booking_registered_by_user_id] = params[:reg_by].to_i if params[:reg_by].present?
       session[:self_booking_service_location_id] = params[:loc].to_s if params[:loc].present? || params.key?(:loc)
       
-      # ESSENTIAL: Store pinned service when sharing from service show (svc param)
-      # Patient will book for that specific day only - skip week/day/period selection
+      # Preserve the original pinned-service context when the link came from a
+      # service page. The generic flow uses the explicit selected service below.
       if params[:svc].present?
         pinned = Service.upcoming.find_by(id: params[:svc])
         session[:self_booking_pinned_service_id] = pinned.id if pinned.present?
       end
+
+      # ESSENTIAL: Keep the selected appointment while the newly identified
+      # person moves into the token-protected confirmation flow.
+      session[:self_booking_selected_service_id] = selected_service.id
+      session[:self_booking_selected_scheduled_at] = selected_scheduled_at&.iso8601
+      session[:self_booking_selected_week] = params[:week]
+      session[:self_booking_selected_day] = params[:day]
+      session[:self_booking_from_public_registration] = true
       
       # ESSENTIAL: Store the minor patient name temporarily so it can be added to distinct_patients
       # This ensures both guardian and minor appear in the patient selection screen
@@ -202,14 +228,16 @@ module ClinicManagement
         # Redirect to show page where user can select between guardian and minor
         redirect_to self_booking_path(target_lead.self_booking_token!)
       else
-        # For adults: if pinned service, go directly to confirm; otherwise week selection
+        # For adults, the date/time has already been selected before this form.
         session[:self_booking_patient_name] = patient_name
         session[:self_booking_patient_names] = [patient_name]
-        if session[:self_booking_pinned_service_id].present?
-          redirect_to self_booking_confirm_path(target_lead.self_booking_token!, service_id: session[:self_booking_pinned_service_id])
-        else
-          redirect_to self_booking_select_week_path(target_lead.self_booking_token!)
-        end
+        redirect_to self_booking_confirm_path(
+          target_lead.self_booking_token!,
+          service_id: selected_service.id,
+          scheduled_at: selected_scheduled_at&.iso8601,
+          week: params[:week],
+          day: params[:day]
+        )
       end
     end
 
@@ -280,7 +308,7 @@ module ClinicManagement
       # ESSENTIAL: Capture service location for multi-region (default: internal)
       if params[:loc].present? || params.key?(:loc)
         session[:self_booking_service_location_id] = params[:loc].to_s
-      else
+      elsif session[:self_booking_from_public_registration].blank?
         session[:self_booking_service_location_id] = ""
       end
     end
@@ -316,8 +344,17 @@ module ClinicManagement
       
       Rails.logger.info "[SelfBooking] Patients selected: #{selected_patients.join(', ')} for lead ##{@lead.id}"
       
-      # ESSENTIAL: When pinned service (from service show share), go directly to confirm
-      if session[:self_booking_pinned_service_id].present?
+      # ESSENTIAL: Public registration already chose the appointment before the
+      # minor-patient selection screen. Preserve it through this extra step.
+      if session[:self_booking_selected_service_id].present?
+        redirect_to self_booking_confirm_path(
+          @lead.self_booking_token,
+          service_id: session[:self_booking_selected_service_id],
+          scheduled_at: session[:self_booking_selected_scheduled_at],
+          week: session[:self_booking_selected_week],
+          day: session[:self_booking_selected_day]
+        )
+      elsif session[:self_booking_pinned_service_id].present?
         redirect_to self_booking_confirm_path(@lead.self_booking_token, service_id: session[:self_booking_pinned_service_id])
       else
         redirect_to self_booking_select_week_path(@lead.self_booking_token)
@@ -664,6 +701,7 @@ module ClinicManagement
       
       # ESSENTIAL: When coming from pinned service (service show share), back goes to start
       @from_pinned_service = session[:self_booking_pinned_service_id].present?
+      @from_public_registration = session[:self_booking_from_public_registration].present?
       
       @formatted_date = I18n.l(@service.date, format: '%A, %d de %B')
       @scheduled_at = Time.zone.parse(params[:scheduled_at]) if params[:scheduled_at].present?
@@ -711,6 +749,10 @@ module ClinicManagement
                     alert: "Serviço não encontrado. Por favor, selecione novamente."
         return
       end
+
+      # ESSENTIAL: This collection must outlive the transaction block because
+      # its IDs are stored in the session after the database commit succeeds.
+      created_appointments = []
       
       ActiveRecord::Base.transaction do
         # Find or create "Local" region for self-bookings
@@ -729,7 +771,6 @@ module ClinicManagement
           Rails.logger.info "[SelfBooking] Registered by: #{registered_user&.name} (User ID: #{registered_by_user_id})"
         end
         
-        created_appointments = []
         skipped_patient_names = []
         appointment_attributes = []
 
@@ -800,6 +841,7 @@ module ClinicManagement
       session.delete(:self_booking_is_minor)
       session.delete(:self_booking_pending_minor_name)
       session.delete(:self_booking_pinned_service_id)
+      clear_public_booking_selection
       
       redirect_to self_booking_success_path(@lead.self_booking_token)
     rescue ActiveRecord::RecordInvalid, ClinicManagement::AppointmentBooking::UnavailableTime => e
@@ -853,12 +895,170 @@ module ClinicManagement
       session.delete(:self_booking_is_minor)
       session.delete(:self_booking_pending_minor_name)
       session.delete(:self_booking_pinned_service_id)
+      clear_public_booking_selection
       session.delete(:self_booking_last_created_patient_names)
       session.delete(:self_booking_last_skipped_patient_names)
       session.delete(:self_booking_last_created_appointment_ids)
     end
 
     private
+
+    # Captures attribution and filtering information only when a new public
+    # booking link is opened. Internal navigation sends continue=1 or a selected
+    # service so the session context is not accidentally reset between steps.
+    #
+    # @return [void]
+    def capture_public_booking_context
+      return if params[:continue].present? || params[:service_id].present?
+
+      if params[:ref].present?
+        session[:self_booking_referral_id] = params[:ref].to_i
+      else
+        session.delete(:self_booking_referral_id)
+      end
+
+      if params[:reg_by].present?
+        session[:self_booking_registered_by_user_id] = params[:reg_by].to_i
+      else
+        session.delete(:self_booking_registered_by_user_id)
+      end
+
+      session[:self_booking_service_location_id] = params.key?(:loc) ? params[:loc].to_s : ""
+
+      pinned_service = params[:svc].present? ? Service.upcoming.find_by(id: params[:svc]) : nil
+      if pinned_service.present?
+        session[:self_booking_pinned_service_id] = pinned_service.id
+      else
+        session.delete(:self_booking_pinned_service_id)
+      end
+
+      clear_public_booking_selection
+    end
+
+    # Prepares the first public step with availability grouped by week.
+    #
+    # @return [void]
+    def prepare_public_week_selection
+      @this_week_services = services_this_week.select { |service| public_service_has_availability?(service) }
+      @next_week_services = services_next_weeks.select { |service| public_service_has_availability?(service) }
+      @has_services = @this_week_services.any? || @next_week_services.any?
+    end
+
+    # Prepares the time-option screen for one or more services on the same day.
+    #
+    # @param services [Enumerable<ClinicManagement::Service>] services to display
+    # @return [void]
+    def prepare_public_period_selection(services:)
+      @day_services = services.to_a
+      @week ||= normalized_public_week
+      @day ||= @day_services.first&.date&.wday || params[:day].to_i
+      @morning_services = @day_services.select { |service| service.start_time.hour < 12 }
+      @afternoon_services = @day_services.select { |service| service.start_time.hour >= 12 }
+      @day_name = @day_services.first ? I18n.l(@day_services.first.date, format: "%A") : ""
+    end
+
+    # Loads and validates the appointment displayed above the personal-data form.
+    # Redirects to the first step when the service or scheduled time is invalid.
+    #
+    # @param service_id [Integer, String] selected service identifier
+    # @return [void]
+    def prepare_public_registration(service_id)
+      @selected_service = public_booking_service(service_id)
+      @scheduled_at = parsed_public_scheduled_at(params[:scheduled_at])
+
+      unless valid_public_booking_selection?(@selected_service, @scheduled_at, allow_missing_time: true)
+        redirect_to public_booking_path(continue: 1),
+                    alert: "Este horário não está mais disponível. Escolha outro."
+        return
+      end
+
+      @formatted_date = I18n.l(@selected_service.date, format: "%A, %d de %B").capitalize
+      @formatted_time = if @selected_service.scheduled?
+        @scheduled_at&.strftime("%H:%M")
+      else
+        "#{@selected_service.start_time.strftime('%H:%M')} - #{@selected_service.end_time.strftime('%H:%M')}"
+      end
+      @referral = Referral.find_by(id: session[:self_booking_referral_id])
+    end
+
+    # Returns a selected service from the already location-filtered relation.
+    #
+    # @param service_id [Integer, String, nil]
+    # @return [ClinicManagement::Service, nil]
+    def public_booking_service(service_id)
+      return if service_id.blank?
+
+      @available_services.find_by(id: service_id)
+    end
+
+    # Reports whether a public visitor can still choose this service. Arrival
+    # order services represent one selectable range; scheduled services require
+    # at least one unoccupied start time.
+    #
+    # @param service [ClinicManagement::Service]
+    # @return [Boolean]
+    def public_service_has_availability?(service)
+      !service.scheduled? || service.available_start_times.any?
+    end
+
+    # Parses an ISO-8601 time without allowing malformed input to escape.
+    #
+    # @param value [String, nil]
+    # @return [ActiveSupport::TimeWithZone, nil]
+    def parsed_public_scheduled_at(value)
+      return if value.blank?
+
+      Time.zone.parse(value)
+    rescue ArgumentError, TypeError
+      nil
+    end
+
+    # Checks that the selected service is still upcoming and, for scheduled
+    # services, that the chosen start remains available.
+    #
+    # @param service [ClinicManagement::Service, nil]
+    # @param scheduled_at [ActiveSupport::TimeWithZone, nil]
+    # @param allow_missing_time [Boolean] whether the time-choice screen may render
+    # @return [Boolean]
+    def valid_public_booking_selection?(service, scheduled_at, allow_missing_time: false)
+      return false unless service
+      return true unless service.scheduled?
+      return allow_missing_time if scheduled_at.blank?
+
+      service.available_start_times.any? do |available_time|
+        available_time.change(sec: 0) == scheduled_at.change(sec: 0)
+      end
+    end
+
+    # Returns only the supported public week values.
+    #
+    # @return [String]
+    def normalized_public_week
+      params[:week] == "next" ? "next" : "this"
+    end
+
+    # Preserves the selected appointment if personal-data validation fails.
+    #
+    # @return [Hash]
+    def public_registration_redirect_params
+      {
+        service_id: params[:service_id],
+        scheduled_at: params[:scheduled_at],
+        week: params[:week],
+        day: params[:day]
+      }.compact_blank
+    end
+
+    # Clears the temporary bridge between public availability and token flow.
+    #
+    # @return [void]
+    def clear_public_booking_selection
+      session.delete(:self_booking_selected_service_id)
+      session.delete(:self_booking_selected_scheduled_at)
+      session.delete(:self_booking_selected_week)
+      session.delete(:self_booking_selected_day)
+      session.delete(:self_booking_from_public_registration)
+    end
 
     # ============================================================================
     # SELF-BOOKING FEATURE FLAG (account.self_booking_enabled)

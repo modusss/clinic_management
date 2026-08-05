@@ -1,0 +1,67 @@
+<%# Public self-booking step 1: choose availability before identification. %>
+
+<div class="step-indicator" aria-label="Etapa 1 de 4">
+  <div class="step-dot active"></div>
+  <div class="step-dot"></div>
+  <div class="step-dot"></div>
+  <div class="step-dot"></div>
+</div>
+
+<div class="booking-card">
+  <div class="text-center mb-6">
+    <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-4">
+      <i class="fas fa-calendar-alt text-emerald-600 text-2xl" aria-hidden="true"></i>
+    </div>
+    <h1 class="text-xl font-bold text-gray-900 mb-2">Agende seu exame de vista</h1>
+    <p class="text-gray-600 text-lg">Quando você prefere ser atendido?</p>
+  </div>
+
+  <% if @has_services %>
+    <div class="space-y-3">
+      <% if @this_week_services.any? %>
+        <% this_week_count = @this_week_services.sum { |service| service.scheduled? ? service.available_start_times.size : 1 } %>
+        <%= link_to public_booking_select_day_path(week: "this"), class: "option-btn" do %>
+          <div class="flex items-center">
+            <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mr-4">
+              <i class="fas fa-calendar-day text-emerald-600 text-xl" aria-hidden="true"></i>
+            </div>
+            <div class="text-left">
+              <div class="font-semibold text-gray-900">Esta semana</div>
+              <div class="text-sm text-gray-500"><%= pluralize(this_week_count, "horário disponível", "horários disponíveis") %></div>
+            </div>
+          </div>
+          <i class="fas fa-chevron-right icon" aria-hidden="true"></i>
+        <% end %>
+      <% end %>
+
+      <% if @next_week_services.any? %>
+        <% next_week_count = @next_week_services.sum { |service| service.scheduled? ? service.available_start_times.size : 1 } %>
+        <%= link_to public_booking_select_day_path(week: "next"), class: "option-btn" do %>
+          <div class="flex items-center">
+            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+              <i class="fas fa-calendar-alt text-blue-600 text-xl" aria-hidden="true"></i>
+            </div>
+            <div class="text-left">
+              <div class="font-semibold text-gray-900">Próximas semanas</div>
+              <div class="text-sm text-gray-500"><%= pluralize(next_week_count, "horário disponível", "horários disponíveis") %></div>
+            </div>
+          </div>
+          <i class="fas fa-chevron-right icon" aria-hidden="true"></i>
+        <% end %>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="text-center py-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+        <i class="fas fa-calendar-times text-gray-400 text-2xl" aria-hidden="true"></i>
+      </div>
+      <h2 class="text-lg font-semibold text-gray-700 mb-2">Sem horários disponíveis</h2>
+      <p class="text-gray-500">Novos horários serão exibidos aqui assim que forem liberados.</p>
+    </div>
+  <% end %>
+</div>
+
+<p class="text-center text-gray-500 text-sm mt-4">
+  <i class="fas fa-info-circle mr-1" aria-hidden="true"></i>
+  Você só informará seus dados depois de escolher o horário
+</p>

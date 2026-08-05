@@ -14,8 +14,18 @@
   <div class="step-dot active"></div>
 </div>
 
-<%# Back button: when from pinned service (service show share), go to start; else go to period selection %>
-<% if @from_pinned_service %>
+<%# Public flow returns to identification with the chosen appointment intact. %>
+<% if @from_public_registration %>
+<%= link_to public_booking_path(continue: 1,
+                                service_id: @service.id,
+                                scheduled_at: @scheduled_at&.iso8601,
+                                week: params[:week],
+                                day: params[:day]),
+            class: "back-btn" do %>
+  <i class="fas fa-arrow-left"></i>
+  Voltar
+<% end %>
+<% elsif @from_pinned_service %>
 <%= link_to self_booking_path(@lead.self_booking_token), class: "back-btn" do %>
   <i class="fas fa-arrow-left"></i>
   Voltar

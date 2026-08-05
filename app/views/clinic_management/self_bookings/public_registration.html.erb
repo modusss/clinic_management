@@ -1,10 +1,11 @@
 <%# ============================================================================
-    Self-Booking: Public Registration Screen
+    Self-Booking: Public Identification Screen (Step 4)
     
     This is a public registration page that doesn't require a lead token.
     Used by staff/referrals to share a generic booking link.
     
-    Anyone can access this page and register to book an appointment.
+    ESSENTIAL: This form is rendered only after a valid appointment option has
+    been selected. It creates the Lead at the end of the decision flow.
     
     MINOR PATIENT LOGIC:
     - If patient is a minor (checkbox checked), show guardian name field
@@ -13,28 +14,52 @@
     ============================================================================ %>
 
 <!-- Step indicator -->
-<div class="step-indicator">
+<div class="step-indicator" aria-label="Etapa 4 de 4">
+  <div class="step-dot completed"></div>
+  <div class="step-dot completed"></div>
+  <div class="step-dot completed"></div>
   <div class="step-dot active"></div>
-  <div class="step-dot"></div>
-  <div class="step-dot"></div>
-  <div class="step-dot"></div>
 </div>
+
+<% unless session[:self_booking_pinned_service_id].present? && !@selected_service.scheduled? %>
+  <%= link_to public_booking_select_period_path(week: params[:week], day: params[:day]), class: "back-btn" do %>
+    <i class="fas fa-arrow-left" aria-hidden="true"></i>
+    Voltar
+  <% end %>
+<% end %>
 
 <!-- Main card -->
 <div class="booking-card">
   <div class="text-center mb-6">
     <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-4">
-      <i class="fas fa-calendar-plus text-emerald-600 text-2xl"></i>
+      <i class="fas fa-user-check text-emerald-600 text-2xl" aria-hidden="true"></i>
     </div>
   </div>
   
-  <h2 class="text-xl font-bold text-gray-900 text-center mb-2">
-    Agende sua consulta!
-  </h2>
+  <h1 class="text-xl font-bold text-gray-900 text-center mb-2">
+    Só falta identificar o paciente
+  </h1>
   
   <p class="text-gray-600 text-center mb-6">
-    Preencha seus dados para continuar
+    O horário já está escolhido. Preencha os dados para revisar.
   </p>
+
+  <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6" aria-label="Horário escolhido">
+    <div class="flex items-center mb-2">
+      <i class="fas fa-calendar-check text-emerald-600 mr-3" aria-hidden="true"></i>
+      <strong class="text-emerald-900"><%= @formatted_date %></strong>
+    </div>
+    <div class="flex items-center">
+      <i class="fas fa-clock text-emerald-600 mr-3" aria-hidden="true"></i>
+      <strong class="text-emerald-900"><%= @formatted_time %></strong>
+    </div>
+    <% if @selected_service.service_location.present? %>
+      <div class="flex items-center mt-2">
+        <i class="fas fa-map-marker-alt text-emerald-600 mr-3" aria-hidden="true"></i>
+        <strong class="text-emerald-900"><%= @selected_service.service_location.name %></strong>
+      </div>
+    <% end %>
+  </div>
   
   <% if @referral.present? %>
     <div class="mb-4 text-center">
@@ -51,20 +76,21 @@
                 id: "registration-form",
                 class: "space-y-4" do %>
     
-    <%# Preserve URL params (ref, reg_by, loc for multi-region, svc for service-specific booking) %>
-    <% if params[:ref].present? %>
-      <input type="hidden" name="ref" value="<%= params[:ref] %>">
+    <%# Preserve attribution from the session and the already selected appointment. %>
+    <% if session[:self_booking_referral_id].present? %>
+      <input type="hidden" name="ref" value="<%= session[:self_booking_referral_id] %>">
     <% end %>
-    <% if params[:reg_by].present? %>
-      <input type="hidden" name="reg_by" value="<%= params[:reg_by] %>">
+    <% if session[:self_booking_registered_by_user_id].present? %>
+      <input type="hidden" name="reg_by" value="<%= session[:self_booking_registered_by_user_id] %>">
     <% end %>
-    <% if params[:loc].present? || params.key?(:loc) %>
-      <input type="hidden" name="loc" value="<%= params[:loc].to_s %>">
+    <input type="hidden" name="loc" value="<%= session[:self_booking_service_location_id].to_s %>">
+    <% if session[:self_booking_pinned_service_id].present? %>
+      <input type="hidden" name="svc" value="<%= session[:self_booking_pinned_service_id] %>">
     <% end %>
-    <%# ESSENTIAL: svc (service_id) - when present, pins booking to that specific day (from service show share) %>
-    <% if params[:svc].present? %>
-      <input type="hidden" name="svc" value="<%= params[:svc] %>">
-    <% end %>
+    <input type="hidden" name="service_id" value="<%= @selected_service.id %>">
+    <input type="hidden" name="scheduled_at" value="<%= @scheduled_at&.iso8601 %>">
+    <input type="hidden" name="week" value="<%= params[:week] %>">
+    <input type="hidden" name="day" value="<%= params[:day] %>">
     
     <%# Patient name field %>
     <div>
@@ -138,7 +164,7 @@
     
     <button type="submit" class="btn-primary">
       <i class="fas fa-arrow-right mr-2"></i>
-      Continuar para agendamento
+      Revisar agendamento
     </button>
   <% end %>
 </div>

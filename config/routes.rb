@@ -4,16 +4,19 @@ ClinicManagement::Engine.routes.draw do
   resource :eye_education, only: [:show], controller: "eye_educations", path: "falar-sobre-o-olho"
   
   # ============================================================================
-  # PUBLIC REGISTRATION ROUTE (No token required)
+  # PUBLIC BOOKING ROUTES (No token required)
   # 
-  # This route allows anyone to register and book an appointment.
-  # Used by staff/referrals to share a generic booking link.
+  # ESSENTIAL: Availability comes before identification in the open-link flow.
+  # The visitor chooses week, day, and time without creating a Lead. Personal
+  # data is requested only after a valid appointment option is selected.
   # 
   # Params:
   # - ref: referral_id (for commission attribution)
   # - reg_by: user_id (who shared the link - effort tracking)
   # ============================================================================
   get 'public_booking', to: 'self_bookings#public_registration', as: 'public_booking'
+  get 'public_booking/select_day', to: 'self_bookings#public_select_day', as: 'public_booking_select_day'
+  get 'public_booking/select_period', to: 'self_bookings#public_select_period', as: 'public_booking_select_period'
   post 'public_booking/register', to: 'self_bookings#create_public_registration', as: 'create_public_booking'
   
   # ============================================================================
@@ -194,4 +197,3 @@ ClinicManagement::Engine.routes.draw do
 
   mount ActionCable.server => '/cable'
 end
-
