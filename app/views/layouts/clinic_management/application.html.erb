@@ -18,6 +18,10 @@
   <%= stylesheet_link_tag "clinic_management/table", "data-turbo-track": "reload" %>
   <%= stylesheet_link_tag "clinic_management/main", "data-turbo-track": "reload" %>
   <%= stylesheet_link_tag "clinic_management/service_slot_modal", "data-turbo-track": "reload" %>
+  <%= stylesheet_link_tag "custom/lead_customer_conversion", "data-turbo-track": "reload" %>
+  <%# ESSENTIAL: Clinic uses Tailwind, so load Materialize JS only. The dedicated
+      stylesheet scopes the modal and avoids global Materialize CSS collisions. %>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <!-- Move custom styles here to ensure they are loaded before the body renders -->
   <style>
@@ -397,6 +401,11 @@
       </div>
     <% end %>
   </main>
+
+  <%# ESSENTIAL: One modal per page; triggers may appear in dozens of table rows. %>
+  <% if user_signed_in? && retail_module_enabled? && !referral?(current_user) %>
+    <%= render "shared/lead_customer_conversion_modal" %>
+  <% end %>
 
   <footer class="bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-900 py-4 mt-16 fixed bottom-0 inset-x-0 shadow-md" style="z-index: 2000">
     <div class="container mx-auto text-center">

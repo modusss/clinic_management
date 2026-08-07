@@ -64,13 +64,14 @@ module ClinicManagement
     
     # GET /services/1
     def show
-      @rows = process_appointments_data(@service.appointments) 
+      appointments = @service.appointments.includes(lead: { leads_conversion: :customer })
+      @rows = process_appointments_data(appointments)
     end
 
     def search_appointment
       if params[:q].present?
         service = Service.find(params[:service_id])
-        appointments = service.appointments
+        appointments = service.appointments.includes(lead: { leads_conversion: :customer })
         query = params[:q].downcase
         # ESSENTIAL: invitation may be nil on legacy/orphan rows — same guard as process_appointments_data.
         @appointments = appointments.select do |appointment|
@@ -109,7 +110,8 @@ module ClinicManagement
         return
       end
 
-      @rows = process_appointments_by_referral_data(@service.appointments)
+      appointments = @service.appointments.includes(lead: { leads_conversion: :customer })
+      @rows = process_appointments_by_referral_data(appointments)
     end
     
     # GET /services/new
@@ -331,11 +333,10 @@ module ClinicManagement
     end  
 
     def set_conversion_link(lead)
-       if lead.leads_conversion.present?
-         helpers.link_to("Página do cliente", main_app.customer_orders_path(lead.customer), class: "text-blue-500 hover:text-blue-800 underline")
-       else
-         helpers.link_to("Converter para cliente", main_app.new_conversion_path(lead_id: lead.id), class: "text-red-500 hover:text-red-800 underline")
-       end
+      render_to_string(
+        partial: "shared/lead_customer_conversion_link",
+        locals: { lead: lead }
+      ).html_safe
     end
   
     def reschedule_form(new_appointment, old_appointment)

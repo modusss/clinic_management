@@ -22,7 +22,7 @@
           .includes(:service_location, appointments: [
             :prescription,
             :service,
-            { invitation: { lead: [:leads_conversion, { lead_interactions: :user }] } }
+            { invitation: { lead: [{ leads_conversion: :customer }, { lead_interactions: :user }] } }
           ])
         @rows = mapping_rows(@services)
 
@@ -129,7 +129,7 @@
             .includes(:service_location, appointments: [
               :prescription,
               :service,
-              { invitation: { lead: [:leads_conversion, { lead_interactions: :user }] } }
+              { invitation: { lead: [{ leads_conversion: :customer }, { lead_interactions: :user }] } }
             ])
         else
           Service.none
@@ -151,7 +151,7 @@
             .includes(:service_location, appointments: [
               :prescription,
               :service,
-              { invitation: { lead: [:leads_conversion, { lead_interactions: :user }] } }
+              { invitation: { lead: [{ leads_conversion: :customer }, { lead_interactions: :user }] } }
             ])
         else
           Service.none
@@ -510,12 +510,11 @@
       end
 
       def set_conversion_link(lead)
-        if lead.leads_conversion.present?
-          helpers.link_to("Página do cliente", main_app.customer_orders_path(lead.customer), class: "text-blue-500 hover:text-blue-800 underline")
-        else
-          helpers.link_to("Converter para cliente", main_app.new_conversion_path(lead_id: lead.id), class: "text-red-500 hover:text-red-800 underline")
-        end
-    end
+        render_to_string(
+          partial: "shared/lead_customer_conversion_link",
+          locals: { lead: lead }
+        ).html_safe
+      end
 
       def new_settings
         # ESSENTIAL: Defaults must match GeneralHelper#format_number ("0.00") so f.select opens on neutral values.

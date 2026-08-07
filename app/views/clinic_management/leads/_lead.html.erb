@@ -255,7 +255,7 @@
           <% if lead.leads_conversion.present? %>
             <%= link_to "Página do cliente", main_app.customer_orders_path(lead.customer), class: "text-blue-500 hover:text-blue-800 underline text-[18px]" %>
           <% else %>
-            <%= link_to "Converter para cliente", main_app.new_conversion_path(lead_id: lead.id), class: "text-red-500 hover:text-red-800 underline text-[18px]" %>
+            <%= render "shared/lead_customer_conversion_link", lead: lead %>
           <% end %>
         </dd>
       </div>
