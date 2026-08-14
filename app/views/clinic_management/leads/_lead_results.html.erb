@@ -108,7 +108,7 @@
                   <div class="w-full">
                     <%= f.label :referral_id, "Indicação:", class: "block text-gray-600 text-xs font-medium mb-1" %>
                     <%= f.collection_select :referral_id, 
-                                          Referral.all, 
+                                          referrals_for_assignment_select(include_id: default_referral_id), 
                                           :id, 
                                           :name, 
                                           { selected: default_referral_id }, 
@@ -154,7 +154,7 @@
                   <div class="w-full">
                     <%= f.label :referral_id, "Indicação:", class: "block text-gray-600 text-xs font-medium mb-1" %>
                     <%= f.collection_select :referral_id, 
-                                          Referral.all, 
+                                          referrals_for_assignment_select(include_id: default_referral_id), 
                                           :id, 
                                           :name, 
                                           { selected: default_referral_id }, 

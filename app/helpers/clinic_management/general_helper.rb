@@ -213,6 +213,17 @@ module ClinicManagement
           return referral
         end
 
+        # ESSENTIAL: Assignment <select>s (indicação / captador) — Local + active captadores only.
+        # Memoized per include_id because remarcação partials can render dozens of times per page.
+        #
+        # @param include_id [Integer, String, nil] currently assigned referral to keep visible
+        # @return [Array<Referral>]
+        def referrals_for_assignment_select(include_id: nil)
+          @referrals_for_assignment_select_cache ||= {}
+          cache_key = include_id.to_i
+          @referrals_for_assignment_select_cache[cache_key] ||= Referral.for_assignment_select(include_id: include_id)
+        end
+
         def format_day_of_week(date)
             I18n.l(date, format: "%A")
         end

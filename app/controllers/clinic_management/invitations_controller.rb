@@ -160,7 +160,7 @@ module ClinicManagement
       @invitation = Invitation.new
       @appointment = @invitation.appointments.build
       @lead = @invitation.build_lead
-      @referrals = referrals_for_select
+      @referrals = referrals_for_assignment_select
       @referral_grouped_options = referral_grouped_options_for_select
       @today_invitations = today_invitations_for_new_form(@selected_service_location_id)
     end
@@ -224,7 +224,7 @@ module ClinicManagement
       @invitation = Invitation.new
       @appointment = @invitation.appointments.build
       @lead = @invitation.build_lead
-      @referrals = referrals_for_select
+      @referrals = referrals_for_assignment_select
       @referral_grouped_options = referral_grouped_options_for_select
     end
 
@@ -519,7 +519,7 @@ module ClinicManagement
       new_form_sets
       new_form_locals = {
           invitation: @invitation,
-          referrals: referrals_for_select,
+          referrals: referrals_for_assignment_select,
           referral_grouped_options: referral_grouped_options_for_select,
           regions: Region.active.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
       }
@@ -606,7 +606,7 @@ module ClinicManagement
         @invitation = Invitation.new
         @appointment = @invitation.appointments.build
         @lead = @invitation.build_lead
-        @referrals = referrals_for_select
+        @referrals = referrals_for_assignment_select
         @referral_grouped_options = referral_grouped_options_for_select
       end
 
@@ -1318,7 +1318,7 @@ module ClinicManagement
         @invitation = Invitation.new
         @appointment = @invitation.appointments.build
         @lead = @invitation.build_lead
-        @referrals = referrals_for_select
+        @referrals = referrals_for_assignment_select
         @referral_grouped_options = referral_grouped_options_for_select
       end
 
@@ -1353,24 +1353,23 @@ module ClinicManagement
         scope
       end
 
-      # Referrals for Indicador select: Local first, then Captadores ativos, then Demais captadores.
+      # Referrals for Indicador assignment select: Local first, then active captadores.
+      # ESSENTIAL: Inactive captadores are not assignable (see Referral.for_assignment_select).
       # Returns array for grouped_options_for_select: [["Group", [[label, id], ...]], ...]
       def referral_grouped_options_for_select
-        local = Referral.find_by(name: "Local")
-        all = Referral.all.to_a
-        active = all.select { |r| r.active? && r.name != "Local" }.sort_by { |r| r.name.to_s.downcase }
-        inactive = all.reject { |r| r.active? || r.name == "Local" }.sort_by { |r| r.name.to_s.downcase }
-
-        options = []
-        options << ["Local", [[local.name, local.id]]] if local
-        options << ["Captadores ativos", active.map { |r| [r.name, r.id] }] if active.any?
-        options << ["Demais captadores", inactive.map { |r| [r.name, r.id] }] if inactive.any?
-        options
+        Referral.grouped_options_for_assignment_select
       end
 
-      # Referrals for Indicador select (flat list, for backward compatibility).
+      # Full captador list for invitations#index historical filters (ativos + inativos).
+      # ESSENTIAL: Do not use this in assignment <select>s — those use
+      # referrals_for_assignment_select so deactivated names are not choosable.
       def referrals_for_select
         Referral.order(Arel.sql("CASE WHEN name = 'Local' THEN 0 ELSE 1 END, name"))
+      end
+
+      # Referrals for Indicador assignment select (flat list, for form fallback).
+      def referrals_for_assignment_select
+        Referral.for_assignment_select
       end
 
       # Builds options for the "Local do atendimento" select in new invitation form.

@@ -372,35 +372,25 @@ module ClinicManagement
     # @param appointment [ClinicManagement::Appointment]
     # @return [ActiveSupport::SafeBuffer] HTML for the indication cell
     def appointment_referral_cell(appointment)
+      current_referral_id = appointment.invitation&.referral_id
       render_to_string(
         partial: "clinic_management/appointments/referral_selector",
         locals: {
           appointment: appointment,
-          referral_grouped_options: appointment_referral_grouped_options
+          referral_grouped_options: appointment_referral_grouped_options(include_id: current_referral_id)
         }
       ).html_safe
     end
 
     # Referrals for the service-show inline selector: Local first, then active
-    # captadores, then inactive captadores. Memoized per request to avoid rebuilding
-    # the same grouped select for every appointment row.
+    # captadores. Inactive names are omitted except the row's current assignment.
+    # Memoized per include_id to avoid rebuilding the same grouped select per row.
+    # @param include_id [Integer, nil]
     # @return [Array<Array(String, Array<Array(String, Integer)>)>]
-    def appointment_referral_grouped_options
-      @appointment_referral_grouped_options ||= begin
-        local = Referral.find_by(name: "Local")
-        referrals = Referral.all.to_a
-        active_ids = Referral.active.pluck(:id)
-        active = referrals.select { |referral| active_ids.include?(referral.id) && referral.name != "Local" }
-                          .sort_by { |referral| referral.name.to_s.downcase }
-        inactive = referrals.reject { |referral| active_ids.include?(referral.id) || referral.name == "Local" }
-                            .sort_by { |referral| referral.name.to_s.downcase }
-
-        [].tap do |options|
-          options << ["Local", [[local.name, local.id]]] if local
-          options << ["Captadores ativos", active.map { |referral| [referral.name, referral.id] }] if active.any?
-          options << ["Demais captadores", inactive.map { |referral| [referral.name, referral.id] }] if inactive.any?
-        end
-      end
+    def appointment_referral_grouped_options(include_id: nil)
+      @appointment_referral_grouped_options ||= {}
+      cache_key = include_id.to_i
+      @appointment_referral_grouped_options[cache_key] ||= Referral.grouped_options_for_assignment_select(include_id: include_id)
     end
 
     def process_services_data(services)
