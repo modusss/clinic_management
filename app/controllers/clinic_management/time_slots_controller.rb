@@ -34,7 +34,10 @@ module ClinicManagement
     end
 
     # GET /time_slots/1
+    # ESSENTIAL: The listing links straight to edit; show has no extra information.
+    # Keep the route so old bookmarks still land on the useful screen.
     def show
+      redirect_to edit_time_slot_path(@time_slot)
     end
 
     # GET /time_slots/new

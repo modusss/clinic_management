@@ -10,9 +10,9 @@
 
 <br>
 
-<div>
-  <%= link_to "Detalhes e edições", @time_slot, class: "" %> |
-  <%= link_to "Todos os horários", time_slots_path %>
+<div class="flex items-center justify-between">
+  <%= link_to "Todos os horários", time_slots_path, class: "text-blue-600 hover:text-blue-800" %>
+  <%= button_to "Excluir este horário", @time_slot, method: :delete, class: "bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" %>
 </div>
 
 </div>
