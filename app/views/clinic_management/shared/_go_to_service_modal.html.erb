@@ -33,6 +33,8 @@
                   <% times = [service.start_time&.strftime('%H:%M'), service.end_time&.strftime('%H:%M')].compact %>
                   <% time_str = times.size == 2 ? "#{times[0]}h às #{times[1]}h" : "" %>
                   <% loc_name = service.service_location&.name %>
+                  <%# ESSENTIAL: With 2+ active types, overlapping ranges on the same day are indistinguishable without this label. %>
+                  <% type_name = slot_modal_service_type_name(service) %>
                   <% appt_total = item[:appointments_total] %>
                   <% appt_mine = item[:appointments_for_referral] %>
                   <% show_counts = item.key?(:appointments_total) %>
@@ -44,14 +46,20 @@
                        t_total = appt_total.to_i
                        "#{t_total} #{t_total == 1 ? 'agendado' : 'agendados'} no horário"
                      end %>
+                  <% aria_description = [type_name, aria_counts].compact_blank.join(", ") %>
                   <li role="option">
-                    <a href="<%= url %>" class="go-to-service-item" data-turbo="false"<% if aria_counts.present? %> aria-description="<%= ERB::Util.html_escape(aria_counts) %>"<% end %>>
+                    <a href="<%= url %>" class="go-to-service-item" data-turbo="false"<% if aria_description.present? %> aria-description="<%= ERB::Util.html_escape(aria_description) %>"<% end %>>
                       <span class="go-to-service-item-icon">
                         <i class="fas fa-clock text-emerald-500" aria-hidden="true"></i>
                       </span>
                       <span class="go-to-service-item-main">
                         <% if time_str.present? %>
                           <span class="go-to-service-item-time"><%= time_str %></span>
+                        <% end %>
+                        <% if type_name.present? %>
+                          <span class="go-to-service-item-type">
+                            <i class="fas fa-tag text-xs mr-1" aria-hidden="true"></i><%= type_name %>
+                          </span>
                         <% end %>
                         <% if loc_name.present? %>
                           <span class="go-to-service-item-location">

@@ -85,7 +85,7 @@
         <%# ESSENTIAL: Location selector moved to the sidebar (clinic-sidebar__location) — see <aside> below. Kept out of the header on all breakpoints per product request. %>
 
         <%# ESSENTIAL: Referral "Ir para atendimento" lists ALL upcoming services for the current location. %>
-        <% referral_services = ClinicManagement::Service.upcoming.for_location(current_service_location_id).includes(:service_location).order(date: :asc, start_time: :asc).limit(20).to_a %>
+        <% referral_services = ClinicManagement::Service.upcoming.for_location(current_service_location_id).includes(:service_location, :service_type).order(date: :asc, start_time: :asc).limit(20).to_a %>
         <% referral_slot_ids = referral_services.map(&:id) %>
         <% referral_appt_total_by_service = referral_slot_ids.blank? ? {} : ClinicManagement::Appointment.where(service_id: referral_slot_ids).group(:service_id).count %>
         <% referral_appt_mine_by_service = referral_slot_ids.blank? ? {} : ClinicManagement::Appointment.where(service_id: referral_slot_ids, referral_code: user_referral.code).group(:service_id).count %>
@@ -258,7 +258,7 @@
 
       <%# ESSENTIAL: Location selector moved to the sidebar (clinic-sidebar__location) — see <aside> below. Kept out of the header on all breakpoints per product request. %>
 
-      <% staff_services = ClinicManagement::Service.for_location(current_service_location_id).includes(:service_location).where("date >= ?", Date.current).order(date: :asc, start_time: :asc).limit(20).to_a %>
+      <% staff_services = ClinicManagement::Service.for_location(current_service_location_id).includes(:service_location, :service_type).where("date >= ?", Date.current).order(date: :asc, start_time: :asc).limit(20).to_a %>
       <% staff_slot_ids = staff_services.map(&:id) %>
       <% staff_appt_total_by_service = staff_slot_ids.blank? ? {} : ClinicManagement::Appointment.where(service_id: staff_slot_ids).group(:service_id).count %>
       <% staff_services_with_urls = staff_services.map { |s| { service: s, url: clinic_management.service_path(s), appointments_total: staff_appt_total_by_service[s.id] || 0 } } %>

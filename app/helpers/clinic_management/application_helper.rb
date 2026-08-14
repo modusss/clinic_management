@@ -66,6 +66,30 @@ module ClinicManagement
       "#{clinic_browser_environment_title_prefix}#{title}"
     end
 
+    # ESSENTIAL: Slot pickers ("Ir para atendimento" / remarcação) must show the service
+    # type name when more than one active type exists. The same date/time/location may host
+    # one Service per type (e.g. Gratuito 08:00-12:00 vs Oftalmo 08:30-09:30); without the
+    # label those rows are indistinguishable. Memoized per request.
+    # Mirrors ServicesHelper#description_service (omit the name when only one type is active).
+    #
+    # @return [Boolean]
+    def multiple_active_service_types?
+      return @_multiple_active_service_types unless @_multiple_active_service_types.nil?
+
+      @_multiple_active_service_types = ClinicManagement::ServiceType.active.count > 1
+    end
+
+    # ESSENTIAL: Type name to render on a slot-picker row. Nil when a single type is active
+    # or the service has no type, so callers can skip the label without repeating the count.
+    #
+    # @param service [ClinicManagement::Service, nil]
+    # @return [String, nil]
+    def slot_modal_service_type_name(service)
+      return unless multiple_active_service_types?
+
+      service&.service_type&.name.presence
+    end
+
     # ESSENTIAL: Display name for Service in dropdowns (navbar "Ir para atendimento...").
     # Format: "Quinta-feira, 05/03/2026 - 08:00h às 12:00h".
     # When "Todos externos" selected: Local as FIRST param so user can distinguish services from different locations.
@@ -109,7 +133,7 @@ module ClinicManagement
       if current_account&.multi_service_locations_enabled?
         scope = scope.merge(ClinicManagement::Service.for_location(current_service_location_id.to_s))
       end
-      scope.includes(:service_location).to_a
+      scope.includes(:service_location, :service_type).to_a
     end
 
     # Groups services by day for slot picker modals (go-to-service / remarcação).
@@ -120,6 +144,9 @@ module ClinicManagement
     def group_services_for_slot_modal(services)
       list = Array(services).compact
       return [] if list.blank?
+
+      # ESSENTIAL: Slot rows read service.service_type.name when multiple types are active.
+      ActiveRecord::Associations::Preloader.new(records: list, associations: [:service_type, :service_location]).call
 
       ids = list.map(&:id)
       counts = ClinicManagement::Appointment.where(service_id: ids).group(:service_id).count

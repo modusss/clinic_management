@@ -2,9 +2,7 @@ module ClinicManagement
   module ServicesHelper
     def description_service(service)
       # Se existe apenas um tipo de serviço ativo, não precisa mostrar o nome dele
-      active_service_types_count = ClinicManagement::ServiceType.where(removed: false).count
-      
-      if active_service_types_count > 1
+      if multiple_active_service_types?
         # Múltiplos tipos: mostrar o nome do tipo
         "#{service.service_type&.name} - #{service.date.strftime("%d/%m/%Y")} - #{show_week_day(service.weekday)} (#{service.start_time.strftime("%H:%M")} - #{service.end_time.strftime("%H:%M")})"
       else
