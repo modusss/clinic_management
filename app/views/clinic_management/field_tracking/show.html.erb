@@ -1,0 +1,56 @@
+<% content_for :footer, @company_name.presence || "Clínica" %>
+
+<% breadcrumb(
+  { title: "Lista de hoje", path: clinic_management.index_today_path },
+  { title: "Equipe em campo", path: clinic_management.field_tracking_path },
+  { title: @shift.referral&.name.presence || "Expediente" }
+) %>
+
+<%
+  route_points = @points.map { |p| { latitude: p.latitude.to_f, longitude: p.longitude.to_f } }
+%>
+
+<div class="field-tracking-page space-y-6">
+  <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+    <div class="bg-gradient-to-r from-emerald-800 to-emerald-700 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 class="text-xl font-semibold text-white flex items-center gap-2">
+          <i class="fas fa-route" aria-hidden="true"></i>
+          <%= @shift.referral&.name %>
+        </h1>
+        <p class="text-emerald-100 text-sm mt-1">
+          Expediente
+          <% if @shift.active? %>
+            em andamento
+          <% else %>
+            concluído
+          <% end %>
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <%= link_to "Histórico", clinic_management.field_tracking_history_path, class: "field-tracking-page__header-link" %>
+        <%= link_to "Ao vivo", clinic_management.field_tracking_path, class: "field-tracking-page__header-link" %>
+      </div>
+    </div>
+
+    <div class="p-4 sm:p-6">
+      <%= render "clinic_management/field_tracking/shift_metrics", shift: @shift %>
+    </div>
+  </div>
+
+  <div class="field-tracking-show-map-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100">
+      <h2 class="text-lg font-semibold text-gray-800">Rota registrada</h2>
+      <p class="text-sm text-gray-500 mt-1"><%= @points.size %> pontos GPS</p>
+    </div>
+    <div id="field-tracking-map"
+         class="field-tracking-map field-tracking-map--show"
+         data-controller="field-tracking-map"
+         data-field-tracking-map-points-value="<%= route_points.to_json %>"
+         role="region"
+         aria-label="Mapa da rota do expediente"></div>
+  </div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>

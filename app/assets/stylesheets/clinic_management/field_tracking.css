@@ -1,0 +1,277 @@
+/*
+ * field_tracking views
+ * Live map + history + shift detail for clinic_management/field_tracking/*
+ */
+
+.field-tracking-page__header-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+
+.field-tracking-page__header-link:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.field-tracking-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 1rem;
+  min-height: 520px;
+}
+
+.field-tracking-layout__list {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.field-tracking-shift-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.field-tracking-shift-list__item {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.field-tracking-shift-list__item:last-child {
+  border-bottom: 0;
+}
+
+.field-tracking-shift-list__name {
+  font-weight: 600;
+  color: #111827;
+}
+
+.field-tracking-shift-list__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.field-tracking-shift-list__link {
+  display: inline-block;
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #047857;
+  text-decoration: none;
+}
+
+.field-tracking-shift-list__link:hover {
+  color: #065f46;
+  text-decoration: underline;
+}
+
+.field-tracking-layout__map,
+.field-tracking-show-map-card {
+  min-height: 520px;
+}
+
+.field-tracking-map {
+  width: 100%;
+  height: 520px;
+  border-radius: 0 0 0.75rem 0.75rem;
+  background: #e5e7eb;
+}
+
+.field-tracking-layout__map .field-tracking-map {
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.field-tracking-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 0.15rem 0.55rem;
+  text-transform: uppercase;
+}
+
+.field-tracking-badge--active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.field-tracking-badge--completed {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.field-tracking-empty {
+  padding: 2rem 1.25rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.field-tracking-empty__link {
+  display: inline-block;
+  margin-top: 0.75rem;
+  color: #047857;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.field-tracking-history-form__grid {
+  display: grid;
+  grid-template-columns: 1fr 180px auto;
+  gap: 1rem;
+  align-items: end;
+}
+
+.field-tracking-history-form__label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.35rem;
+}
+
+.field-tracking-history-form__select,
+.field-tracking-history-form__input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  background: #fff;
+}
+
+.field-tracking-history-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.field-tracking-history-form__submit {
+  border: 0;
+  border-radius: 0.5rem;
+  background: #047857;
+  color: #fff;
+  font-weight: 600;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+}
+
+.field-tracking-history-form__submit:hover {
+  background: #065f46;
+}
+
+.field-tracking-history-form__secondary {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  font-weight: 600;
+  padding: 0.55rem 1rem;
+  text-decoration: none;
+}
+
+.field-tracking-history-results__item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.5rem;
+}
+
+.field-tracking-history-results__metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.field-tracking-history-results__link {
+  color: #047857;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.field-tracking-history-results__link:hover {
+  text-decoration: underline;
+}
+
+.field-tracking-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.field-tracking-metrics__item {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: #f9fafb;
+}
+
+.field-tracking-metrics__label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 0.35rem;
+}
+
+.field-tracking-metrics__value {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+@media (max-width: 1024px) {
+  .field-tracking-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .field-tracking-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .field-tracking-history-form__grid,
+  .field-tracking-history-results__item {
+    grid-template-columns: 1fr;
+  }
+
+  .field-tracking-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .field-tracking-map,
+  .field-tracking-layout__map,
+  .field-tracking-show-map-card {
+    min-height: 360px;
+    height: 360px;
+  }
+}

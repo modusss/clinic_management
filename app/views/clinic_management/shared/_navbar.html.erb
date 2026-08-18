@@ -336,6 +336,11 @@
     <% if is_manager_above? %>
       <%= link_to "Convites", clinic_management.invitations_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'invitations'}" %>
       <%= link_to "Tipos de serviço", clinic_management.service_types_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'service_types'}" %>
+      <% if field_tracking_enabled? %>
+        <%= link_to "Equipe em campo",
+            clinic_management.field_tracking_path,
+            class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'field_tracking'}" %>
+      <% end %>
     <% end %>
     <%= link_to "Atendimentos", clinic_management.services_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'services'}" %>
     <%= link_to "Meus Agendamentos", clinic_management.my_reschedules_appointments_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if action_name == 'my_reschedules'}" %>

@@ -156,6 +156,14 @@ module ClinicManagement
     end
     helper_method :whatsapp_integration_enabled?
 
+    # ESSENTIAL: Field route tracking flag — web manager panel + nav links in clinic engine.
+    def field_tracking_enabled?
+      return false if current_account.nil?
+
+      current_account.field_tracking_enabled?
+    end
+    helper_method :field_tracking_enabled?
+
     # ESSENTIAL: Service location context for multi-region support.
     # nil = internal (default); ServiceLocation = external.
     # Persists in session + cookie so selection survives page refresh.

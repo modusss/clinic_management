@@ -195,5 +195,27 @@ ClinicManagement::Engine.routes.draw do
   # ESSENTIAL: Captador personal WhatsApp connections — clinic Tailwind layout (not retail Materialize).
   get "meu-whatsapp", to: "referral_whatsapp#index", as: :referral_whatsapp
 
+  # ESSENTIAL: Field-tracking web panel (Phase 2) — manager/owner only; captadores use mobile API.
+  get "rastreamento", to: "field_tracking#index", as: :field_tracking
+  get "rastreamento/historico", to: "field_tracking#history", as: :field_tracking_history
+  get "rastreamento/:id", to: "field_tracking#show", as: :field_tracking_shift
+
+  # ESSENTIAL: Field-tracking mobile API for captadores (Android app) — manager/owner use web panel (Phase 2).
+  namespace :api do
+    namespace :v1 do
+      namespace :field do
+        post "auth/login", to: "auth#login"
+        delete "auth/logout", to: "auth#logout"
+        get "me", to: "me#show"
+        resources :shifts, only: [:index, :show, :create] do
+          member { post :end, action: :finish }
+          resources :points, only: [:index] do
+            collection { post :batch }
+          end
+        end
+      end
+    end
+  end
+
   mount ActionCable.server => '/cable'
 end

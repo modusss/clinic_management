@@ -1,0 +1,84 @@
+<% content_for :footer, @company_name.presence || "Clínica" %>
+
+<% breadcrumb(
+  { title: "Lista de hoje", path: clinic_management.index_today_path },
+  { title: "Equipe em campo", path: clinic_management.field_tracking_path },
+  { title: "Histórico" }
+) %>
+
+<div class="field-tracking-page space-y-6">
+  <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+    <div class="bg-gradient-to-r from-emerald-800 to-emerald-700 px-6 py-4">
+      <h1 class="text-xl font-semibold text-white flex items-center gap-2">
+        <i class="fas fa-history" aria-hidden="true"></i>
+        Histórico de expedientes
+      </h1>
+      <p class="text-emerald-100 text-sm mt-1">Consulte rotas concluídas ou ainda ativas por captador e data.</p>
+    </div>
+
+    <div class="p-4 sm:p-6">
+      <%= form_with url: clinic_management.field_tracking_history_path, method: :get, local: true, class: "field-tracking-history-form" do |f| %>
+        <div class="field-tracking-history-form__grid">
+          <div>
+            <%= label_tag :referral_id, "Captador", class: "field-tracking-history-form__label" %>
+            <%= select_tag :referral_id,
+                options_from_collection_for_select(@referrals, :id, :name, @referral_id),
+                include_blank: "Todos os captadores",
+                class: "field-tracking-history-form__select" %>
+          </div>
+          <div>
+            <%= label_tag :date, "Data", class: "field-tracking-history-form__label" %>
+            <%= date_field_tag :date, @date, class: "field-tracking-history-form__input" %>
+          </div>
+          <div class="field-tracking-history-form__actions">
+            <%= submit_tag "Filtrar", class: "field-tracking-history-form__submit" %>
+            <%= link_to "Ao vivo", clinic_management.field_tracking_path, class: "field-tracking-history-form__secondary" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
+      <h2 class="text-lg font-semibold text-gray-800">
+        <%= l(@date, format: :long) %>
+      </h2>
+      <span class="text-sm text-gray-500"><%= @shifts.size %> <%= @shifts.size == 1 ? "expediente" : "expedientes" %></span>
+    </div>
+
+    <% if @shifts.any? %>
+      <ul class="field-tracking-history-results divide-y divide-gray-100">
+        <% @shifts.each do |shift| %>
+          <li class="field-tracking-history-results__item">
+            <div>
+              <div class="font-medium text-gray-900"><%= shift.referral&.name %></div>
+              <div class="text-sm text-gray-500 mt-1">
+                <%= l(shift.started_at, format: :short) %>
+                <% if shift.ended_at.present? %>
+                  — <%= l(shift.ended_at, format: :short) %>
+                <% end %>
+              </div>
+            </div>
+            <div class="field-tracking-history-results__metrics">
+              <span class="field-tracking-badge <%= shift.active? ? 'field-tracking-badge--active' : 'field-tracking-badge--completed' %>">
+                <%= shift.active? ? "Ativo" : "Concluído" %>
+              </span>
+              <% if shift.distance_meters.present? %>
+                <span><%= number_with_delimiter(shift.distance_meters) %> m</span>
+              <% end %>
+              <% if shift.points_count.to_i.positive? %>
+                <span><%= shift.points_count %> pontos</span>
+              <% end %>
+            </div>
+            <%= link_to "Ver rota",
+                clinic_management.field_tracking_shift_path(shift),
+                class: "field-tracking-history-results__link" %>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="text-gray-600 text-center py-10 px-4">Nenhum expediente encontrado para os filtros selecionados.</p>
+    <% end %>
+  </div>
+</div>

@@ -18,6 +18,7 @@
   <%= stylesheet_link_tag "clinic_management/table", "data-turbo-track": "reload" %>
   <%= stylesheet_link_tag "clinic_management/main", "data-turbo-track": "reload" %>
   <%= stylesheet_link_tag "clinic_management/service_slot_modal", "data-turbo-track": "reload" %>
+  <%= stylesheet_link_tag "clinic_management/field_tracking", "data-turbo-track": "reload" %>
   <%= stylesheet_link_tag "custom/lead_customer_conversion", "data-turbo-track": "reload" %>
   <%# ESSENTIAL: Clinic uses Tailwind, so load Materialize JS only. The dedicated
       stylesheet scopes the modal and avoids global Materialize CSS collisions. %>
@@ -392,7 +393,7 @@
         # screens; form/education pages keep the standard readable container.
         wide_table_shell = controller_name.in?(%w[
           prescriptions services leads invitations service_locations time_slots
-          regions service_types lead_messages referral_indicators whatsapp
+          regions service_types lead_messages referral_indicators whatsapp field_tracking
         ])
       %>
       <div class="container mx-auto px-4 sm:px-6 lg:px-8 clinic-main-shell <%= 'clinic-main-shell--wide' if wide_table_shell %>">

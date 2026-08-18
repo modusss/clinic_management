@@ -1,0 +1,62 @@
+<%# ESSENTIAL: Reusable shift metrics grid for field_tracking#show (and future exports). %>
+<div class="field-tracking-metrics">
+  <div class="field-tracking-metrics__item">
+    <span class="field-tracking-metrics__label">Status</span>
+    <span class="field-tracking-metrics__value">
+      <span class="field-tracking-badge <%= shift.active? ? 'field-tracking-badge--active' : 'field-tracking-badge--completed' %>">
+        <%= shift.active? ? "Ativo" : "Concluído" %>
+      </span>
+    </span>
+  </div>
+
+  <div class="field-tracking-metrics__item">
+    <span class="field-tracking-metrics__label">Início</span>
+    <span class="field-tracking-metrics__value"><%= l(shift.started_at, format: :short) if shift.started_at %></span>
+  </div>
+
+  <div class="field-tracking-metrics__item">
+    <span class="field-tracking-metrics__label">Término</span>
+    <span class="field-tracking-metrics__value">
+      <%= shift.ended_at.present? ? l(shift.ended_at, format: :short) : "—" %>
+    </span>
+  </div>
+
+  <div class="field-tracking-metrics__item">
+    <span class="field-tracking-metrics__label">Pontos GPS</span>
+    <span class="field-tracking-metrics__value"><%= shift.points_count.to_i %></span>
+  </div>
+
+  <div class="field-tracking-metrics__item">
+    <span class="field-tracking-metrics__label">Distância</span>
+    <span class="field-tracking-metrics__value">
+      <%= shift.distance_meters.present? ? "#{number_with_delimiter(shift.distance_meters)} m" : "—" %>
+    </span>
+  </div>
+
+  <div class="field-tracking-metrics__item">
+    <span class="field-tracking-metrics__label">Duração</span>
+    <span class="field-tracking-metrics__value">
+      <% if shift.duration_seconds.present? %>
+        <% hours = shift.duration_seconds / 3600 %>
+        <% minutes = (shift.duration_seconds % 3600) / 60 %>
+        <%= hours.positive? ? "#{hours}h " : "" %><%= minutes %>min
+      <% else %>
+        —
+      <% end %>
+    </span>
+  </div>
+
+  <div class="field-tracking-metrics__item">
+    <span class="field-tracking-metrics__label">Vel. média</span>
+    <span class="field-tracking-metrics__value">
+      <%= shift.avg_speed_kmh.present? ? "#{number_with_precision(shift.avg_speed_kmh, precision: 1)} km/h" : "—" %>
+    </span>
+  </div>
+
+  <div class="field-tracking-metrics__item">
+    <span class="field-tracking-metrics__label">Precisão média</span>
+    <span class="field-tracking-metrics__value">
+      <%= shift.avg_accuracy_meters.present? ? "#{number_with_precision(shift.avg_accuracy_meters, precision: 1)} m" : "—" %>
+    </span>
+  </div>
+</div>
