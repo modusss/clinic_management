@@ -1,6 +1,6 @@
 # Field tracking (captadores em campo)
 
-Módulo no engine `clinic_management` para rastreamento de expediente e rotas GPS dos captadores (`Referral`).
+Módulo no engine `clinic_management` para o aplicativo de campo dos captadores (`Referral`): expediente, rotas GPS e agenda clínica móvel.
 
 ## Acesso
 
@@ -71,6 +71,23 @@ Base: `{HOST}/clinic_management/api/v1/field/`
 | GET | `shifts/:id/points` | Bearer |
 | POST | `shifts/:id/points/batch` | Bearer — até 100 pontos |
 
+### Agenda clínica móvel
+
+Todos os endpoints abaixo exigem Bearer válido, módulos `field_tracking` + clínica e `Referral#is_exam_scheduler`.
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET | `scheduling/context` | Locais permitidos, tipos, regiões e permissões |
+| GET | `scheduling/availability` | Serviços e ocupação por período/local/tipo |
+| GET | `scheduling/services/:id` | Serviço selecionado com ocupação atual |
+| GET | `scheduling/patients/lookup?phone=` | Busca exata dentro do escopo de leads permitido |
+| GET | `scheduling/appointments` | Até 100 marcações do usuário/referral autenticado |
+| GET | `scheduling/appointments/:id` | Detalhe autorizado |
+| POST | `scheduling/appointments` | Novo agendamento idempotente |
+| POST | `scheduling/appointments/:id/reschedule` | Remarcação transacional idempotente |
+
+`FieldScheduling::AccessPolicy` aplica a fronteira de referral/local. Criação e remarcação reutilizam `AppointmentBooking`, portanto o horário é revalidado sob lock do `Service`. O cliente envia UUID em `client_request_id`; `Appointment#mobile_request_id` evita duplicação e `rescheduled_from_appointment_id` liga a nova marcação à original.
+
 ## Models
 
 - `ClinicManagement::FieldShift` (`has_one :last_track_point` para mapa ao vivo)
@@ -86,4 +103,6 @@ Base: `{HOST}/clinic_management/api/v1/field/`
 
 Repositório: `/Users/fillypefarias/Desktop/lipepay-field-android`
 
-A tela ativa usa o Room como fonte imediata para a rota, precisão, último ponto e fila pendente. O envio continua sendo tentado a cada leitura e recebe uma segunda rede de segurança por WorkManager periódico com requisito de conectividade. Isso mantém feedback local quando a internet oscila sem alterar o intervalo GPS de 30 segundos.
+A tela ativa usa o Room como fonte imediata para rota, precisão, último ponto e fila pendente. O GPS solicita alta precisão a cada 5 segundos, preserva todas as posições entregues pelo Android e envia lotes de 50 pontos. WorkManager sincroniza a fila quando a rede volta. A linha da rota continua visível sem tiles ou internet.
+
+A navegação móvel é **Expediente / Agenda / Marcações / Conta**; o histórico GPS fica dentro de Expediente. Agenda e busca de pacientes são leituras online. Novo agendamento e remarcação nunca são apresentados como confirmados sem resposta do servidor; uma falha de rede mantém a marcação original intacta.

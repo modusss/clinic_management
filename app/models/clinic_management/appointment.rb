@@ -20,6 +20,14 @@ module ClinicManagement
     belongs_to :service
     belongs_to :invitation, required: true
     belongs_to :registered_by_user, class_name: 'User', optional: true
+    belongs_to :rescheduled_from_appointment,
+               class_name: "ClinicManagement::Appointment",
+               optional: true
+    has_one :rescheduled_to_appointment,
+            class_name: "ClinicManagement::Appointment",
+            foreign_key: :rescheduled_from_appointment_id,
+            dependent: :nullify,
+            inverse_of: :rescheduled_from_appointment
     has_one :prescription
     # ESSENTIAL: Destroy interaction audit rows before the appointment row is removed.
     # Lead#destroy cascades through invitations -> appointments; without this, PostgreSQL

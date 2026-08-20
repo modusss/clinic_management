@@ -207,6 +207,15 @@ ClinicManagement::Engine.routes.draw do
         post "auth/login", to: "auth#login"
         delete "auth/logout", to: "auth#logout"
         get "me", to: "me#show"
+        namespace :scheduling do
+          get "context", to: "context#show"
+          get "availability", to: "availability#index"
+          get "services/:id", to: "availability#show"
+          get "patients/lookup", to: "patients#lookup"
+          resources :appointments, only: [:index, :show, :create] do
+            member { post :reschedule }
+          end
+        end
         resources :shifts, only: [:index, :show, :create] do
           member { post :end, action: :finish }
           resources :points, only: [:index] do

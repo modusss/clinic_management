@@ -7,7 +7,8 @@ module ClinicManagement
 
     def initialize(service:, allow_overbooking: false)
       @service = service
-      @allow_overbooking = allow_overbooking
+      # ESSENTIAL: nil is a common unchecked-checkbox value and must still persist false.
+      @allow_overbooking = ActiveModel::Type::Boolean.new.cast(allow_overbooking) || false
     end
 
     # Reserves consecutive times for the supplied appointment attribute hashes.
