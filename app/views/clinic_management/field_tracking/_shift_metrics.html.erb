@@ -4,7 +4,7 @@
     <span class="field-tracking-metrics__label">Status</span>
     <span class="field-tracking-metrics__value">
       <span class="field-tracking-badge <%= shift.active? ? 'field-tracking-badge--active' : 'field-tracking-badge--completed' %>">
-        <%= shift.active? ? "Ativo" : "Concluído" %>
+        <span data-field-tracking-map-target="status"><%= shift.active? ? "Ativo" : "Concluído" %></span>
       </span>
     </span>
   </div>
@@ -23,7 +23,7 @@
 
   <div class="field-tracking-metrics__item">
     <span class="field-tracking-metrics__label">Pontos GPS</span>
-    <span class="field-tracking-metrics__value"><%= shift.points_count.to_i %></span>
+    <span class="field-tracking-metrics__value" data-field-tracking-map-target="pointsCount"><%= shift.points_count.to_i %></span>
   </div>
 
   <div class="field-tracking-metrics__item">
@@ -57,6 +57,20 @@
     <span class="field-tracking-metrics__label">Precisão média</span>
     <span class="field-tracking-metrics__value">
       <%= shift.avg_accuracy_meters.present? ? "#{number_with_precision(shift.avg_accuracy_meters, precision: 1)} m" : "—" %>
+    </span>
+  </div>
+
+  <div class="field-tracking-metrics__item">
+    <span class="field-tracking-metrics__label">Última atualização</span>
+    <span class="field-tracking-metrics__value" data-field-tracking-map-target="lastUpdate">
+      <%= shift.last_track_point ? l(shift.last_track_point.recorded_at, format: :short) : "Aguardando GPS" %>
+    </span>
+  </div>
+
+  <div class="field-tracking-metrics__item">
+    <span class="field-tracking-metrics__label">Precisão atual</span>
+    <span class="field-tracking-metrics__value" data-field-tracking-map-target="accuracy">
+      <%= shift.last_track_point&.accuracy_meters ? "#{number_with_precision(shift.last_track_point.accuracy_meters, precision: 0)} m" : "—" %>
     </span>
   </div>
 </div>

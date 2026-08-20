@@ -1,3 +1,4 @@
+<% content_for :title, "Equipe em campo" %>
 <% content_for :footer, @company_name.presence || "Clínica" %>
 
 <% breadcrumb(
@@ -5,74 +6,100 @@
   { title: "Equipe em campo" }
 ) %>
 
-<div class="field-tracking-page space-y-6">
-  <div class="field-tracking-page__header bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-    <div class="bg-gradient-to-r from-emerald-800 to-emerald-700 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h1 class="text-xl font-semibold text-white flex items-center gap-2">
-          <i class="fas fa-map-marked-alt" aria-hidden="true"></i>
-          Equipe em campo
-        </h1>
-        <p class="text-emerald-100 text-sm mt-1">
-          <%= @active_shifts.size %>
-          <%= @active_shifts.size == 1 ? "captador ativo agora" : "captadores ativos agora" %>
-        </p>
-      </div>
-      <%= link_to clinic_management.field_tracking_history_path,
-          class: "inline-flex items-center gap-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-4 py-2 transition-colors" do %>
-        <i class="fas fa-history" aria-hidden="true"></i>
-        Histórico
-      <% end %>
-    </div>
-  </div>
+<%
+  delayed_count = @active_shifts.count do |shift|
+    shift.last_track_point.present? && shift.last_track_point.recorded_at < 2.minutes.ago
+  end
+  waiting_count = @active_shifts.count { |shift| shift.last_track_point.nil? }
+%>
 
-  <div class="field-tracking-layout">
-    <aside class="field-tracking-layout__list" aria-label="Captadores ativos">
-      <% if @active_shifts.any? %>
-        <ul class="field-tracking-shift-list">
+<div class="field-tracking-page"
+     data-controller="field-tracking-map"
+     data-field-tracking-map-live-url-value="<%= clinic_management.field_tracking_path(format: :json) %>"
+     data-field-tracking-map-shift-url-template-value="<%= clinic_management.field_tracking_shift_path('__ID__') %>"
+     data-field-tracking-map-poll-interval-value="30000">
+  <header class="field-tracking-hero">
+    <div>
+      <span class="field-tracking-hero__eyebrow">LipePay Field</span>
+      <h1><i class="fas fa-map-marked-alt" aria-hidden="true"></i> Equipe em campo</h1>
+      <p>Acompanhe a coleta de GPS e identifique rapidamente sinais atrasados.</p>
+    </div>
+    <%= link_to clinic_management.field_tracking_history_path, class: "field-tracking-hero__action" do %>
+      <i class="fas fa-history" aria-hidden="true"></i>
+      Histórico de rotas
+    <% end %>
+  </header>
+
+  <section class="field-tracking-summary" aria-label="Resumo da operação em campo">
+    <article class="field-tracking-summary__card field-tracking-summary__card--active">
+      <span class="field-tracking-summary__icon"><i class="fas fa-route" aria-hidden="true"></i></span>
+      <div><strong data-field-tracking-map-target="activeCount"><%= @active_shifts.size %></strong><span>em campo agora</span></div>
+    </article>
+    <article class="field-tracking-summary__card field-tracking-summary__card--warning">
+      <span class="field-tracking-summary__icon"><i class="fas fa-signal" aria-hidden="true"></i></span>
+      <div><strong data-field-tracking-map-target="delayedCount"><%= delayed_count %></strong><span>com sinal atrasado</span></div>
+    </article>
+    <article class="field-tracking-summary__card">
+      <span class="field-tracking-summary__icon"><i class="fas fa-satellite-dish" aria-hidden="true"></i></span>
+      <div><strong data-field-tracking-map-target="waitingCount"><%= waiting_count %></strong><span>aguardando primeiro GPS</span></div>
+    </article>
+  </section>
+
+  <section class="field-tracking-live-grid">
+    <aside class="field-tracking-live-panel" aria-label="Representantes com expediente ativo">
+      <div class="field-tracking-live-panel__header">
+        <div><span class="field-tracking-live-panel__pulse"></span><strong>Representantes</strong></div>
+        <span>Atualiza a cada 30 s</span>
+      </div>
+      <div class="field-tracking-live-panel__body" data-field-tracking-map-target="shiftList">
+        <% if @active_shifts.any? %>
           <% @active_shifts.each do |shift| %>
             <% last_point = shift.last_track_point %>
-            <li class="field-tracking-shift-list__item">
-              <div class="field-tracking-shift-list__name"><%= shift.referral&.name %></div>
-              <div class="field-tracking-shift-list__meta">
-                <span class="field-tracking-badge field-tracking-badge--active">Em campo</span>
-                <% if shift.started_at.present? %>
-                  <span>Início <%= l(shift.started_at, format: :short) %></span>
-                <% end %>
+            <% signal_tone = last_point.nil? ? "waiting" : (last_point.recorded_at < 2.minutes.ago ? "delayed" : "fresh") %>
+            <article class="field-tracking-person field-tracking-person--<%= signal_tone %>">
+              <div class="field-tracking-person__avatar" aria-hidden="true"><%= shift.referral&.name.to_s.split.first(2).map { |part| part.first }.join.upcase.presence || "C" %></div>
+              <div class="field-tracking-person__body">
+                <div class="field-tracking-person__heading">
+                  <strong><%= shift.referral&.name %></strong>
+                  <span class="field-tracking-signal field-tracking-signal--<%= signal_tone %>">
+                    <%= { "fresh" => "Atualizado", "delayed" => "Sinal atrasado", "waiting" => "Aguardando GPS" }.fetch(signal_tone) %>
+                  </span>
+                </div>
+                <div class="field-tracking-person__meta">
+                  <span>Início <%= l(shift.started_at, format: "%H:%M") if shift.started_at %></span>
+                  <span><%= last_point ? "Último ponto #{l(last_point.recorded_at, format: '%H:%M')}" : "Aguardando primeiro ponto" %></span>
+                </div>
+                <div class="field-tracking-person__footer">
+                  <span><%= shift.points_count %> pontos</span>
+                  <span><%= last_point&.accuracy_meters ? "Precisão #{last_point.accuracy_meters.to_i} m" : "Precisão —" %></span>
+                  <%= link_to "Ver rota", clinic_management.field_tracking_shift_path(shift) %>
+                </div>
               </div>
-              <% if last_point %>
-                <div class="field-tracking-shift-list__location text-xs text-gray-500 mt-1">
-                  Último ponto <%= l(last_point.recorded_at, format: :short) %>
-                </div>
-              <% else %>
-                <div class="field-tracking-shift-list__location text-xs text-amber-600 mt-1">
-                  Aguardando primeiro ponto GPS
-                </div>
-              <% end %>
-              <%= link_to "Ver expediente",
-                  clinic_management.field_tracking_shift_path(shift),
-                  class: "field-tracking-shift-list__link" %>
-            </li>
+            </article>
           <% end %>
-        </ul>
-      <% else %>
-        <div class="field-tracking-empty">
-          <p>Nenhum captador com expediente ativo no momento.</p>
-          <%= link_to "Ver histórico", clinic_management.field_tracking_history_path, class: "field-tracking-empty__link" %>
-        </div>
-      <% end %>
+        <% else %>
+          <div class="field-tracking-empty">
+            <strong>Ninguém em campo agora</strong>
+            <p>Os expedientes iniciados pelo aplicativo aparecerão aqui.</p>
+          </div>
+        <% end %>
+      </div>
     </aside>
 
-    <div class="field-tracking-layout__map">
-      <div id="field-tracking-map"
-           class="field-tracking-map"
-           data-controller="field-tracking-map"
-           data-field-tracking-map-live-url-value="<%= clinic_management.field_tracking_path(format: :json) %>"
-           data-field-tracking-map-poll-interval-value="45000"
+    <div class="field-tracking-map-card">
+      <div class="field-tracking-map-card__header">
+        <div><strong>Mapa ao vivo</strong><span>Trajeto recente e última posição recebida</span></div>
+        <div class="field-tracking-map-legend" aria-label="Legenda do mapa">
+          <span><i class="field-tracking-legend-dot field-tracking-legend-dot--fresh"></i>Atualizado</span>
+          <span><i class="field-tracking-legend-dot field-tracking-legend-dot--delayed"></i>Atrasado</span>
+        </div>
+      </div>
+      <div class="field-tracking-map"
+           data-field-tracking-map-target="map"
            role="region"
            aria-label="Mapa ao vivo da equipe em campo"></div>
     </div>
-  </div>
+  </section>
 </div>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">

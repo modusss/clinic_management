@@ -1,3 +1,4 @@
+<% content_for :title, "Histórico de rotas" %>
 <% content_for :footer, @company_name.presence || "Clínica" %>
 
 <% breadcrumb(
@@ -24,7 +25,7 @@
             <%= select_tag :referral_id,
                 options_from_collection_for_select(@referrals, :id, :name, @referral_id),
                 include_blank: "Todos os captadores",
-                class: "field-tracking-history-form__select" %>
+                class: "field-tracking-history-form__select browser-default" %>
           </div>
           <div>
             <%= label_tag :date, "Data", class: "field-tracking-history-form__label" %>

@@ -25,7 +25,7 @@ module ClinicManagement
     def history
       @date = parse_history_date
       @referral_id = params[:referral_id].presence
-      @referrals = Referral.order(:name)
+      @referrals = account_referrals_scope.order(:name)
       @shifts = history_shifts_scope
     end
 
@@ -44,16 +44,15 @@ module ClinicManagement
     private
 
     def active_shifts_scope
-      ClinicManagement::FieldShift.active
-                                  .includes(:referral, :last_track_point)
-                                  .recent_first
+      account_shifts_scope.active
+                          .includes(:referral, :last_track_point)
+                          .recent_first
     end
 
     def history_shifts_scope
-      scope = ClinicManagement::FieldShift
-              .where(status: %w[active completed])
-              .includes(:referral)
-              .recent_first
+      scope = account_shifts_scope.where(status: %w[active completed])
+                                  .includes(:referral)
+                                  .recent_first
 
       scope = scope.for_referral(@referral_id) if @referral_id.present?
 
@@ -70,7 +69,21 @@ module ClinicManagement
     end
 
     def set_shift
-      @shift = ClinicManagement::FieldShift.includes(:referral).find(params[:id])
+      @shift = account_shifts_scope.includes(:referral, :last_track_point).find(params[:id])
+    end
+
+    # ESSENTIAL: field shifts do not own account_id, so the user membership is
+    # the tenant boundary for every manager query, including direct show URLs.
+    def account_shifts_scope
+      ClinicManagement::FieldShift.where(user_id: field_member_user_ids)
+    end
+
+    def account_referrals_scope
+      Referral.where(code: current_account.memberships.where(role: "referral").select(:code))
+    end
+
+    def field_member_user_ids
+      current_account.memberships.where(role: "referral").select(:user_id)
     end
   end
 end
