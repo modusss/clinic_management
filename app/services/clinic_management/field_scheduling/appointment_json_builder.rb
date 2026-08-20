@@ -16,6 +16,8 @@ module ClinicManagement
         {
           id: appointment.id,
           status: appointment.status,
+          attendance: appointment.attendance?,
+          attendance_status: attendance_status,
           confirmed: appointment.confirmed?,
           overbooked: appointment.overbooked?,
           patient_name: appointment.invitation&.patient_name,
@@ -38,6 +40,16 @@ module ClinicManagement
       def can_reschedule?
         service_date = appointment.service&.date
         appointment.status == "agendado" && service_date.present? && service_date.to_date >= Date.current
+      end
+
+      # Converts the legacy attendance boolean into an explicit mobile state.
+      # A false value only means absence after the service date has passed.
+      def attendance_status
+        return "not_applicable" if appointment.status.in?(%w[cancelado remarcado])
+        return "attended" if appointment.attendance?
+        return "missed" if appointment.service&.date&.to_date&.before?(Date.current)
+
+        "pending"
       end
 
       def service_json

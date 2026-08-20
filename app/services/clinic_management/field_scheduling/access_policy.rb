@@ -41,10 +41,7 @@ module ClinicManagement
       def appointment_scope
         ClinicManagement::Appointment
           .joins(:invitation)
-          .where(
-            registered_by_user_id: user.id,
-            clinic_management_invitations: { referral_id: referral.id }
-          )
+          .where(clinic_management_invitations: { referral_id: referral.id })
       end
 
       def lead_scope

@@ -14,7 +14,10 @@ module ClinicManagement
               scope = scope.where(status: params[:status]) if params[:status].present?
               scope = apply_search(scope)
               scope = apply_period(scope)
-              appointments = scope.order(created_at: :desc).limit(100)
+              appointments = scope
+                .joins(:service)
+                .order("clinic_management_services.date DESC, clinic_management_appointments.id DESC")
+                .limit(300)
 
               render json: { appointments: appointments.map { |appointment| serialize(appointment) } }
             end

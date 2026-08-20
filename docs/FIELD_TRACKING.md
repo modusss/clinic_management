@@ -81,7 +81,7 @@ Todos os endpoints abaixo exigem Bearer válido, módulos `field_tracking` + cl�
 | GET | `scheduling/availability` | Serviços e ocupação por período/local/tipo |
 | GET | `scheduling/services/:id` | Serviço selecionado com ocupação atual |
 | GET | `scheduling/patients/lookup?phone=` | Busca exata dentro do escopo de leads permitido |
-| GET | `scheduling/appointments` | Até 100 marcações do usuário/referral autenticado |
+| GET | `scheduling/appointments` | Até 300 marcações atribuídas ao `Referral` autenticado, com comparecimento explícito |
 | GET | `scheduling/appointments/:id` | Detalhe autorizado |
 | POST | `scheduling/appointments` | Novo agendamento idempotente |
 | POST | `scheduling/appointments/:id/reschedule` | Remarcação transacional idempotente |
@@ -105,4 +105,4 @@ Repositório: `/Users/fillypefarias/Desktop/lipepay-field-android`
 
 A tela ativa usa o Room como fonte imediata para rota, precisão, último ponto e fila pendente. O GPS solicita alta precisão a cada 5 segundos, preserva todas as posições entregues pelo Android e envia lotes de 50 pontos. WorkManager sincroniza a fila quando a rede volta. A linha da rota continua visível sem tiles ou internet.
 
-A navegação móvel é **Expediente / Agenda / Marcações / Conta**; o histórico GPS fica dentro de Expediente. Agenda e busca de pacientes são leituras online. Novo agendamento e remarcação nunca são apresentados como confirmados sem resposta do servidor; uma falha de rede mantém a marcação original intacta.
+A navegação móvel é **Expediente / Agenda / Marcações / Conta**; o histórico GPS fica dentro de Expediente. A agenda e a remarcação usam calendário mensal navegável e exibem somente os dias que possuem atendimento aberto. O histórico usa `Invitation#referral_id` como atribuição canônica do captador — inclusive para registros antigos sem `registered_by_user_id` — e informa `Compareceu`, `Não compareceu` ou `Aguardando atendimento`. Agenda e busca de pacientes são leituras online. Novo agendamento e remarcação nunca são apresentados como confirmados sem resposta do servidor; uma falha de rede mantém a marcação original intacta.
