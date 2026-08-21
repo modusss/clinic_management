@@ -31,17 +31,61 @@ module ClinicManagement
 
     # GET /clinic_management/rastreamento/:id
     def show
-      @points = @shift.field_track_points.chronological
+      refresh_active_shift_metrics!
+      load_show_points_context
 
       respond_to do |format|
         format.html
-        format.json do
-          render json: ClinicManagement::FieldTracking::ShiftJsonBuilder.call(@shift, include_points: true)
-        end
+        format.json { render json: shift_json_payload }
       end
     end
 
     private
+
+    def refresh_active_shift_metrics!
+      return unless @shift.active?
+
+      ClinicManagement::FieldTracking::ShiftMetricsRefresher.refresh_if_stale!(@shift)
+      @shift.reload
+    end
+
+    def load_show_points_context
+      @points_count = @shift.points_count.to_i
+      @first_point = @shift.field_track_points.chronological.limit(1).first
+      @last_point = @shift.last_track_point
+      @first_point_stay = compute_first_point_stay if @first_point
+    end
+
+    def compute_first_point_stay
+      stay_points = @shift.field_track_points.chronological.select(
+        :latitude, :longitude, :recorded_at, :accuracy_meters, :speed_mps
+      )
+      ClinicManagement::FieldTracking::StayEstimateCalculator.call(
+        stay_points.to_a,
+        selected_index: 0
+      )
+    end
+
+    def shift_json_payload
+      since = parse_since_param
+      include_points = ActiveModel::Type::Boolean.new.cast(params[:include_points])
+      display_only = ActiveModel::Type::Boolean.new.cast(params[:display])
+
+      ClinicManagement::FieldTracking::ShiftJsonBuilder.call(
+        @shift,
+        include_points: include_points,
+        since: since,
+        display_only: display_only
+      )
+    end
+
+    def parse_since_param
+      return nil if params[:since].blank?
+
+      Time.zone.parse(params[:since])
+    rescue ArgumentError
+      nil
+    end
 
     def active_shifts_scope
       account_shifts_scope.active

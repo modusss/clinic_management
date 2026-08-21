@@ -23,7 +23,7 @@ Base: `{HOST}/clinic_management/rastreamento`
 | GET | `/rastreamento.json` | Manager/owner + flag | JSON para polling do mapa (`LiveSnapshotBuilder`) |
 | GET | `/rastreamento/historico` | Manager/owner + flag | Filtro por captador + data |
 | GET | `/rastreamento/:id` | Manager/owner + flag | Detalhe do expediente + rota no mapa |
-| GET | `/rastreamento/:id.json` | Manager/owner + flag | Pontos GPS (`ShiftJsonBuilder`, `include_points: true`) |
+| GET | `/rastreamento/:id.json` | Manager/owner + flag | Summary JSON (`ShiftJsonBuilder`) — métricas + `last_point`; ver parâmetros abaixo |
 
 ### Controller / services
 
@@ -31,6 +31,21 @@ Base: `{HOST}/clinic_management/rastreamento`
 - `ClinicManagement::FieldTrackingManagerAuthorization` (concern)
 - `ClinicManagement::FieldTracking::LiveSnapshotBuilder`
 - `ClinicManagement::FieldTracking::ShiftJsonBuilder`
+- `ClinicManagement::FieldTracking::ShiftMetricsRefresher`
+- `ClinicManagement::FieldTracking::ShiftMetricsRefreshJob`
+- `ClinicManagement::FieldTracking::RouteDisplaySimplifier`
+- `ClinicManagement::FieldTracking::StayEstimateCalculator`
+
+### JSON do detalhe (`/rastreamento/:id.json`)
+
+| Parâmetro | Comportamento |
+|-----------|---------------|
+| _(default)_ | Summary: métricas, `points_count`, `last_point` — **sem** array de pontos |
+| `include_points=1` | Pontos GPS completos para a linha do tempo |
+| `display=1` | Pontos decimados (até ~400) para desenho rápido do mapa |
+| `since=<iso8601>` | Apenas pontos novos após o timestamp (delta para polling de expediente ativo) |
+
+**ESSENTIAL — métricas em expediente ativo:** `ShiftMetricsRefreshJob` recalcula distância/duração após cada batch GPS. O `show` também chama `ShiftMetricsRefresher.refresh_if_stale!` para garantir cards preenchidos no primeiro paint.
 
 ### Estados operacionais do GPS
 
@@ -53,12 +68,15 @@ O payload ao vivo também inclui `last_update_seconds` e até 120 `recent_points
 - Stimulus (app principal): `app/javascript/controllers/field_tracking_map_controller.js` — atualiza cards, saúde do sinal, marcadores, trajetos e detalhe ativo
 - Leaflet via CDN nas views (não importmap)
 
+**Carregamento do detalhe:** o SSR renderiza métricas, primeiro ponto e permanência estimada imediatamente. O Stimulus busca primeiro `display=1` (mapa rápido), depois `include_points=1` em background (timeline completa). Polls usam summary + `since=` para anexar pontos novos sem baixar a rota inteira.
+
 Nav: link **Equipe em campo** no sidebar staff (`_navbar.html.erb`) e bloco Apenas Clínica (`_clinic_only_nav_links.html.erb`) quando `is_manager_above? && field_tracking_enabled?`.
 
 ### Linha do tempo histórica
 
-O detalhe do expediente reutiliza `/rastreamento/:id.json` para manter a rota
-completa visível e sincronizar o histórico ativo a cada atualização. Um controle
+O detalhe do expediente usa `/rastreamento/:id.json` com modos summary, display e delta.
+A rota completa permanece disponível via `include_points=1`; polls de expediente ativo
+anexam apenas pontos novos com `since=<iso8601>`. Um controle
 `range` nativo percorre os pontos em ordem cronológica; a bolinha temporal, o
 trecho já percorrido, o horário, a posição atual/total, a precisão e a velocidade
 são atualizados juntos. Os botões anterior, próximo e reproduzir/pausar usam a

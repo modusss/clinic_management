@@ -49,6 +49,8 @@ module ClinicManagement
 
         if created.positive?
           @shift.increment!(:points_count, created)
+          # ESSENTIAL: Keep active-shift metrics fresh without blocking the mobile batch response.
+          ClinicManagement::FieldTracking::ShiftMetricsRefreshJob.perform_later(@shift.id)
         end
 
         { created: created, skipped: skipped, points_count: @shift.reload.points_count }

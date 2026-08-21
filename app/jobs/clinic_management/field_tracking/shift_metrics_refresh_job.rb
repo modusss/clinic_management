@@ -2,14 +2,14 @@
 
 module ClinicManagement
   module FieldTracking
-    # ESSENTIAL: Recomputes route metrics when a shift ends (non-blocking via GoodJob).
-    class ShiftSummaryJob < ClinicManagement::ApplicationJob
+    # ESSENTIAL: Non-blocking metrics refresh for active shifts after GPS batch ingestion.
+    class ShiftMetricsRefreshJob < ClinicManagement::ApplicationJob
       queue_as :default
 
       # @param shift_id [Integer]
       def perform(shift_id)
         shift = ClinicManagement::FieldShift.find_by(id: shift_id)
-        return unless shift
+        return unless shift&.active?
 
         ShiftMetricsRefresher.call(shift)
       end

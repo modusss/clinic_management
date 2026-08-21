@@ -6,18 +6,39 @@ module ClinicManagement
     class ShiftJsonBuilder
       # @param shift [ClinicManagement::FieldShift]
       # @param include_points [Boolean]
+      # @param since [Time, nil]
+      # @param display_only [Boolean]
       # @return [Hash]
-      def self.call(shift, include_points: false)
-        new(shift, include_points: include_points).call
+      def self.call(shift, include_points: false, since: nil, display_only: false)
+        new(shift, include_points: include_points, since: since, display_only: display_only).call
       end
 
-      def initialize(shift, include_points: false)
+      def initialize(shift, include_points: false, since: nil, display_only: false)
         @shift = shift
         @include_points = include_points
+        @since = since
+        @display_only = display_only
       end
 
       def call
-        payload = {
+        payload = base_payload
+
+        if @display_only
+          payload[:display_points] = display_points_payload
+        elsif @include_points
+          payload[:points] = points_payload
+        elsif @since.present?
+          payload[:delta_points] = delta_points_payload
+        end
+
+        payload
+      end
+
+      private
+
+      def base_payload
+        last_point = @shift.last_track_point
+        {
           id: @shift.id,
           status: @shift.status,
           referral_id: @shift.referral_id,
@@ -29,17 +50,39 @@ module ClinicManagement
           avg_speed_kmh: @shift.avg_speed_kmh&.to_f,
           avg_accuracy_meters: @shift.avg_accuracy_meters&.to_f,
           device_metadata: @shift.device_metadata,
-          ended_reason: @shift.ended_reason
+          ended_reason: @shift.ended_reason,
+          last_point: last_point_hash(last_point)
         }
-
-        if @include_points
-          payload[:points] = @shift.field_track_points.chronological.map { |point| point_json(point) }
-        end
-
-        payload
       end
 
-      private
+      def points_payload
+        @shift.field_track_points.chronological.map { |point| point_json(point) }
+      end
+
+      def delta_points_payload
+        return [] unless @since.present?
+
+        @shift.field_track_points
+              .where("recorded_at > ?", @since)
+              .order(recorded_at: :asc)
+              .map { |point| point_json(point) }
+      end
+
+      def display_points_payload
+        points = @shift.field_track_points.chronological.to_a
+        RouteDisplaySimplifier.call(points).map { |point| point_json(point) }
+      end
+
+      def last_point_hash(point)
+        return nil unless point
+
+        {
+          latitude: point.latitude.to_f,
+          longitude: point.longitude.to_f,
+          recorded_at: point.recorded_at.iso8601,
+          accuracy_meters: point.accuracy_meters&.to_f
+        }
+      end
 
       def point_json(point)
         {
