@@ -7,9 +7,15 @@
   { title: @shift.referral&.name.presence || "Expediente" }
 ) %>
 
+<% initial_route_point = @points.last %>
+
 <div class="field-tracking-page field-tracking-detail"
      data-controller="field-tracking-map"
      data-field-tracking-map-points-url-value="<%= clinic_management.field_tracking_shift_path(@shift, format: :json) %>"
+     <% if initial_route_point %>
+       data-field-tracking-map-initial-latitude-value="<%= initial_route_point.latitude %>"
+       data-field-tracking-map-initial-longitude-value="<%= initial_route_point.longitude %>"
+     <% end %>
      data-field-tracking-map-poll-interval-value="30000">
   <div class="field-tracking-detail__overview">
     <div class="field-tracking-detail__header">
@@ -41,17 +47,90 @@
   <div class="field-tracking-map-card field-tracking-show-map-card">
     <div class="field-tracking-map-card__header">
       <div>
-        <strong>Rota registrada</strong>
-        <span><b data-field-tracking-map-target="pointsCount"><%= @points.size %></b> pontos GPS · atualização automática</span>
+        <strong>Linha do tempo da rota</strong>
+        <span>Arraste o controle para acompanhar posição, horário e permanência aproximada.</span>
       </div>
-      <% if @shift.active? %>
-        <span class="field-tracking-signal field-tracking-signal--fresh">Expediente ativo</span>
-      <% end %>
+      <span class="field-tracking-timeline__point-count">
+        <b data-field-tracking-map-target="pointsCount"><%= @points.size %></b> pontos GPS
+      </span>
     </div>
+
     <div class="field-tracking-map field-tracking-map--show"
          data-field-tracking-map-target="map"
          role="region"
-         aria-label="Mapa da rota do expediente"></div>
+         aria-label="Mapa da linha do tempo do expediente"></div>
+
+    <section class="field-tracking-timeline" aria-label="Controles da linha do tempo da rota">
+        <div class="field-tracking-timeline__summary" aria-live="polite">
+          <div>
+            <span class="field-tracking-timeline__eyebrow">Posição selecionada</span>
+            <strong class="field-tracking-timeline__timestamp" data-field-tracking-map-target="timestamp">
+              <%= @points.first ? l(@points.first.recorded_at, format: :long) : "Aguardando GPS" %>
+            </strong>
+          </div>
+          <span class="field-tracking-timeline__position" data-field-tracking-map-target="position">
+            <%= @points.any? ? "Ponto 1 de #{@points.size}" : "Nenhum ponto recebido" %>
+          </span>
+        </div>
+
+        <div class="field-tracking-timeline__transport">
+          <button type="button"
+                  class="field-tracking-timeline__step-button"
+                  data-action="field-tracking-map#previousPoint"
+                  data-field-tracking-map-target="previousButton"
+                  <%= "disabled" if @points.size <= 1 %>
+                  aria-label="Voltar um ponto">
+            <i class="fas fa-step-backward" aria-hidden="true"></i>
+          </button>
+          <button type="button"
+                  class="field-tracking-timeline__play-button"
+                  data-action="field-tracking-map#togglePlayback"
+                  data-field-tracking-map-target="playButton"
+                  <%= "disabled" if @points.size <= 1 %>
+                  aria-pressed="false">
+            <i class="fas fa-play" data-field-tracking-map-target="playIcon" aria-hidden="true"></i>
+            <span data-field-tracking-map-target="playLabel">Reproduzir</span>
+          </button>
+          <button type="button"
+                  class="field-tracking-timeline__step-button"
+                  data-action="field-tracking-map#nextPoint"
+                  data-field-tracking-map-target="nextButton"
+                  <%= "disabled" if @points.size <= 1 %>
+                  aria-label="Avançar um ponto">
+            <i class="fas fa-step-forward" aria-hidden="true"></i>
+          </button>
+
+          <input type="range"
+                 class="field-tracking-timeline__slider"
+                 min="0"
+                 max="<%= [@points.size - 1, 0].max %>"
+                 value="0"
+                 step="1"
+                 <%= "disabled" if @points.size <= 1 %>
+                 data-action="input->field-tracking-map#seek change->field-tracking-map#seek"
+                 data-field-tracking-map-target="slider"
+                 aria-label="Posição na linha do tempo da rota">
+        </div>
+
+        <dl class="field-tracking-timeline__details">
+          <div class="field-tracking-timeline__detail">
+            <dt><i class="fas fa-hourglass-half" aria-hidden="true"></i> Permanência aproximada</dt>
+            <dd data-field-tracking-map-target="stayDuration"><%= @points.any? ? "Calculando…" : "Aguardando GPS" %></dd>
+          </div>
+          <div class="field-tracking-timeline__detail">
+            <dt><i class="fas fa-crosshairs" aria-hidden="true"></i> Precisão do GPS</dt>
+            <dd data-field-tracking-map-target="selectedAccuracy">—</dd>
+          </div>
+          <div class="field-tracking-timeline__detail">
+            <dt><i class="fas fa-person-walking" aria-hidden="true"></i> Velocidade registrada</dt>
+            <dd data-field-tracking-map-target="selectedSpeed">—</dd>
+          </div>
+        </dl>
+
+        <p class="field-tracking-timeline__disclaimer">
+          A permanência é uma estimativa baseada na sequência de pontos próximos e na precisão informada pelo aparelho.
+        </p>
+    </section>
   </div>
 </div>
 

@@ -55,6 +55,32 @@ O payload ao vivo também inclui `last_update_seconds` e até 120 `recent_points
 
 Nav: link **Equipe em campo** no sidebar staff (`_navbar.html.erb`) e bloco Apenas Clínica (`_clinic_only_nav_links.html.erb`) quando `is_manager_above? && field_tracking_enabled?`.
 
+### Linha do tempo histórica
+
+O detalhe do expediente reutiliza `/rastreamento/:id.json` para manter a rota
+completa visível e sincronizar o histórico ativo a cada atualização. Um controle
+`range` nativo percorre os pontos em ordem cronológica; a bolinha temporal, o
+trecho já percorrido, o horário, a posição atual/total, a precisão e a velocidade
+são atualizados juntos. Os botões anterior, próximo e reproduzir/pausar usam a
+mesma seleção e continuam acessíveis por teclado.
+
+Rotas extensas avançam em passos proporcionais durante a reprodução automática,
+para concluir a animação em aproximadamente um minuto sem remover pontos do
+controle manual.
+
+A primeira carga do mapa ocorre mesmo quando a aba iniciou em segundo plano.
+Falhas transitórias recebem retry curto e limitado; ao voltar para a aba, o
+payload é atualizado imediatamente e o Leaflet recalcula o tamanho do container
+antes de reaplicar os limites geográficos. No detalhe, a última coordenada
+renderizada pelo servidor serve como centro inicial até o JSON chegar.
+
+**Permanência aproximada:** para o ponto selecionado, o frontend expande a
+sequência contínua de amostras dentro de um raio entre 25 e 60 metros, calibrado
+pela precisão do aparelho. Registros com velocidade superior a `0.8 m/s` são
+tratados como deslocamento; lacunas superiores a cinco minutos nunca são somadas.
+O texto preserva a palavra **aproximada**, pois GPS não comprova presença exata
+em um endereço. Com uma única amostra, a duração é mostrada como não estimável.
+
 ## API (MVP — Fase 1)
 
 Base: `{HOST}/clinic_management/api/v1/field/`
@@ -106,3 +132,22 @@ Repositório: `/Users/fillypefarias/Desktop/lipepay-field-android`
 A tela ativa usa o Room como fonte imediata para rota, precisão, último ponto e fila pendente. O GPS solicita alta precisão a cada 5 segundos, preserva todas as posições entregues pelo Android e envia lotes de 50 pontos. WorkManager sincroniza a fila quando a rede volta. A linha da rota continua visível sem tiles ou internet.
 
 A navegação móvel é **Expediente / Agenda / Marcações / Conta**; o histórico GPS fica dentro de Expediente. A agenda e a remarcação usam calendário mensal navegável e exibem somente os dias que possuem atendimento aberto. O histórico usa `Invitation#referral_id` como atribuição canônica do captador — inclusive para registros antigos sem `registered_by_user_id` — e informa `Compareceu`, `Não compareceu` ou `Aguardando atendimento`. Agenda e busca de pacientes são leituras online. Novo agendamento e remarcação nunca são apresentados como confirmados sem resposta do servidor; uma falha de rede mantém a marcação original intacta.
+
+## Seed local — Vitória da Conquista
+
+O host LPóticas possui `db/seeds/field_tracking_dev.rb`, restrito a
+development/test. O seed habilita `field_tracking_enabled` na conta escolhida,
+cria um gestor local, dois captadores fictícios e três expedientes sintéticos:
+
+- Praça Tancredo Neves → Shopping Conquista Sul, concluído e com paradas;
+- Avenida Olívia Flores → UESB, concluído e com parada de exame simulada;
+- Avenida Olívia Flores, ativo e com último ponto recente para o mapa ao vivo.
+
+```bash
+bin/rails runner db/seeds/field_tracking_dev.rb
+ACCOUNT_ID=3 bin/rails runner db/seeds/field_tracking_dev.rb
+```
+
+O comando é idempotente por `device_metadata.seed_key` e UUID determinístico.
+As coordenadas intermediárias são simulação de desenvolvimento; nenhuma API
+externa é chamada.
