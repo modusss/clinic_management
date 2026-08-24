@@ -2,7 +2,7 @@ require 'ostruct'
 
 module ClinicManagement
   class LeadsController < ApplicationController
-    before_action :set_lead, only: %i[ show edit update destroy ]
+    before_action :set_lead, only: %i[ show edit update destroy lpvoz_call ]
     before_action :set_menu, only: %i[ index absent attended cancelled ]
     before_action :set_referral, only: %i[ index absent attended cancelled ]
     skip_before_action :redirect_referral_users
@@ -642,6 +642,27 @@ module ClinicManagement
         format.html { render :absent }
         format.html { render :absent_download if params[:view] == 'download' }
       end
+    end
+
+    def lpvoz_call
+      unless is_operator_above?
+        return redirect_to absent_leads_path, alert: "Seu perfil não pode iniciar ligações."
+      end
+
+      connection = ClinicManagement::LpvozConnection.active.find_by(account: current_account)
+      return redirect_to(lpvoz_integration_path, alert: "Conecte o LPVoz antes de iniciar ligações.") unless connection
+
+      appointment = @lead.appointments.joins(:service).order("clinic_management_services.date DESC, clinic_management_appointments.id DESC").first!
+      existing = connection.lpvoz_operations.where(lead: @lead).where(status: %w[queued dispatching accepted in_progress]).recent_first.first
+      operation = existing || connection.lpvoz_operations.create!(
+        account: current_account,
+        lead: @lead,
+        appointment:
+      )
+      ClinicManagement::Lpvoz::DispatchOperationJob.perform_later(operation.id) unless existing
+      redirect_to absent_leads_path, notice: existing ? "Já existe uma ligação em andamento para este paciente." : "Ligação enviada ao LPVoz."
+    rescue ActiveRecord::RecordNotFound
+      redirect_to absent_leads_path, alert: "Não foi possível localizar a falta deste paciente."
     end
     
     # POST /leads/send_bulk_messages
@@ -1607,6 +1628,12 @@ module ClinicManagement
         .includes(:prescription, :service, invitation: :referral)
         .index_by(&:id)
 
+      lpvoz_operations = if context == "absent" && defined?(ClinicManagement::LpvozOperation) && current_account
+        ClinicManagement::LpvozOperation.where(account: current_account, lead_id: leads.map(&:id)).recent_first.group_by(&:lead_id).transform_values(&:first)
+      else
+        {}
+      end
+
       leads.map.with_index do |lead, index|
         last_invitation = lead.invitations.max_by(&:id)
         
@@ -1726,7 +1753,15 @@ module ClinicManagement
           {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: get_full_appointment.call, message: "" }), id: "appointment-comments-#{last_appointment.id}"},
           {header: "Último atendimento", content: service_content_link(get_full_appointment.call), class: "nowrap"},
           {header: "Remarcação", content: reschedule_form(new_appointment, get_full_appointment.call), class: "text-orange-500" },
-        ]
+          ({
+            header: "LPVoz",
+            content: render_to_string(
+              partial: "clinic_management/leads/lpvoz_action",
+              locals: { lead:, operation: lpvoz_operations[lead.id] }
+            ).html_safe,
+            class: "nowrap"
+          } if context == "absent")
+        ].compact
       end
     end
     

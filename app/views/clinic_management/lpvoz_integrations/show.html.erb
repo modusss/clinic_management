@@ -1,0 +1,58 @@
+<% content_for :title, "Integração LPVoz" %>
+
+<div class="max-w-5xl mx-auto px-4 py-8">
+  <div class="mb-6">
+    <p class="text-sm font-semibold text-emerald-700">Administração / Integrações</p>
+    <h1 class="mt-2 text-3xl font-black text-slate-950">Integração LPVoz</h1>
+    <p class="mt-2 text-slate-600">Autorize o LPVoz a consultar e atualizar somente os dados necessários desta conta.</p>
+  </div>
+
+  <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <header class="flex flex-col gap-4 border-b border-slate-200 p-6 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-4">
+        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-600 text-lg font-black text-white">LP</div>
+        <div>
+          <h2 class="text-2xl font-black">LPVoz</h2>
+          <p class="text-sm font-semibold <%= @connection.active? ? 'text-emerald-700' : 'text-slate-500' %>">
+            <%= @connection.active? ? "Conectado" : "Não conectado" %>
+          </p>
+        </div>
+      </div>
+      <% unless @connection.active? %>
+        <%= button_to "Permitir integração", enable_lpvoz_integration_path, class: "rounded-xl bg-emerald-700 px-5 py-3 font-bold text-white" %>
+      <% end %>
+    </header>
+
+    <div class="p-6">
+      <h3 class="text-lg font-black">Permissões</h3>
+      <div class="mt-4 space-y-3">
+        <% [["Consultar paciente", "Apenas contexto mínimo da falta"], ["Consultar horários", "Somente horários livres e compatíveis"], ["Remarcar atendimento", "Somente após confirmação verbal explícita"]].each do |title, description| %>
+          <div class="flex items-start gap-3 rounded-xl border border-emerald-100 bg-emerald-50/40 p-4">
+            <span class="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-700 text-sm text-white">✓</span>
+            <div><p class="font-bold"><%= title %></p><p class="text-sm text-slate-600"><%= description %></p></div>
+          </div>
+        <% end %>
+      </div>
+
+      <% unless @connection.active? %>
+        <div class="mt-7 border-t border-slate-200 pt-6">
+          <h3 class="text-lg font-black">Conectar</h3>
+          <p class="mt-1 text-sm text-slate-600">Gere o código, copie e informe-o junto com a URL desta instalação no LPVoz. Ele expira em 10 minutos e só pode ser usado uma vez.</p>
+          <% if @pairing_code.present? %>
+            <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <code class="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-2xl font-black tracking-widest text-emerald-900"><%= @pairing_code %></code>
+              <span class="rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">Expira às <%= l(@connection.pairing_expires_at, format: "%H:%M") %></span>
+            </div>
+          <% end %>
+          <div class="mt-4"><%= button_to(@pairing_code.present? ? "Gerar outro" : "Gerar código temporário", generate_pairing_code_lpvoz_integration_path, class: "rounded-xl bg-blue-700 px-5 py-3 font-bold text-white") %></div>
+        </div>
+      <% else %>
+        <div class="mt-7 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">
+          <p class="font-bold">Conexão ativa e validada</p>
+          <p class="mt-1 text-sm">O LPÓticas continua validando todas as consultas e alterações. Nenhuma credencial é enviada ao navegador ou ao ElevenLabs.</p>
+        </div>
+        <div class="mt-5"><%= button_to "Revogar acesso", lpvoz_integration_path, method: :delete, data: { turbo_confirm: "Revogar o acesso do LPVoz?" }, class: "rounded-xl border border-rose-300 px-5 py-3 font-bold text-rose-700" %></div>
+      <% end %>
+    </div>
+  </section>
+</div>

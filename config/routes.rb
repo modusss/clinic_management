@@ -145,6 +145,7 @@ ClinicManagement::Engine.routes.draw do
   resources :service_types
   resources :leads do
     member do
+      post :lpvoz_call
       post :record_message_sent
       post :verify_whatsapp
       patch :hide_from_absent
@@ -168,6 +169,27 @@ ClinicManagement::Engine.routes.draw do
       post 'cancel_scheduled_message'
       get 'load_scheduled_messages'
       delete 'clear_all_scheduled_messages'
+    end
+  end
+
+  resource :lpvoz_integration,
+           only: :show,
+           path: "integracoes/lpvoz",
+           controller: "lpvoz_integrations" do
+    post :enable
+    post :generate_pairing_code
+    delete :revoke
+  end
+
+  namespace :api do
+    namespace :lpvoz do
+      namespace :v1 do
+        post "pairings/exchange", to: "pairings#exchange"
+        get "operations/:id/context", to: "operations#context"
+        get "operations/:id/availability", to: "operations#availability"
+        post "operations/:id/reschedule", to: "operations#reschedule"
+        post "events", to: "events#create"
+      end
     end
   end
   post 'build_message/:lead_id', to: 'lead_messages#build_message', as: 'build_message'

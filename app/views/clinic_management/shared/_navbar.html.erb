@@ -334,6 +334,9 @@
         class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'leads'}" %>
     <% end %>
     <% if is_manager_above? %>
+      <%= link_to "Integração LPVoz",
+          clinic_management.lpvoz_integration_path,
+          class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'lpvoz_integrations'}" %>
       <%= link_to "Convites", clinic_management.invitations_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'invitations'}" %>
       <%= link_to "Tipos de serviço", clinic_management.service_types_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'service_types'}" %>
       <% if field_tracking_enabled? %>
