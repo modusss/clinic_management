@@ -15,7 +15,7 @@ module ClinicManagement
 
     def generate_pairing_code
       @pairing_code = @connection.generate_pairing_code!
-      render :show, status: :ok
+      render :show, formats: :html, status: :ok
     end
 
     def revoke
