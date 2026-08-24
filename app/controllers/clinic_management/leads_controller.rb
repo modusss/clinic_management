@@ -651,7 +651,7 @@ module ClinicManagement
         return redirect_to return_path, alert: "Integração LPVoz não está habilitada para esta conta."
       end
 
-      unless is_operator_above?
+      unless lpvoz_call_allowed?
         return redirect_to return_path, alert: "Seu perfil não pode iniciar ligações."
       end
 
@@ -1576,7 +1576,7 @@ module ClinicManagement
       current_referral = helpers.user_referral if helpers.referral?(current_user)
 
       appointments = @lead.appointments.includes(:invitation, :service).order('clinic_management_services.date DESC')
-      show_lpvoz_actions = lpvoz_integration_enabled? && is_operator_above?
+      show_lpvoz_actions = lpvoz_integration_enabled? && lpvoz_call_allowed?
       lpvoz_operations = if show_lpvoz_actions
         ClinicManagement::LpvozOperation
           .where(account: current_account, appointment_id: appointments.map(&:id))
@@ -1676,7 +1676,8 @@ module ClinicManagement
         .includes(:prescription, :service, invitation: :referral)
         .index_by(&:id)
 
-      lpvoz_operations = if context == "absent" && lpvoz_integration_enabled? && defined?(ClinicManagement::LpvozOperation)
+      show_lpvoz_actions = context == "absent" && lpvoz_integration_enabled? && lpvoz_call_allowed?
+      lpvoz_operations = if show_lpvoz_actions && defined?(ClinicManagement::LpvozOperation)
         ClinicManagement::LpvozOperation.where(account: current_account, lead_id: leads.map(&:id)).recent_first.group_by(&:lead_id).transform_values(&:first)
       else
         {}
@@ -1808,7 +1809,7 @@ module ClinicManagement
               locals: { lead:, operation: lpvoz_operations[lead.id] }
             ).html_safe,
             class: "nowrap"
-          } if context == "absent" && lpvoz_integration_enabled?)
+          } if show_lpvoz_actions)
         ].compact
       end
     end

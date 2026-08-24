@@ -170,6 +170,17 @@ module ClinicManagement
     end
     helper_method :lpvoz_integration_enabled?
 
+    # ESSENTIAL: Starting calls is a staff-only operation. Resolve the role for
+    # the active account instead of relying on memberships.first/last, which can
+    # point to another tenant for users linked to more than one account.
+    def lpvoz_call_allowed?
+      current_user&.memberships&.where(
+        account: current_account,
+        role: %w[operator manager owner]
+      )&.exists? || false
+    end
+    helper_method :lpvoz_call_allowed?
+
     # ESSENTIAL: Service location context for multi-region support.
     # nil = internal (default); ServiceLocation = external.
     # Persists in session + cookie so selection survives page refresh.
