@@ -645,28 +645,42 @@ module ClinicManagement
     end
 
     def lpvoz_call
+      return_path = params[:appointment_id].present? ? lead_path(@lead, anchor: "ultimos-atendimentos") : absent_leads_path
+
       unless lpvoz_integration_enabled?
-        return redirect_to absent_leads_path, alert: "Integração LPVoz não está habilitada para esta conta."
+        return redirect_to return_path, alert: "Integração LPVoz não está habilitada para esta conta."
       end
 
       unless is_operator_above?
-        return redirect_to absent_leads_path, alert: "Seu perfil não pode iniciar ligações."
+        return redirect_to return_path, alert: "Seu perfil não pode iniciar ligações."
       end
 
       connection = ClinicManagement::LpvozConnection.active.find_by(account: current_account)
       return redirect_to(lpvoz_integration_path, alert: "Conecte o LPVoz antes de iniciar ligações.") unless connection
 
-      appointment = @lead.appointments.joins(:service).order("clinic_management_services.date DESC, clinic_management_appointments.id DESC").first!
-      existing = connection.lpvoz_operations.where(lead: @lead).where(status: %w[queued dispatching accepted in_progress]).recent_first.first
+      unless @lead.phone.to_s.gsub(/\D/, "").length.in?([10, 11])
+        return redirect_to return_path, alert: "Cadastre um telefone válido antes de iniciar a ligação."
+      end
+
+      appointment = if params[:appointment_id].present?
+        @lead.appointments.find(params[:appointment_id])
+      else
+        @lead.appointments.joins(:service).order("clinic_management_services.date DESC, clinic_management_appointments.id DESC").first!
+      end
+      existing = connection.lpvoz_operations
+        .where(lead: @lead, appointment:)
+        .where(status: %w[queued dispatching accepted in_progress])
+        .recent_first
+        .first
       operation = existing || connection.lpvoz_operations.create!(
         account: current_account,
         lead: @lead,
         appointment:
       )
       ClinicManagement::Lpvoz::DispatchOperationJob.perform_later(operation.id) unless existing
-      redirect_to absent_leads_path, notice: existing ? "Já existe uma ligação em andamento para este paciente." : "Ligação enviada ao LPVoz."
+      redirect_to return_path, notice: existing ? "Já existe uma ligação em andamento para este atendimento." : "Ligação enviada ao LPVoz."
     rescue ActiveRecord::RecordNotFound
-      redirect_to absent_leads_path, alert: "Não foi possível localizar a falta deste paciente."
+      redirect_to return_path, alert: "Não foi possível localizar o atendimento deste paciente."
     end
     
     # POST /leads/send_bulk_messages
@@ -1562,6 +1576,16 @@ module ClinicManagement
       current_referral = helpers.user_referral if helpers.referral?(current_user)
 
       appointments = @lead.appointments.includes(:invitation, :service).order('clinic_management_services.date DESC')
+      show_lpvoz_actions = lpvoz_integration_enabled? && is_operator_above?
+      lpvoz_operations = if show_lpvoz_actions
+        ClinicManagement::LpvozOperation
+          .where(account: current_account, appointment_id: appointments.map(&:id))
+          .includes(:lpvoz_connection)
+          .recent_first
+          .each_with_object({}) { |operation, memo| memo[operation.appointment_id] ||= operation }
+      else
+        {}
+      end
 
       appointments.map.with_index do |ap, index|
         invitation = ap.invitation
@@ -1579,19 +1603,39 @@ module ClinicManagement
             class: "nowrap size_20 patient-name"
           },          
           {header: "Data do atendimento", content: service_content_link(ap), class: "nowrap"},
-          {header: "Horário definido", content: ap.scheduled_time_label, class: "nowrap"},
+          {header: "Horário definido", content: ap.scheduled_time_label, class: "nowrap"}
+        ]
+
+        if show_lpvoz_actions
+          row << {
+            header: "LPVoz",
+            content: render_to_string(
+              partial: "clinic_management/leads/lpvoz_action",
+              locals: { lead: @lead, appointment: ap, operation: lpvoz_operations[ap.id] }
+            ).html_safe,
+            class: "nowrap"
+          }
+        end
+
+        row.concat([
           {header: "Cancelar?", content: helpers.cancel_attendance_button(ap), id: "cancel-attendance-button-#{ap.id}", class: "pt-2 pb-0"},
-          {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: ap, message: "" }), id: "appointment-comments-#{ap.id}"},                   
+          {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: ap, message: "" }), id: "appointment-comments-#{ap.id}"}
+        ])
+
+        unless helpers.referral?(current_user)
+          row << {header: "Receita", content: prescription_link(ap), class: "nowrap"}
+        end
+
+        row.concat([
           {header: "Remarcação", content: reschedule_form(new_appointment, ap), class: "text-orange-500"},
           {header: "Comparecimento", content: (ap.attendance == true ? "Sim" : "Não"), class: helpers.attendance_class(ap)},
           {header: "Status", content: ap.status, id: "status-#{ap.id}", class: "size_20 " + helpers.status_class(ap)},
           {header: "Data do convite", content: invitation&.created_at&.strftime("%d/%m/%Y")},
           {header: "Região", content: invitation&.region&.name},
           {header: "Mensagem", content: generate_message_content(@lead, ap, 'show'), id: "whatsapp-link-#{@lead.id}"}
-        ]
+        ])
 
         unless helpers.referral?(current_user)
-          row.insert(6, {header: "Receita", content: prescription_link(ap), class: "nowrap"})
           row << {header: "Convidado por", content: invitation&.referral&.name}
           #row << {header: "Mensagem", content: generate_message_content(@lead, ap), id: "whatsapp-link-#{@lead.id}"}
         end
