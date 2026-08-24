@@ -645,6 +645,10 @@ module ClinicManagement
     end
 
     def lpvoz_call
+      unless lpvoz_integration_enabled?
+        return redirect_to absent_leads_path, alert: "Integração LPVoz não está habilitada para esta conta."
+      end
+
       unless is_operator_above?
         return redirect_to absent_leads_path, alert: "Seu perfil não pode iniciar ligações."
       end
@@ -1628,7 +1632,7 @@ module ClinicManagement
         .includes(:prescription, :service, invitation: :referral)
         .index_by(&:id)
 
-      lpvoz_operations = if context == "absent" && defined?(ClinicManagement::LpvozOperation) && current_account
+      lpvoz_operations = if context == "absent" && lpvoz_integration_enabled? && defined?(ClinicManagement::LpvozOperation)
         ClinicManagement::LpvozOperation.where(account: current_account, lead_id: leads.map(&:id)).recent_first.group_by(&:lead_id).transform_values(&:first)
       else
         {}
@@ -1760,7 +1764,7 @@ module ClinicManagement
               locals: { lead:, operation: lpvoz_operations[lead.id] }
             ).html_safe,
             class: "nowrap"
-          } if context == "absent")
+          } if context == "absent" && lpvoz_integration_enabled?)
         ].compact
       end
     end

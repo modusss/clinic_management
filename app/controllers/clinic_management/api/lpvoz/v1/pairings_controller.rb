@@ -11,6 +11,9 @@ module ClinicManagement
               pairing_code_digest: ClinicManagement::LpvozConnection.digest(code)
             )
             return render json: { error: "Código temporário inválido ou expirado." }, status: :unprocessable_entity unless connection
+            unless connection.account.lpvoz_integration_available?
+              return render json: { error: "Integração LPVoz não está habilitada para esta conta." }, status: :forbidden
+            end
 
             connection.exchange_pairing!(
               code:,

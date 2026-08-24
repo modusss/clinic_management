@@ -2,6 +2,7 @@
 
 module ClinicManagement
   class LpvozIntegrationsController < ApplicationController
+    before_action :require_lpvoz_feature
     before_action :require_manager
     before_action :set_connection
 
@@ -23,6 +24,12 @@ module ClinicManagement
     end
 
     private
+
+    def require_lpvoz_feature
+      return if lpvoz_integration_enabled?
+
+      redirect_to root_path, alert: "Integração LPVoz não está habilitada para esta conta."
+    end
 
     def require_manager
       return if is_manager_above?

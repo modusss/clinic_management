@@ -7,6 +7,7 @@ module ClinicManagement
         class BaseController < ActionController::API
           before_action :authenticate_connection
           before_action :verify_signature
+          before_action :require_feature_enabled
 
           private
 
@@ -29,6 +30,13 @@ module ClinicManagement
               secret: connection.shared_secret
             )
             render json: { error: "Assinatura inválida ou expirada." }, status: :unauthorized unless valid
+          end
+
+          def require_feature_enabled
+            return unless connection
+            return if connection.account.lpvoz_integration_available?
+
+            render json: { error: "Integração LPVoz não está habilitada para esta conta." }, status: :forbidden
           end
 
           def require_permission!(permission)

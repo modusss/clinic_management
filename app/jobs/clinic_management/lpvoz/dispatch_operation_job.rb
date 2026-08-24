@@ -8,6 +8,10 @@ module ClinicManagement
       def perform(operation_id)
         operation = ClinicManagement::LpvozOperation.find(operation_id)
         return if operation.terminal? || operation.voice_operation_id.present?
+        unless operation.account.lpvoz_integration_available?
+          operation.update!(status: :failed, last_error: "Integração LPVoz desabilitada para a conta.", completed_at: Time.current)
+          return
+        end
 
         operation.update!(status: :dispatching, started_at: operation.started_at || Time.current)
         response = ClinicManagement::Lpvoz::Client.new(connection: operation.lpvoz_connection).create_operation(operation)

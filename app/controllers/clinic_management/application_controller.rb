@@ -164,6 +164,12 @@ module ClinicManagement
     end
     helper_method :field_tracking_enabled?
 
+    # ESSENTIAL: LPVoz UI and actions are opt-in per tenant and require the clinic module.
+    def lpvoz_integration_enabled?
+      current_account&.lpvoz_integration_available? || false
+    end
+    helper_method :lpvoz_integration_enabled?
+
     # ESSENTIAL: Service location context for multi-region support.
     # nil = internal (default); ServiceLocation = external.
     # Persists in session + cookie so selection survives page refresh.

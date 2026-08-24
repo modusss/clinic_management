@@ -12,6 +12,10 @@ module ClinicManagement
       end
 
       def create_operation(operation)
+        unless connection.account.lpvoz_integration_available?
+          raise RequestFailed, "Integração LPVoz desabilitada para a conta."
+        end
+
         post(
           "/internal/v1/voice_operations",
           {
