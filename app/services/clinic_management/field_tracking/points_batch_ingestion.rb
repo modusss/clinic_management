@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "set"
+
 module ClinicManagement
   module FieldTracking
     # Ingests up to 100 GPS points idempotently for an active shift.
@@ -33,18 +35,30 @@ module ClinicManagement
 
         created = 0
         skipped = 0
+        seen_client_point_ids = Set.new
+        normalized_points = @points.filter_map { |raw| normalize_point(raw) }
+        existing_client_point_ids = load_existing_client_point_ids(
+          normalized_points.map { |point| point[:client_point_id] }
+        )
 
-        @points.each do |raw|
-          attrs = normalize_point(raw)
-          next if attrs.nil?
+        normalized_points.each do |attrs|
+          client_point_id = attrs[:client_point_id]
 
-          if duplicate?(attrs[:client_point_id])
+          if seen_client_point_ids.include?(client_point_id) || existing_client_point_ids.include?(client_point_id)
             skipped += 1
             next
           end
 
-          @shift.field_track_points.create!(attrs)
-          created += 1
+          begin
+            @shift.field_track_points.create!(attrs)
+            created += 1
+            seen_client_point_ids.add(client_point_id)
+            existing_client_point_ids.add(client_point_id)
+          rescue ActiveRecord::RecordNotUnique
+            # ESSENTIAL: Mobile retries can race past the pre-check — unique index is the final guard.
+            skipped += 1
+            existing_client_point_ids.add(client_point_id)
+          end
         end
 
         if created.positive?
@@ -58,8 +72,11 @@ module ClinicManagement
 
       private
 
-      def duplicate?(client_point_id)
-        @shift.field_track_points.exists?(client_point_id: client_point_id)
+      def load_existing_client_point_ids(client_point_ids)
+        ids = client_point_ids.compact.uniq
+        return Set.new if ids.empty?
+
+        @shift.field_track_points.where(client_point_id: ids).pluck(:client_point_id).to_set
       end
 
       def normalize_point(raw)
