@@ -39,17 +39,10 @@ module ClinicManagement
             scope = ClinicManagement::Service.upcoming
               .where(date: from..to, service_location_id: source.service_location_id)
             scope = scope.where(service_type_id: source.service_type_id) if source.service_type_id.present?
-            slots = scope.includes(:appointments, :service_location, :service_type).order(:date, :start_time).flat_map do |service|
-              service.available_appointment_times.map do |time|
-                {
-                  service_id: service.id.to_s,
-                  scheduled_at: time.iso8601,
-                  label: I18n.l(time, format: "%d/%m às %H:%M"),
-                  location: service.service_location&.name || "Interno"
-                }
-              end
-            end
-            render json: { operation_reference: operation.public_id, slots: slots.first(12) }
+            services = scope.includes(:appointments, :service_location, :service_type).order(:date, :start_time)
+            slots = ClinicManagement::Lpvoz::AvailabilitySlots.new(services:).call
+
+            render json: { operation_reference: operation.public_id, slots: }
           rescue ArgumentError, Date::Error => error
             render json: { error: error.message }, status: :unprocessable_entity
           end
