@@ -35,9 +35,17 @@
     <button type="button" class="mt-1 font-bold text-blue-700 underline" onclick="document.getElementById('<%= drawer_id %>').showModal()">Ver resultado</button>
   </div>
 <% elsif operation.needs_attention? %>
-  <div class="text-sm"><p class="font-bold text-amber-700">Precisa de atenção</p><p class="text-slate-600"><%= operation.result["summary"].presence || "Revisão necessária" %></p><button type="button" class="mt-1 font-bold text-blue-700 underline" onclick="document.getElementById('<%= drawer_id %>').showModal()">Revisar</button></div>
+  <div class="text-sm">
+    <p class="font-bold text-amber-700">Precisa de atenção</p>
+    <p class="lpvoz-operation-summary text-slate-600"><%= operation.result["summary"].presence || "Revisão necessária" %></p>
+    <button type="button" class="mt-1 font-bold text-blue-700 underline" onclick="document.getElementById('<%= drawer_id %>').showModal()">Revisar</button>
+  </div>
 <% else %>
-  <div class="text-sm"><p class="font-bold text-slate-700"><%= operation.failed? ? "Falha" : "Concluída" %></p><p class="max-w-52 text-slate-500"><%= operation.result["summary"].presence || operation.last_error.presence || "Sem remarcação" %></p><button type="button" class="mt-1 font-bold text-blue-700 underline" onclick="document.getElementById('<%= drawer_id %>').showModal()">Ver resultado</button></div>
+  <div class="text-sm">
+    <p class="font-bold text-slate-700"><%= operation.failed? ? "Falha" : "Concluída" %></p>
+    <p class="lpvoz-operation-summary text-slate-500"><%= operation.result["summary"].presence || operation.last_error.presence || "Sem remarcação" %></p>
+    <button type="button" class="mt-1 font-bold text-blue-700 underline" onclick="document.getElementById('<%= drawer_id %>').showModal()">Ver resultado</button>
+  </div>
 <% end %>
 
 <% if appointment.present? && operation&.terminal? && callable_phone %>
@@ -63,7 +71,7 @@
         <% if operation.result["scheduled_at"].present? %>
           <p class="mt-3 text-3xl font-black text-slate-950"><%= l(Time.zone.parse(operation.result["scheduled_at"]), format: "%d/%m às %H:%M") rescue operation.result["scheduled_at"] %></p>
         <% end %>
-        <p class="mt-5 rounded-xl bg-slate-50 p-4 text-slate-700"><%= operation.result["summary"].presence || operation.last_error.presence || "Operação concluída sem observações adicionais." %></p>
+        <p class="mt-5 whitespace-normal break-words rounded-xl bg-slate-50 p-4 text-slate-700"><%= operation.result["summary"].presence || operation.last_error.presence || "Operação concluída sem observações adicionais." %></p>
         <% if operation.result["rescheduled"] %>
           <p class="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 font-bold text-emerald-800">Agendamento validado pelo LPÓticas.</p>
         <% end %>

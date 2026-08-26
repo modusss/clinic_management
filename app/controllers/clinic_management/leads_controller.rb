@@ -1613,7 +1613,7 @@ module ClinicManagement
               partial: "clinic_management/leads/lpvoz_action",
               locals: { lead: @lead, appointment: ap, operation: lpvoz_operations[ap.id] }
             ).html_safe,
-            class: "nowrap"
+            class: "lpvoz-table-cell"
           }
         end
 
