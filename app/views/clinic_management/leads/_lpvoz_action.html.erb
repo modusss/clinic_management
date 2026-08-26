@@ -5,11 +5,13 @@
 <% phone_label = add_phone_mask(phone_digits) %>
 <% call_params = appointment.present? ? { appointment_id: appointment.id } : {} %>
 <% appointment_label = appointment&.service&.date&.strftime("%d/%m/%Y") %>
+<% operation_dom_id = operation.present? ? "lpvoz-operation-#{operation.public_id}" : "lpvoz-operation-appointment-#{appointment&.id || 'latest'}" %>
 <% confirmation_message = if appointment.present?
      "Iniciar agora uma ligação da Clara para #{phone_label}, usando o atendimento de #{appointment_label} como contexto?"
    else
      "Iniciar agora uma ligação da Clara para #{phone_label}?"
    end %>
+<div id="<%= operation_dom_id %>"<%= ' data-controller="lpvoz-operation-status"'.html_safe if operation&.status&.in?(%w[queued dispatching accepted in_progress]) %>>
 <% if operation.blank? %>
   <% if callable_phone %>
     <%= button_to appointment.present? ? "Ligar com Clara" : "Ligar",
@@ -82,3 +84,4 @@
     </div>
   </dialog>
 <% end %>
+</div>
