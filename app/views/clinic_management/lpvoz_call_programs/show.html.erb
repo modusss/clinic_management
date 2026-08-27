@@ -56,16 +56,25 @@
   <section class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
     <header class="border-b border-slate-200">
       <nav class="flex gap-6 px-5 pt-4 text-sm font-bold" aria-label="Seções da programação">
-        <span class="border-b-2 border-blue-700 px-1 pb-3 text-blue-700">Fila</span>
-        <span class="px-1 pb-3 text-slate-500">Resultados</span>
+        <%= link_to "Fila", lpvoz_call_program_path(@program, view: "queue"), class: "px-1 pb-3 #{@view == 'queue' ? 'border-b-2 border-blue-700 text-blue-700' : 'text-slate-500 hover:text-blue-700'}" %>
+        <%= link_to "Resultados", lpvoz_call_program_path(@program, view: "results"), class: "px-1 pb-3 #{@view == 'results' ? 'border-b-2 border-blue-700 text-blue-700' : 'text-slate-500 hover:text-blue-700'}" %>
         <%= link_to "Configuração", edit_lpvoz_call_program_path(@program), class: "px-1 pb-3 text-slate-500 hover:text-blue-700" %>
       </nav>
     </header>
 
-    <div class="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
-      <span class="inline-flex w-fit rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-600">Todos os estados</span>
-      <label class="relative block sm:w-80"><span class="sr-only">Buscar paciente</span><i class="fas fa-search absolute left-3 top-3.5 text-slate-400" aria-hidden="true"></i><input type="search" placeholder="Buscar paciente ou telefone..." class="w-full rounded-xl border border-slate-300 py-3 pl-10 pr-4"></label>
-    </div>
+    <%= form_with url: lpvoz_call_program_path(@program), method: :get, local: true, class: "flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between" do %>
+      <%= hidden_field_tag :view, @view %>
+      <%= select_tag :status,
+          options_for_select([["Todos os estados", ""]] + ClinicManagement::LpvozOperation.statuses.keys.map { |status| [ClinicManagement::LpvozCallProgramsHelper::OPERATION_STATUS_LABELS.fetch(status), status] }, params[:status]),
+          class: "browser-default w-fit rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-600",
+          onchange: "this.form.requestSubmit()",
+          aria: { label: "Filtrar por estado LPVoz" } %>
+      <label class="relative block sm:w-80">
+        <span class="sr-only">Buscar paciente</span>
+        <i class="fas fa-search absolute left-3 top-3.5 text-slate-400" aria-hidden="true"></i>
+        <%= search_field_tag :q, params[:q], placeholder: "Buscar paciente ou telefone...", class: "w-full rounded-xl border border-slate-300 py-3 pl-10 pr-4" %>
+      </label>
+    <% end %>
 
     <% if @operations.any? %>
       <div class="overflow-x-auto">
@@ -78,7 +87,7 @@
               <tr>
                 <td class="px-5 py-4"><p class="font-bold text-slate-900"><%= operation.lead.name %></p><p class="mt-1 text-xs text-slate-500"><%= add_phone_mask(operation.lead.phone) %></p></td>
                 <td class="px-5 py-4 text-slate-600"><%= l(operation.appointment.service.date, format: "%d/%m/%Y") %> · <%= operation.appointment.scheduled_time_label %></td>
-                <td class="px-5 py-4 text-slate-600"><%= @program.lpvoz_operations.where(lead_id: operation.lead_id).where("created_at <= ?", operation.created_at).count %>ª</td>
+                <td class="px-5 py-4 text-slate-600"><%= operation[:attempt_number] %>ª</td>
                 <td class="px-5 py-4"><span class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold <%= lpvoz_operation_status_classes(operation) %>"><span class="h-2 w-2 rounded-full bg-current"></span><%= lpvoz_operation_status_label(operation) %></span></td>
                 <td class="max-w-lg px-5 py-4 text-slate-600"><p class="line-clamp-2"><%= lpvoz_operation_result(operation) %></p><p class="mt-1 text-xs text-slate-400"><%= l(operation.created_at, format: "%d/%m às %H:%M") %></p></td>
                 <td class="px-5 py-4 text-right"><%= link_to operation.lpvoz_detail_url.present? ? "Abrir" : "Ver paciente", operation.lpvoz_detail_url.presence || lead_path(operation.lead), target: operation.lpvoz_detail_url.present? ? "_blank" : nil, rel: operation.lpvoz_detail_url.present? ? "noopener" : nil, class: "inline-flex rounded-lg border border-blue-300 px-4 py-2 font-bold text-blue-700" %></td>

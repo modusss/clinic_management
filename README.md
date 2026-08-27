@@ -13,7 +13,12 @@ O piloto de recuperação de pacientes ausentes inclui:
 - APIs `v1` autenticadas por HMAC e idempotência;
 - remarcação transacional que reutiliza as regras existentes de agenda;
 - ledger de callbacks e projeção assíncrona por GoodJob;
-- estado e ação LPVoz na lista de pacientes ausentes.
+- estado e ação LPVoz na lista de pacientes ausentes;
+- programações por manager/owner com agente ElevenLabs publicado, dias,
+  múltiplas janelas, filtros clínicos e limite diário;
+- executor sequencial que revalida elegibilidade e mantém no máximo uma
+  operação ativa por programação, sem repetir o mesmo paciente na conta durante
+  o mesmo dia local.
 
 A interface de conexão fica em `/clinic_management/integracoes/lpvoz`. O
 contrato canônico está em

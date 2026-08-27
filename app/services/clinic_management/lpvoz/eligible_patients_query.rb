@@ -5,8 +5,9 @@ module ClinicManagement
     class EligiblePatientsQuery
       SUPPORTED_LPVOZ_STATUSES = %w[never_called no_answer technical_failure].freeze
 
-      def initialize(program:)
+      def initialize(program:, now: Time.current)
         @program = program
+        @now = now
       end
 
       def relation
@@ -23,10 +24,10 @@ module ClinicManagement
 
       private
 
-      attr_reader :program
+      attr_reader :program, :now
 
       def base_relation
-        one_year_ago = Date.current - 1.year
+        one_year_ago = current_date - 1.year
         recently_attended = ClinicManagement::Appointment
           .joins(:service)
           .where(
@@ -43,7 +44,7 @@ module ClinicManagement
           .joins("LEFT JOIN clinic_management_lpvoz_operations AS latest_lpvop ON latest_lpvop.id = (#{latest_operation_subquery})")
           .select("clinic_management_leads.*", "main_apt.id AS current_appointment_id", "main_svc.date AS service_date")
           .where.not(id: recently_attended)
-          .where("main_svc.date < ?", Date.current)
+          .where("main_svc.date < ?", current_date)
           .where("main_apt.status IS NULL OR main_apt.status NOT IN (?)", %w[cancelado remarcado])
           .where("clinic_management_leads.phone ~ ?", "^[0-9]{10,11}$")
           .where.not(id: attempted_today_subquery)
@@ -64,13 +65,13 @@ module ClinicManagement
         when "absent"
           scope.where("main_apt.attendance = ?", false)
         when "attended_year_ago"
-          scope.where("main_apt.attendance = ? AND main_svc.date < ?", true, Date.current - 1.year)
+          scope.where("main_apt.attendance = ? AND main_svc.date < ?", true, current_date - 1.year)
         else
           scope.where(
             "(main_apt.attendance = ? OR (main_apt.attendance = ? AND main_svc.date < ?))",
             false,
             true,
-            Date.current - 1.year
+            current_date - 1.year
           )
         end
       end
@@ -79,7 +80,7 @@ module ClinicManagement
         days = Integer(filters["period_days"], exception: false)
         return scope unless days&.positive?
 
-        scope.where("main_svc.date >= ?", Date.current - days.days)
+        scope.where("main_svc.date >= ?", current_date - days.days)
       end
 
       def apply_region(scope)
@@ -166,11 +167,13 @@ module ClinicManagement
       end
 
       def attempted_today_subquery
-        return ClinicManagement::LpvozOperation.none.select(:lead_id) unless program.persisted?
-
-        program.lpvoz_operations
-          .where(created_at: program.local_day_range)
+        ClinicManagement::LpvozOperation
+          .where(account_id: program.account_id, created_at: program.local_day_range(now))
           .select(:lead_id)
+      end
+
+      def current_date
+        @current_date ||= now.in_time_zone(program.time_zone).to_date
       end
     end
   end

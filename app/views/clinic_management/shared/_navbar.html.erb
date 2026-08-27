@@ -333,12 +333,14 @@
         session[:absent_leads_state] || clinic_management.absent_leads_path,
         class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'leads'}" %>
     <% end %>
-    <% if is_manager_above? %>
+    <% if lpvoz_program_management_allowed? %>
       <% if lpvoz_integration_enabled? %>
       <%= link_to "Integração LPVoz",
           clinic_management.lpvoz_integration_path,
           class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name.in?(%w[lpvoz_integrations lpvoz_call_programs])}" %>
       <% end %>
+    <% end %>
+    <% if is_manager_above? %>
       <%= link_to "Convites", clinic_management.invitations_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'invitations'}" %>
       <%= link_to "Tipos de serviço", clinic_management.service_types_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'service_types'}" %>
       <% if field_tracking_enabled? %>

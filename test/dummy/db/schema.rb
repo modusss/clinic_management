@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_05_24_201817) do
+ActiveRecord::Schema[7.0].define(version: 2026_08_27_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -62,6 +62,29 @@ ActiveRecord::Schema[7.0].define(version: 2023_05_24_201817) do
     t.datetime "updated_at", null: false
     t.integer "last_appointment_id"
     t.index ["last_appointment_id"], name: "index_clinic_management_leads_on_last_appointment_id"
+  end
+
+  create_table "clinic_management_lpvoz_call_programs", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "lpvoz_connection_id", null: false
+    t.bigint "created_by_id"
+    t.string "name", null: false
+    t.string "agent_key", null: false
+    t.string "status", default: "draft", null: false
+    t.string "time_zone", default: "America/Bahia", null: false
+    t.jsonb "weekdays", default: [1, 2, 3, 4, 5], null: false
+    t.jsonb "time_windows", default: [{"end"=>"12:00", "start"=>"08:00"}, {"end"=>"17:00", "start"=>"13:00"}], null: false
+    t.jsonb "filters", default: {}, null: false
+    t.integer "daily_limit", default: 100, null: false
+    t.datetime "activated_at"
+    t.datetime "paused_at"
+    t.datetime "last_dispatched_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "status"], name: "idx_cm_lpvoz_programs_account_status"
+    t.index ["account_id"], name: "index_clinic_management_lpvoz_call_programs_on_account_id"
+    t.index ["created_by_id"], name: "index_clinic_management_lpvoz_call_programs_on_created_by_id"
+    t.index ["lpvoz_connection_id"], name: "idx_cm_lpvoz_programs_connection"
   end
 
   create_table "clinic_management_regions", force: :cascade do |t|

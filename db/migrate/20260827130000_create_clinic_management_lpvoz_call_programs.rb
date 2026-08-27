@@ -2,12 +2,19 @@
 
 class CreateClinicManagementLpvozCallPrograms < ActiveRecord::Migration[7.0]
   def change
+    connection_foreign_key = if table_exists?(:clinic_management_lpvoz_connections)
+      { to_table: :clinic_management_lpvoz_connections }
+    else
+      false
+    end
+    user_foreign_key = table_exists?(:users) ? { to_table: :users } : false
+
     create_table :clinic_management_lpvoz_call_programs do |t|
-      t.references :account, null: false, foreign_key: true
+      t.references :account, null: false, foreign_key: table_exists?(:accounts)
       t.references :lpvoz_connection, null: false,
-                   foreign_key: { to_table: :clinic_management_lpvoz_connections },
+                   foreign_key: connection_foreign_key,
                    index: { name: "idx_cm_lpvoz_programs_connection" }
-      t.references :created_by, null: true, foreign_key: { to_table: :users }
+      t.references :created_by, null: true, foreign_key: user_foreign_key
       t.string :name, null: false
       t.string :agent_key, null: false
       t.string :status, null: false, default: "draft"
@@ -26,10 +33,12 @@ class CreateClinicManagementLpvozCallPrograms < ActiveRecord::Migration[7.0]
     add_index :clinic_management_lpvoz_call_programs, [:account_id, :status],
               name: "idx_cm_lpvoz_programs_account_status"
 
-    add_reference :clinic_management_lpvoz_operations, :lpvoz_call_program,
-                  null: true,
-                  foreign_key: { to_table: :clinic_management_lpvoz_call_programs },
-                  index: { name: "idx_cm_lpvoz_operations_program" }
-    add_column :clinic_management_lpvoz_operations, :agent_key, :string
+    if table_exists?(:clinic_management_lpvoz_operations)
+      add_reference :clinic_management_lpvoz_operations, :lpvoz_call_program,
+                    null: true,
+                    foreign_key: { to_table: :clinic_management_lpvoz_call_programs },
+                    index: { name: "idx_cm_lpvoz_operations_program" }
+      add_column :clinic_management_lpvoz_operations, :agent_key, :string
+    end
   end
 end

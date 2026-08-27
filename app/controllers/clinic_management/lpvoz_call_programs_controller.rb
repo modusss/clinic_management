@@ -14,8 +14,39 @@ module ClinicManagement
     end
 
     def show
-      @operations = @program.lpvoz_operations
+      @view = params[:view].in?(%w[queue results]) ? params[:view] : "queue"
+      operations = @program.lpvoz_operations
         .includes(:lead, appointment: :service)
+        .select(
+          "clinic_management_lpvoz_operations.*",
+          <<~SQL.squish
+            (
+              SELECT COUNT(*)
+              FROM clinic_management_lpvoz_operations prior_operation
+              WHERE prior_operation.lpvoz_call_program_id = clinic_management_lpvoz_operations.lpvoz_call_program_id
+                AND prior_operation.lead_id = clinic_management_lpvoz_operations.lead_id
+                AND (
+                  prior_operation.created_at < clinic_management_lpvoz_operations.created_at
+                  OR (
+                    prior_operation.created_at = clinic_management_lpvoz_operations.created_at
+                    AND prior_operation.id <= clinic_management_lpvoz_operations.id
+                  )
+                )
+            ) AS attempt_number
+          SQL
+        )
+      operations = operations.where(status: LpvozCallProgram::TERMINAL_OPERATION_STATUSES) if @view == "results"
+      if params[:status].in?(ClinicManagement::LpvozOperation.statuses.keys)
+        operations = operations.where(status: params[:status])
+      end
+      if params[:q].present?
+        query = "%#{ActiveRecord::Base.sanitize_sql_like(params[:q].strip)}%"
+        operations = operations.joins(:lead).where(
+          "clinic_management_leads.name ILIKE :query OR clinic_management_leads.phone ILIKE :query",
+          query:
+        )
+      end
+      @operations = operations
         .recent_first
         .page(params[:page])
         .per(25)
@@ -106,7 +137,7 @@ module ClinicManagement
     end
 
     def require_manager
-      return if is_manager_above?
+      return if lpvoz_program_management_allowed?
 
       redirect_to root_path, alert: "Apenas gestores podem configurar programações de ligação."
     end
@@ -127,9 +158,11 @@ module ClinicManagement
     end
 
     def load_available_agents
+      @agent_catalog_available = true
       @available_agents = ClinicManagement::Lpvoz::Client.new(connection: @connection).available_agents
     rescue ClinicManagement::Lpvoz::Client::RequestFailed, KeyError => error
       Rails.logger.warn("[LPVoz programs] Agent catalog unavailable: #{error.message}")
+      @agent_catalog_available = false
       @available_agents = [{
         "key" => @connection.agent_key,
         "name" => "Agente conectado",
@@ -139,7 +172,7 @@ module ClinicManagement
     end
 
     def agent_available?(agent_key)
-      Array(@available_agents).any? { |agent| agent["key"] == agent_key }
+      @agent_catalog_available && Array(@available_agents).any? { |agent| agent["key"] == agent_key }
     end
 
     def program_params

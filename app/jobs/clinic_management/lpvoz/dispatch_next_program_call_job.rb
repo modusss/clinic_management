@@ -21,7 +21,7 @@ module ClinicManagement
           close_stale_operations(program, now:)
           return if program.active_operation?
 
-          candidate = ClinicManagement::Lpvoz::EligiblePatientsQuery.new(program:).next_candidate
+          candidate = ClinicManagement::Lpvoz::EligiblePatientsQuery.new(program:, now:).next_candidate
           return unless candidate
 
           appointment = ClinicManagement::Appointment.find(candidate.current_appointment_id)

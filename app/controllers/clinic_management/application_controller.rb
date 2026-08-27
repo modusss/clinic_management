@@ -181,6 +181,17 @@ module ClinicManagement
     end
     helper_method :lpvoz_call_allowed?
 
+    # ESSENTIAL: Program configuration is privileged per active tenant. A user
+    # may hold different roles in different accounts, so never use the first
+    # membership to authorize this screen.
+    def lpvoz_program_management_allowed?
+      current_user&.memberships&.where(
+        account: current_account,
+        role: %w[manager owner]
+      )&.exists? || false
+    end
+    helper_method :lpvoz_program_management_allowed?
+
     # ESSENTIAL: Service location context for multi-region support.
     # nil = internal (default); ServiceLocation = external.
     # Persists in session + cookie so selection survives page refresh.

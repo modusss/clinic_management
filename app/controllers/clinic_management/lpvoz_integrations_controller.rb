@@ -48,7 +48,7 @@ module ClinicManagement
     end
 
     def require_manager
-      return if is_manager_above?
+      return if lpvoz_program_management_allowed?
 
       redirect_to root_path, alert: "Apenas gestores podem configurar esta integração."
     end
