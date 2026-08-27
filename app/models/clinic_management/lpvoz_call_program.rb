@@ -19,6 +19,7 @@ module ClinicManagement
     }.freeze
     ACTIVE_OPERATION_STATUSES = %w[queued dispatching accepted in_progress].freeze
     TERMINAL_OPERATION_STATUSES = %w[completed failed needs_attention canceled].freeze
+    ANSWERED_EVENT_TYPES = %w[call.answered call.in_progress].freeze
 
     belongs_to :account, class_name: "::Account"
     belongs_to :lpvoz_connection, class_name: "ClinicManagement::LpvozConnection"
@@ -71,8 +72,20 @@ module ClinicManagement
       lpvoz_operations.where(created_at: local_day_range(time)).count
     end
 
+    # The operational ceiling represents conversations actually answered, not
+    # dial attempts. One operation can receive duplicate/out-of-order provider
+    # callbacks, hence the distinct operation count.
+    def answered_calls_today(time = Time.current)
+      lpvoz_operations
+        .where(created_at: local_day_range(time))
+        .joins(:lpvoz_events)
+        .where(clinic_management_lpvoz_events: { event_type: ANSWERED_EVENT_TYPES })
+        .distinct
+        .count
+    end
+
     def daily_limit_reached?(time = Time.current)
-      calls_today(time) >= daily_limit
+      answered_calls_today(time) >= daily_limit
     end
 
     def active_operation?

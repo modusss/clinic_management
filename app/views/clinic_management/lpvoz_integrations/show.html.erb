@@ -91,12 +91,12 @@
               </thead>
               <tbody class="divide-y divide-slate-100 bg-white">
                 <% @programs.each do |program| %>
-                  <% calls_today = program.lpvoz_operations.count { |operation| program.local_day_range.cover?(operation.created_at) } %>
+                  <% answered_calls_today = program.answered_calls_today %>
                   <tr>
                     <td class="px-5 py-4"><p class="font-bold text-slate-900"><%= program.name %></p><p class="mt-1 text-xs text-slate-500"><%= program.filters["patient_type"] == "absent" ? "Ausentes do último atendimento" : "Público personalizado" %></p></td>
                     <td class="px-5 py-4 font-semibold text-slate-700"><%= lpvoz_program_agent_label(program, @available_agents) %></td>
                     <td class="px-5 py-4 text-slate-600"><%= lpvoz_program_schedule(program) %></td>
-                    <td class="px-5 py-4"><p class="font-bold text-slate-800"><%= calls_today %> de <%= program.daily_limit %></p><div class="mt-2 h-1.5 w-28 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-blue-600" style="width: <%= [calls_today * 100 / program.daily_limit, 100].min %>%"></div></div></td>
+                    <td class="px-5 py-4"><p class="font-bold text-slate-800"><%= answered_calls_today %> de <%= program.daily_limit %> atendidas</p><div class="mt-2 h-1.5 w-28 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-blue-600" style="width: <%= [answered_calls_today * 100 / program.daily_limit, 100].min %>%"></div></div></td>
                     <td class="px-5 py-4"><span class="inline-flex rounded-full border px-3 py-1 text-xs font-bold <%= lpvoz_program_status_classes(program) %>"><%= lpvoz_program_status_label(program) %></span></td>
                     <td class="px-5 py-4 text-right"><%= link_to "Abrir", lpvoz_call_program_path(program), class: "inline-flex rounded-lg border border-blue-300 px-4 py-2 font-bold text-blue-700 hover:bg-blue-50" %></td>
                   </tr>

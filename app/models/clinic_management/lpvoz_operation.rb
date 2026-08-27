@@ -27,6 +27,7 @@ module ClinicManagement
     before_validation :assign_public_id, on: :create
     before_validation :assign_idempotency_key, on: :create
     before_validation :assign_agent_key, on: :create
+    after_update_commit :enqueue_next_program_call, if: :became_terminal_program_operation?
 
     validates :public_id, :idempotency_key, presence: true, uniqueness: true
     validates :agent_key, format: { with: /\A[a-z0-9]+(?:-[a-z0-9]+)*\z/ }
@@ -58,6 +59,25 @@ module ClinicManagement
 
     def assign_agent_key
       self.agent_key ||= lpvoz_call_program&.agent_key || lpvoz_connection&.agent_key
+    end
+
+    # Continue the program as soon as the current call reaches a terminal
+    # state. The minute cron remains a recovery mechanism for restarts and
+    # missed callbacks, rather than the primary continuation mechanism.
+    def enqueue_next_program_call
+      return unless lpvoz_call_program&.active?
+
+      ClinicManagement::Lpvoz::DispatchNextProgramCallJob
+        .set(wait: 5.seconds)
+        .perform_later(lpvoz_call_program_id)
+    end
+
+    def became_terminal_program_operation?
+      return false if lpvoz_call_program_id.blank? || !saved_change_to_status?
+
+      previous_status, current_status = saved_change_to_status
+      current_status.in?(LpvozCallProgram::TERMINAL_OPERATION_STATUSES) &&
+        !previous_status.in?(LpvozCallProgram::TERMINAL_OPERATION_STATUSES)
     end
 
     def tenant_matches_connection
