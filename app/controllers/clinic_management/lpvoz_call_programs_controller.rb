@@ -193,7 +193,10 @@ module ClinicManagement
       when "technical_failure"
         scope.where("result ->> 'classification' = 'technical_failure' OR NULLIF(result ->> 'provider_error', '') IS NOT NULL")
       when "attention"
-        scope.where(status: %w[failed needs_attention])
+        scope.where(
+          "status IN (?) OR result ->> 'classification' = 'technical_failure' OR NULLIF(result ->> 'provider_error', '') IS NOT NULL",
+          %w[failed needs_attention]
+        )
       else
         scope
       end

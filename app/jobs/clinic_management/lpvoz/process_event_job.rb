@@ -60,6 +60,7 @@ module ClinicManagement
         ).compact
         operation.update!(
           voice_operation_id: payload["voice_operation_id"].presence || operation.voice_operation_id,
+          agent_key: operation.agent_key.presence || operation.lpvoz_connection.agent_key,
           status: next_status,
           result:,
           last_error: quota_exceeded ? "Cota do ElevenLabs esgotada." : operation.last_error,
