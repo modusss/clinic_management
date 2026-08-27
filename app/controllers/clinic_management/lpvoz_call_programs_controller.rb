@@ -194,8 +194,13 @@ module ClinicManagement
         scope.where("result ->> 'classification' = 'technical_failure' OR NULLIF(result ->> 'provider_error', '') IS NOT NULL")
       when "attention"
         scope.where(
-          "status IN (?) OR result ->> 'classification' = 'technical_failure' OR NULLIF(result ->> 'provider_error', '') IS NOT NULL",
-          %w[failed needs_attention]
+          <<~SQL.squish,
+            (status IN (:statuses) OR result ->> 'classification' = 'technical_failure' OR NULLIF(result ->> 'provider_error', '') IS NOT NULL)
+            AND COALESCE(result ->> 'classification', '') NOT IN ('no_answer', 'voicemail', 'confirmed')
+            AND NOT (result @> :rescheduled OR result #>> '{collected_data,integration_result}' = 'rescheduled')
+          SQL
+          statuses: %w[failed needs_attention],
+          rescheduled: { rescheduled: true }.to_json
         )
       else
         scope

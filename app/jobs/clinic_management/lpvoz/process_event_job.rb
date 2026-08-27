@@ -40,7 +40,9 @@ module ClinicManagement
         quota_exceeded = quota_exceeded?(data)
         candidate = "needs_attention" if quota_exceeded
         pause_program_for_quota!(operation) if quota_exceeded
-        next_status = if operation.terminal?
+        next_status = if refinable_outcome?(operation, event, data)
+          candidate
+        elsif operation.terminal?
           operation.status
         elsif STATUS_RANK.fetch(candidate) >= STATUS_RANK.fetch(operation.status)
           candidate
@@ -110,6 +112,12 @@ module ClinicManagement
 
         program.pause!
         Rails.logger.error("[LPVoz programs] Program #{program.id} paused: ElevenLabs quota exceeded")
+      end
+
+      def refinable_outcome?(operation, event, data)
+        operation.needs_attention? &&
+          event.event_type == "call.outcome_ready" &&
+          data["needs_review"] == false
       end
     end
   end

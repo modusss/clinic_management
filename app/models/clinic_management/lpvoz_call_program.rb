@@ -80,6 +80,10 @@ module ClinicManagement
         .where(created_at: local_day_range(time))
         .joins(:lpvoz_events)
         .where(clinic_management_lpvoz_events: { event_type: ANSWERED_EVENT_TYPES })
+        .where(
+          "result ->> 'classification' IS NULL OR result ->> 'classification' NOT IN (?)",
+          %w[no_answer voicemail]
+        )
         .distinct
         .count
     end
