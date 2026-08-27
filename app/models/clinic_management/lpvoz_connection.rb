@@ -14,6 +14,7 @@ module ClinicManagement
     belongs_to :account, class_name: "::Account"
     has_many :lpvoz_operations, dependent: :restrict_with_error
     has_many :lpvoz_events, dependent: :restrict_with_error
+    has_many :lpvoz_call_programs, dependent: :restrict_with_error
 
     enum :status, { pending: "pending", active: "active", revoked: "revoked" },
          default: :pending,

@@ -1,0 +1,3 @@
+<% content_for :title, "Editar programação de ligações" %>
+<% breadcrumb({ title: "Integração LPVoz", path: lpvoz_integration_path }, { title: @program.name, path: lpvoz_call_program_path(@program) }, { title: "Editar" }) %>
+<%= render "form", program: @program %>

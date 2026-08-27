@@ -1,0 +1,140 @@
+<% filters = ClinicManagement::LpvozCallProgram::DEFAULT_FILTERS.merge(program.filters.to_h.stringify_keys) %>
+<% weekday_labels = [[1, "Seg"], [2, "Ter"], [3, "Qua"], [4, "Qui"], [5, "Sex"], [6, "Sáb"], [0, "Dom"]] %>
+
+<div class="mx-auto max-w-7xl px-4 py-8"
+     data-controller="lpvoz-call-program-form"
+     data-lpvoz-call-program-form-preview-url-value="<%= preview_lpvoz_call_programs_path %>">
+  <header class="mb-6">
+    <p class="text-sm font-semibold text-emerald-700">Integração LPVoz / <%= program.persisted? ? "Editar programação" : "Nova programação" %></p>
+    <h1 class="mt-2 text-3xl font-black text-slate-950"><%= program.persisted? ? "Editar programação de ligações" : "Nova programação de ligações" %></h1>
+    <p class="mt-2 text-slate-600">Defina quando, para quem e com qual agente o LPVoz realizará as ligações.</p>
+  </header>
+
+  <ol class="mb-6 flex flex-wrap items-center gap-3 text-sm font-bold text-slate-500" aria-label="Etapas da configuração">
+    <% ["Configuração", "Público", "Limites", "Revisão"].each_with_index do |label, index| %>
+      <li class="flex items-center gap-2 <%= index.zero? ? 'text-blue-700' : '' %>">
+        <span class="flex h-8 w-8 items-center justify-center rounded-full border <%= index.zero? ? 'border-blue-700 bg-blue-700 text-white' : 'border-slate-300 bg-white' %>"><%= index + 1 %></span>
+        <span><%= label %></span>
+        <% unless index == 3 %><span class="mx-2 hidden h-px w-12 bg-slate-300 sm:block" aria-hidden="true"></span><% end %>
+      </li>
+    <% end %>
+  </ol>
+
+  <%= form_with model: program,
+                local: true,
+                html: { data: { lpvoz_call_program_form_target: "form", action: "change->lpvoz-call-program-form#schedulePreview" } } do |form| %>
+    <% if program.errors.any? %>
+      <div class="mb-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800" role="alert">
+        <p class="font-bold">Revise os campos abaixo:</p>
+        <ul class="mt-2 list-disc space-y-1 pl-5 text-sm"><% program.errors.full_messages.each do |message| %><li><%= message %></li><% end %></ul>
+      </div>
+    <% end %>
+
+    <div class="grid gap-5 xl:grid-cols-5">
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+        <h2 class="text-lg font-black text-slate-950">Agente e identificação</h2>
+        <div class="mt-5">
+          <%= form.label :name, "Nome da programação", class: "block text-sm font-bold text-slate-700" %>
+          <%= form.text_field :name, required: true, maxlength: 120, placeholder: "Ex.: Ausentes recentes — Interno", class: "mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+        </div>
+        <div class="mt-5">
+          <%= form.label :agent_key, "Agente LPVoz", class: "block text-sm font-bold text-slate-700" %>
+          <%= form.select :agent_key,
+              @available_agents.map { |agent| ["#{agent['name']}#{agent['version'].present? ? " · versão ativa v#{agent['version']}" : ''}", agent['key']] },
+              {},
+              class: "browser-default mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3" %>
+        </div>
+        <div class="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+          <p class="font-bold">Versão ativa do agente</p>
+          <p class="mt-1">A versão marcada como oficial no LPVoz será resolvida novamente no momento de cada ligação.</p>
+        </div>
+      </section>
+
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-3">
+        <h2 class="text-lg font-black text-slate-950">Quando ligar</h2>
+        <div class="mt-5">
+          <p class="text-sm font-bold text-slate-700">Dias da semana</p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <% weekday_labels.each do |value, label| %>
+              <label class="cursor-pointer">
+                <%= check_box_tag "lpvoz_call_program[weekdays][]", value, program.weekdays.include?(value), class: "peer sr-only" %>
+                <span class="inline-flex min-w-14 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-600 peer-checked:border-blue-600 peer-checked:bg-blue-50 peer-checked:text-blue-700"><%= label %></span>
+              </label>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="mt-5 grid gap-5 lg:grid-cols-3">
+          <div>
+            <%= form.label :time_zone, "Fuso horário", class: "block text-sm font-bold text-slate-700" %>
+            <%= form.select :time_zone, [["Bahia · America/Bahia", "America/Bahia"], ["Brasília · America/Sao_Paulo", "America/Sao_Paulo"]], {}, class: "browser-default mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3" %>
+          </div>
+          <div class="lg:col-span-2">
+            <p class="text-sm font-bold text-slate-700">Janelas de ligação</p>
+            <div class="mt-2 space-y-3" data-lpvoz-call-program-form-target="windows">
+              <% program.time_windows.each do |window| %>
+                <div class="grid grid-cols-[1fr_1fr_auto] gap-2" data-lpvoz-call-program-form-target="window">
+                  <label><span class="sr-only">Início</span><input type="time" name="lpvoz_call_program[time_windows][][start]" value="<%= window['start'] %>" required class="w-full rounded-xl border border-slate-300 px-3 py-3"></label>
+                  <label><span class="sr-only">Fim</span><input type="time" name="lpvoz_call_program[time_windows][][end]" value="<%= window['end'] %>" required class="w-full rounded-xl border border-slate-300 px-3 py-3"></label>
+                  <button type="button" data-action="lpvoz-call-program-form#removeWindow" class="rounded-xl border border-rose-200 px-3 font-bold text-rose-700" aria-label="Remover janela">Remover</button>
+                </div>
+              <% end %>
+            </div>
+            <template data-lpvoz-call-program-form-target="windowTemplate">
+              <div class="grid grid-cols-[1fr_1fr_auto] gap-2" data-lpvoz-call-program-form-target="window">
+                <label><span class="sr-only">Início</span><input type="time" name="lpvoz_call_program[time_windows][][start]" value="08:00" required class="w-full rounded-xl border border-slate-300 px-3 py-3"></label>
+                <label><span class="sr-only">Fim</span><input type="time" name="lpvoz_call_program[time_windows][][end]" value="12:00" required class="w-full rounded-xl border border-slate-300 px-3 py-3"></label>
+                <button type="button" data-action="lpvoz-call-program-form#removeWindow" class="rounded-xl border border-rose-200 px-3 font-bold text-rose-700" aria-label="Remover janela">Remover</button>
+              </div>
+            </template>
+            <button type="button" data-action="lpvoz-call-program-form#addWindow" class="mt-3 rounded-lg border border-blue-300 px-4 py-2 text-sm font-bold text-blue-700">＋ Adicionar janela</button>
+          </div>
+        </div>
+        <p class="mt-5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">Nenhuma ligação será iniciada fora dessas janelas.</p>
+      </section>
+    </div>
+
+    <section class="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 class="text-lg font-black text-slate-950">Público-alvo</h2>
+      <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <label class="block"><span class="text-sm font-bold text-slate-700">Tipo de paciente</span><%= select_tag "lpvoz_call_program[filters][patient_type]", options_for_select([["Ausente último atendimento", "absent"], ["Compareceu há mais de 1 ano", "attended_year_ago"], ["Todos os elegíveis", "all"]], filters["patient_type"]), class: "browser-default mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3" %></label>
+        <label class="block"><span class="text-sm font-bold text-slate-700">Período</span><%= select_tag "lpvoz_call_program[filters][period_days]", options_for_select([["Últimos 30 dias", "30"], ["Últimos 90 dias", "90"], ["Últimos 180 dias", "180"], ["Último ano", "365"], ["Todo o histórico", "all"]], filters["period_days"]), class: "browser-default mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3" %></label>
+        <label class="block"><span class="text-sm font-bold text-slate-700">Região</span><%= select_tag "lpvoz_call_program[filters][region_id]", options_for_select([["Todas as regiões", ""]] + @regions.map { |region| [region.name, region.id] }, filters["region_id"]), class: "browser-default mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3" %></label>
+        <label class="block"><span class="text-sm font-bold text-slate-700">Local</span><%= select_tag "lpvoz_call_program[filters][service_location_id]", options_for_select([["Interno", ""], ["Todos externos", "all"], ["Qualquer local", "any"]] + @service_locations.map { |location| [location.name, location.id] }, filters["service_location_id"]), class: "browser-default mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3" %></label>
+        <label class="block"><span class="text-sm font-bold text-slate-700">Status de interesse</span><%= select_tag "lpvoz_call_program[filters][interest_status]", options_for_select([["Disponível", "visible"], ["Sem interesse", "no_interest"], ["Telefone errado", "wrong_phone"]], filters["interest_status"]), class: "browser-default mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3" %></label>
+      </div>
+
+      <div class="mt-5 grid gap-5 lg:grid-cols-[1fr_240px]">
+        <div>
+          <p class="text-sm font-bold text-slate-700">Status LPVoz</p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <% [["never_called", "Nunca chamado"], ["no_answer", "Não atendeu"], ["technical_failure", "Falha técnica"]].each do |value, label| %>
+              <label class="cursor-pointer">
+                <%= check_box_tag "lpvoz_call_program[filters][lpvoz_statuses][]", value, Array(filters["lpvoz_statuses"]).include?(value), class: "peer sr-only" %>
+                <span class="inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-600 peer-checked:border-blue-600 peer-checked:bg-blue-50 peer-checked:text-blue-700"><%= label %></span>
+              </label>
+            <% end %>
+          </div>
+          <div class="mt-5 max-w-xs">
+            <%= form.label :daily_limit, "Limite diário", class: "block text-sm font-bold text-slate-700" %>
+            <%= form.number_field :daily_limit, min: 1, max: 1000, required: true, class: "mt-2 w-full rounded-xl border border-slate-300 px-4 py-3" %>
+            <p class="mt-1 text-xs text-slate-500">Máximo de novas ligações iniciadas por dia.</p>
+          </div>
+        </div>
+        <aside class="rounded-xl border border-blue-200 bg-blue-50 p-5 text-center" aria-live="polite">
+          <p class="text-4xl font-black text-blue-700" data-lpvoz-call-program-form-target="previewCount">—</p>
+          <p class="mt-1 font-bold text-slate-800" data-lpvoz-call-program-form-target="previewLabel">pacientes elegíveis</p>
+          <button type="button" data-action="lpvoz-call-program-form#refreshPreview" class="mt-4 text-sm font-bold text-blue-700 underline">Atualizar prévia</button>
+        </aside>
+      </div>
+    </section>
+
+    <footer class="mt-5 flex flex-col-reverse gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <%= link_to "Cancelar", program.persisted? ? lpvoz_call_program_path(program) : lpvoz_integration_path, class: "rounded-xl border border-slate-300 px-5 py-3 text-center font-bold text-slate-700" %>
+      <div class="flex flex-col gap-3 sm:flex-row">
+        <%= form.submit program.persisted? ? "Salvar alterações" : "Salvar rascunho", class: "rounded-xl border border-blue-600 px-5 py-3 font-bold text-blue-700" %>
+        <%= form.submit program.persisted? ? "Salvar e revisar" : "Continuar", class: "rounded-xl bg-blue-700 px-6 py-3 font-bold text-white hover:bg-blue-800" %>
+      </div>
+    </footer>
+  <% end %>
+</div>

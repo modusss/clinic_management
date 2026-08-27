@@ -337,7 +337,7 @@
       <% if lpvoz_integration_enabled? %>
       <%= link_to "Integração LPVoz",
           clinic_management.lpvoz_integration_path,
-          class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'lpvoz_integrations'}" %>
+          class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name.in?(%w[lpvoz_integrations lpvoz_call_programs])}" %>
       <% end %>
       <%= link_to "Convites", clinic_management.invitations_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'invitations'}" %>
       <%= link_to "Tipos de serviço", clinic_management.service_types_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'service_types'}" %>

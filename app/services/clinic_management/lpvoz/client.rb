@@ -19,7 +19,7 @@ module ClinicManagement
         post(
           "/internal/v1/voice_operations",
           {
-            agent_key: connection.agent_key,
+            agent_key: operation.agent_key.presence || connection.agent_key,
             external_reference: operation.public_id,
             purpose: "missed_appointment_recovery",
             contact: {
@@ -34,6 +34,14 @@ module ClinicManagement
           },
           "Idempotency-Key" => operation.idempotency_key
         )
+      end
+
+      # Fetches the small, signed catalog of published agents explicitly bound
+      # to this installation. Prompt content and provider credentials remain in
+      # LPVoz and are never exposed to the LPÓticas browser.
+      def available_agents
+        response = post("/internal/v1/integration_agents/catalog", {})
+        Array(response.fetch("agents"))
       end
 
       private

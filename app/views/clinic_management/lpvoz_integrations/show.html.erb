@@ -1,21 +1,34 @@
 <% content_for :title, "Integração LPVoz" %>
+<% breadcrumb({ title: "Administração" }, { title: "Integração LPVoz" }) %>
 
-<div class="max-w-5xl mx-auto px-4 py-8">
-  <div class="mb-6">
-    <p class="text-sm font-semibold text-emerald-700">Administração / Integrações</p>
-    <h1 class="mt-2 text-3xl font-black text-slate-950">Integração LPVoz</h1>
-    <p class="mt-2 text-slate-600">Autorize o LPVoz a consultar e atualizar somente os dados necessários desta conta.</p>
-  </div>
+<div class="mx-auto max-w-7xl px-4 py-8">
+  <header class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <p class="text-sm font-semibold text-emerald-700">Administração / Integrações</p>
+      <h1 class="mt-2 text-3xl font-black text-slate-950">Integração LPVoz</h1>
+      <p class="mt-2 text-slate-600">Conecte o LPVoz e programe ligações para pacientes ausentes com controle de horários, público e limites.</p>
+    </div>
+    <% if @connection.active? %>
+      <%= link_to new_lpvoz_call_program_path,
+          class: "inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-3 font-bold text-white shadow-sm hover:bg-blue-800" do %>
+        <span aria-hidden="true">＋</span> Nova programação
+      <% end %>
+    <% end %>
+  </header>
 
   <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
     <header class="flex flex-col gap-4 border-b border-slate-200 p-6 sm:flex-row sm:items-center sm:justify-between">
       <div class="flex items-center gap-4">
         <div class="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-600 text-lg font-black text-white">LP</div>
         <div>
-          <h2 class="text-2xl font-black">LPVoz</h2>
-          <p class="text-sm font-semibold <%= @connection.active? ? 'text-emerald-700' : 'text-slate-500' %>">
-            <%= @connection.active? ? "Conectado" : "Não conectado" %>
-          </p>
+          <div class="flex flex-wrap items-center gap-3">
+            <h2 class="text-2xl font-black">LPVoz</h2>
+            <span class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold <%= @connection.active? ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-100 text-slate-600' %>">
+              <span class="h-2 w-2 rounded-full <%= @connection.active? ? 'bg-emerald-600' : 'bg-slate-400' %>"></span>
+              <%= @connection.active? ? "Conectado" : "Não conectado" %>
+            </span>
+          </div>
+          <p class="mt-1 text-sm text-slate-500">Consulta de contexto, horários e remarcação confirmada.</p>
         </div>
       </div>
       <% unless @connection.active? %>
@@ -23,26 +36,88 @@
       <% end %>
     </header>
 
-    <div class="p-6">
-      <h3 class="text-lg font-black">Permissões</h3>
-      <div class="mt-4 space-y-3">
-        <% [["Consultar paciente", "Apenas contexto mínimo da falta"], ["Consultar horários", "Somente horários livres e compatíveis"], ["Remarcar atendimento", "Somente após confirmação verbal explícita"]].each do |title, description| %>
-          <div class="flex items-start gap-3 rounded-xl border border-emerald-100 bg-emerald-50/40 p-4">
-            <span class="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-700 text-sm text-white">✓</span>
-            <div><p class="font-bold"><%= title %></p><p class="text-sm text-slate-600"><%= description %></p></div>
+    <% unless @connection.active? %>
+      <div class="p-6">
+        <h3 class="text-lg font-black">Permissões</h3>
+        <div class="mt-4 grid gap-3 lg:grid-cols-3">
+          <% [["Consultar paciente", "Apenas contexto mínimo da falta"], ["Consultar horários", "Somente horários livres e compatíveis"], ["Remarcar atendimento", "Somente após confirmação verbal explícita"]].each do |title, description| %>
+            <div class="flex items-start gap-3 rounded-xl border border-emerald-100 bg-emerald-50/40 p-4">
+              <span class="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-700 text-sm text-white">✓</span>
+              <div><p class="font-bold"><%= title %></p><p class="text-sm text-slate-600"><%= description %></p></div>
+            </div>
+          <% end %>
+        </div>
+        <%= render "pairing", connection: @connection, pairing_code: @pairing_code %>
+      </div>
+    <% else %>
+      <div class="p-6">
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <% [
+            ["Programações ativas", @overview[:active_programs], "fa-calendar-check", "text-blue-700", "bg-blue-50"],
+            ["Em ligação", @overview[:in_progress], "fa-phone-volume", "text-blue-700", "bg-blue-50"],
+            ["Concluídas hoje", @overview[:completed], "fa-circle-check", "text-emerald-700", "bg-emerald-50"],
+            ["Reagendados hoje", @overview[:rescheduled], "fa-calendar-plus", "text-emerald-700", "bg-emerald-50"]
+          ].each do |label, value, icon, color, background| %>
+            <article class="rounded-xl border border-slate-200 p-4">
+              <div class="flex items-center justify-between">
+                <p class="text-sm font-semibold text-slate-500"><%= label %></p>
+                <span class="flex h-9 w-9 items-center justify-center rounded-full <%= background %> <%= color %>"><i class="fas <%= icon %>" aria-hidden="true"></i></span>
+              </div>
+              <p class="mt-2 text-3xl font-black <%= color %>"><%= value %></p>
+            </article>
+          <% end %>
+        </div>
+
+        <div class="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 class="text-xl font-black text-slate-950">Programações de pacientes ausentes</h3>
+            <p class="mt-1 text-sm text-slate-500">Cada programação escolhe seu agente, público, janelas e limite diário.</p>
+          </div>
+          <span class="text-sm font-semibold text-slate-500"><%= pluralize(@programs.size, "programação", "programações") %></span>
+        </div>
+
+        <% if @programs.any? %>
+          <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200">
+            <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+              <thead class="bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th class="px-5 py-4">Programação</th>
+                  <th class="px-5 py-4">Agente</th>
+                  <th class="px-5 py-4">Quando ligar</th>
+                  <th class="px-5 py-4">Progresso hoje</th>
+                  <th class="px-5 py-4">Estado</th>
+                  <th class="px-5 py-4 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 bg-white">
+                <% @programs.each do |program| %>
+                  <% calls_today = program.lpvoz_operations.count { |operation| program.local_day_range.cover?(operation.created_at) } %>
+                  <tr>
+                    <td class="px-5 py-4"><p class="font-bold text-slate-900"><%= program.name %></p><p class="mt-1 text-xs text-slate-500"><%= program.filters["patient_type"] == "absent" ? "Ausentes do último atendimento" : "Público personalizado" %></p></td>
+                    <td class="px-5 py-4 font-semibold text-slate-700"><%= lpvoz_program_agent_label(program, @available_agents) %></td>
+                    <td class="px-5 py-4 text-slate-600"><%= lpvoz_program_schedule(program) %></td>
+                    <td class="px-5 py-4"><p class="font-bold text-slate-800"><%= calls_today %> de <%= program.daily_limit %></p><div class="mt-2 h-1.5 w-28 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-blue-600" style="width: <%= [calls_today * 100 / program.daily_limit, 100].min %>%"></div></div></td>
+                    <td class="px-5 py-4"><span class="inline-flex rounded-full border px-3 py-1 text-xs font-bold <%= lpvoz_program_status_classes(program) %>"><%= lpvoz_program_status_label(program) %></span></td>
+                    <td class="px-5 py-4 text-right"><%= link_to "Abrir", lpvoz_call_program_path(program), class: "inline-flex rounded-lg border border-blue-300 px-4 py-2 font-bold text-blue-700 hover:bg-blue-50" %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <div class="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-700"><i class="fas fa-phone-volume" aria-hidden="true"></i></div>
+            <h4 class="mt-4 text-lg font-black text-slate-900">Nenhuma programação criada</h4>
+            <p class="mx-auto mt-2 max-w-xl text-sm text-slate-500">Crie uma programação para o LPVoz trabalhar a lista de pacientes ausentes automaticamente dentro dos horários permitidos.</p>
+            <%= link_to "Criar primeira programação", new_lpvoz_call_program_path, class: "mt-5 inline-flex rounded-xl bg-blue-700 px-5 py-3 font-bold text-white hover:bg-blue-800" %>
           </div>
         <% end %>
-      </div>
 
-      <% unless @connection.active? %>
-        <%= render "pairing", connection: @connection, pairing_code: @pairing_code %>
-      <% else %>
-        <div class="mt-7 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">
-          <p class="font-bold">Conexão ativa e validada</p>
-          <p class="mt-1 text-sm">O LPÓticas continua validando todas as consultas e alterações. Nenhuma credencial é enviada ao navegador ou ao ElevenLabs.</p>
+        <div class="mt-7 flex flex-col gap-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div><p class="font-bold text-emerald-900">Conexão ativa e validada</p><p class="mt-1 text-sm text-emerald-800">O LPÓticas revalida elegibilidade, horários e alterações antes de cada ligação.</p></div>
+          <%= button_to "Revogar acesso", lpvoz_integration_path, method: :delete, data: { turbo_confirm: "Revogar o acesso do LPVoz? As programações deixarão de iniciar novas ligações." }, class: "rounded-xl border border-rose-300 bg-white px-5 py-3 font-bold text-rose-700" %>
         </div>
-        <div class="mt-5"><%= button_to "Revogar acesso", lpvoz_integration_path, method: :delete, data: { turbo_confirm: "Revogar o acesso do LPVoz?" }, class: "rounded-xl border border-rose-300 px-5 py-3 font-bold text-rose-700" %></div>
-      <% end %>
-    </div>
+      </div>
+    <% end %>
   </section>
 </div>

@@ -8,6 +8,9 @@ module ClinicManagement
     belongs_to :lpvoz_connection, class_name: "ClinicManagement::LpvozConnection"
     belongs_to :lead, class_name: "ClinicManagement::Lead"
     belongs_to :appointment, class_name: "ClinicManagement::Appointment"
+    belongs_to :lpvoz_call_program,
+               class_name: "ClinicManagement::LpvozCallProgram",
+               optional: true
     has_many :lpvoz_events, dependent: :restrict_with_error
 
     enum :status, {
@@ -23,8 +26,10 @@ module ClinicManagement
 
     before_validation :assign_public_id, on: :create
     before_validation :assign_idempotency_key, on: :create
+    before_validation :assign_agent_key, on: :create
 
     validates :public_id, :idempotency_key, presence: true, uniqueness: true
+    validates :agent_key, format: { with: /\A[a-z0-9]+(?:-[a-z0-9]+)*\z/ }
     validate :tenant_matches_connection
     validate :appointment_matches_lead
 
@@ -49,6 +54,10 @@ module ClinicManagement
 
     def assign_idempotency_key
       self.idempotency_key ||= "lpvoz:#{public_id || SecureRandom.uuid}"
+    end
+
+    def assign_agent_key
+      self.agent_key ||= lpvoz_call_program&.agent_key || lpvoz_connection&.agent_key
     end
 
     def tenant_matches_connection

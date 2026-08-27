@@ -1,0 +1,97 @@
+<% content_for :title, @program.name %>
+<% breadcrumb({ title: "Integração LPVoz", path: lpvoz_integration_path }, { title: @program.name }) %>
+<% calls_today = @today_scope.count %>
+<% in_progress = @today_scope.where(status: ClinicManagement::LpvozCallProgram::ACTIVE_OPERATION_STATUSES).count %>
+<% completed = @today_scope.where(status: "completed").count %>
+<% rescheduled = @today_scope.where("result @> ?", { rescheduled: true }.to_json).count %>
+<% no_answer = @today_scope.where("result ->> 'classification' IN (?) OR result ->> 'outcome' IN (?)", %w[no_answer voicemail], %w[no_answer voicemail]).count %>
+<% attention = @today_scope.where(status: %w[failed needs_attention]).count %>
+
+<div class="mx-auto max-w-7xl px-4 py-8">
+  <header class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+    <div>
+      <p class="text-sm font-semibold text-emerald-700">Integração LPVoz / <%= @program.name %></p>
+      <div class="mt-2 flex flex-wrap items-center gap-3">
+        <h1 class="text-3xl font-black text-slate-950">Execução da programação</h1>
+        <span class="inline-flex rounded-full border px-3 py-1 text-xs font-bold <%= lpvoz_program_status_classes(@program) %>"><%= lpvoz_program_status_label(@program) %></span>
+      </div>
+      <div class="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
+        <span><i class="fas fa-user-headset mr-2 text-slate-400" aria-hidden="true"></i>Agente: <strong><%= lpvoz_program_agent_label(@program, @available_agents) %></strong></span>
+        <span><i class="far fa-clock mr-2 text-slate-400" aria-hidden="true"></i><%= lpvoz_program_schedule(@program) %></span>
+        <span><i class="fas fa-location-dot mr-2 text-slate-400" aria-hidden="true"></i>Local: <strong><%= @program.filters["service_location_id"].blank? ? "Interno" : "Personalizado" %></strong></span>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-3">
+      <%= link_to "Editar", edit_lpvoz_call_program_path(@program), class: "rounded-xl border border-slate-300 bg-white px-5 py-3 font-bold text-slate-700" %>
+      <% if @program.active? %>
+        <%= button_to "Pausar programação", pause_lpvoz_call_program_path(@program), class: "rounded-xl bg-blue-700 px-5 py-3 font-bold text-white", data: { turbo_confirm: "Pausar novas ligações desta programação?" } %>
+      <% else %>
+        <%= button_to "Ativar programação", activate_lpvoz_call_program_path(@program), class: "rounded-xl bg-emerald-700 px-5 py-3 font-bold text-white", data: { turbo_confirm: "Ativar esta programação? As ligações começarão na próxima janela permitida." } %>
+      <% end %>
+    </div>
+  </header>
+
+  <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    <% [
+      ["Em ligação", in_progress, "fa-phone-volume", "text-blue-700", "bg-blue-50"],
+      ["Aguardando", @eligible_count, "fa-hourglass-half", "text-blue-700", "bg-blue-50"],
+      ["Concluídas", completed, "fa-circle-check", "text-emerald-700", "bg-emerald-50"],
+      ["Reagendados", rescheduled, "fa-calendar-plus", "text-emerald-700", "bg-emerald-50"],
+      ["Não atenderam", no_answer, "fa-circle-xmark", "text-slate-600", "bg-slate-100"],
+      ["Precisam de atenção", attention, "fa-triangle-exclamation", "text-amber-700", "bg-amber-50"]
+    ].each do |label, value, icon, color, background| %>
+      <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="flex items-center justify-between"><p class="text-sm font-semibold text-slate-500"><%= label %></p><span class="flex h-9 w-9 items-center justify-center rounded-full <%= background %> <%= color %>"><i class="fas <%= icon %>" aria-hidden="true"></i></span></div>
+        <p class="mt-2 text-3xl font-black <%= color %>"><%= value %></p>
+      </article>
+    <% end %>
+  </div>
+
+  <section class="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div class="flex flex-wrap items-center justify-between gap-3"><div><h2 class="font-black text-slate-950">Limite diário</h2><p class="mt-1 text-sm text-slate-500">O limite protege a operação e pode ser alterado nas configurações.</p></div><p class="font-bold text-slate-700"><%= calls_today %> de <%= @program.daily_limit %> ligações hoje</p></div>
+    <div class="mt-4 h-3 overflow-hidden rounded-full bg-slate-200"><div class="h-full rounded-full bg-blue-700" style="width: <%= [calls_today * 100 / @program.daily_limit, 100].min %>%"></div></div>
+    <% unless @program.within_call_window? %><p class="mt-3 text-sm font-semibold text-amber-700"><i class="far fa-clock mr-2" aria-hidden="true"></i>Fora da janela de ligação. A fila permanece preservada até o próximo período.</p><% end %>
+  </section>
+
+  <section class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <header class="border-b border-slate-200">
+      <nav class="flex gap-6 px-5 pt-4 text-sm font-bold" aria-label="Seções da programação">
+        <span class="border-b-2 border-blue-700 px-1 pb-3 text-blue-700">Fila</span>
+        <span class="px-1 pb-3 text-slate-500">Resultados</span>
+        <%= link_to "Configuração", edit_lpvoz_call_program_path(@program), class: "px-1 pb-3 text-slate-500 hover:text-blue-700" %>
+      </nav>
+    </header>
+
+    <div class="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <span class="inline-flex w-fit rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-600">Todos os estados</span>
+      <label class="relative block sm:w-80"><span class="sr-only">Buscar paciente</span><i class="fas fa-search absolute left-3 top-3.5 text-slate-400" aria-hidden="true"></i><input type="search" placeholder="Buscar paciente ou telefone..." class="w-full rounded-xl border border-slate-300 py-3 pl-10 pr-4"></label>
+    </div>
+
+    <% if @operations.any? %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+          <thead class="bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500">
+            <tr><th class="px-5 py-4">Paciente</th><th class="px-5 py-4">Última falta</th><th class="px-5 py-4">Tentativa</th><th class="px-5 py-4">Estado LPVoz</th><th class="px-5 py-4">Horário / resultado</th><th class="px-5 py-4 text-right">Ação</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <% @operations.each do |operation| %>
+              <tr>
+                <td class="px-5 py-4"><p class="font-bold text-slate-900"><%= operation.lead.name %></p><p class="mt-1 text-xs text-slate-500"><%= add_phone_mask(operation.lead.phone) %></p></td>
+                <td class="px-5 py-4 text-slate-600"><%= l(operation.appointment.service.date, format: "%d/%m/%Y") %> · <%= operation.appointment.scheduled_time_label %></td>
+                <td class="px-5 py-4 text-slate-600"><%= @program.lpvoz_operations.where(lead_id: operation.lead_id).where("created_at <= ?", operation.created_at).count %>ª</td>
+                <td class="px-5 py-4"><span class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold <%= lpvoz_operation_status_classes(operation) %>"><span class="h-2 w-2 rounded-full bg-current"></span><%= lpvoz_operation_status_label(operation) %></span></td>
+                <td class="max-w-lg px-5 py-4 text-slate-600"><p class="line-clamp-2"><%= lpvoz_operation_result(operation) %></p><p class="mt-1 text-xs text-slate-400"><%= l(operation.created_at, format: "%d/%m às %H:%M") %></p></td>
+                <td class="px-5 py-4 text-right"><%= link_to operation.lpvoz_detail_url.present? ? "Abrir" : "Ver paciente", operation.lpvoz_detail_url.presence || lead_path(operation.lead), target: operation.lpvoz_detail_url.present? ? "_blank" : nil, rel: operation.lpvoz_detail_url.present? ? "noopener" : nil, class: "inline-flex rounded-lg border border-blue-300 px-4 py-2 font-bold text-blue-700" %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+      <div class="border-t border-slate-200 px-5 py-3"><%= clinic_paginate @operations %></div>
+    <% else %>
+      <div class="p-10 text-center"><p class="font-bold text-slate-800">Nenhuma ligação registrada nesta programação.</p><p class="mt-2 text-sm text-slate-500">Quando ativa e dentro da janela, a primeira pessoa elegível será enviada automaticamente.</p></div>
+    <% end %>
+
+    <div class="border-t border-slate-200 bg-blue-50 px-5 py-4 text-sm text-blue-900"><i class="fas fa-circle-info mr-2" aria-hidden="true"></i>A fila é reavaliada antes de cada ligação. Pacientes já reagendados, contatados hoje ou inelegíveis são removidos automaticamente.</div>
+  </section>
+</div>

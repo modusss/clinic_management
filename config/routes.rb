@@ -181,6 +181,16 @@ ClinicManagement::Engine.routes.draw do
     delete :revoke
   end
 
+  resources :lpvoz_call_programs,
+            path: "integracoes/lpvoz/programacoes",
+            controller: "lpvoz_call_programs" do
+    post :preview, on: :collection
+    member do
+      post :activate
+      post :pause
+    end
+  end
+
   namespace :api do
     namespace :lpvoz do
       namespace :v1 do
