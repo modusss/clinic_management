@@ -14,7 +14,7 @@ module ClinicManagement
       @overview = {
         active_programs: @programs.count(&:active?),
         in_progress: operations_today.where(status: LpvozCallProgram::ACTIVE_OPERATION_STATUSES).count,
-        completed: operations_today.where(status: LpvozCallProgram::TERMINAL_OPERATION_STATUSES).count,
+        completed: operations_today.where("result ->> 'classification' = 'confirmed' OR result @> ? OR result #>> '{collected_data,integration_result}' = 'rescheduled'", { rescheduled: true }.to_json).count,
         rescheduled: operations_today.where("result @> ?", { rescheduled: true }.to_json).count
       }
       @available_agents = available_agents

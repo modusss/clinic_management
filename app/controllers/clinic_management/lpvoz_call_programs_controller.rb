@@ -39,6 +39,7 @@ module ClinicManagement
       if params[:status].in?(ClinicManagement::LpvozOperation.statuses.keys)
         operations = operations.where(status: params[:status])
       end
+      operations = filter_by_outcome(operations, params[:outcome])
       if params[:q].present?
         query = "%#{ActiveRecord::Base.sanitize_sql_like(params[:q].strip)}%"
         operations = operations.joins(:lead).where(
@@ -52,6 +53,12 @@ module ClinicManagement
         .per(25)
       @today_scope = @program.lpvoz_operations.where(created_at: @program.local_day_range)
       @status_counts = @today_scope.group(:status).count
+      @outcome_counts = {
+        success: filter_by_outcome(@today_scope, "success").count,
+        rescheduled: filter_by_outcome(@today_scope, "rescheduled").count,
+        no_answer: filter_by_outcome(@today_scope, "no_answer").count,
+        attention: filter_by_outcome(@today_scope, "attention").count
+      }
       @eligible_count = ClinicManagement::Lpvoz::EligiblePatientsQuery.new(program: @program).count
     end
 
@@ -173,6 +180,23 @@ module ClinicManagement
 
     def agent_available?(agent_key)
       @agent_catalog_available && Array(@available_agents).any? { |agent| agent["key"] == agent_key }
+    end
+
+    def filter_by_outcome(scope, outcome)
+      case outcome
+      when "rescheduled"
+        scope.where("result @> ? OR result #>> '{collected_data,integration_result}' = 'rescheduled'", { rescheduled: true }.to_json)
+      when "success"
+        scope.where("result ->> 'classification' = 'confirmed' OR result @> ? OR result #>> '{collected_data,integration_result}' = 'rescheduled'", { rescheduled: true }.to_json)
+      when "no_answer"
+        scope.where("result ->> 'classification' IN (?) OR result ->> 'outcome' IN (?)", %w[no_answer voicemail], %w[no_answer voicemail])
+      when "technical_failure"
+        scope.where("result ->> 'classification' = 'technical_failure' OR NULLIF(result ->> 'provider_error', '') IS NOT NULL")
+      when "attention"
+        scope.where(status: %w[failed needs_attention])
+      else
+        scope
+      end
     end
 
     def program_params

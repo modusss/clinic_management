@@ -55,7 +55,7 @@
           <% [
             ["Programações ativas", @overview[:active_programs], "fa-calendar-check", "text-blue-700", "bg-blue-50"],
             ["Em ligação", @overview[:in_progress], "fa-phone-volume", "text-blue-700", "bg-blue-50"],
-            ["Concluídas hoje", @overview[:completed], "fa-circle-check", "text-emerald-700", "bg-emerald-50"],
+            ["Com sucesso hoje", @overview[:completed], "fa-circle-check", "text-emerald-700", "bg-emerald-50"],
             ["Reagendados hoje", @overview[:rescheduled], "fa-calendar-plus", "text-emerald-700", "bg-emerald-50"]
           ].each do |label, value, icon, color, background| %>
             <article class="rounded-xl border border-slate-200 p-4">

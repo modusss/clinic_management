@@ -19,6 +19,15 @@ module ClinicManagement
       "canceled" => "Cancelada"
     }.freeze
 
+    OUTCOME_FILTER_OPTIONS = [
+      ["Todos os resultados", ""],
+      ["Reagendados", "rescheduled"],
+      ["Sucesso", "success"],
+      ["Não atenderam", "no_answer"],
+      ["Falha técnica", "technical_failure"],
+      ["Precisam de atenção", "attention"]
+    ].freeze
+
     def lpvoz_program_status_label(program)
       STATUS_LABELS.fetch(program.status, program.status.humanize)
     end
@@ -32,10 +41,24 @@ module ClinicManagement
     end
 
     def lpvoz_operation_status_label(operation)
+      return "Reagendado" if lpvoz_operation_outcome(operation) == "rescheduled"
+      return "Sucesso" if lpvoz_operation_outcome(operation) == "success"
+      return "Não atendeu" if lpvoz_operation_outcome(operation) == "no_answer"
+      return "Falha técnica" if lpvoz_operation_outcome(operation) == "technical_failure"
+
       OPERATION_STATUS_LABELS.fetch(operation.status, operation.status.humanize)
     end
 
     def lpvoz_operation_status_classes(operation)
+      case lpvoz_operation_outcome(operation)
+      when "rescheduled", "success"
+        return "border-emerald-200 bg-emerald-50 text-emerald-700"
+      when "no_answer"
+        return "border-slate-200 bg-slate-100 text-slate-600"
+      when "technical_failure"
+        return "border-rose-200 bg-rose-50 text-rose-700"
+      end
+
       case operation.status
       when "completed" then "border-emerald-200 bg-emerald-50 text-emerald-700"
       when "in_progress", "accepted", "dispatching" then "border-blue-200 bg-blue-50 text-blue-700"
@@ -60,12 +83,40 @@ module ClinicManagement
     end
 
     def lpvoz_operation_result(operation)
-      if operation.result["rescheduled"]
+      if lpvoz_operation_outcome(operation) == "rescheduled"
         scheduled_at = Time.zone.parse(operation.result["scheduled_at"].to_s) rescue nil
         return scheduled_at ? "Reagendado · #{l(scheduled_at, format: '%d/%m, %H:%M')}" : "Reagendado"
       end
 
+      if operation.result["provider_error"].present?
+        return "Falha técnica: #{operation.result['provider_error']} #{operation.result['automatic_pause_reason']}".squish
+      end
+
       operation.result["summary"].presence || operation.last_error.presence || "Sem resultado informado"
+    end
+
+    def lpvoz_operation_outcome(operation)
+      result = operation.result || {}
+      classification = result["classification"].to_s
+      integration_result = result.dig("collected_data", "integration_result").to_s
+
+      return "rescheduled" if result["rescheduled"] == true || integration_result == "rescheduled"
+      return "success" if classification == "confirmed"
+      return "no_answer" if classification.in?(%w[no_answer voicemail]) || result["outcome"].to_s.in?(%w[no_answer voicemail])
+      return "technical_failure" if classification == "technical_failure" || result["provider_error"].present?
+
+      operation.status
+    end
+
+    def lpvoz_operation_transcript(operation)
+      Array(operation.result["transcript"]).filter_map do |turn|
+        next unless turn.is_a?(Hash) && turn["message"].present?
+
+        {
+          role: turn["role"] == "agent" ? "Atendente" : "Paciente",
+          message: turn["message"]
+        }
+      end
     end
   end
 end
