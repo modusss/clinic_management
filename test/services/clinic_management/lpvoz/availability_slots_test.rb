@@ -77,6 +77,37 @@ module ClinicManagement
         assert_equal 3, slots.size
         assert_equal ["20", "20", "21"], slots.pluck(:service_id)
       end
+
+      def test_keeps_an_afternoon_option_when_morning_service_is_processed_first
+        now = Time.zone.local(2026, 8, 26, 8, 0)
+        services = [
+          FakeService.new(
+            30,
+            Date.new(2026, 8, 28),
+            FakeLocation.new("Interno"),
+            [
+              Time.zone.local(2026, 8, 28, 9, 0),
+              Time.zone.local(2026, 8, 28, 9, 30),
+              Time.zone.local(2026, 8, 28, 10, 0)
+            ]
+          ),
+          FakeService.new(
+            31,
+            Date.new(2026, 8, 28),
+            FakeLocation.new("Interno"),
+            [
+              Time.zone.local(2026, 8, 28, 13, 0),
+              Time.zone.local(2026, 8, 28, 13, 30)
+            ]
+          )
+        ]
+
+        slots = AvailabilitySlots.new(services:, now:).call
+
+        assert_equal 3, slots.size
+        assert_equal ["09:00", "09:30", "13:00"], slots.map { |slot| Time.zone.parse(slot[:scheduled_at]).strftime("%H:%M") }
+        assert_equal ["30", "30", "31"], slots.pluck(:service_id)
+      end
     end
   end
 end

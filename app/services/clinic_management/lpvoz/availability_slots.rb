@@ -11,25 +11,36 @@ module ClinicManagement
       end
 
       def call
-        slots_by_date = Hash.new { |hash, date| hash[date] = [] }
+        candidates_by_date = Hash.new { |hash, date| hash[date] = [] }
 
         services.each do |service|
-          day_slots = slots_by_date[service.date]
-          remaining = MAX_SLOTS_PER_DAY - day_slots.size
-          next unless remaining.positive?
-
           service.available_appointment_times
             .select { |time| time > now }
-            .first(remaining)
-            .each { |time| day_slots << serialize(service, time) }
+            .each do |time|
+              candidates_by_date[service.date] << serialize(service, time)
+            end
         end
 
-        slots_by_date.values.flatten
+        candidates_by_date.values.flat_map { |slots| representative_slots(slots) }
       end
 
       private
 
       attr_reader :services, :now
+
+      # Keeps the payload compact without starving an entire period. Previously,
+      # the first morning service consumed the daily limit before afternoon
+      # services were inspected, so the voice agent could never answer a request
+      # such as "tem pela tarde?" even when such slots existed.
+      def representative_slots(slots)
+        ordered = slots.sort_by { |slot| slot.fetch(:scheduled_at) }
+        morning, afternoon = ordered.partition do |slot|
+          Time.zone.parse(slot.fetch(:scheduled_at)).hour < 12
+        end
+        selected = [morning.first, afternoon.first].compact
+        selected.concat((ordered - selected).first(MAX_SLOTS_PER_DAY - selected.size))
+        selected.sort_by { |slot| slot.fetch(:scheduled_at) }
+      end
 
       def serialize(service, time)
         {
