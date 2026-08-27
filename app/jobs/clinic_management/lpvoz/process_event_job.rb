@@ -115,7 +115,7 @@ module ClinicManagement
       end
 
       def refinable_outcome?(operation, event, data)
-        operation.needs_attention? &&
+        (operation.needs_attention? || operation.failed?) &&
           event.event_type == "call.outcome_ready" &&
           data["needs_review"] == false
       end
