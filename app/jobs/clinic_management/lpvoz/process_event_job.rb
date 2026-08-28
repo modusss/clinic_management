@@ -37,7 +37,8 @@ module ClinicManagement
         data = payload.fetch("data", {})
         candidate = STATUS_MAP.fetch(event.event_type, operation.status)
         candidate = "needs_attention" if data["needs_review"] == true
-        quota_exceeded = quota_exceeded?(data)
+        quota_exceeded = ClinicManagement::Lpvoz::ProviderQuotaFailure.detected?(data)
+        quota_provider = ClinicManagement::Lpvoz::ProviderQuotaFailure.provider_label(data)
         candidate = "needs_attention" if quota_exceeded
         pause_program_for_quota!(operation) if quota_exceeded
         next_status = if refinable_outcome?(operation, event, data)
@@ -57,15 +58,15 @@ module ClinicManagement
           "collected_data" => merged_collected_data(operation, data),
           "transcript" => normalized_transcript(data["transcript"]).presence || operation.result["transcript"],
           "next_action" => data["next_action"].presence || operation.result["next_action"],
-          "provider_error" => ("Cota do ElevenLabs esgotada." if quota_exceeded) || operation.result["provider_error"],
-          "automatic_pause_reason" => ("Programação pausada automaticamente porque a cota do ElevenLabs foi excedida." if quota_exceeded) || operation.result["automatic_pause_reason"]
+          "provider_error" => ("Créditos de #{quota_provider} esgotados." if quota_exceeded) || operation.result["provider_error"],
+          "automatic_pause_reason" => ("Programação pausada automaticamente porque os créditos de #{quota_provider} foram esgotados." if quota_exceeded) || operation.result["automatic_pause_reason"]
         ).compact
         operation.update!(
           voice_operation_id: payload["voice_operation_id"].presence || operation.voice_operation_id,
           agent_key: operation.agent_key.presence || operation.lpvoz_connection.agent_key,
           status: next_status,
           result:,
-          last_error: quota_exceeded ? "Cota do ElevenLabs esgotada." : operation.last_error,
+          last_error: quota_exceeded ? "Créditos de #{quota_provider} esgotados." : operation.last_error,
           completed_at: next_status.in?(%w[completed failed needs_attention]) ? Time.current : operation.completed_at
         )
         event.update!(status: :processed, processed_at: Time.current)
@@ -96,22 +97,12 @@ module ClinicManagement
         end
       end
 
-      def quota_exceeded?(data)
-        candidates = [
-          data["failure_reason"],
-          data["summary"],
-          data.dig("collected_data", "failure_reason"),
-          data.dig("collected_data", "termination_reason")
-        ]
-        candidates.compact.any? { |value| value.to_s.match?(/quota(?: limit)?|exceeds your quota/i) }
-      end
-
       def pause_program_for_quota!(operation)
         program = operation.lpvoz_call_program
         return unless program&.active?
 
         program.pause!
-        Rails.logger.error("[LPVoz programs] Program #{program.id} paused: ElevenLabs quota exceeded")
+        Rails.logger.error("[LPVoz programs] Program #{program.id} paused: provider credits exhausted")
       end
 
       def refinable_outcome?(operation, event, data)
