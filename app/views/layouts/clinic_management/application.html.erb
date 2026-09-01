@@ -20,6 +20,7 @@
   <%= stylesheet_link_tag "clinic_management/service_slot_modal", "data-turbo-track": "reload" %>
   <%= stylesheet_link_tag "clinic_management/field_tracking", "data-turbo-track": "reload" %>
   <%= stylesheet_link_tag "custom/lead_customer_conversion", "data-turbo-track": "reload" %>
+  <%= stylesheet_link_tag "custom/internal_chat", "data-turbo-track": "reload" %>
   <%# ESSENTIAL: Clinic uses Tailwind, so load Materialize JS only. The dedicated
       stylesheet scopes the modal and avoids global Materialize CSS collisions. %>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
@@ -372,11 +373,17 @@
     })();
   </script>
 </head>
-<body class="clinic-app bg-gray-100 font-sans leading-normal tracking-normal <%= 'doctor-view' if doctor_user? %> <%= 'clinic-lens-demo' if clinic_lens_demo_layout? %>" style="margin-bottom: 200px">
+<body class="clinic-app bg-gray-100 font-sans leading-normal tracking-normal <%= 'doctor-view' if doctor_user? %> <%= 'clinic-lens-demo' if clinic_lens_demo_layout? %>"
+      style="margin-bottom: 200px"
+      data-controller="<%= 'internal-chat' if user_signed_in? && internal_chat_available? %>">
   <%# Global loading overlay - shows when requests take > 2 seconds %>
   <%= render "clinic_management/shared/global_loading" %>
 
   <%= render "clinic_management/shared/navbar" %>
+  <% if user_signed_in? && internal_chat_available? %>
+    <%= render "shared/internal_chat_trigger", variant: :clinic %>
+    <%= render "shared/internal_chat_drawer" %>
+  <% end %>
   <%= render "clinic_management/shared/scroll_buttons" %>
   <%= yield(:breadcrumb) if content_for?(:breadcrumb) %>
   <main class="mb-8" id="main-container">

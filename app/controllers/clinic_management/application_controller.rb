@@ -18,6 +18,7 @@ module ClinicManagement
     helper ::WhatsappUiPathsHelper
     helper ::CommissionsHelper
     helper ::GeneralHelper
+    helper ::InternalChatHelper
     helper ::MembershipRolesHelper
     helper ::MetaTemplatesHelper
     helper ClinicManagement::ServicesStatsHelper

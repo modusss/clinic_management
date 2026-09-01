@@ -1,6 +1,7 @@
 module ClinicManagement
   module ApplicationHelper
     include ReferralDisplayLabelsHelper
+    include ::InternalChatHelper
 
     CLINIC_PAGE_TITLE_OVERRIDES = {
       "clinic_management/appointments#index" => "agendamentos",
