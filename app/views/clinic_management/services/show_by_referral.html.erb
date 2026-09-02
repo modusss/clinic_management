@@ -60,6 +60,12 @@
   <% end %>
 </div>
 
+<%# ESSENTIAL: Shared remarcação slot modal for show_by_referral patient rows.
+    The "Escolha o dia" trigger in _update_service_form does nothing unless this
+    modal (and its Stimulus controller) is in the DOM — same as services#show. %>
+<%= render "clinic_management/shared/reschedule_slot_modal",
+           modal_id: "reschedule-slot-modal",
+           grouped_by_day: group_services_for_slot_modal(reschedule_modal_services) %>
 
 <style>
 
