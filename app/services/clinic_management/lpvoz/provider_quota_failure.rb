@@ -30,7 +30,18 @@ module ClinicManagement
       end
 
       def self.provider_label(data)
-        PROVIDER_LABELS.fetch(data["provider"].to_s.downcase, "provedor de voz")
+        provider = data["provider"] || data.dig("collected_data", "provider")
+        if provider.blank?
+          text = candidates(data).join(" ")
+          if text.match?(/elevenlabs/i)
+            provider = "elevenlabs"
+          elsif text.match?(/cartesia/i)
+            provider = "cartesia"
+          elsif text.match?(/openai/i)
+            provider = "openai"
+          end
+        end
+        PROVIDER_LABELS.fetch(provider.to_s.downcase, "provedor de voz")
       end
 
       def self.candidates(data)
