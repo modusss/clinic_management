@@ -12,6 +12,8 @@ class LpvozActionStatusContractTest < ActiveSupport::TestCase
 
     assert_includes source, 'lpvoz-operation-#{operation.public_id}'
     assert_includes source, 'data-controller="lpvoz-operation-status"'
-    assert_includes source, "%w[queued dispatching accepted in_progress]"
+    assert_includes source, "is_active_operation"
+    assert_includes source, "operation.stale?"
+    assert_includes source, "Expirada"
   end
 end

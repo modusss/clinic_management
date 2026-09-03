@@ -670,6 +670,7 @@ module ClinicManagement
       existing = connection.lpvoz_operations
         .where(lead: @lead, appointment:)
         .where(status: %w[queued dispatching accepted in_progress])
+        .where("clinic_management_lpvoz_operations.updated_at >= ?", ClinicManagement::LpvozOperation::STALE_THRESHOLD.ago)
         .recent_first
         .first
       operation = existing || connection.lpvoz_operations.create!(

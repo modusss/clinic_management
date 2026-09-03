@@ -11,7 +11,8 @@
    else
      "Iniciar agora uma ligação da Clara para #{phone_label}?"
    end %>
-<div id="<%= operation_dom_id %>"<%= ' data-controller="lpvoz-operation-status"'.html_safe if operation&.status&.in?(%w[queued dispatching accepted in_progress]) %>>
+<% is_active_operation = operation.present? && operation.active? %>
+<div id="<%= operation_dom_id %>"<%= ' data-controller="lpvoz-operation-status"'.html_safe if is_active_operation %>>
 <% if operation.blank? %>
   <% if callable_phone %>
     <%= button_to appointment.present? ? "Ligar com Clara" : "Ligar",
@@ -24,7 +25,7 @@
   <% else %>
     <span class="text-sm font-semibold text-amber-700">Cadastre um telefone válido</span>
   <% end %>
-<% elsif operation.status.in?(%w[queued dispatching accepted in_progress]) %>
+<% elsif is_active_operation %>
   <span class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-sm font-bold text-blue-700">
     <span class="h-2 w-2 rounded-full bg-blue-600"></span>
     <%= operation.in_progress? ? "Em ligação" : "Enviado" %>
@@ -41,6 +42,11 @@
     <p class="font-bold text-amber-700">Precisa de atenção</p>
     <p class="lpvoz-operation-summary text-slate-600"><%= operation.result["summary"].presence || "Revisão necessária" %></p>
     <button type="button" class="mt-1 font-bold text-blue-700 underline" onclick="document.getElementById('<%= drawer_id %>').showModal()">Revisar</button>
+  </div>
+<% elsif operation.stale? %>
+  <div class="text-sm">
+    <p class="font-bold text-amber-700">Expirada</p>
+    <p class="lpvoz-operation-summary text-slate-500">Sem resposta do gateway</p>
   </div>
 <% else %>
   <div class="text-sm">

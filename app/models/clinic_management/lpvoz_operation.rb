@@ -36,8 +36,20 @@ module ClinicManagement
 
     scope :recent_first, -> { order(created_at: :desc) }
 
+    # Operações em status ativo (queued, dispatching, accepted, in_progress)
+    # que não receberam atualização por mais de 20 minutos são consideradas expiradas (stale).
+    STALE_THRESHOLD = 20.minutes
+
     def terminal?
-      completed? || failed? || needs_attention? || canceled?
+      completed? || failed? || needs_attention? || canceled? || stale?
+    end
+
+    def active?
+      status.in?(%w[queued dispatching accepted in_progress]) && !stale?
+    end
+
+    def stale?
+      status.in?(%w[queued dispatching accepted in_progress]) && updated_at < STALE_THRESHOLD.ago
     end
 
     def lpvoz_detail_url
