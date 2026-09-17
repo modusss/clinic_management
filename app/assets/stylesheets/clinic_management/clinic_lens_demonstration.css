@@ -1,7 +1,8 @@
 /* ============================================================================
    Lens demonstration — embedded in clinic_management (reuses lens_demonstrations/show)
-   ESSENTIAL: Main app uses .custom-container + lens_demonstrations.css; clinic uses
-   .clinic-lens-demo-shell + this file. Tablet/doctor presentation rules live here only.
+   ESSENTIAL: Main app uses .custom-container; clinic uses .clinic-lens-demo-shell.
+   Tab capsule chrome is in custom/lens_demonstrations.css, loaded by the shared show.
+   This file keeps clinic layout/presentation rules only (sticky, hide clinic navbar).
    Present in: clinic_management/lens_demonstrations#show, layouts/clinic_management/application
    ============================================================================ */
 
@@ -33,61 +34,7 @@ body.clinic-lens-demo .lens-demonstration-container {
   box-sizing: border-box;
 }
 
-body.clinic-lens-demo .lens-demonstration-container .tabs-container {
-  align-items: flex-end;
-  justify-content: flex-start;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-/* ESSENTIAL: Presentation button styles — lens_demonstrations.css is not loaded in clinic engine */
-body.clinic-lens-demo .presentation-mode-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 42px;
-  margin-left: 8px;
-  margin-bottom: 0;
-  padding: 0 14px;
-  border: 1px solid rgba(5, 150, 105, 0.35);
-  border-radius: 999px;
-  background: rgba(16, 185, 129, 0.08);
-  color: #047857;
-  font-family: inherit;
-  font-size: 0.875rem;
-  font-weight: 700;
-  line-height: 1;
-  cursor: pointer;
-  transition:
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease;
-}
-
-body.clinic-lens-demo .presentation-mode-button i {
-  font-size: 20px;
-  line-height: 1;
-}
-
-body.clinic-lens-demo .presentation-mode-button:hover,
-body.clinic-lens-demo .presentation-mode-button:focus-visible {
-  background: rgba(16, 185, 129, 0.16);
-  border-color: rgba(5, 150, 105, 0.55);
-  color: #065f46;
-  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.18);
-  outline: none;
-  transform: translateY(-1px);
-}
-
-body.clinic-lens-demo .presentation-mode-button.active {
-  background: #065f46;
-  border-color: #065f46;
-  color: #ffffff;
-  box-shadow: 0 8px 24px rgba(6, 95, 70, 0.28);
-}
+/* Tab capsule chrome lives in custom/lens_demonstrations.css (loaded by the shared show). */
 
 body.clinic-lens-demo .lens-demonstration-container .comparison-container,
 body.clinic-lens-demo .lens-demonstration-container .static-treatment-card,
@@ -138,8 +85,6 @@ body.clinic-lens-demo .lens-demonstration-container .crop-center-wrapper {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    padding-bottom: 0.35rem;
-    margin-bottom: 0.75rem;
   }
 
   body.clinic-lens-demo .lens-demonstration-container .tabs-container::-webkit-scrollbar {
@@ -206,8 +151,6 @@ body.clinic-lens-demo .lens-demonstration-container .crop-center-wrapper {
     flex-wrap: nowrap;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 0.35rem;
-    margin-bottom: 1rem;
   }
 
   body.clinic-lens-demo .lens-demonstration-container .comparison-container {
@@ -262,12 +205,8 @@ html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-containe
 
 html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .tabs-container {
   position: sticky;
-  top: 0;
+  top: 8px;
   z-index: 50;
-  margin-bottom: 0.5rem !important;
-  padding: 6px 4px 8px !important;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
 }
 
 html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .tab-content.active {
