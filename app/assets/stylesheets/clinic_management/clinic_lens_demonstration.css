@@ -166,7 +166,10 @@ body.clinic-lens-demo .lens-demonstration-container .crop-center-wrapper {
 /* ========== Apresentar / fullscreen — clinic_management chrome hidden ========== */
 html.lens-presentation-active body.clinic-lens-demo {
   margin-bottom: 0 !important;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  height: auto;
+  max-height: none;
 }
 
 html.lens-presentation-active body.clinic-lens-demo .clinic-navbar,
@@ -228,13 +231,7 @@ html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-containe
 
 html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .comparison-container {
   max-height: none !important;
-  height: calc(100vh - 168px);
-  min-height: 360px;
-}
-
-html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .comparison-container::before {
-  padding-top: 0;
-  display: none;
+  height: auto;
 }
 
 /* Hide description block in presentation — maximize comparison stage */
@@ -252,20 +249,8 @@ html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-containe
   width: 100%;
 }
 
-@media screen and (min-width: 768px) and (max-width: 1365px) {
-  html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .comparison-container {
-    height: calc(100vh - 150px);
-    min-height: 420px;
-  }
-}
-
 @media screen and (max-width: 767px) {
   html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container {
     padding: 6px 4px 8px !important;
-  }
-
-  html.lens-presentation-active body.clinic-lens-demo .lens-demonstration-container .comparison-container {
-    height: calc(100vh - 190px);
-    min-height: 280px;
   }
 }
