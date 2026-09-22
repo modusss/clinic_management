@@ -1,5 +1,8 @@
 module ClinicManagement
     class LeadMessage < ApplicationRecord
+      # ESSENTIAL: pós_atendimento (9) is next-day feedback for patients marked attended.
+      # Integer column — adding a value does not need a migration.
+      # Recovery purposes stay for no-shows; this one is the inverse audience.
       enum message_type: { confirmação: 0, 
                            remarcação: 1, 
                            lembrete: 2, 
@@ -8,6 +11,7 @@ module ClinicManagement
                            recuperação_sete_dias: 6,
                            recuperação_quinze_dias: 7,
                            recuperação_dois_meses: 8,
+                           pós_atendimento: 9,
                            outro: 3 }
       belongs_to :service_type, optional: true
       # ESSENTIAL: Optional - nil = global (applies to all locations).
