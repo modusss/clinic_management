@@ -3,7 +3,10 @@
 <% show_meta = can_use_meta_bulk_for_absent? %>
 <% default_channel = show_evolution ? "evolution" : "meta" %>
 <% meta_readiness = absent_meta_readiness if show_meta %>
-<% meta_templates = @absent_meta_templates || absent_meta_bulk_templates %>
+<% meta_phones = absent_meta_bulk_phones if show_meta %>
+<% selected_meta_phone = meta_phones&.first %>
+<% meta_templates_by_phone = (meta_phones || []).index_with { |phone| absent_meta_bulk_templates(phone) } %>
+<% meta_templates = selected_meta_phone ? meta_templates_by_phone.fetch(selected_meta_phone) : [] %>
 
 <% if show_evolution || show_meta %>
 <div class="my-4 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-md border border-blue-200">
@@ -130,7 +133,20 @@
           </p>
         <% end %>
 
-        <%= label_tag :bulk_meta_template_id, "Template Meta aprovado:", class: "block text-sm font-medium text-gray-700 mb-2" %>
+        <% if meta_phones.size > 1 %>
+          <%= label_tag :bulk_meta_phone_id, "Enviar por:", class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <%= select_tag :bulk_meta_phone_id,
+                options_for_select(meta_phones.map { |phone| ["#{phone.meta_business_account.display_name} · #{phone.formatted_phone}", phone.id] }, selected_meta_phone&.id),
+                class: "w-full border border-gray-300 rounded-lg px-3 py-2 mb-3 focus:ring-2 focus:ring-green-500 focus:border-green-500",
+                data: {
+                  action: "change->bulk-message#updateMetaAccount",
+                  bulk_message_target: "metaPhoneSelect"
+                } %>
+        <% else %>
+          <%= hidden_field_tag :bulk_meta_phone_id, selected_meta_phone&.id, data: { bulk_message_target: "metaPhoneSelect" } %>
+        <% end %>
+
+        <%= label_tag :bulk_meta_template_id, "Mensagem aprovada:", class: "block text-sm font-medium text-gray-700 mb-2" %>
         <%= select_tag :bulk_meta_template_id,
               options_for_select(
                 meta_templates.map { |row| [row[:label], row[:template].id] }
@@ -145,17 +161,27 @@
                 }
               } %>
 
+        <% meta_phones.each do |phone| %>
+          <template data-bulk-message-target="metaPhoneTemplates" data-phone-id="<%= phone.id %>">
+            <% meta_templates_by_phone.fetch(phone).each do |row| %>
+              <option value="<%= row[:template].id %>"><%= row[:label] %></option>
+            <% end %>
+          </template>
+        <% end %>
+
         <div class="mt-3 p-3 bg-white rounded border border-gray-200 min-h-[80px]"
              data-bulk-message-target="metaMessagePreview">
           <p class="text-sm text-gray-500 italic">Selecione um template Meta para ver a prévia</p>
         </div>
 
-        <% meta_templates.each do |row| %>
-          <% template = row[:template] %>
-          <div id="preview-meta-template-<%= template.id %>" class="hidden" data-had-variation="<%= row[:had_variation_blocks] %>">
-            <p class="text-sm font-semibold text-gray-700 mb-2"><%= row[:label] %></p>
-            <div class="bg-green-50 p-3 rounded border border-green-200 text-sm text-gray-800 whitespace-pre-wrap"><%= template.preview_text %></div>
-          </div>
+        <% meta_templates_by_phone.each_value do |phone_templates| %>
+          <% phone_templates.each do |row| %>
+            <% template = row[:template] %>
+            <div id="preview-meta-template-<%= template.id %>" class="hidden" data-had-variation="<%= row[:had_variation_blocks] %>">
+              <p class="text-sm font-semibold text-gray-700 mb-2"><%= row[:label] %></p>
+              <div class="bg-green-50 p-3 rounded border border-green-200 text-sm text-gray-800 whitespace-pre-wrap"><%= template.preview_text %></div>
+            </div>
+          <% end %>
         <% end %>
 
         <p class="mt-3 text-xs text-gray-600">

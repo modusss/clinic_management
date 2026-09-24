@@ -255,12 +255,12 @@ module ClinicManagement
     # ClinicManagement::LeadMessage source record.
     #
     # @return [Array<Hash>] :template, :label, :had_variation_blocks
-    def absent_meta_bulk_templates
+    def absent_meta_bulk_templates(phone = nil)
       return [] unless defined?(current_account) && current_account.present?
       return [] unless can_use_meta_bulk_for_absent?
       return [] unless MetaTemplate.respond_to?(:from_lead_message)
 
-      phone = bulk_meta_phone_for_absent
+      phone ||= bulk_meta_phone_for_absent
       return [] unless phone&.meta_business_account&.active?
 
       templates = MetaTemplate
@@ -279,6 +279,25 @@ module ClinicManagement
           had_variation_blocks: template.try(:had_variation_blocks?)
         }
       end.sort_by { |row| row[:label].to_s.downcase }
+    end
+
+    # All operational Meta numbers available to this account for the absent-patient
+    # screen. The clinic-oriented number remains first/default, but staff may choose
+    # another connected WABA (for example the optical-store account).
+    def absent_meta_bulk_phones
+      account = current_account
+      return [] unless account
+
+      phones = MetaPhoneNumber
+                 .includes(:meta_business_account)
+                 .joins(:meta_business_account)
+                 .merge(MetaBusinessAccount.active.where(account_id: account.id))
+                 .active
+                 .select(&:has_access_token?)
+                 .select(&:can_send_message?)
+
+      default_phone = bulk_meta_phone_for_absent
+      phones.sort_by { |phone| [phone.id == default_phone&.id ? 0 : 1, phone.meta_business_account.display_name.downcase, phone.id] }
     end
 
     # Readiness summary for Meta bulk panel on absent screen.

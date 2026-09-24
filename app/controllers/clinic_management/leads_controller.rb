@@ -947,6 +947,7 @@ module ClinicManagement
 
       lead_ids = params[:lead_ids] || []
       meta_template_id = params[:meta_template_id]
+      meta_phone_number_id = params[:meta_phone_number_id]
 
       if lead_ids.blank?
         render json: { success: false, error: "Nenhum lead selecionado" }, status: :unprocessable_entity
@@ -962,7 +963,8 @@ module ClinicManagement
         account: current_account,
         user: current_user,
         lead_ids: lead_ids,
-        meta_template_id: meta_template_id
+        meta_template_id: meta_template_id,
+        meta_phone_number_id: meta_phone_number_id
       )
 
       if result[:success]
