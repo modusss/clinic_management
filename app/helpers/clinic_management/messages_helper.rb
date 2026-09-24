@@ -273,7 +273,9 @@ module ClinicManagement
       templates.map do |template|
         {
           template: template,
-          label: template.name,
+          # The Meta API slug is technical; staff must choose by the human title
+          # configured in LPóticas or inherited from the linked clinical message.
+          label: template.display_title,
           had_variation_blocks: template.try(:had_variation_blocks?)
         }
       end.sort_by { |row| row[:label].to_s.downcase }
