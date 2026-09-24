@@ -243,7 +243,7 @@ module ClinicManagement
       return false unless meta_bulk_absent_role_allowed?
       return false unless meta_bulk_account_operational?
 
-      default_meta_phone_for_bulk&.can_send_message?
+      bulk_meta_phone_for_absent&.can_send_message?
     rescue StandardError => e
       Rails.logger.warn("[MessagesHelper] can_use_meta_bulk_for_absent? failed: #{e.class}: #{e.message}")
       false
@@ -260,7 +260,7 @@ module ClinicManagement
       return [] unless can_use_meta_bulk_for_absent?
       return [] unless MetaTemplate.respond_to?(:from_lead_message)
 
-      phone = default_meta_phone_for_bulk
+      phone = bulk_meta_phone_for_absent
       return [] unless phone&.meta_business_account&.active?
 
       templates = MetaTemplate
@@ -283,7 +283,7 @@ module ClinicManagement
     #
     # @return [Hash]
     def absent_meta_readiness
-      phone = default_meta_phone_for_bulk
+      phone = bulk_meta_phone_for_absent
       templates = absent_meta_bulk_templates
 
       {
@@ -339,21 +339,33 @@ module ClinicManagement
       current_account.meta_inbox_operational?
     end
 
-    # Resolves default Meta phone with fallback when host Account lacks the helper method.
+    # Resolves the Meta phone for absent-patient recovery. When an account has
+    # multiple WABAs, prefer the one with the most approved clinic templates so
+    # this clinical surface never silently falls back to a retail WABA simply
+    # because it was created first.
     #
     # @return [MetaPhoneNumber, nil]
-    def default_meta_phone_for_bulk
+    def bulk_meta_phone_for_absent
       account = current_account
       return nil unless account
 
-      if account.respond_to?(:default_meta_phone_number)
-        account.default_meta_phone_number
-      else
-        MetaPhoneNumber
-          .joins(:meta_business_account)
-          .merge(MetaBusinessAccount.active.where(account_id: account.id))
-          .active
-          .find { |phone| phone.has_access_token? }
+      phones = MetaPhoneNumber
+                 .joins(:meta_business_account)
+                 .merge(MetaBusinessAccount.active.where(account_id: account.id))
+                 .active
+                 .select(&:has_access_token?)
+      return if phones.empty?
+
+      clinic_template_counts = MetaTemplate
+                                 .where(meta_business_account_id: phones.map(&:meta_business_account_id))
+                                 .approved
+                                 .current_versions
+                                 .for_domain("clinic")
+                                 .group(:meta_business_account_id)
+                                 .count
+
+      phones.min_by do |phone|
+        [-clinic_template_counts.fetch(phone.meta_business_account_id, 0), phone.id]
       end
     end
 
