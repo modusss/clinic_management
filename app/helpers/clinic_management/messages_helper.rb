@@ -249,9 +249,9 @@ module ClinicManagement
       false
     end
 
-    # Approved, current, campaign-sendable templates from the account's active
-    # WABAs. A template may have been created directly in Meta, so its
-    # availability for an absent-patient campaign must never depend on a legacy
+    # Approved, current, campaign-sendable templates from the WABA that owns
+    # the number displayed in the bulk panel. A template may have been created
+    # directly in Meta, so availability must never depend on a legacy
     # ClinicManagement::LeadMessage source record.
     #
     # @return [Array<Hash>] :template, :label, :had_variation_blocks
@@ -260,13 +260,15 @@ module ClinicManagement
       return [] unless can_use_meta_bulk_for_absent?
       return [] unless MetaTemplate.respond_to?(:from_lead_message)
 
-      waba_ids = current_account.meta_business_accounts.active.pluck(:id)
+      phone = default_meta_phone_for_bulk
+      return [] unless phone&.meta_business_account&.active?
+
       templates = MetaTemplate
-                    .where(meta_business_account_id: waba_ids)
+                    .where(meta_business_account_id: phone.meta_business_account_id)
                     .approved
                     .current_versions
-      templates = templates.campaign_sendable if MetaTemplate.respond_to?(:campaign_sendable)
       templates = templates.includes(:meta_business_account)
+      templates = templates.select(&:campaign_sendable?)
 
       templates.map do |template|
         {
