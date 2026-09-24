@@ -132,12 +132,10 @@
           </p>
         <% end %>
 
-        <%= label_tag :bulk_meta_template_id, "Template Meta (vinculado à mensagem clínica):", class: "block text-sm font-medium text-gray-700 mb-2" %>
+        <%= label_tag :bulk_meta_template_id, "Template Meta aprovado:", class: "block text-sm font-medium text-gray-700 mb-2" %>
         <%= select_tag :bulk_meta_template_id,
               options_for_select(
-                meta_templates.map { |row|
-                  ["#{row[:lead_message].name} (Meta: #{row[:template].name})", row[:template].id]
-                }
+                meta_templates.map { |row| [row[:label], row[:template].id] }
               ),
               {
                 include_blank: meta_templates.any? ? "Selecione um template aprovado" : "Nenhum template aprovado disponível",

@@ -249,9 +249,12 @@ module ClinicManagement
       false
     end
 
-    # Approved Meta templates linked to global LeadMessages (staff absent bulk).
+    # Approved, current, campaign-sendable templates from the account's active
+    # WABAs. A template may have been created directly in Meta, so its
+    # availability for an absent-patient campaign must never depend on a legacy
+    # ClinicManagement::LeadMessage source record.
     #
-    # @return [Array<Hash>] :template, :lead_message, :had_variation_blocks
+    # @return [Array<Hash>] :template, :label, :had_variation_blocks
     def absent_meta_bulk_templates
       return [] unless defined?(current_account) && current_account.present?
       return [] unless can_use_meta_bulk_for_absent?
@@ -260,21 +263,18 @@ module ClinicManagement
       waba_ids = current_account.meta_business_accounts.active.pluck(:id)
       templates = MetaTemplate
                     .where(meta_business_account_id: waba_ids)
-                    .from_lead_message
                     .approved
                     .current_versions
       templates = templates.campaign_sendable if MetaTemplate.respond_to?(:campaign_sendable)
       templates = templates.includes(:meta_business_account)
 
-      lead_message_ids = templates.map(&:source_id).compact
-      lead_messages = ClinicManagement::LeadMessage.where(id: lead_message_ids, referral_id: nil).index_by(&:id)
-
-      templates.filter_map do |template|
-        lead_message = lead_messages[template.source_id]
-        next unless lead_message
-
-        { template: template, lead_message: lead_message, had_variation_blocks: template.try(:had_variation_blocks?) }
-      end.sort_by { |row| row[:lead_message].name.to_s.downcase }
+      templates.map do |template|
+        {
+          template: template,
+          label: template.name,
+          had_variation_blocks: template.try(:had_variation_blocks?)
+        }
+      end.sort_by { |row| row[:label].to_s.downcase }
     end
 
     # Readiness summary for Meta bulk panel on absent screen.
