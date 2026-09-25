@@ -281,9 +281,14 @@ module ClinicManagement
       end.sort_by { |row| row[:label].to_s.downcase }
     end
 
-    # All operational Meta numbers available to this account for the absent-patient
-    # screen. The clinic-oriented number remains first/default, but staff may choose
-    # another connected WABA (for example the optical-store account).
+    # All active Meta numbers available to this account for the absent-patient
+    # screen. The clinic-oriented number remains first/default, but staff may
+    # choose another connected WABA (for example the optical-store account).
+    #
+    # ESSENTIAL: Do not filter by can_send_message? here. A number may be at its
+    # daily quota while still being a valid selectable account number; hiding it
+    # silently removes the operator's ability to choose it and obscures why a
+    # send cannot proceed. The campaign service remains the final send guard.
     def absent_meta_bulk_phones
       account = current_account
       return [] unless account
@@ -294,7 +299,6 @@ module ClinicManagement
                  .merge(MetaBusinessAccount.active.where(account_id: account.id))
                  .active
                  .select(&:has_access_token?)
-                 .select(&:can_send_message?)
 
       default_phone = bulk_meta_phone_for_absent
       phones.sort_by { |phone| [phone.id == default_phone&.id ? 0 : 1, phone.meta_business_account.display_name.downcase, phone.id] }
