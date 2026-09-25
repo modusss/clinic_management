@@ -10,6 +10,7 @@
 <% bulk_default_channel = (can_use_evolution_api? || Rails.env.development?) ? "evolution" : "meta" %>
 <div data-controller="bulk-message"
      data-bulk-message-channel-value="<%= bulk_default_channel %>"
+     data-bulk-message-meta-preferences-key-value="clinic_absent_meta_preferences_user_<%= current_user.id %>"
      data-bulk-message-leads-data-value="<%= @leads.map { |l| { id: l.id, phone: l.phone, name: l.name } }.to_json.gsub('"', '&quot;') %>">
 
 <% if referral?(current_user) %>
@@ -417,4 +418,3 @@
 }
 
 </style>
-
