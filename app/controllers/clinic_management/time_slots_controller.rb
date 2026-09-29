@@ -190,19 +190,31 @@ module ClinicManagement
       end
 
       # Keeps already-created future attendance ranges aligned with their recurring template.
-      # ESSENTIAL: Past services remain immutable and existing appointments are preserved.
+      # ESSENTIAL: Past services remain immutable. When a future service changes to
+      # arrival order, its individual slots are invalid and must be removed so every
+      # affected appointment remains editable (including attendance registration).
       def propagate_configuration_to_future_services(previous_configuration)
-        ClinicManagement::Service
+        future_services = ClinicManagement::Service
           .where(previous_configuration)
           .where("date >= ?", Date.current)
-          .update_all(
+        future_service_ids = future_services.pluck(:id)
+        timestamp = Time.current
+
+        future_services.update_all(
             weekday: @time_slot.weekday,
             start_time: @time_slot.start_time,
             end_time: @time_slot.end_time,
             booking_mode: @time_slot.booking_mode,
             interval_minutes: @time_slot.interval_minutes,
-            updated_at: Time.current
+            updated_at: timestamp
           )
+
+        return unless @time_slot.booking_mode == "arrival_order" && future_service_ids.any?
+
+        ClinicManagement::Appointment
+          .where(service_id: future_service_ids)
+          .where.not(scheduled_at: nil)
+          .update_all(scheduled_at: nil, updated_at: timestamp)
       end
   end
 end

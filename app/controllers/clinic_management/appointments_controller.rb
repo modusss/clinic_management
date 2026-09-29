@@ -123,8 +123,15 @@ module ClinicManagement
     def set_attendance
       @appointment = Appointment.find(params[:id])
       button_id = "set-attendance-button-#{@appointment.id}"
-      @appointment.attendance = true
-      @appointment.save
+
+      # ESSENTIAL: Never acknowledge attendance in Turbo before it is persisted.
+      # Legacy appointments can carry fields invalidated by a later service setting,
+      # so `save` may fail even though the in-memory value is true.
+      unless @appointment.update(attendance: true)
+        render plain: @appointment.errors.full_messages.to_sentence, status: :unprocessable_entity
+        return
+      end
+
       respond_to do |format|
         format.turbo_stream do
           render turbo_stream: [ 

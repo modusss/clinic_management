@@ -44,6 +44,11 @@ module ClinicManagement
     scope :self_booked, -> { where(self_booked: true) }
     scope :manually_booked, -> { where(self_booked: [false, nil]) }
 
+    # ESSENTIAL: A service can be changed from scheduled slots to arrival order after
+    # patients have already been booked. Those legacy timestamps no longer describe a
+    # valid appointment and must not prevent unrelated updates such as attendance.
+    before_validation :clear_scheduled_at_for_arrival_order
+
     validate :scheduled_at_matches_service
     
     # ESSENTIAL: Prevents duplicate appointments for the same service + same patient (same name + same phone).
@@ -104,6 +109,15 @@ module ClinicManagement
     end
 
     private
+
+    # Removes an obsolete individual slot when its service now accepts patients by
+    # arrival order. The service configuration is the source of truth for whether a
+    # timestamp is meaningful; preserving it would leave the record impossible to save.
+    #
+    # @return [void]
+    def clear_scheduled_at_for_arrival_order
+      self.scheduled_at = nil if scheduled_at.present? && service&.scheduled? == false
+    end
 
     def scheduled_at_matches_service
       return if scheduled_at.blank?
