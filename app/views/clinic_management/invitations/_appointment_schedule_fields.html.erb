@@ -8,7 +8,11 @@
 <div class="invitation-schedule-field">
   <%= appointment_fields.hidden_field :service_id,
                                      value: selected_service&.id,
-                                     data: { invitation_duplicate_guard_target: "serviceInput" } %>
+                                     data: {
+                                       invitation_duplicate_guard_target: "serviceInput",
+                                       # ESSENTIAL: reschedule_slot_modal dispatches change after picking a day/slot.
+                                       action: "change->invitation-duplicate-guard#preview"
+                                     } %>
   <%= appointment_fields.hidden_field :scheduled_at, value: "" %>
   <%= appointment_fields.hidden_field :allow_overbooking, value: "0" %>
 

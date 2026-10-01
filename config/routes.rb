@@ -1,6 +1,9 @@
 ClinicManagement::Engine.routes.draw do
   root 'invitations#new'
-  resource :lens_demonstration, only: [:show], controller: "lens_demonstrations", path: "demonstracao-lentes"
+  resource :lens_demonstration, only: [:show], controller: "lens_demonstrations", path: "demonstracao-lentes" do
+    # ESSENTIAL: Same account-scoped jsonb calibration as the main app demo.
+    patch :update_multifocal_corridor
+  end
   resource :eye_education, only: [:show], controller: "eye_educations", path: "falar-sobre-o-olho"
   
   # ============================================================================

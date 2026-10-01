@@ -8,13 +8,20 @@
     <% times = [service&.start_time&.strftime("%H:%M"), service&.end_time&.strftime("%H:%M")].compact %>
     <% time_label = times.size == 2 ? "das #{times[0]}h às #{times[1]}h" : "" %>
     <div id="duplicate-patient-modal"
-         class="modal duplicate-patient-guard-modal"
-         role="dialog"
-         aria-modal="true"
-         aria-labelledby="duplicate-patient-modal-title"
+         class="duplicate-patient-guard-overlay"
          data-controller="duplicate-patient-modal"
-         data-duplicate-patient-modal-form-id-value="<%= form_id %>">
-      <div class="modal-content duplicate-patient-guard-modal__content">
+         data-duplicate-patient-modal-form-id-value="<%= form_id %>"
+         data-duplicate-patient-modal-phone-value="<%= duplicate_result.phone %>">
+      <button type="button"
+              class="duplicate-patient-guard-overlay__backdrop"
+              aria-label="Voltar e revisar"
+              data-action="click->duplicate-patient-modal#review"></button>
+
+      <div class="duplicate-patient-guard-modal"
+           role="dialog"
+           aria-modal="true"
+           aria-labelledby="duplicate-patient-modal-title">
+      <div class="duplicate-patient-guard-modal__content">
         <button type="button"
                 class="app-modal-close duplicate-patient-guard-modal__close"
                 aria-label="Voltar e revisar"
@@ -51,9 +58,10 @@
 
         <p class="duplicate-patient-guard-modal__hint">Confira a lista antes de continuar.</p>
       </div>
-      <div class="modal-footer duplicate-patient-guard-modal__actions">
-        <button type="button" class="btn-flat duplicate-patient-guard-modal__review" data-action="click->duplicate-patient-modal#review">Voltar e revisar</button>
-        <button type="button" class="btn duplicate-patient-guard-modal__continue" data-action="click->duplicate-patient-modal#continue">Continuar mesmo assim</button>
+      <div class="duplicate-patient-guard-modal__actions">
+        <button type="button" class="duplicate-patient-guard-modal__review" data-action="click->duplicate-patient-modal#review">Voltar e revisar</button>
+        <button type="button" class="duplicate-patient-guard-modal__continue" data-duplicate-patient-modal-primary data-action="click->duplicate-patient-modal#continue">Continuar mesmo assim</button>
+      </div>
       </div>
     </div>
   <% end %>

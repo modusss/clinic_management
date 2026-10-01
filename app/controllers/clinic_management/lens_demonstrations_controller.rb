@@ -3,7 +3,9 @@ module ClinicManagement
   # ESSENTIAL: This controller reuses the main app template and explicitly hides
   # the "campos de visão" tab/content for the clinical explanation workflow.
   class LensDemonstrationsController < ApplicationController
-    skip_before_action :redirect_doctor_users, only: [:show]
+    include ::MultifocalCorridorUpdatable
+
+    skip_before_action :redirect_doctor_users, only: %i[show update_multifocal_corridor]
     before_action :ensure_doctor_user!
     before_action :mark_clinic_lens_demo_layout
 
@@ -13,6 +15,14 @@ module ClinicManagement
     end
 
     private
+
+    # ESSENTIAL: Persist calibration through the engine mount, not the main-app
+    # /demonstracao-lentes path that retail staff use.
+    #
+    # @return [String]
+    def multifocal_corridor_save_path
+      clinic_management.update_multifocal_corridor_lens_demonstration_path
+    end
 
     def ensure_doctor_user!
       return if doctor_user?

@@ -32,6 +32,21 @@ module ClinicManagement
       assert_equal false, result.patients.second[:same_first_name]
     end
 
+    test "returns patients for the phone before a patient name has been entered" do
+      create_appointment("Maria do Carmo")
+      create_appointment("Ana Clara")
+
+      result = DuplicatePatientChecker.call(
+        service: @service,
+        phone: "(77) 99999-9991",
+        patient_name: ""
+      )
+
+      assert_not_predicate result, :duplicate?
+      assert_equal ["Maria do Carmo", "Ana Clara"], result.patients.pluck(:patient_name)
+      assert result.patients.none? { |patient| patient[:same_first_name] }
+    end
+
     test "ignores canceled appointments and appointments in another service" do
       canceled = create_appointment("Maria do Carmo", status: "cancelado")
       other_service = Service.create!(

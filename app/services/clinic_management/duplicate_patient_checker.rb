@@ -31,6 +31,10 @@ module ClinicManagement
 
     # Returns every active patient already registered with this phone in the
     # selected service, marking which entries share the submitted first name.
+    # The patient name is intentionally optional here: the live form must be
+    # able to warn as soon as staff finishes the phone field, before a name has
+    # necessarily been entered. The final duplicate decision still requires a
+    # matching first name.
     #
     # @return [ClinicManagement::DuplicatePatientChecker::Result]
     def call
@@ -40,7 +44,7 @@ module ClinicManagement
 
         {
           patient_name: name,
-          same_first_name: normalize_first_name(name) == first_name
+          same_first_name: first_name.present? && normalize_first_name(name) == first_name
         }
       end
 
@@ -60,7 +64,7 @@ module ClinicManagement
     # Canceled and rescheduled appointments no longer occupy the attendance and
     # must not force staff to acknowledge a duplicate that is no longer active.
     def matching_appointments
-      return ClinicManagement::Appointment.none if service.blank? || phone.blank? || first_name.blank?
+      return ClinicManagement::Appointment.none if service.blank? || phone.blank?
 
       ClinicManagement::Appointment
         .joins(:lead)

@@ -224,7 +224,11 @@ module ClinicManagement
 
       respond_to do |format|
         format.turbo_stream do
-          if result.duplicate?
+          # Live UX is broader than the final hard block: once this phone is
+          # already present in the selected attendance, show the existing
+          # patients immediately so staff can recognise whom they launched.
+          # Creation itself remains blocked only for the same first name.
+          if result.patients.any?
             render turbo_stream: turbo_stream.replace(
               "duplicate-patient-modal-container",
               partial: "duplicate_patient_modal",

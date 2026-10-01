@@ -1251,12 +1251,55 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
 
 /* Duplicate invitation confirmation — shared by the live Turbo check and the
    server-side submission guard. ESSENTIAL: this is intentionally distinct from
-   the yellow phone-owner association notice; it prevents duplicate attendance. */
-.duplicate-patient-guard-modal.modal {
+   the yellow phone-owner association notice. It is fully self-contained because
+   the clinic layout loads Materialize JS but deliberately does not load its CSS. */
+.duplicate-patient-guard-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 160ms ease, visibility 160ms ease;
+}
+
+.duplicate-patient-guard-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.duplicate-patient-guard-overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: rgba(15, 23, 42, 0.62);
+  cursor: default;
+}
+
+.duplicate-patient-guard-modal {
+  position: relative;
+  z-index: 1;
   width: 620px;
   max-width: 92vw;
+  max-height: calc(100vh - 48px);
   border-radius: 16px;
-  overflow: hidden;
+  overflow: auto;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+  transform: translateY(10px) scale(0.985);
+  transition: transform 160ms ease;
+}
+
+.duplicate-patient-guard-overlay.is-open .duplicate-patient-guard-modal {
+  transform: translateY(0) scale(1);
 }
 
 .duplicate-patient-guard-modal__content {
@@ -1265,8 +1308,29 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
 }
 
 .duplicate-patient-guard-modal__close.app-modal-close {
+  position: absolute;
   top: 16px;
   right: 16px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  color: #64748b;
+  background: #f8fafc;
+  cursor: pointer;
+}
+
+.duplicate-patient-guard-modal__close.app-modal-close:hover,
+.duplicate-patient-guard-modal__close.app-modal-close:focus-visible {
+  color: #0f172a;
+  background: #e2e8f0;
+  outline: none;
 }
 
 .duplicate-patient-guard-modal__heading {
@@ -1379,8 +1443,11 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
 
 .duplicate-patient-guard-modal__review,
 .duplicate-patient-guard-modal__continue {
+  appearance: none;
   flex: 1 1 0;
   min-height: 46px;
+  padding: 0 18px;
+  border: 0;
   border-radius: 8px;
   font-size: 16px;
   font-weight: 700;
@@ -1392,6 +1459,7 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
 
 .duplicate-patient-guard-modal__review {
   color: #fff;
+  border: 1px solid #1d4ed8;
   background: #1d4ed8;
 }
 
@@ -1409,6 +1477,18 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
 }
 
 @media (max-width: 600px) {
+  .duplicate-patient-guard-overlay {
+    align-items: flex-end;
+    padding: 12px;
+  }
+
+  .duplicate-patient-guard-modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100vh - 24px);
+    border-radius: 16px 16px 12px 12px;
+  }
+
   .duplicate-patient-guard-modal__content {
     padding: 24px 20px;
   }
