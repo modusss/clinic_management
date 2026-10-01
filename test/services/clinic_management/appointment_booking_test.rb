@@ -51,6 +51,22 @@ module ClinicManagement
       assert_equal time.change(sec: 0), appointment.scheduled_at.change(sec: 0)
     end
 
+    test "explicit duplicate confirmation permits the same patient in the service" do
+      time = @service.appointment_times.first
+      AppointmentBooking.new(service: @service).create_consecutive!(
+        appointment_attributes: [appointment_attributes("Maria da Silva")],
+        starting_at: time
+      )
+
+      appointment = AppointmentBooking.new(service: @service, allow_duplicate_patient: true).create_consecutive!(
+        appointment_attributes: [appointment_attributes("Maria da Silva")],
+        starting_at: @service.appointment_times.second
+      ).first
+
+      assert_predicate appointment, :persisted?
+      assert_equal "Maria da Silva", appointment.invitation.patient_name
+    end
+
     private
 
     def appointment_attributes(patient_name)

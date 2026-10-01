@@ -51,7 +51,12 @@
                   <% aria_description = [type_name, aria_counts].compact_blank.join(", ") %>
                   <% if service.scheduled? %>
                     <% free_times, occupied_times = item[:appointment_times].partition { |time| occupied_counts[time.change(sec: 0)].to_i.zero? } %>
-                    <li class="go-to-service-scheduled-group">
+                    <%# ESSENTIAL: The shared modal is reused by every patient form. Keep
+                        the service identity on the whole scheduled group so Stimulus can
+                        hide only the current appointment's service. %>
+                    <li class="go-to-service-scheduled-group reschedule-slot-service-option"
+                        data-service-id="<%= service.id %>"
+                        data-service-location-id="<%= service.service_location_id.to_s %>">
                       <div class="go-to-service-item go-to-service-item--static">
                         <span class="go-to-service-item-main">
                           <strong><%= time_str %></strong>
@@ -116,7 +121,7 @@
                   <% else %>
                   <li role="option">
                     <button type="button"
-                            class="go-to-service-item"
+                            class="go-to-service-item reschedule-slot-service-option"
                             data-action="click->reschedule-slot-modal#select"
                             data-service-id="<%= service.id %>"
                             data-service-location-id="<%= service.service_location_id.to_s %>"

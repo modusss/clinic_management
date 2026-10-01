@@ -1,0 +1,60 @@
+<%# ESSENTIAL: Turbo replaces this stable shell after the live check or a final
+    server-side validation. Keep it outside the modal itself so subsequent checks
+    can safely replace the previous Materialize instance. %>
+<div id="duplicate-patient-modal-container">
+  <% if local_assigns[:duplicate_result].present? %>
+    <% service = duplicate_result.service %>
+    <% date_label = service&.date ? I18n.l(service.date, format: "%A, %d/%m/%Y").capitalize : "o atendimento selecionado" %>
+    <% times = [service&.start_time&.strftime("%H:%M"), service&.end_time&.strftime("%H:%M")].compact %>
+    <% time_label = times.size == 2 ? "das #{times[0]}h às #{times[1]}h" : "" %>
+    <div id="duplicate-patient-modal"
+         class="modal duplicate-patient-guard-modal"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="duplicate-patient-modal-title"
+         data-controller="duplicate-patient-modal"
+         data-duplicate-patient-modal-form-id-value="<%= form_id %>">
+      <div class="modal-content duplicate-patient-guard-modal__content">
+        <button type="button"
+                class="app-modal-close duplicate-patient-guard-modal__close"
+                aria-label="Voltar e revisar"
+                data-action="click->duplicate-patient-modal#review">
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+
+        <div class="duplicate-patient-guard-modal__heading">
+          <span class="duplicate-patient-guard-modal__icon" aria-hidden="true">
+            <i class="fas fa-exclamation-triangle"></i>
+          </span>
+          <div>
+            <h2 id="duplicate-patient-modal-title">Paciente já lançado neste atendimento</h2>
+            <p>Encontramos pacientes com este telefone já lançados para <strong><%= date_label %></strong><%= " #{time_label}" if time_label.present? %>.</p>
+          </div>
+        </div>
+
+        <section class="duplicate-patient-guard-modal__patients" aria-label="Pacientes já lançados">
+          <p class="duplicate-patient-guard-modal__phone">Telefone: <strong><%= number_to_phone(duplicate_result.phone, area_code: true) %></strong></p>
+          <ul>
+            <% duplicate_result.patients.each do |patient| %>
+              <li>
+                <span class="duplicate-patient-guard-modal__patient-icon" aria-hidden="true"><i class="fas fa-user"></i></span>
+                <strong><%= patient[:patient_name] %></strong>
+                <% if patient[:same_first_name] %>
+                  <span class="duplicate-patient-guard-modal__badge">Mesmo primeiro nome</span>
+                <% else %>
+                  <span class="duplicate-patient-guard-modal__badge duplicate-patient-guard-modal__badge--neutral">Mesmo telefone</span>
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        </section>
+
+        <p class="duplicate-patient-guard-modal__hint">Confira a lista antes de continuar.</p>
+      </div>
+      <div class="modal-footer duplicate-patient-guard-modal__actions">
+        <button type="button" class="btn-flat duplicate-patient-guard-modal__review" data-action="click->duplicate-patient-modal#review">Voltar e revisar</button>
+        <button type="button" class="btn duplicate-patient-guard-modal__continue" data-action="click->duplicate-patient-modal#continue">Continuar mesmo assim</button>
+      </div>
+    </div>
+  <% end %>
+</div>

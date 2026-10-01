@@ -5,10 +5,11 @@ module ClinicManagement
   class AppointmentBooking
     class UnavailableTime < StandardError; end
 
-    def initialize(service:, allow_overbooking: false)
+    def initialize(service:, allow_overbooking: false, allow_duplicate_patient: false)
       @service = service
       # ESSENTIAL: nil is a common unchecked-checkbox value and must still persist false.
       @allow_overbooking = ActiveModel::Type::Boolean.new.cast(allow_overbooking) || false
+      @allow_duplicate_patient = ActiveModel::Type::Boolean.new.cast(allow_duplicate_patient) || false
     end
 
     # Reserves consecutive times for the supplied appointment attribute hashes.
@@ -28,7 +29,8 @@ module ClinicManagement
             attributes.merge(
               service: service,
               scheduled_at: scheduled_at,
-              overbooked: intentional_overbooking
+              overbooked: intentional_overbooking,
+              allow_duplicate_patient: @allow_duplicate_patient
             )
           )
         end

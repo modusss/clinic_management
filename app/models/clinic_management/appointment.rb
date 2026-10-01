@@ -16,6 +16,11 @@ module ClinicManagement
   # - Analyzing patient engagement with the booking flow
   # ============================================================================
   class Appointment < ApplicationRecord
+    # Set only by the invitation duplicate-confirmation flow. This is virtual on
+    # purpose: the staff acknowledgement belongs to the current request, not to
+    # the clinical history stored on the appointment.
+    attr_accessor :allow_duplicate_patient
+
     belongs_to :lead
     belongs_to :service
     belongs_to :invitation, required: true
@@ -158,6 +163,7 @@ module ClinicManagement
     #
     # @return [void]
     def no_duplicate_patient_same_service
+      return if ActiveModel::Type::Boolean.new.cast(allow_duplicate_patient)
       return if lead_id.blank? || service_id.blank?
       return unless lead.present?
 

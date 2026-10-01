@@ -264,11 +264,12 @@ module ClinicManagement
       @rows = get_lead_data
       @new_appointment = ClinicManagement::Appointment.new
       @old_appointment = @lead.appointments&.last
-      if @old_appointment.present?
-        @available_services = available_services(@old_appointment&.service)
-      else
-        @available_services = ClinicManagement::Service.where("date >= ?", Date.current)
-      end
+
+      # ESSENTIAL: The shared reschedule modal serves every patient listed under
+      # this responsible lead. It must contain every eligible future service;
+      # the Stimulus controller hides only the service of the appointment whose
+      # individual reschedule form opened the modal.
+      @available_services = available_services(nil)
     end
 
     # GET /leads/new

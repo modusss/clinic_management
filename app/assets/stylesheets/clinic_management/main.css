@@ -1249,6 +1249,194 @@ html.clinic-sidenav-open .clinic-sidenav-close-btn {
   min-height: 6rem;
 }
 
+/* Duplicate invitation confirmation — shared by the live Turbo check and the
+   server-side submission guard. ESSENTIAL: this is intentionally distinct from
+   the yellow phone-owner association notice; it prevents duplicate attendance. */
+.duplicate-patient-guard-modal.modal {
+  width: 620px;
+  max-width: 92vw;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.duplicate-patient-guard-modal__content {
+  position: relative;
+  padding: 32px;
+}
+
+.duplicate-patient-guard-modal__close.app-modal-close {
+  top: 16px;
+  right: 16px;
+}
+
+.duplicate-patient-guard-modal__heading {
+  display: flex;
+  gap: 16px;
+  padding-right: 36px;
+}
+
+.duplicate-patient-guard-modal__icon,
+.duplicate-patient-guard-modal__patient-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 999px;
+}
+
+.duplicate-patient-guard-modal__icon {
+  width: 52px;
+  height: 52px;
+  color: #c2410c;
+  background: #ffedd5;
+  font-size: 22px;
+}
+
+.duplicate-patient-guard-modal h2 {
+  margin: 2px 0 8px;
+  color: #0f172a;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.duplicate-patient-guard-modal__heading p,
+.duplicate-patient-guard-modal__hint {
+  margin: 0;
+  color: #475569;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.duplicate-patient-guard-modal__patients {
+  margin-top: 24px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.duplicate-patient-guard-modal__phone {
+  margin: 0;
+  padding: 14px 18px;
+  color: #1e3a5f;
+  background: #eff6ff;
+  font-size: 16px;
+}
+
+.duplicate-patient-guard-modal__patients ul {
+  margin: 0;
+  padding: 0 18px;
+  list-style: none;
+}
+
+.duplicate-patient-guard-modal__patients li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  color: #1e293b;
+  font-size: 16px;
+}
+
+.duplicate-patient-guard-modal__patients li + li {
+  border-top: 1px solid #e2e8f0;
+}
+
+.duplicate-patient-guard-modal__patient-icon {
+  width: 34px;
+  height: 34px;
+  color: #2563eb;
+  background: #dbeafe;
+}
+
+.duplicate-patient-guard-modal__badge {
+  margin-left: auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #9a3412;
+  background: #ffedd5;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.duplicate-patient-guard-modal__badge--neutral {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.duplicate-patient-guard-modal__hint {
+  margin-top: 18px;
+}
+
+.duplicate-patient-guard-modal__actions {
+  display: flex;
+  gap: 12px;
+  height: auto;
+  padding: 0 32px 28px;
+  background: #fff;
+}
+
+.duplicate-patient-guard-modal__review,
+.duplicate-patient-guard-modal__continue {
+  flex: 1 1 0;
+  min-height: 46px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 46px;
+  text-align: center;
+  text-transform: none;
+}
+
+.duplicate-patient-guard-modal__review {
+  color: #fff;
+  background: #1d4ed8;
+}
+
+.duplicate-patient-guard-modal__continue {
+  color: #1e293b;
+  border: 1px solid #94a3b8;
+  background: #fff;
+  box-shadow: none;
+}
+
+.duplicate-patient-guard-modal__continue:hover,
+.duplicate-patient-guard-modal__continue:focus {
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+@media (max-width: 600px) {
+  .duplicate-patient-guard-modal__content {
+    padding: 24px 20px;
+  }
+
+  .duplicate-patient-guard-modal__heading {
+    gap: 12px;
+    padding-right: 24px;
+  }
+
+  .duplicate-patient-guard-modal h2 {
+    font-size: 20px;
+  }
+
+  .duplicate-patient-guard-modal__actions {
+    flex-direction: column;
+    padding: 0 20px 20px;
+  }
+
+  .duplicate-patient-guard-modal__patients li {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .duplicate-patient-guard-modal__badge {
+    margin-left: 46px;
+  }
+}
+
 .invitation-form input:not([type="submit"]):not([type="button"]):focus,
 .invitation-form select:focus,
 .invitation-form textarea:focus {

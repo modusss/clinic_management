@@ -1,4 +1,18 @@
-<%= form_for(invitation, url: create_patient_fitted_invitations_path, method: :post, html: {multipart: true, class: "invitation-form w-full max-w-2xl mx-auto mt-6", id: "new_invitation"}) do |form| %>
+<%= form_for(invitation,
+             url: create_patient_fitted_invitations_path,
+             method: :post,
+             html: {
+               multipart: true,
+               class: "invitation-form w-full max-w-2xl mx-auto mt-6",
+               id: "new_invitation",
+               data: {
+                 controller: "invitation-duplicate-guard",
+                 invitation_duplicate_guard_check_url_value: duplicate_patient_check_invitations_path,
+                 invitation_duplicate_guard_csrf_token_value: form_authenticity_token,
+                 invitation_duplicate_guard_form_id_value: "new_invitation",
+                 action: "submit->invitation-duplicate-guard#submit duplicate-patient-modal:acknowledged@document->invitation-duplicate-guard#acknowledge duplicate-patient-modal:closed@document->invitation-duplicate-guard#releaseModal"
+               }
+             }) do |form| %>
   <% if invitation.errors.any? %>
     <div class="bg-red-200 border-red-600 border-l-4 p-4 mb-6">
       <h2 class="text-red-800 font-bold"><%= pluralize(invitation.errors.count, "erro") %> impediram que o convite fosse salvo:</h2>
@@ -12,7 +26,8 @@
 
   <div data-controller="phone-checker" 
        data-phone-checker-check-url-value="<%= check_existing_phone_invitations_path %>"
-       data-phone-checker-csrf-token-value="<%= form_authenticity_token %>">
+       data-phone-checker-csrf-token-value="<%= form_authenticity_token %>"
+       data-action="duplicate-patient-modal:acknowledged@document->phone-checker#acceptDuplicatePatient">
 
     <section class="invitation-form-section">
     <h2 class="invitation-form-section__title"><span>1</span> Dados da marcação</h2>
@@ -43,6 +58,7 @@
               controller: "phone-mask",
               phone_mask_target: "input",
               phone_checker_target: "phoneInput",
+              invitation_duplicate_guard_target: "phoneInput",
               action: "blur->phone-checker#checkPhone focus->phone-checker#onPhoneFocus"
             }
         %>
@@ -91,10 +107,13 @@
     <% end %>
 
     <%= hidden_field_tag :phone_action, '', data: { phone_checker_target: "phoneActionInput" } %>
+    <%= hidden_field_tag :allow_duplicate_patient, "0", data: { invitation_duplicate_guard_target: "confirmationInput" } %>
 
     <div class="mb-4">
       <%= form.label "Nome do paciente", class: "block text-gray-700 font-bold" %>
-      <%= form.text_field :patient_name, class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+      <%= form.text_field :patient_name,
+                          class: "w-full px-3 py-2 border rounded shadow appearance-none text-gray-700 leading-tight focus:outline-none focus:shadow-outline",
+                          data: { invitation_duplicate_guard_target: "patientNameInput" } %>
     </div>
     
     <%= form.fields_for :lead do |lead_fields| %>
@@ -128,4 +147,5 @@
     </section>
 
   </div>
+  <%= render "duplicate_patient_modal" %>
 <% end %>

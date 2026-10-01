@@ -2,11 +2,22 @@ module ClinicManagement
   class InvitationsController < ApplicationController
     before_action :set_invitation, only: %i[ show edit update destroy ]
     before_action :require_manager_above!, only: [:interaction_timeline]
-    skip_before_action :redirect_referral_users, only: [:new, :create, :update, :index, :edit_patient_name, :update_patient_name, :check_existing_phone]
+    skip_before_action :redirect_referral_users, only: [:new, :create, :update, :index, :edit_patient_name, :update_patient_name, :check_existing_phone, :duplicate_patient_check]
     include GeneralHelper
 
     INTERACTION_TIMELINE_TYPES = %w[whatsapp_click phone_call phone_call_answered].freeze
     INTERACTION_TIMELINE_SUBJECT_TYPES = %w[referral local_user].freeze
+
+    # Raised before persistence when the staff member has not explicitly
+    # acknowledged a same-phone and same-first-name patient in this service.
+    class DuplicatePatientError < StandardError
+      attr_reader :result
+
+      def initialize(result)
+        @result = result
+        super("Paciente já lançado neste atendimento.")
+      end
+    end
 
     # GET /invitations
     def index
@@ -185,19 +196,16 @@ module ClinicManagement
           @lead.update!(name: @invitation.patient_name) if @lead.name.blank?
           puts @lead.errors.full_messages
           appointment_params = invitation_params[:appointments_attributes]["0"].merge({status: "agendado", lead: @lead})
-          existing_appointment = already_schedule_this_patient?(@invitation, appointment_params[:service_id])   
-          
-          if existing_appointment
-            @lead.errors.add(:base, "Este paciente chamado #{@lead.name} já está agendado para este atendimento.")
-            @invitation.destroy
-            raise ActiveRecord::RecordInvalid.new(@lead)
-          else
-            @appointment = create_manual_appointment!(@invitation, appointment_params)
-          end
+          duplicate_result = duplicate_patient_result(@invitation, appointment_params[:service_id])
+          raise DuplicatePatientError, duplicate_result if duplicate_result.duplicate? && !duplicate_patient_confirmed?
+
+          @appointment = create_manual_appointment!(@invitation, appointment_params)
         end
         @lead.update(last_appointment_id: @appointment.id)
         puts @lead.errors.full_messages
         render_turbo_stream
+      rescue DuplicatePatientError => exception
+        render_duplicate_patient_modal(exception.result)
       rescue ActiveRecord::RecordInvalid => exception
         render_validation_errors(exception)
       rescue ClinicManagement::AppointmentBooking::UnavailableTime => exception
@@ -205,17 +213,29 @@ module ClinicManagement
       end
     end
 
-    def already_schedule_this_patient?(invitation, service_id)
-      phone = invitation.lead.phone
-      patient_first_name = invitation.patient_name.split.first
-      # check if this service has any appointment with this patient first name and phone
-      ClinicManagement::Appointment
-        .joins(:service, :lead, :invitation)
-        .where(
-          clinic_management_services: { id: service_id },
-          clinic_management_leads: { phone: phone },
-          clinic_management_invitations: { patient_name: patient_first_name }
-        ).exists?
+    # GET /invitations/duplicate_patient_check.turbo_stream
+    # Checks the current form values without creating or modifying any record.
+    def duplicate_patient_check
+      result = ClinicManagement::DuplicatePatientChecker.call(
+        service: Service.find_by(id: params[:service_id]),
+        phone: params[:phone],
+        patient_name: params[:patient_name]
+      )
+
+      respond_to do |format|
+        format.turbo_stream do
+          if result.duplicate?
+            render turbo_stream: turbo_stream.replace(
+              "duplicate-patient-modal-container",
+              partial: "duplicate_patient_modal",
+              locals: { duplicate_result: result, form_id: params[:form_id].presence || "new_invitation" }
+            )
+          else
+            head :no_content
+          end
+        end
+        format.html { head :no_content }
+      end
     end
     
     def new_patient_fitted
@@ -247,14 +267,10 @@ module ClinicManagement
           @lead.update!(name: @invitation.patient_name) if @lead.name.blank?    
           
           appointment_params = invitation_params[:appointments_attributes]["0"].merge({status: "agendado", lead: @lead})
-          existing_appointment = already_schedule_this_patient?(@invitation, appointment_params[:service_id])
-          
-          if existing_appointment
-            @lead.errors.add(:base, "Este paciente chamado #{@lead.name} já está agendado para este atendimento.")
-            raise ActiveRecord::RecordInvalid.new(@lead)
-          else
-            @appointment = create_manual_appointment!(@invitation, appointment_params)
-          end
+          duplicate_result = duplicate_patient_result(@invitation, appointment_params[:service_id])
+          raise DuplicatePatientError, duplicate_result if duplicate_result.duplicate? && !duplicate_patient_confirmed?
+
+          @appointment = create_manual_appointment!(@invitation, appointment_params)
         end
         
         @lead.update(last_appointment_id: @appointment.id)
@@ -266,6 +282,8 @@ module ClinicManagement
         else
           redirect_to @appointment.service
         end
+      rescue DuplicatePatientError => exception
+        render_duplicate_patient_modal(exception.result)
       rescue ActiveRecord::RecordInvalid => exception
         render_validation_errors(exception)
       rescue ClinicManagement::AppointmentBooking::UnavailableTime => exception
@@ -1428,13 +1446,44 @@ module ClinicManagement
 
         ClinicManagement::AppointmentBooking.new(
           service: service,
-          allow_overbooking: allow_overbooking
+          allow_overbooking: allow_overbooking,
+          allow_duplicate_patient: duplicate_patient_confirmed?
         ).create_consecutive!(
           appointment_attributes: [attributes],
           starting_at: scheduled_at
         ).first
       rescue ArgumentError
         raise ClinicManagement::AppointmentBooking::UnavailableTime, "Escolha um horário válido."
+      end
+
+      # Uses the same checker for the live preview and the final POST, so a
+      # stale browser response cannot create an unacknowledged duplicate.
+      def duplicate_patient_result(invitation, service_id)
+        ClinicManagement::DuplicatePatientChecker.call(
+          service: Service.find_by(id: service_id),
+          phone: invitation.lead&.phone,
+          patient_name: invitation.patient_name
+        )
+      end
+
+      def duplicate_patient_confirmed?
+        ActiveModel::Type::Boolean.new.cast(params[:allow_duplicate_patient])
+      end
+
+      def render_duplicate_patient_modal(result)
+        respond_to do |format|
+          format.turbo_stream do
+            render turbo_stream: turbo_stream.replace(
+              "duplicate-patient-modal-container",
+              partial: "duplicate_patient_modal",
+              locals: { duplicate_result: result, form_id: "new_invitation" }
+            )
+          end
+          format.html do
+            redirect_back fallback_location: new_invitation_path,
+                          alert: "Paciente já lançado neste atendimento. Revise os registros antes de continuar."
+          end
+        end
       end
 
     # ============================================================================

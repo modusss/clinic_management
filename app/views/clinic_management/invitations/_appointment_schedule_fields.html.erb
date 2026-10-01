@@ -6,7 +6,9 @@
 <% selected_label = selected_service.present? ? display_service_name(selected_service) : nil %>
 
 <div class="invitation-schedule-field">
-  <%= appointment_fields.hidden_field :service_id, value: selected_service&.id %>
+  <%= appointment_fields.hidden_field :service_id,
+                                     value: selected_service&.id,
+                                     data: { invitation_duplicate_guard_target: "serviceInput" } %>
   <%= appointment_fields.hidden_field :scheduled_at, value: "" %>
   <%= appointment_fields.hidden_field :allow_overbooking, value: "0" %>
 

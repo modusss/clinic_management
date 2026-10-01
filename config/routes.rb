@@ -67,6 +67,7 @@ ClinicManagement::Engine.routes.draw do
       get 'new_patient_fitted/:service_id', action: "new_patient_fitted", as: "new_patient_fitted"
       post 'create_patient_fitted', action: "create_patient_fitted", as: "create_patient_fitted"
       post 'check_existing_phone', action: "check_existing_phone", as: "check_existing_phone"
+      get 'duplicate_patient_check', action: "duplicate_patient_check", as: "duplicate_patient_check"
     end
   end
   get '/performance_report', to: 'invitations#performance_report', as: 'performance_report'
