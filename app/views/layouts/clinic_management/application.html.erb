@@ -382,7 +382,6 @@
 
   <%= render "clinic_management/shared/navbar" %>
   <% if user_signed_in? && internal_chat_available? %>
-    <%= render "shared/internal_chat_trigger", variant: :clinic %>
     <%= render "shared/internal_chat_drawer" %>
   <% end %>
   <%= render "clinic_management/shared/scroll_buttons" %>

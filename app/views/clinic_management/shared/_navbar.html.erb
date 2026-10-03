@@ -37,6 +37,7 @@
 
         <% if user_signed_in? %>
           <div class="clinic-navbar__user">
+            <%= render "shared/internal_chat_trigger", variant: :clinic if internal_chat_available? %>
             <span class="clinic-navbar__greeting mr-4">Olá, <%= current_user.name %></span>
             <%= link_to "Sair", main_app.destroy_user_session_path, data: { turbo_method: :delete }, class: "text-sm px-4 py-2 border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white" %>
           </div>
@@ -105,6 +106,7 @@
 
         <% if user_signed_in? %>
           <div class="clinic-navbar__user">
+            <%= render "shared/internal_chat_trigger", variant: :clinic if internal_chat_available? %>
             <div class="clinic-navbar__user-chip clinic-phone-only">
               <span class="clinic-navbar__avatar" aria-hidden="true"><%= current_user.name.to_s.strip.first&.upcase || "?" %></span>
               <span class="clinic-navbar__greeting">Olá, <%= current_user.name.to_s.split.first %></span>
@@ -277,6 +279,7 @@
 
       <% if user_signed_in? %>
         <div class="clinic-navbar__user">
+          <%= render "shared/internal_chat_trigger", variant: :clinic if internal_chat_available? %>
           <div class="clinic-navbar__user-chip clinic-phone-only">
             <span class="clinic-navbar__avatar" aria-hidden="true"><%= current_user.name.to_s.strip.first&.upcase || "?" %></span>
             <span class="clinic-navbar__greeting">Olá, <%= current_user.name.to_s.split.first %></span>
