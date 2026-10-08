@@ -375,7 +375,8 @@ module ClinicManagement
         # Se não tiver o helper específico, vamos assumir que o número é válido para evitar enviar "✓"
         # Se quiser manter a validação estrita, precisaria implementar o checkNumberStatus no helper
         
-        # validation_response = send_api_zap_message("✓", phone, false, instance_name)
+        # The queued job sends through GeneralHelper, which normalizes the
+        # recipient before contacting Evolution.
         
         # Por enquanto, vamos confiar que o número é válido e deixar o job lidar com erros de envio
         # Isso evita o envio da mensagem "✓" indesejada

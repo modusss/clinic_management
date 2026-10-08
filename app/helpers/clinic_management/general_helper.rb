@@ -142,8 +142,11 @@ module ClinicManagement
     end
 
         def whatsapp_link(phone, message = "")
+          recipient = evolution_recipient_number(phone)
+          return "#" if recipient.blank?
+
           formatted_message = message.gsub("\n", "%0A")
-          "whatsapp://send?phone=55#{phone}&text=#{formatted_message}"
+          "whatsapp://send?phone=#{recipient}&text=#{formatted_message}"
         end
 
         def add_phone_mask(phone)
@@ -156,7 +159,7 @@ module ClinicManagement
         def masked_whatsapp_link(phone, message = "")
           masked_phone = add_phone_mask(phone)
           whatsapp = whatsapp_link(phone, message)
-          tel_link = "tel:+55#{phone&.gsub(/[^0-9]/, '')}"
+          tel_link = "tel:+#{evolution_recipient_number(phone)}"
 
           # WhatsApp icon, masked phone, and explicit call link with icon and "Ligar" text
           "<a href=\"#{whatsapp}\" target=\"_blank\" rel=\"noopener\" style=\"text-decoration:none;font-weight:500;\" class=\"nowrap text-blue-500 hover:text-blue-700\">
@@ -354,6 +357,16 @@ module ClinicManagement
           current_membership.role == "clinical_assistant"
         end
 
+        # Delegates recipient normalization to the host application so the
+        # clinic engine and retail flows cannot diverge when phone storage
+        # conventions change (for example, local digits versus an E.164 `55`).
+        #
+        # @param phone [String, nil] local Brazilian digits or country-code digits
+        # @return [String, nil] digits with exactly one Brazilian country code
+        def evolution_recipient_number(phone)
+          Object.new.extend(::GeneralHelper).send(:evolution_recipient_number, phone)
+        end
+
         # =======================================================
         # VERIFICAÇÃO DE WHATSAPP - Evolution API v2
         # Endpoint: POST /chat/whatsappNumbers/{instance}
@@ -373,7 +386,8 @@ module ClinicManagement
           }
           
           # Formato: array de números com código do país
-          formatted_phone = "55#{phone.to_s.gsub(/[^0-9]/, '')}"
+          formatted_phone = evolution_recipient_number(phone)
+          return { exists: false, error: "Telefone inválido" } if formatted_phone.blank?
           
           body = {
             numbers: [formatted_phone]
@@ -504,7 +518,7 @@ module ClinicManagement
           
           # v2: Estrutura simplificada - text direto no body
           body = {
-            number: "55" + phone.to_s,
+            number: evolution_recipient_number(phone),
             text: message,
             delay: 1200,
             linkPreview: false
@@ -539,7 +553,7 @@ module ClinicManagement
           
           # v2: Estrutura simplificada - campos diretos no body
           body = {
-            number: "55" + phone,
+            number: evolution_recipient_number(phone),
             mediatype: "image",
             caption: caption,
             media: media_url,
@@ -576,7 +590,7 @@ module ClinicManagement
           
           # v2: Estrutura simplificada - campos diretos no body
           body = {
-            number: "55" + phone,
+            number: evolution_recipient_number(phone),
             mediatype: "video",
             caption: caption,
             media: video_url,
@@ -613,7 +627,7 @@ module ClinicManagement
           
           # v2: Endpoint mudou para sendWhatsAppAudio e estrutura simplificada
           body = {
-            number: "55" + phone,
+            number: evolution_recipient_number(phone),
             audio: audio_url,
             delay: 1200,
             linkPreview: false
@@ -649,7 +663,7 @@ module ClinicManagement
           
           # v2: Estrutura simplificada - campos diretos no body
           body = {
-            number: "55" + phone,
+            number: evolution_recipient_number(phone),
             mediatype: "document",
             mimetype: "application/pdf",
             caption: caption,

@@ -26,8 +26,9 @@
                 <div class="flex items-center">
                   <% if lead.phone.present? %>
                     <% phone_number = lead.phone.to_s.gsub(/\D/, '') %>
+                    <% whatsapp_recipient = evolution_recipient_number(lead.phone) %>
                     <%= link_to add_phone_mask(lead.phone), 
-                                "whatsapp://send?phone=55#{phone_number}&text=", 
+                                "whatsapp://send?phone=#{whatsapp_recipient}&text=",
                                 target: '_blank',
                                 data: { 
                                   action: "click->message-tracking#recordMessageSent"

@@ -229,7 +229,7 @@
             <%# Direct WhatsApp share button with referral attribution %>
             <% whatsapp_message = "Olá! Segue o link para você agendar sua consulta: #{full_link}" %>
             <% if lead.phone.present? %>
-              <a href="https://wa.me/55<%= lead.phone %>?text=<%= ERB::Util.url_encode(whatsapp_message) %>"
+              <a href="https://wa.me/<%= evolution_recipient_number(lead.phone) %>?text=<%= ERB::Util.url_encode(whatsapp_message) %>"
                  target="_blank"
                  class="w-full sm:w-auto bg-green-500 hover:bg-green-600 active:bg-green-700 
                         text-white text-sm px-4 py-2 rounded-lg shadow-md 

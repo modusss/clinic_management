@@ -218,7 +218,8 @@
       const message = 'Olá, ' + patientName + '! 👋\n\nAqui está seu link para agendar sua consulta:\n\n' + registrationUrl + '\n\nClique no link acima para continuar. ✅';
       
       // Open WhatsApp with the message
-      const whatsappUrl = 'https://wa.me/55' + newPhone + '?text=' + encodeURIComponent(message);
+      const whatsappRecipient = newPhone.startsWith('55') && [12, 13].includes(newPhone.length) ? newPhone : '55' + newPhone;
+      const whatsappUrl = 'https://wa.me/' + whatsappRecipient + '?text=' + encodeURIComponent(message);
       window.open(whatsappUrl, '_blank');
       
       // Show confirmation
