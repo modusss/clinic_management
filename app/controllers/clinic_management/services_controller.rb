@@ -303,7 +303,7 @@ module ClinicManagement
             )},
             {header: "Observações", content: render_to_string(partial: "clinic_management/shared/appointment_comments", locals: { appointment: ap, message: "" }), id: "appointment-comments-#{ap.id}"},
             { header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "pt-2 pb-0" },          
-            { header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500 nowrap" },
+            { header: "Ficha de cliente da ótica", content: set_conversion_link(lead), class: "text-purple-500 nowrap" },
             { header: "Responsável", content: ((lead.name == invitation.patient_name) ? "" : lead.name), class: "nowrap" },
             {  
               header: "Telefone", 

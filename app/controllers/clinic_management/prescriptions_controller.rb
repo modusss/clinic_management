@@ -486,7 +486,7 @@
               },          
               {header: "Receita", content: prescription_link(ap), class: "nowrap"},
               {header: "Ação", content: set_appointment_button(ap), id: "set-attendance-button-#{ap.id}", class: "pt-2 pb-0 nowrap" },          
-              {header: "Tornar cliente", content: set_conversion_link(lead), class: "text-purple-500 nowrap"},
+              {header: "Ficha de cliente da ótica", content: set_conversion_link(lead), class: "text-purple-500 nowrap"},
               {header: "Mensagem", content: generate_message_content(lead, ap), id: "whatsapp-link-#{lead.id.to_s}"},
               {header: "Mensagens enviadas:", content: helpers.format_appointment_messages_sent(ap&.messages_sent), id: "messages-sent-#{ap.id.to_s}"}
             ]
