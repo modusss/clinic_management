@@ -1,0 +1,232 @@
+<%#
+  ESSENTIAL: Unified Service Day Dashboard & Header ("Proposta de nova UX" layout in light theme).
+  Renders:
+  1. Top Card: Service date header (weekday, full date, time range, status badge, "+ Encaixar paciente")
+     + "Resumo do atendimento" with dual segmented progress bar (Compareceram vs Faltaram/Aguardando).
+  2. Primary KPI Row (3 cards): Agendados (ativos), Compareceram, Faltaram / Aguardando.
+  3. Secondary Indicators Card ("Outros indicadores"): Confirmados, Remarcados, Cancelados, Total na lista.
+
+  Updated live via Turbo Stream whenever attendance, confirmation, or cancellation changes.
+
+  Locals:
+  - services: ClinicManagement::Service or Array<ClinicManagement::Service>
+  - referral: Optional Referral when scoped by captador (show_by_referral)
+  - dom_id: Optional DOM id override (defaults to "service-day-metrics")
+  - show_header: Optional boolean (defaults to true) — renders the top date/time header inside the hero card
+  - show_fit_patient: Optional boolean (defaults to false) — renders "+ Encaixar paciente" button
+  - show_service_link: Optional boolean (defaults to false) — renders link to services#show
+%>
+<% service_list = Array(local_assigns[:services]).compact %>
+<% primary_service = service_list.first %>
+<% referral = local_assigns[:referral] %>
+<% container_id = local_assigns[:dom_id].presence || "service-day-metrics" %>
+<% show_header = local_assigns.key?(:show_header) ? local_assigns[:show_header] : true %>
+<% show_fit_patient = local_assigns.fetch(:show_fit_patient, false) %>
+<% show_service_link = local_assigns.fetch(:show_service_link, false) %>
+<% m = service_day_metrics(service_list, referral: referral) %>
+<% att_pct_str = "#{format('%.1f', m[:attendance_rate]).tr('.', ',')}%" %>
+<% pend_pct_str = "#{format('%.1f', m[:pending_rate]).tr('.', ',')}%" %>
+<% pending_is_past = m[:past_service] %>
+
+<section id="<%= container_id %>"
+         class="mb-5 space-y-4"
+         aria-label="Indicadores do atendimento">
+
+  <%# =========================================================================
+      1. HERO CARD: Header do Atendimento + Resumo do Atendimento (Barra Dupla)
+      ========================================================================= %>
+  <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 sm:p-6">
+    <% if show_header && primary_service.present? %>
+      <% weekday_upcase = I18n.l(primary_service.date, format: "%A").upcase rescue format_weekday(primary_service.date).to_s.upcase %>
+      <% full_date_label = I18n.l(primary_service.date, format: "%d de %B de %Y") rescue primary_service.date.strftime("%d/%m/%Y") %>
+      <% service_type_names = service_list.map { |s| s.service_type&.name }.compact.uniq.join(" / ") %>
+      <% location_names = service_list.map { |s| s.service_location&.name.presence || "Clínica (Interno)" }.uniq.join(" / ") %>
+      <% time_ranges = service_list.map { |s| "#{s.start_time.strftime('%H:%M')} – #{s.end_time.strftime('%H:%M')}" }.uniq.join(" · ") %>
+
+      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 pb-5 mb-5 border-b border-slate-100">
+        <div>
+          <div class="flex flex-wrap items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-500 uppercase mb-1.5">
+            <i class="far fa-calendar-alt text-slate-400" aria-hidden="true"></i>
+            <span>ATENDIMENTO · <%= weekday_upcase %></span>
+            <% if service_type_names.present? %>
+              <span class="text-slate-300">·</span>
+              <span class="text-slate-600"><%= service_type_names %></span>
+            <% end %>
+            <% if multi_service_locations_enabled? && location_names.present? %>
+              <span class="text-slate-300">·</span>
+              <span class="text-indigo-600"><i class="fas fa-map-marker-alt mr-1" aria-hidden="true"></i><%= location_names %></span>
+            <% end %>
+            <% if referral.present? %>
+              <span class="text-slate-300">·</span>
+              <span class="text-blue-600">INDICADOR: <%= referral.name %></span>
+            <% end %>
+          </div>
+
+          <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            <%= full_date_label %>
+          </h1>
+
+          <div class="mt-2 flex flex-wrap items-center gap-2.5 text-sm text-slate-500">
+            <span class="inline-flex items-center gap-1.5 font-medium text-slate-600">
+              <i class="far fa-clock text-slate-400" aria-hidden="true"></i>
+              <%= time_ranges %>
+            </span>
+
+            <% badge_classes = case m[:status_badge_tone]
+              when "red" then "bg-red-50 text-red-700 border-red-200"
+              when "emerald" then "bg-emerald-50 text-emerald-700 border-emerald-200"
+              when "blue" then "bg-blue-50 text-blue-700 border-blue-200"
+              else "bg-slate-100 text-slate-700 border-slate-200"
+            end %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border <%= badge_classes %>">
+              <%= m[:status_badge_label] %>
+            </span>
+
+            <% if show_service_link && service_list.size == 1 && !doctor?(current_user) %>
+              <%= link_to service_path(primary_service),
+                    class: "inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline ml-1" do %>
+                <span>Página do atendimento</span>
+                <i class="fas fa-external-link-alt text-[10px]" aria-hidden="true"></i>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+
+        <% if show_fit_patient && primary_service.present? && !primary_service.canceled && !referral?(current_user) && !doctor?(current_user) %>
+          <div class="shrink-0">
+            <%= link_to new_patient_fitted_invitations_path(primary_service),
+                  class: "inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold shadow-sm transition-colors" do %>
+              <i class="fas fa-plus text-xs" aria-hidden="true"></i>
+              <span>Encaixar paciente</span>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%# Bloco "Resumo do atendimento" %>
+    <div class="flex items-end justify-between gap-4 mb-3">
+      <div>
+        <h2 class="text-base font-semibold text-slate-900">Resumo do atendimento</h2>
+        <p class="text-sm text-slate-500 mt-0.5">
+          <strong class="font-semibold text-slate-700"><%= m[:attended] %></strong> de
+          <strong class="font-semibold text-slate-700"><%= m[:active] %></strong> pacientes atendidos
+        </p>
+      </div>
+
+      <div class="text-right">
+        <div class="text-2xl sm:text-3xl font-bold text-emerald-600 leading-none tracking-tight">
+          <%= att_pct_str %>
+        </div>
+        <div class="text-xs font-medium text-slate-500 mt-1">Comparecimento</div>
+      </div>
+    </div>
+
+    <%# Barra de progresso dupla segmentada (Compareceram vs Faltaram/Aguardando) %>
+    <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden flex gap-0.5"
+         role="progressbar"
+         aria-valuenow="<%= m[:attendance_rate].round %>"
+         aria-valuemin="0"
+         aria-valuemax="100"
+         aria-label="Progresso de comparecimento do atendimento">
+      <% if m[:active].positive? || m[:total].positive? %>
+        <% if m[:attendance_rate].positive? %>
+          <div class="bg-emerald-500 h-full transition-all duration-300 first:rounded-l-full last:rounded-r-full"
+               style="width: <%= m[:attendance_rate].clamp(0, 100) %>%"></div>
+        <% end %>
+        <% if m[:pending_rate].positive? %>
+          <div class="<%= pending_is_past ? 'bg-red-500' : 'bg-amber-400' %> h-full transition-all duration-300 first:rounded-l-full last:rounded-r-full"
+               style="width: <%= m[:pending_rate].clamp(0, 100) %>%"></div>
+        <% end %>
+      <% end %>
+    </div>
+
+    <div class="mt-2.5 flex items-center justify-between text-xs font-medium">
+      <span class="inline-flex items-center gap-1.5 text-slate-600">
+        <i class="far fa-check-circle text-emerald-600" aria-hidden="true"></i>
+        <span>Compareceram <%= att_pct_str %></span>
+      </span>
+
+      <span class="inline-flex items-center gap-1.5 text-slate-600">
+        <% if pending_is_past %>
+          <i class="far fa-times-circle text-red-500" aria-hidden="true"></i>
+          <span>Faltaram <%= pend_pct_str %></span>
+        <% else %>
+          <i class="far fa-clock text-amber-500" aria-hidden="true"></i>
+          <span>Aguardando <%= pend_pct_str %></span>
+        <% end %>
+      </span>
+    </div>
+  </div>
+
+  <%# =========================================================================
+      2. GRID DE 3 CARDS PRINCIPAIS (Agendados | Compareceram | Faltaram/Aguardando)
+      ========================================================================= %>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+    <%# Card 1: Agendados %>
+    <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 sm:p-5 flex flex-col justify-between" data-day-metric="active">
+      <div class="flex items-center justify-between text-sm font-medium text-slate-600">
+        <span>Agendados</span>
+        <i class="fas fa-user-friends text-slate-400" aria-hidden="true"></i>
+      </div>
+      <div class="my-2.5 text-3xl font-bold text-slate-900 tracking-tight" data-day-metric-value="active"><%= m[:active] %></div>
+      <div class="text-xs text-slate-500">Pacientes ativos</div>
+    </div>
+
+    <%# Card 2: Compareceram %>
+    <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 sm:p-5 flex flex-col justify-between" data-day-metric="attended">
+      <div class="flex items-center justify-between text-sm font-medium text-emerald-600">
+        <span>Compareceram</span>
+        <i class="far fa-check-circle text-emerald-500" aria-hidden="true"></i>
+      </div>
+      <div class="my-2.5 text-3xl font-bold text-emerald-600 tracking-tight" data-day-metric-value="attended"><%= m[:attended] %></div>
+      <div class="text-xs text-slate-500"><%= m[:attended_subtitle] %></div>
+    </div>
+
+    <%# Card 3: Faltaram / Aguardando %>
+    <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 sm:p-5 flex flex-col justify-between" data-day-metric="pending">
+      <div class="flex items-center justify-between text-sm font-medium <%= pending_is_past ? 'text-red-600' : 'text-amber-600' %>">
+        <span><%= m[:pending_label] %></span>
+        <i class="fas <%= pending_is_past ? 'fa-user-times text-red-400' : 'fa-user-clock text-amber-400' %>" aria-hidden="true"></i>
+      </div>
+      <div class="my-2.5 text-3xl font-bold <%= pending_is_past ? 'text-red-600' : 'text-amber-600' %> tracking-tight" data-day-metric-value="pending"><%= m[:pending_or_absent] %></div>
+      <div class="text-xs text-slate-500"><%= m[:pending_subtitle] %></div>
+    </div>
+  </div>
+
+  <%# =========================================================================
+      3. CARD "OUTROS INDICADORES" (Confirmados | Remarcados | Cancelados | Total)
+      ========================================================================= %>
+  <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 sm:p-5">
+    <div class="flex items-center justify-between gap-2 mb-3.5">
+      <h3 class="text-base font-semibold text-slate-900">Outros indicadores</h3>
+      <span class="text-xs font-medium text-slate-400">Situações adicionais</span>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <%# Confirmados %>
+      <div class="rounded-xl border border-slate-200/80 bg-slate-50/60 px-3 py-3.5 text-center" data-day-metric="confirmed">
+        <div class="text-xl sm:text-2xl font-bold text-blue-600 leading-none" data-day-metric-value="confirmed"><%= m[:confirmed] %></div>
+        <div class="text-xs font-medium text-slate-500 mt-1.5">Confirmados</div>
+      </div>
+
+      <%# Remarcados %>
+      <div class="rounded-xl border border-slate-200/80 bg-slate-50/60 px-3 py-3.5 text-center" data-day-metric="rescheduled">
+        <div class="text-xl sm:text-2xl font-bold text-purple-600 leading-none" data-day-metric-value="rescheduled"><%= m[:rescheduled] %></div>
+        <div class="text-xs font-medium text-slate-500 mt-1.5">Remarcados</div>
+      </div>
+
+      <%# Cancelados %>
+      <div class="rounded-xl border border-slate-200/80 bg-slate-50/60 px-3 py-3.5 text-center" data-day-metric="canceled">
+        <div class="text-xl sm:text-2xl font-bold text-slate-700 leading-none" data-day-metric-value="canceled"><%= m[:canceled] %></div>
+        <div class="text-xs font-medium text-slate-500 mt-1.5">Cancelados</div>
+      </div>
+
+      <%# Total na lista %>
+      <div class="rounded-xl border border-slate-200/80 bg-slate-50/60 px-3 py-3.5 text-center" data-day-metric="total">
+        <div class="text-xl sm:text-2xl font-bold text-slate-900 leading-none" data-day-metric-value="total"><%= m[:total] %></div>
+        <div class="text-xs font-medium text-slate-500 mt-1.5">Total na lista</div>
+      </div>
+    </div>
+  </div>
+</section>

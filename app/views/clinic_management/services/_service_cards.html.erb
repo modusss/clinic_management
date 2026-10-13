@@ -1,19 +1,33 @@
 <%# Cards view for service appointments, using the same data as the table (rows) %>
-<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
+     data-service-patients-filter-target="period">
   <% if rows.any? %>
-  <% rows.each do |row| %>
-    <div class="bg-white rounded shadow p-4 mb-4">
-      <% row.each do |cell| %>
-        <div class="mb-2">
-          <span class="block text-xs text-gray-500 font-semibold"><%= cell[:header] %></span>
-          <span class="block text-base text-gray-800" style="margin-top: 10px;"><%= cell[:content] %></span>
-        </div>
-      <% end %>
+    <% rows.each do |row| %>
+      <% attendance_status = row.first[:attendance_status] %>
+      <% patient_state = row.first[:patient_state].presence || attendance_status %>
+      <% row_id = row.first[:row_id] %>
+      <div class="bg-white rounded shadow p-4 mb-4"
+           <% if row_id.present? %>id="<%= row_id %>-card"<% end %>
+           <% if attendance_status.present? %>
+             data-service-patients-filter-target="item"
+             data-attendance="<%= attendance_status %>"
+             data-patient-state="<%= patient_state %>"
+           <% end %>>
+        <% row.each do |cell| %>
+          <div class="mb-2">
+            <span class="block text-xs text-gray-500 font-semibold"><%= cell[:header] %></span>
+            <span class="block text-base text-gray-800" style="margin-top: 10px;"><%= cell[:content] %></span>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+    <div data-service-patients-filter-target="empty"
+         class="hidden bg-white rounded shadow p-4 mb-4 col-span-full">
+      <span class="block text-base text-gray-800">Nenhum paciente nesta situação</span>
     </div>
-  <% end %> 
   <% else %>
     <div class="bg-white rounded shadow p-4 mb-4">
       <span class="block text-base text-gray-800">Nenhum paciente agendado</span>
     </div>
   <% end %>
-</div> 
+</div>

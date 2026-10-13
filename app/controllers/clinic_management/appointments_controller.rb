@@ -134,10 +134,12 @@ module ClinicManagement
 
       respond_to do |format|
         format.turbo_stream do
-          render turbo_stream: [ 
-                                turbo_stream.update(button_id, "--"),
-                                turbo_stream.replace("attendance-#{@appointment.id}", partial: 'clinic_management/appointments/attendance_table_status', locals: { appointment: @appointment })
-                                ]
+          render turbo_stream: [
+            turbo_stream.update(button_id, "--"),
+            turbo_stream.update("status-#{@appointment.id}", helpers.format_status_and_attendance(@appointment)),
+            turbo_stream.replace("attendance-#{@appointment.id}", partial: 'clinic_management/appointments/attendance_table_status', locals: { appointment: @appointment }),
+            *day_metrics_turbo_streams(@appointment)
+          ]
         end
       end      
     end
@@ -214,7 +216,13 @@ module ClinicManagement
     def toggle_confirmation
       @appointment = Appointment.find(params[:id])
       @appointment.update(confirmed: !@appointment.confirmed)
-      # redirect_back(fallback_location: service_path(@appointment.service))
+
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: day_metrics_turbo_streams(@appointment)
+        end
+        format.html { head :no_content }
+      end
     end
 
     def my_reschedules
@@ -424,8 +432,78 @@ module ClinicManagement
             "cancel-attendance-button-#{appointment.id}",
             helpers.cancel_attendance_button(appointment)
           ),
-          turbo_stream.update("status-#{appointment.id}", appointment.status)
+          turbo_stream.update("status-#{appointment.id}", appointment.status),
+          *day_metrics_turbo_streams(appointment)
         ]
+      end
+
+      # Builds Turbo Stream replacements for any day-metrics panels visible on the current page
+      # (index_today, index_next, index_before, services#show, or services#show_by_referral).
+      #
+      # @param appointment [ClinicManagement::Appointment]
+      # @return [Array<Turbo::Streams::TagBuilder>]
+      def day_metrics_turbo_streams(appointment)
+        service = ClinicManagement::Service
+          .includes(appointments: [:invitation, :lead])
+          .find_by(id: appointment.service_id)
+        return [] unless service
+
+        is_doc = helpers.doctor?(current_user)
+        streams = [
+          turbo_stream.replace(
+            "service-day-metrics-#{service.id}",
+            partial: "clinic_management/shared/day_metrics",
+            locals: {
+              services: [service],
+              dom_id: "service-day-metrics-#{service.id}",
+              show_header: true,
+              show_fit_patient: !is_doc && !helpers.referral?(current_user),
+              show_service_link: false
+            }
+          )
+        ]
+
+        if service.date == Date.current
+          today_services = ClinicManagement::Service
+            .for_location(current_service_location_id)
+            .where(date: Date.current)
+            .order(:start_time)
+            .includes(appointments: [:invitation, :lead])
+            .to_a
+          today_services = [service] if today_services.empty?
+
+          streams << turbo_stream.replace(
+            "today-day-metrics",
+            partial: "clinic_management/shared/day_metrics",
+            locals: {
+              services: today_services,
+              dom_id: "today-day-metrics",
+              show_header: true,
+              show_fit_patient: !is_doc,
+              show_service_link: true
+            }
+          )
+        end
+
+        referral = appointment.invitation&.referral ||
+                   (appointment.referral_code.present? ? Referral.find_by(code: appointment.referral_code) : nil)
+        if referral.present?
+          referral_dom_id = "service-referral-day-metrics-#{service.id}-#{referral.id}"
+          streams << turbo_stream.replace(
+            referral_dom_id,
+            partial: "clinic_management/shared/day_metrics",
+            locals: {
+              services: [service],
+              referral: referral,
+              dom_id: referral_dom_id,
+              show_header: true,
+              show_fit_patient: false,
+              show_service_link: false
+            }
+          )
+        end
+
+        streams
       end
 
       # Only allow a list of trusted parameters through.

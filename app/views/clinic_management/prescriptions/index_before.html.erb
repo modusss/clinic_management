@@ -8,25 +8,30 @@
 <% if @services.present? %>
   <% @rows.each_with_index do |rows, index| %>
     <% service = @services[index] %>
-    <%# Service header %>
-    <h1 class="text-3xl font-bold text-gray-900 mb-2 px-4">
-      Atendimento anterior: <%= show_week_day service.weekday %><%= " — Local: #{service.service_location.name}" if service.service_location.present? %>
-    </h1>
-    <h2 class="text-2xl text-gray-700 mb-1 px-4"><%= service.service_type&.name %></h2>
-    <h2 class="text-2xl text-gray-700 mb-1 px-4"><%= service.date.strftime("%d/%m/%Y") %></h2>
-    <h3 class="text-xl text-gray-700 mb-3 px-4">
-      <%= service.start_time.strftime('%H:%M') %>h às <%= service.end_time.strftime('%H:%M') %>h
-    </h3>
-    <%= link_to "Página do atendimento", service_path(service), class: "text-blue-500 hover:text-blue-700" %>
-    <br>
-    <br>
-    <% if @view_type == 'cards' %>
-      <%= render partial: "today_cards", locals: { rows: [rows], services: [service] } %>
-    <% else %>
-      <div data-controller="table">
-        <%= data_table(rows, 3) %>
-      </div>
-    <% end %>
+    <div data-controller="service-patients-filter" data-service-patients-filter-active-value="all" class="mb-8">
+      <%= render "clinic_management/shared/day_metrics",
+                 services: [service],
+                 dom_id: "service-day-metrics-#{service.id}",
+                 show_header: true,
+                 show_fit_patient: false,
+                 show_service_link: true %>
+
+      <%= render "clinic_management/shared/patients_list_header",
+                 services: [service],
+                 dom_id: "service-patients-list-header-#{service.id}" %>
+
+      <% if @view_type == 'cards' %>
+        <%= render partial: "today_cards", locals: { rows: [rows], services: [service] } %>
+      <% else %>
+        <div data-service-patients-filter-target="period" data-controller="table">
+          <%= data_table(rows, 3) %>
+          <p data-service-patients-filter-target="empty"
+             class="hidden bg-white rounded-xl border border-slate-200 shadow-sm p-4 my-3 text-sm text-slate-600 text-center">
+            Nenhum paciente encontrado neste filtro.
+          </p>
+        </div>
+      <% end %>
+    </div>
     <hr class="my-6">
   <% end %>
 <% else %>

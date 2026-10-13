@@ -64,8 +64,16 @@ module ClinicManagement
     
     # GET /services/1
     def show
-      appointments = @service.appointments.includes(lead: { leads_conversion: :customer })
-      @rows = process_appointments_data(appointments)
+      ActiveRecord::Associations::Preloader.new(
+        records: [@service],
+        associations: {
+          appointments: [
+            { invitation: [:referral, :region] },
+            { lead: [{ leads_conversion: :customer }, { lead_interactions: :user }] }
+          ]
+        }
+      ).call
+      @rows = process_appointments_data(@service.appointments)
     end
 
     def search_appointment
@@ -110,8 +118,16 @@ module ClinicManagement
         return
       end
 
-      appointments = @service.appointments.includes(lead: { leads_conversion: :customer })
-      @rows = process_appointments_by_referral_data(appointments)
+      ActiveRecord::Associations::Preloader.new(
+        records: [@service],
+        associations: {
+          appointments: [
+            { invitation: [:referral, :region] },
+            { lead: [{ leads_conversion: :customer }, { lead_interactions: :user }] }
+          ]
+        }
+      ).call
+      @rows = process_appointments_by_referral_data(@service.appointments)
     end
     
     # GET /services/new
@@ -223,8 +239,16 @@ module ClinicManagement
         next unless (invitation.present?) && (lead.present?) && (ap.present?) && (lead.name.present?) 
     
         if (invitation.present?) && (lead.present?)
+          attendance_status = ap.attendance == true ? "present" : "absent"
+          patient_state = helpers.appointment_patient_filter_state(ap)
           [
-            { header: "#", content: index },
+            {
+              header: "#",
+              content: index,
+              row_id: "appointment-row-#{ap.id}",
+              attendance_status: attendance_status,
+              patient_state: patient_state
+            },
             {
               header: "Paciente", 
               content: render_to_string(
@@ -285,8 +309,16 @@ module ClinicManagement
         next unless (invitation.present?) && (lead.present?) && (ap.present?) && (lead.name.present?) 
 
         if (invitation.present?) && (lead.present?)
+          attendance_status = ap.attendance == true ? "present" : "absent"
+          patient_state = helpers.appointment_patient_filter_state(ap)
           [
-            { header: "#", content: index },
+            {
+              header: "#",
+              content: index,
+              row_id: "appointment-row-#{ap.id}",
+              attendance_status: attendance_status,
+              patient_state: patient_state
+            },
             {
               header: "Paciente", 
               content: render_to_string(

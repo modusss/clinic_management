@@ -1,0 +1,157 @@
+<%#
+  ESSENTIAL: "Lista de pacientes" Header Card ("Proposta de nova UX" bottom section).
+  Renders:
+  - Header: "Lista de pacientes" + "<total> registros" + "Filtros" button
+  - Search input: rounded pill search field submitting via remote/debounce (when search_url is passed)
+  - Filter pills: "Todos (X)", "Compareceram (Y)", "Faltaram (Z)" / "Aguardando (Z)"
+    (and for doctor on index_today, preserves doctor-attendance-filter targets)
+  - Secondary pills toggled by the "Filtros" button: Remarcados, Cancelados.
+
+  Locals:
+  - services: ClinicManagement::Service or Array<ClinicManagement::Service>
+  - referral: Optional Referral
+  - search_url: Optional URL for the search form (POST remote with debounce)
+  - search_hidden_fields: Optional Hash of hidden fields (e.g. { service_location_id: ..., "service_ids[]" => [...] })
+  - search_input_id: Optional id for the search input (defaults to "search-results")
+  - doctor_mode: Boolean (default false) — when true, renders doctor-attendance-filter tabs
+  - dom_id: Optional DOM id (defaults to "service-patients-list-header")
+%>
+<% service_list = Array(local_assigns[:services]).compact %>
+<% referral = local_assigns[:referral] %>
+<% m = service_day_metrics(service_list, referral: referral) %>
+<% search_url = local_assigns[:search_url] %>
+<% search_hidden_fields = local_assigns[:search_hidden_fields] || {} %>
+<% search_input_id = local_assigns[:search_input_id].presence || "search-results" %>
+<% doctor_mode = local_assigns.fetch(:doctor_mode, false) %>
+<% container_id = local_assigns[:dom_id].presence || "service-patients-list-header" %>
+
+<div id="<%= container_id %>" class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 sm:p-6 mb-4">
+  <div class="flex items-center justify-between gap-4 mb-4">
+    <div>
+      <h2 class="text-lg font-bold text-slate-900 leading-tight">Lista de pacientes</h2>
+      <p class="text-xs font-medium text-slate-500 mt-0.5"><%= m[:total] %> registros</p>
+    </div>
+
+    <% unless doctor_mode %>
+      <button type="button"
+              data-action="click->service-patients-filter#toggleExtraFilters"
+              class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 transition-colors">
+        <i class="fas fa-filter text-slate-400 text-[11px]" aria-hidden="true"></i>
+        <span>Filtros</span>
+      </button>
+    <% end %>
+  </div>
+
+  <% if search_url.present? %>
+    <div class="mb-4">
+      <%= form_with url: search_url,
+                    method: :post,
+                    data: { remote: true, controller: "debounce" },
+                    class: "w-full" do |search| %>
+        <% search_hidden_fields.each do |field_name, field_value| %>
+          <% if field_value.is_a?(Array) %>
+            <% field_value.each do |val| %>
+              <%= hidden_field_tag field_name, val %>
+            <% end %>
+          <% else %>
+            <%= hidden_field_tag field_name, field_value %>
+          <% end %>
+        <% end %>
+        <div class="relative w-full" id="search-results-container">
+          <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+            <i class="fas fa-search text-sm" aria-hidden="true"></i>
+          </span>
+          <%= search.search_field :q,
+                                  data: { debounce_target: "input" },
+                                  id: search_input_id,
+                                  placeholder: "Buscar paciente pelo nome...",
+                                  autocomplete: "off",
+                                  spellcheck: false,
+                                  class: "w-full rounded-full border border-slate-200 bg-slate-50/70 pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all" %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if doctor_mode %>
+    <%# ESSENTIAL: Preserves doctor-attendance-filter Stimulus targets for doctors on index_today %>
+    <div class="flex flex-wrap items-center gap-2" role="tablist" aria-label="Filtrar pacientes por presença">
+      <button type="button"
+              role="tab"
+              aria-selected="true"
+              data-doctor-attendance-filter-target="tab"
+              data-filter="present"
+              data-action="click->doctor-attendance-filter#showPresent"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border transition-colors bg-blue-600 text-white border-blue-600 shadow-sm">
+        <span>Presentes</span>
+        <span data-doctor-attendance-filter-target="presentCount"
+              class="inline-flex items-center justify-center min-w-[1.5rem] h-6 px-1.5 rounded-full text-xs font-bold bg-blue-500 text-white">0</span>
+      </button>
+      <button type="button"
+              role="tab"
+              aria-selected="false"
+              data-doctor-attendance-filter-target="tab"
+              data-filter="absent"
+              data-action="click->doctor-attendance-filter#showAbsent"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border transition-colors bg-white text-gray-700 border-gray-300 hover:bg-gray-50">
+        <span>Ausentes</span>
+        <span data-doctor-attendance-filter-target="absentCount"
+              class="inline-flex items-center justify-center min-w-[1.5rem] h-6 px-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-700">0</span>
+      </button>
+    </div>
+  <% else %>
+    <div class="flex flex-wrap items-center gap-2" role="tablist" aria-label="Filtrar lista de pacientes">
+      <button type="button"
+              role="tab"
+              aria-selected="true"
+              data-service-patients-filter-target="tab"
+              data-filter="all"
+              data-action="click->service-patients-filter#filter"
+              class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold border transition-all bg-slate-900 text-white border-slate-900 shadow-sm">
+        <span data-service-patients-filter-target="countAll">Todos (<%= m[:total] %>)</span>
+      </button>
+
+      <button type="button"
+              role="tab"
+              aria-selected="false"
+              data-service-patients-filter-target="tab"
+              data-filter="present"
+              data-action="click->service-patients-filter#filter"
+              class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold border transition-all bg-white text-slate-600 border-slate-200 hover:bg-slate-50">
+        <span data-service-patients-filter-target="countPresent">Compareceram (<%= m[:attended] %>)</span>
+      </button>
+
+      <button type="button"
+              role="tab"
+              aria-selected="false"
+              data-service-patients-filter-target="tab"
+              data-filter="pending"
+              data-action="click->service-patients-filter#filter"
+              class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold border transition-all bg-white text-slate-600 border-slate-200 hover:bg-slate-50">
+        <span data-service-patients-filter-target="countPending" data-pending-label="<%= m[:pending_label] %>"><%= m[:pending_label] %> (<%= m[:pending_or_absent] %>)</span>
+      </button>
+
+      <div data-service-patients-filter-target="extraFilters" class="hidden flex flex-wrap items-center gap-2">
+        <button type="button"
+                role="tab"
+                aria-selected="false"
+                data-service-patients-filter-target="tab"
+                data-filter="rescheduled"
+                data-action="click->service-patients-filter#filter"
+                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold border transition-all bg-white text-slate-600 border-slate-200 hover:bg-slate-50">
+          <span data-service-patients-filter-target="countRescheduled">Remarcados (<%= m[:rescheduled] %>)</span>
+        </button>
+
+        <button type="button"
+                role="tab"
+                aria-selected="false"
+                data-service-patients-filter-target="tab"
+                data-filter="canceled"
+                data-action="click->service-patients-filter#filter"
+                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold border transition-all bg-white text-slate-600 border-slate-200 hover:bg-slate-50">
+          <span data-service-patients-filter-target="countCanceled">Cancelados (<%= m[:canceled] %>)</span>
+        </button>
+      </div>
+    </div>
+  <% end %>
+</div>

@@ -365,11 +365,13 @@ def table_body(rows, fix_to)
       row_id = row.first[:row_id] || "table-row-#{row_index}"
 
       tr_options = { class: row_class, id: row_id }
-      # ESSENTIAL: Enables doctor_attendance_filter Stimulus on prescriptions/index_today rows.
+      # ESSENTIAL: Enables doctor_attendance_filter and service_patients_filter Stimulus controllers on day tables.
       if row.first[:attendance_status].present?
         tr_options[:data] = {
           doctor_attendance_filter_target: "item",
-          attendance: row.first[:attendance_status]
+          service_patients_filter_target: "item",
+          attendance: row.first[:attendance_status],
+          patient_state: row.first[:patient_state].presence || row.first[:attendance_status]
         }
       end
 

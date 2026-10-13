@@ -446,12 +446,14 @@
             # ESSENTIAL: Do not filter by attendance server-side — doctor_attendance_filter Stimulus
             # toggles Presentes (default) vs Ausentes (not yet marked present) on index_today.
             attendance_status = ap.attendance == true ? "present" : "absent"
+            patient_state = helpers.appointment_patient_filter_state(ap)
             [
               {
                 header: "#",
                 content: index,
                 row_id: "doctor-appointment-#{ap.id}",
-                attendance_status: attendance_status
+                attendance_status: attendance_status,
+                patient_state: patient_state
               },
               {header: "Paciente", content: invitation.patient_name, class: "size_20 nowrap patient-name"},
               {header: "Horário definido", content: ap.scheduled_time_label, class: "nowrap"},
@@ -459,8 +461,16 @@
               {header: "Receita", content: prescription_link(ap), class: "nowrap"}
             ]
           else
+            attendance_status = ap.attendance == true ? "present" : "absent"
+            patient_state = helpers.appointment_patient_filter_state(ap)
             [
-              {header: "#", content: index},
+              {
+                header: "#",
+                content: index,
+                row_id: "appointment-row-#{ap.id}",
+                attendance_status: attendance_status,
+                patient_state: patient_state
+              },
               {
                 header: "Paciente", 
                 content: render_to_string(
