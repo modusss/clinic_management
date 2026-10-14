@@ -371,7 +371,8 @@ def table_body(rows, fix_to)
           doctor_attendance_filter_target: "item",
           service_patients_filter_target: "item",
           attendance: row.first[:attendance_status],
-          patient_state: row.first[:patient_state].presence || row.first[:attendance_status]
+          patient_state: row.first[:patient_state].presence || row.first[:attendance_status],
+          patient_name: row.first[:patient_name].to_s
         }
       end
 

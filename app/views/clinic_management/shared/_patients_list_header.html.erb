@@ -2,7 +2,7 @@
   ESSENTIAL: "Lista de pacientes" Header Card ("Proposta de nova UX" bottom section).
   Renders:
   - Header: "Lista de pacientes" + "<total> registros" + "Filtros" button
-  - Search input: rounded pill search field submitting via remote/debounce (when search_url is passed)
+  - Search input: full-width rounded pill search field that filters rows/cards instantly via Stimulus
   - Filter pills: "Todos (X)", "Compareceram (Y)", "Faltaram (Z)" / "Aguardando (Z)"
     (and for doctor on index_today, preserves doctor-attendance-filter targets)
   - Secondary pills toggled by the "Filtros" button: Remarcados, Cancelados.
@@ -10,8 +10,6 @@
   Locals:
   - services: ClinicManagement::Service or Array<ClinicManagement::Service>
   - referral: Optional Referral
-  - search_url: Optional URL for the search form (POST remote with debounce)
-  - search_hidden_fields: Optional Hash of hidden fields (e.g. { service_location_id: ..., "service_ids[]" => [...] })
   - search_input_id: Optional id for the search input (defaults to "search-results")
   - doctor_mode: Boolean (default false) — when true, renders doctor-attendance-filter tabs
   - dom_id: Optional DOM id (defaults to "service-patients-list-header")
@@ -19,8 +17,6 @@
 <% service_list = Array(local_assigns[:services]).compact %>
 <% referral = local_assigns[:referral] %>
 <% m = service_day_metrics(service_list, referral: referral) %>
-<% search_url = local_assigns[:search_url] %>
-<% search_hidden_fields = local_assigns[:search_hidden_fields] || {} %>
 <% search_input_id = local_assigns[:search_input_id].presence || "search-results" %>
 <% doctor_mode = local_assigns.fetch(:doctor_mode, false) %>
 <% container_id = local_assigns[:dom_id].presence || "service-patients-list-header" %>
@@ -42,36 +38,25 @@
     <% end %>
   </div>
 
-  <% if search_url.present? %>
-    <div class="mb-4">
-      <%= form_with url: search_url,
-                    method: :post,
-                    data: { remote: true, controller: "debounce" },
-                    class: "w-full" do |search| %>
-        <% search_hidden_fields.each do |field_name, field_value| %>
-          <% if field_value.is_a?(Array) %>
-            <% field_value.each do |val| %>
-              <%= hidden_field_tag field_name, val %>
-            <% end %>
-          <% else %>
-            <%= hidden_field_tag field_name, field_value %>
-          <% end %>
-        <% end %>
-        <div class="relative w-full" id="search-results-container">
-          <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
-            <i class="fas fa-search text-sm" aria-hidden="true"></i>
-          </span>
-          <%= search.search_field :q,
-                                  data: { debounce_target: "input" },
-                                  id: search_input_id,
-                                  placeholder: "Buscar paciente pelo nome...",
-                                  autocomplete: "off",
-                                  spellcheck: false,
-                                  class: "w-full rounded-full border border-slate-200 bg-slate-50/70 pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all" %>
-        </div>
-      <% end %>
+  <%# Instant client-side search via Stimulus (full width, no page reload) %>
+  <div class="mb-4 w-full">
+    <div class="relative w-full">
+      <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+        <i class="fas fa-search text-sm" aria-hidden="true"></i>
+      </span>
+      <% search_action = doctor_mode ? "input->doctor-attendance-filter#search search->doctor-attendance-filter#search" : "input->service-patients-filter#search search->service-patients-filter#search" %>
+      <input type="search"
+             id="<%= search_input_id %>"
+             placeholder="Buscar paciente pelo nome..."
+             autocomplete="off"
+             spellcheck="false"
+             data-service-patients-filter-target="searchInput"
+             data-doctor-attendance-filter-target="searchInput"
+             data-action="<%= search_action %>"
+             style="width: 100%; box-sizing: border-box;"
+             class="block w-full rounded-full border border-slate-200 bg-slate-50/70 pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all" />
     </div>
-  <% end %>
+  </div>
 
   <% if doctor_mode %>
     <%# ESSENTIAL: Preserves doctor-attendance-filter Stimulus targets for doctors on index_today %>

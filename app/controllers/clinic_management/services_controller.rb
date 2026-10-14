@@ -247,7 +247,8 @@ module ClinicManagement
               content: index,
               row_id: "appointment-row-#{ap.id}",
               attendance_status: attendance_status,
-              patient_state: patient_state
+              patient_state: patient_state,
+              patient_name: invitation.patient_name.to_s
             },
             {
               header: "Paciente", 
@@ -317,7 +318,8 @@ module ClinicManagement
               content: index,
               row_id: "appointment-row-#{ap.id}",
               attendance_status: attendance_status,
-              patient_state: patient_state
+              patient_state: patient_state,
+              patient_name: invitation.patient_name.to_s
             },
             {
               header: "Paciente", 

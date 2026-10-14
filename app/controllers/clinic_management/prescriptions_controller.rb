@@ -453,7 +453,8 @@
                 content: index,
                 row_id: "doctor-appointment-#{ap.id}",
                 attendance_status: attendance_status,
-                patient_state: patient_state
+                patient_state: patient_state,
+                patient_name: invitation.patient_name.to_s
               },
               {header: "Paciente", content: invitation.patient_name, class: "size_20 nowrap patient-name"},
               {header: "Horário definido", content: ap.scheduled_time_label, class: "nowrap"},
@@ -469,7 +470,8 @@
                 content: index,
                 row_id: "appointment-row-#{ap.id}",
                 attendance_status: attendance_status,
-                patient_state: patient_state
+                patient_state: patient_state,
+                patient_name: invitation.patient_name.to_s
               },
               {
                 header: "Paciente", 
