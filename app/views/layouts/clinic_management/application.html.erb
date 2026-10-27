@@ -6,6 +6,12 @@
   <%= csrf_meta_tags %>
   <%= action_cable_meta_tag %>
   <%= csp_meta_tag %>
+  <%# The absent-patient bulk panel relies on Tailwind's runtime stylesheet.
+      A Turbo visit from the host layout may paint the panel before that script
+      has generated its classes. Enter this page with a full document load. %>
+  <% if controller_name == "leads" && action_name == "absent" %>
+    <meta name="turbo-visit-control" content="reload">
+  <% end %>
   
   <%= javascript_importmap_tags %>
   <%#= stimulus_include_tags %>

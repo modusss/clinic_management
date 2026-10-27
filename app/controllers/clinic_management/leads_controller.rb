@@ -605,8 +605,11 @@ module ClinicManagement
       @all_leads = filter_by_hidden_status(@all_leads)  # Filtro de ocultação/interesse
       @all_leads = filter_by_patient_type(@all_leads)
       @all_leads = filter_by_date(@all_leads)
+      @all_leads = filter_by_absence_period(@all_leads)
       @all_leads = filter_by_region(@all_leads)
       @all_leads = filter_by_contact_status(@all_leads)
+      @all_leads = filter_by_last_contact_days(@all_leads)
+      @all_leads = filter_by_contact_attempts(@all_leads)
       @all_leads = filter_by_referral(@all_leads)  # Novo filtro aqui
       @all_leads = filter_by_page_views(@all_leads)  # 🆕 Filtrar leads visualizados por outros
       @all_leads = apply_absent_leads_order(@all_leads)
@@ -1398,16 +1401,19 @@ module ClinicManagement
 
     # Filtra por tipo de paciente, se especificado
     def filter_by_patient_type(scope)
-      return scope unless params[:patient_type].present? && params[:patient_type] != "all"
+      patient_type = params[:patient_type].presence
+      patient_type = "absent" if patient_type.blank? && params[:preset] == "recent"
+      patient_type = "attended_year_ago" if patient_type.blank? && params[:preset] == "inactive"
+      return scope if patient_type.blank? || patient_type == "all"
 
       # ESSENTIAL: Customer/non-customer segments depend on retail orders — unavailable in Apenas Clínica.
       if current_account&.clinic_only? &&
-         %w[attended_year_ago_customer attended_year_ago_non_customer].include?(params[:patient_type])
+         %w[attended_year_ago_customer attended_year_ago_non_customer].include?(patient_type)
         return scope
       end
 
       one_year_ago = 1.year.ago.to_date
-      case params[:patient_type]
+      case patient_type
       when "absent"
         scope.joins("INNER JOIN clinic_management_appointments AS latest_apt ON latest_apt.id = (#{latest_appointment_by_service_date_subquery})")
         .where('latest_apt.attendance = ?', false)
@@ -1438,6 +1444,8 @@ module ClinicManagement
 
     # Filtra por data (ano/mês), se especificado
     def filter_by_date(scope)
+      return scope if params[:period_mode] == "relative"
+
       if params[:year].present? && params[:month].present?
         start_date = Date.new(params[:year].to_i, params[:month].to_i, 1)
         end_date = start_date.end_of_month
@@ -1446,9 +1454,25 @@ module ClinicManagement
         start_date = Date.new(params[:year].to_i, 1, 1)
         end_date = Date.new(params[:year].to_i, 12, 31)
         scope.where('main_svc.date BETWEEN ? AND ?', start_date, end_date)
+      elsif params[:month].present?
+        scope.where('EXTRACT(MONTH FROM main_svc.date) = ?', params[:month].to_i)
       else
         scope
       end
+    end
+
+    # ESSENTIAL: Relative absence ranges refer to the latest service date, not contact time.
+    def filter_by_absence_period(scope)
+      period = params[:absence_period].presence
+      period = "30" if period.blank? && params[:preset] == "recent"
+      return scope if params[:period_mode] == "calendar" || period.blank? || period == "all"
+
+      days = { "30" => [0, 30], "90" => [31, 90], "180" => [91, 180], "365" => [181, 365] }
+      return scope.where('main_svc.date < ?', Date.current - 1.year) if period == "older"
+      return scope unless days.key?(period)
+
+      lower, upper = days.fetch(period)
+      scope.where('main_svc.date BETWEEN ? AND ?', Date.current - upper.days, Date.current - lower.days)
     end
 
     # Filters by patient capture region on the lead's latest appointment (main_apt) invitation.
@@ -1465,18 +1489,56 @@ module ClinicManagement
 
     # Filtra por status de contato, se especificado
     def filter_by_contact_status(scope)
-      return scope unless params[:contact_status].present? && params[:contact_status] != "all"
+      status = params[:contact_status].presence
+      status = "not_contacted" if status.blank? && params[:preset] == "never"
+      return scope if status.blank? || status == "all"
       
-      case params[:contact_status]
+      case status
       when "not_contacted"
-        scope.where('main_apt.last_message_sent_at IS NULL')
+        scope.where("main_apt.last_message_sent_at IS NULL AND NOT EXISTS (SELECT 1 FROM clinic_management_lead_interactions li WHERE li.lead_id = clinic_management_leads.id)")
       when "contacted"
-        scope.where('main_apt.last_message_sent_at IS NOT NULL')
+        scope.where("main_apt.last_message_sent_at IS NOT NULL OR EXISTS (SELECT 1 FROM clinic_management_lead_interactions li WHERE li.lead_id = clinic_management_leads.id)")
       when "contacted_by_me"
         scope.where('main_apt.last_message_sent_at IS NOT NULL AND main_apt.last_message_sent_by = ?', current_user.name)
       else
         scope
       end
+    end
+
+    # Last contact includes historical appointment timestamps and newer lead interactions.
+    def filter_by_last_contact_days(scope)
+      value = params[:last_contact_days].to_s
+      return scope if value.blank? || value == "all"
+      return scope.where("main_apt.last_message_sent_at IS NULL AND NOT EXISTS (SELECT 1 FROM clinic_management_lead_interactions li WHERE li.lead_id = clinic_management_leads.id)") if value == "never"
+      return scope unless %w[7 15 30 60 90].include?(value)
+
+      scope.where("GREATEST(latest_interaction.occurred_at, main_apt.last_message_sent_at) <= ?", value.to_i.days.ago)
+    end
+
+    # A phone_call_answered is the outcome of a phone_call, not a second attempt.
+    # Legacy appointments without a matching interaction contribute one attempt each.
+    def filter_by_contact_attempts(scope)
+      value = params[:contact_attempts].to_s
+      return scope if value.blank? || value == "all"
+      return scope unless %w[0 1 2 3 4_plus].include?(value)
+
+      count_sql = <<~SQL.squish
+        (SELECT COUNT(*) FROM clinic_management_lead_interactions attempts
+         WHERE attempts.lead_id = clinic_management_leads.id
+         AND attempts.interaction_type IN ('whatsapp_click', 'phone_call'))
+      SQL
+      legacy_sql = <<~SQL.squish
+        (SELECT COUNT(*) FROM clinic_management_appointments legacy
+         WHERE legacy.lead_id = clinic_management_leads.id
+         AND legacy.last_message_sent_at IS NOT NULL
+         AND NOT EXISTS (
+           SELECT 1 FROM clinic_management_lead_interactions linked
+           WHERE linked.appointment_id = legacy.id
+           AND linked.interaction_type IN ('whatsapp_click', 'phone_call')
+         ))
+      SQL
+      count_with_legacy = "(#{count_sql} + #{legacy_sql})"
+      value == "4_plus" ? scope.where("#{count_with_legacy} >= 4") : scope.where("#{count_with_legacy} = ?", value.to_i)
     end
 
     # Novo filtro para referral

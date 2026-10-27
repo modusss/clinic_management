@@ -1,0 +1,98 @@
+<%# ESSENTIAL: This form only changes absent-patient filtering; results and bulk campaign controls remain separate. %>
+<% selected_type = params[:patient_type].presence || { 'recent' => 'absent', 'inactive' => 'attended_year_ago' }.fetch(params[:preset], 'all') %>
+<% selected_contact = params[:contact_status].presence || (params[:preset] == 'never' ? 'not_contacted' : 'all') %>
+<% selected_period_mode = params[:period_mode] == 'calendar' ? 'calendar' : 'relative' %>
+<section class="absent-filters" data-controller="absent-filters" data-absent-filters-mode-value="<%= selected_period_mode %>">
+  <div class="absent-filters__heading">
+    <div>
+      <h2>Filtros de pacientes</h2>
+      <p>Encontre os pacientes certos para cada ação de recaptura.</p>
+    </div>
+    <%= link_to 'Limpar filtros', absent_leads_path, class: 'absent-filters__clear' %>
+  </div>
+
+  <div class="absent-filters__presets" aria-label="Listas rápidas de pacientes">
+    <span class="absent-filters__presets-title">Listas rápidas</span>
+    <%= link_to 'Todos os elegíveis', absent_leads_path, class: "absent-filters__preset #{params[:preset].blank? ? 'is-active' : ''}" %>
+    <%= link_to 'Faltaram recentemente', absent_leads_path(preset: 'recent'), class: "absent-filters__preset #{params[:preset] == 'recent' ? 'is-active' : ''}" %>
+    <%= link_to 'Nunca contatados', absent_leads_path(preset: 'never'), class: "absent-filters__preset #{params[:preset] == 'never' ? 'is-active' : ''}" %>
+    <%= link_to 'Inativos há +1 ano', absent_leads_path(preset: 'inactive'), class: "absent-filters__preset #{params[:preset] == 'inactive' ? 'is-active' : ''}" %>
+  </div>
+
+  <%= form_with url: absent_leads_path, method: :get, local: true, class: 'absent-filters__form' do |f| %>
+    <div class="absent-filters__search">
+      <%= f.label :q, 'Pesquisar por nome ou telefone' %>
+      <%= f.search_field :q, value: params[:q], placeholder: 'Nome do responsável ou telefone...', autocomplete: 'off', class: 'absent-filters__input' %>
+    </div>
+
+    <div class="absent-filters__grid">
+      <div class="absent-filters__field">
+        <%= f.label :patient_type, 'Situação do paciente' %>
+        <% type_options = [['Todas as situações', 'all'], ['Faltou ao último atendimento', 'absent'], ['Compareceu há mais de 1 ano', 'attended_year_ago']] %>
+        <% unless current_account&.clinic_only? %>
+          <% type_options += [['Já é cliente +1 ano', 'attended_year_ago_customer'], ['Não é cliente +1 ano', 'attended_year_ago_non_customer']] %>
+        <% end %>
+        <%= f.select :patient_type, options_for_select(type_options, selected_type), {}, class: 'absent-filters__select browser-default' %>
+      </div>
+
+      <div class="absent-filters__field">
+        <span class="absent-filters__label">Período do último atendimento</span>
+        <div class="absent-filters__mode" role="group" aria-label="Modo de período">
+          <button type="button" data-absent-filters-target="relativeButton" data-action="absent-filters#relative" aria-pressed="<%= selected_period_mode == 'relative' %>">Por ausência</button>
+          <button type="button" data-absent-filters-target="calendarButton" data-action="absent-filters#calendar" aria-pressed="<%= selected_period_mode == 'calendar' %>">Ano e mês</button>
+        </div>
+        <%= f.hidden_field :period_mode, value: selected_period_mode, data: { absent_filters_target: 'periodMode' } %>
+        <div data-absent-filters-target="relativeFields">
+          <%= f.select :absence_period, options_for_select([['Qualquer período', 'all'], ['Até 30 dias', '30'], ['31 a 90 dias', '90'], ['91 a 180 dias', '180'], ['181 a 365 dias', '365'], ['Mais de 1 ano', 'older']], params[:absence_period].presence || (params[:preset] == 'recent' ? '30' : 'all')), {}, class: 'absent-filters__select browser-default' %>
+        </div>
+        <div class="absent-filters__date-fields" data-absent-filters-target="calendarFields" hidden>
+          <%= f.select :year, options_for_select([['Todos os anos', '']] + (Date.current.year - 10..Date.current.year).to_a.reverse.map { |year| [year, year] }, params[:year]), {}, class: 'absent-filters__select browser-default', aria: { label: 'Ano' } %>
+          <%= f.select :month, options_for_select([['Todos os meses', '']] + (1..12).map { |month| [I18n.t('date.month_names')[month], month] }, params[:month]), {}, class: 'absent-filters__select browser-default', aria: { label: 'Mês' } %>
+        </div>
+      </div>
+
+      <div class="absent-filters__field">
+        <%= f.label :region_id, 'Região de captação' %>
+        <%= f.select :region_id, options_from_collection_for_select(@regions, :id, :name, params[:region_id]), { include_blank: 'Todas as regiões' }, class: 'absent-filters__select browser-default' %>
+      </div>
+
+      <div class="absent-filters__field">
+        <%= f.label :contact_status, 'Histórico de contato' %>
+        <%= f.select :contact_status, options_for_select([['Todos', 'all'], ['Nunca contatados', 'not_contacted'], ['Já contatados', 'contacted']], selected_contact), {}, class: 'absent-filters__select browser-default' %>
+      </div>
+
+      <div class="absent-filters__field">
+        <%= f.label :whatsapp_status, 'Disponibilidade WhatsApp' %>
+        <%= f.select :whatsapp_status, options_for_select([['Todos', 'all'], ['Tem WhatsApp', 'has_whatsapp'], ['Sem WhatsApp', 'no_whatsapp']], params[:whatsapp_status]), {}, class: 'absent-filters__select browser-default' %>
+      </div>
+
+      <div class="absent-filters__field">
+        <%= f.label :sort_order, 'Ordenar por' %>
+        <%= f.select :sort_order, options_for_select([['Último atendimento mais recente', 'appointment_newest_first'], ['Último atendimento mais antigo', 'appointment_oldest_first'], ['Contatado mais recente', 'contact_newest_first'], ['Contatado há mais tempo', 'contact_oldest_first']], params[:sort_order]), {}, class: 'absent-filters__select browser-default' %>
+      </div>
+    </div>
+
+    <details class="absent-filters__advanced" <%= 'open' if params.values_at(:last_contact_days, :contact_attempts).any?(&:present?) || params[:hidden_status].present? && params[:hidden_status] != 'visible' %>>
+      <summary>Filtros avançados</summary>
+      <div class="absent-filters__grid">
+        <div class="absent-filters__field">
+          <%= f.label :last_contact_days, 'Tempo desde o último contato' %>
+          <%= f.select :last_contact_days, options_for_select([['Qualquer período', 'all'], ['Nunca contatado', 'never'], ['Há pelo menos 7 dias', '7'], ['Há pelo menos 15 dias', '15'], ['Há pelo menos 30 dias', '30'], ['Há pelo menos 60 dias', '60'], ['Há pelo menos 90 dias', '90']], params[:last_contact_days]), {}, class: 'absent-filters__select browser-default' %>
+        </div>
+        <div class="absent-filters__field">
+          <%= f.label :contact_attempts, 'Tentativas de contato' %>
+          <%= f.select :contact_attempts, options_for_select([['Todas', 'all'], ['Nenhuma', '0'], ['1 tentativa', '1'], ['2 tentativas', '2'], ['3 tentativas', '3'], ['4 ou mais', '4_plus']], params[:contact_attempts]), {}, class: 'absent-filters__select browser-default' %>
+        </div>
+        <div class="absent-filters__field">
+          <%= f.label :hidden_status, 'Status de interesse' %>
+          <%= f.select :hidden_status, options_for_select([['Disponível', 'visible'], ['Contato futuro', 'hidden'], ['Sem interesse', 'no_interest'], ['Telefone errado', 'wrong_phone']], params[:hidden_status]), {}, class: 'absent-filters__select browser-default' %>
+        </div>
+      </div>
+    </details>
+
+    <div class="absent-filters__footer">
+      <span>Combine os filtros para refinar a lista de pacientes.</span>
+      <%= f.submit 'Aplicar filtros', class: 'absent-filters__submit' %>
+    </div>
+  <% end %>
+</section>
