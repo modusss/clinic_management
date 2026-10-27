@@ -1478,13 +1478,17 @@ module ClinicManagement
     # Filters by patient capture region on the lead's latest appointment (main_apt) invitation.
     # ESSENTIAL: region lives on invitation, not on appointment or lead directly.
     def filter_by_region(scope)
-      return scope if params[:region_id].blank?
-
-      region_id = params[:region_id].to_i
-      return scope if region_id <= 0
+      # ESSENTIAL: Multiple checked regions are combined with OR, while the
+      # region group still combines with other filters through AND.
+      region_ids = Array(params[:region_ids]).filter_map { |value| Integer(value, exception: false) }.select(&:positive?).uniq
+      if region_ids.empty? && params[:region_id].present?
+        legacy_id = Integer(params[:region_id], exception: false)
+        region_ids = [legacy_id] if legacy_id&.positive?
+      end
+      return scope if region_ids.empty?
 
       scope.joins("INNER JOIN clinic_management_invitations AS main_inv ON main_inv.id = main_apt.invitation_id")
-           .where("main_inv.region_id = ?", region_id)
+           .where("main_inv.region_id IN (?)", region_ids)
     end
 
     # Filtra por status de contato, se especificado

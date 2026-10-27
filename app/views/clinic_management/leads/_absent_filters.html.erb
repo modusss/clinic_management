@@ -2,6 +2,8 @@
 <% selected_type = params[:patient_type].presence || { 'recent' => 'absent', 'inactive' => 'attended_year_ago' }.fetch(params[:preset], 'all') %>
 <% selected_contact = params[:contact_status].presence || (params[:preset] == 'never' ? 'not_contacted' : 'all') %>
 <% selected_period_mode = params[:period_mode] == 'calendar' ? 'calendar' : 'relative' %>
+<% selected_region_ids = Array(params[:region_ids]).map(&:to_s) %>
+<% selected_region_ids = [params[:region_id].to_s] if selected_region_ids.empty? && params[:region_id].present? %>
 <section class="absent-filters" data-controller="absent-filters" data-absent-filters-mode-value="<%= selected_period_mode %>">
   <div class="absent-filters__heading">
     <div>
@@ -51,9 +53,35 @@
         </div>
       </div>
 
-      <div class="absent-filters__field">
-        <%= f.label :region_id, 'Região de captação' %>
-        <%= f.select :region_id, options_from_collection_for_select(@regions, :id, :name, params[:region_id]), { include_blank: 'Todas as regiões' }, class: 'absent-filters__select browser-default' %>
+      <div class="absent-filters__field absent-filters__region" data-action="click@document->absent-filters#closeRegionsOutside">
+        <span class="absent-filters__label" id="absent-regions-label">Região de captação</span>
+        <button type="button" class="absent-filters__region-toggle" data-absent-filters-target="regionToggle" data-action="absent-filters#toggleRegions" aria-haspopup="true" aria-expanded="false" aria-labelledby="absent-regions-label">
+          <span data-absent-filters-target="regionSummary"><%= selected_region_ids.empty? ? 'Todas as regiões' : "#{selected_region_ids.size} regiões selecionadas" %></span>
+          <span aria-hidden="true">▾</span>
+        </button>
+        <div class="absent-filters__region-dropdown" data-absent-filters-target="regionDropdown" hidden>
+          <div class="absent-filters__region-search">
+            <label for="absent-region-search">Buscar região</label>
+            <input type="search" id="absent-region-search" placeholder="Digite o nome da região..." autocomplete="off" data-absent-filters-target="regionSearch" data-action="input->absent-filters#searchRegions">
+          </div>
+          <div class="absent-filters__region-toolbar">
+            <span data-absent-filters-target="regionCount"><%= @regions.size %> regiões encontradas</span>
+            <button type="button" data-action="absent-filters#clearRegions">Limpar seleção</button>
+          </div>
+          <div class="absent-filters__region-options" role="group" aria-label="Selecione as regiões">
+            <% @regions.each do |region| %>
+              <label class="absent-filters__region-option" data-absent-filters-target="regionOption" data-region-name="<%= region.name %>">
+                <%= check_box_tag 'region_ids[]', region.id, selected_region_ids.include?(region.id.to_s), data: { absent_filters_target: 'regionCheckbox', action: 'change->absent-filters#updateRegions' } %>
+                <span><%= region.name %></span>
+              </label>
+            <% end %>
+            <div class="absent-filters__region-empty" data-absent-filters-target="regionEmpty" hidden>Nenhuma região encontrada.</div>
+          </div>
+          <div class="absent-filters__region-footer">
+            <span data-absent-filters-target="regionSelection"><%= selected_region_ids.empty? ? 'Todas as regiões incluídas' : "#{selected_region_ids.size} regiões escolhidas" %></span>
+            <button type="button" data-action="absent-filters#closeRegions">Concluir</button>
+          </div>
+        </div>
       </div>
 
       <div class="absent-filters__field">
