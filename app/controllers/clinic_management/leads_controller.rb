@@ -6,6 +6,9 @@ module ClinicManagement
     before_action :set_menu, only: %i[ index absent attended cancelled ]
     before_action :set_referral, only: %i[ index absent attended cancelled ]
     skip_before_action :redirect_referral_users
+    # ESSENTIAL: doctors stay on the consultório (index_today). Do not skip
+    # redirect_doctor_users here — Pacientes ausentes is a recapture screen,
+    # not part of the doctor's attendance flow.
     before_action :set_view_type, only: [:absent]
 
     include GeneralHelper

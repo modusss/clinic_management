@@ -22,6 +22,7 @@
         </div>
 
         <nav class="clinic-navbar__links">
+          <%# ESSENTIAL: doctors do not recapture absent patients. Keep this nav free of that link. %>
           <% if current_account&.clinic_only? %>
             <%= link_to "Perfil",
                         clinic_management.edit_profile_path,
@@ -331,7 +332,7 @@
     <%= link_to "Lista de hoje", clinic_management.index_today_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if request.path == clinic_management.index_today_path}", data: { turbo: false } %>
     <%= link_to "Próximo atendimento", clinic_management.index_next_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if request.path == clinic_management.index_next_path }", data: { turbo: false } %>
     <%= link_to "Atendimento anterior", clinic_management.index_before_path, class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if request.path == clinic_management.index_before_path }", data: { turbo: false } %>
-    <% unless clinical_assistant?(current_user) %>
+    <% if !clinical_assistant?(current_user) || can_use_meta_bulk_for_absent? %>
     <%= link_to "Pacientes ausentes",
         session[:absent_leads_state] || clinic_management.absent_leads_path,
         class: "text-emerald-50 hover:bg-emerald-800 hover:text-white px-3 py-2 rounded-md #{'bg-emerald-950 text-white' if controller_name == 'leads'}" %>

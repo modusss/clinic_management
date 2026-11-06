@@ -233,12 +233,13 @@ module ClinicManagement
     end
 
     # Meta bulk send on clinic absent patients screen (staff only).
-    # ESSENTIAL: Uses meta_bulk_absent_allowed_roles — NOT meta_whatsapp_role_allowed? (campaigns separate).
+    # ESSENTIAL: Checks membership in the CURRENT account, not the first/last
+    # membership, so a referral in another account cannot grant access here.
     #
     # @return [Boolean]
     def can_use_meta_bulk_for_absent?
       return false unless defined?(current_account) && current_account.present?
-      return false if referral?(current_user)
+      return false unless current_user.present?
       return false unless current_account.meta_whatsapp_enabled?
       return false unless meta_bulk_absent_role_allowed?
       return false unless meta_bulk_account_operational?
@@ -351,7 +352,7 @@ module ClinicManagement
     def meta_bulk_absent_role_allowed?
       return false unless current_user.present?
 
-      role = current_user.memberships.order(:id).first&.role
+      role = current_user.memberships.find_by(account_id: current_account.id)&.role
       return false unless current_account.respond_to?(:meta_bulk_absent_role_allowed?)
 
       current_account.meta_bulk_absent_role_allowed?(role)
