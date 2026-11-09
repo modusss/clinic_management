@@ -9,6 +9,8 @@ module ClinicManagement
       test "exports aggregate metrics with spreadsheet formula protection" do
         analytics = {
           patients: 2, attended: 1, exams: 1, sessions: 1,
+          advance_bookings: 1, same_day_bookings: 1, rescheduled_same_day_bookings: 0,
+          booking_origins: [{ label: "Encaixes no dia", patients: 1, attended: 1, exams: 1, sales: 1, sales_amount: 200.to_d }],
           sales: 1, sales_amount: 200.to_d, show_sales: true,
           days: [], shifts: [], hours: [],
           regions: [{ label: "=DANGEROUS()", patients: 2, attended: 1,
@@ -27,6 +29,9 @@ module ClinicManagement
 
         assert_equal "Inteligência de Atendimentos", rows.first.first
         assert rows.any? { |row| row.first == "Faturamento atribuído" }
+        assert rows.any? { |row| row.first == "Encaixes do dia ativos" && row[1] == "1" }
+        assert rows.any? { |row| row.first == "Origem das marcações (fichas ativas)" }
+        assert rows.any? { |row| row.first == "Encaixes no dia" && row[1] == "1" }
         assert rows.any? { |row| row.first == "'=DANGEROUS()" }
         assert rows.any? { |row| row.first == "Bairros dos clientes" }
         assert rows.any? { |row| row.first == "'=BAIRRO()" }

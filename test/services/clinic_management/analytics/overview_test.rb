@@ -24,6 +24,9 @@ module ClinicManagement
         assert_equal 7, result[:heatmap].size
         assert result[:heatmap].all? { |hours| hours.size == 24 }
         assert_empty result[:regions]
+        assert_equal 4, result[:booking_origins].size
+        assert_equal 0, result[:same_day_bookings]
+        assert_equal 0, result[:advance_bookings]
       end
     end
   end

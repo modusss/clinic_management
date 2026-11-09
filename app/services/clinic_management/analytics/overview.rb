@@ -36,6 +36,7 @@ module ClinicManagement
           service_dates.select! { |service_id, _| selected_service_ids.include?(service_id) }
           service_day = service_dates.to_h
         end
+        booking_origin = BookingOrigin.new(appointments: appointments, service_dates: service_day)
         customer_geography = CustomerGeography.new(
           appointments: appointments,
           sales_by_appointment: sales_by_appointment,
@@ -47,6 +48,9 @@ module ClinicManagement
         hours = (0..23).index_with { |hour| blank_group(format('%02d:00', hour)) }
         heatmap = Array.new(7) { Array.new(24, 0) }
         regions = {}
+        origin_groups = BookingOrigin::LABELS.to_h do |key, label|
+          [key, blank_group(label).merge(key: key)]
+        end
         examined = 0
         attended = 0
         sales_total = 0.to_d
@@ -64,9 +68,19 @@ module ClinicManagement
           increment_patient(region, appointment)
           attended += 1 if appointment.attendance?
 
+          origin_group = nil
+          origin = booking_origin.category(appointment, service_date)
+          if origin
+            origin_group = origin_groups.fetch(origin)
+            increment_patient(origin_group, appointment)
+            day[origin] += 1
+            region[origin] += 1
+          end
+
           appointment_sales = sales_by_appointment.fetch(appointment.id, [])
           apply_sales(day, appointment_sales)
           apply_sales(region, appointment_sales)
+          apply_sales(origin_group, appointment_sales) if origin_group
           appointment_sales.each do |sale|
             sales_total += sale[:amount]
             order_ids << sale[:order_id]
@@ -79,6 +93,7 @@ module ClinicManagement
           examined += 1
           day[:exams] += 1
           region[:exams] += 1
+          origin_group[:exams] += 1 if origin_group
           # An entered-on-another-day prescription cannot reliably identify the exam hour.
           created = prescription.created_at&.in_time_zone
           next unless created&.to_date == service_date
@@ -96,7 +111,7 @@ module ClinicManagement
           days[date.cwday - 1][:sessions] += 1
         end
 
-        all_groups = days + shifts.values + hours.values + regions.values
+        all_groups = days + shifts.values + hours.values + regions.values + origin_groups.values
         all_groups.each { |group| finalize_sales(group) }
 
         {
@@ -105,6 +120,10 @@ module ClinicManagement
           show_sales: @include_sales,
           sessions: service_dates.size, days: days, shifts: shifts.values,
           hours: hours.values, heatmap: heatmap,
+          booking_origins: origin_groups.values,
+          advance_bookings: origin_groups[:advance][:patients],
+          same_day_bookings: origin_groups[:same_day][:patients],
+          rescheduled_same_day_bookings: origin_groups[:rescheduled_same_day][:patients],
           customer_geography: customer_geography,
           regions: regions.values.sort_by { |row| [-row[:attended], row[:label]] }
         }
@@ -114,6 +133,7 @@ module ClinicManagement
 
       def blank_group(label)
         { label: label, patients: 0, attended: 0, exams: 0, sessions: 0,
+          advance: 0, same_day: 0, rescheduled_same_day: 0, after_date: 0,
           sales_amount: 0.to_d, buyers: Set.new, orders: Set.new }
       end
 

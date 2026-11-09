@@ -66,7 +66,9 @@
       <h2 class="font-bold text-lg mb-1">Comparação com o período anterior</h2>
       <p class="text-sm text-gray-600 mb-4"><%= l(@start_date) %> a <%= l(@end_date) %> versus <%= l(@previous_start_date) %> a <%= l(@previous_end_date) %>, com os mesmos filtros.</p>
       <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <% comparison_metrics = [["Agendados", :patients, false], ["Compareceram", :attended, false], ["Exames", :exams, false]] %>
+        <% comparison_metrics = [["Agendados", :patients, false], ["Compareceram", :attended, false], ["Exames", :exams, false],
+                                 ["Antecipados", :advance_bookings, false], ["Encaixes do dia", :same_day_bookings, false],
+                                 ["Remarcados no dia", :rescheduled_same_day_bookings, false]] %>
         <% comparison_metrics << ["Faturamento", :sales_amount, true] if @analytics[:show_sales] %>
         <% comparison_metrics.each do |label, metric, currency| %>
           <% current = @analytics[metric] %>
@@ -112,6 +114,8 @@
     </section>
   <% end %>
 
+  <%= render "clinic_management/analytics/booking_origins" %>
+
   <% if @detail %>
     <%= render "clinic_management/analytics/drilldown", detail: @detail, filter_params: @filter_params %>
   <% end %>
@@ -136,7 +140,7 @@
       <% end %>
     </section>
     <nav aria-label="Seções da análise" class="flex flex-wrap gap-2 mb-6">
-      <% [["Dias da semana", "dias"], ["Turnos", "turnos"], ["Horários", "horarios"], ["Regiões", "regioes"]].each do |label, anchor| %>
+      <% [["Origem das marcações", "origens"], ["Dias da semana", "dias"], ["Turnos", "turnos"], ["Horários", "horarios"], ["Regiões", "regioes"]].each do |label, anchor| %>
         <%= link_to label, "##{anchor}", class: "px-4 py-2 bg-white border border-gray-200 rounded-lg text-emerald-800 font-semibold text-sm hover:bg-emerald-50" %>
       <% end %>
     </nav>
@@ -159,13 +163,16 @@
       </div>
       <div class="overflow-x-auto">
         <table class="min-w-full text-sm text-left">
-          <thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="p-3">Dia</th><th class="p-3">Sessões</th><th class="p-3">Agendados</th><th class="p-3">Compareceram</th><th class="p-3">Presença</th><th class="p-3">Presentes / sessão</th><th class="p-3">Receitas</th><% if @analytics[:show_sales] %><th class="p-3">Compradores</th><th class="p-3">Conversão</th><th class="p-3">Faturamento</th><th class="p-3">R$ / sessão</th><% end %></tr></thead>
+          <thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="p-3">Dia</th><th class="p-3">Sessões</th><th class="p-3">Agendados</th><th class="p-3">Antecipados¹</th><th class="p-3">Encaixes¹</th><th class="p-3">Remarcados no dia¹</th><th class="p-3">Compareceram</th><th class="p-3">Presença</th><th class="p-3">Presentes / sessão</th><th class="p-3">Receitas</th><% if @analytics[:show_sales] %><th class="p-3">Compradores</th><th class="p-3">Conversão</th><th class="p-3">Faturamento</th><th class="p-3">R$ / sessão</th><% end %></tr></thead>
           <tbody>
             <% @analytics[:days].each_with_index do |day, day_index| %>
               <tr class="border-t border-gray-100 hover:bg-gray-50">
                 <th class="p-3 font-semibold"><%= link_to day[:label], analytics_path(@filter_params.merge(detail: "weekday", value: day_index + 1, anchor: "detalhamento")), class: "text-emerald-800 hover:underline focus:underline" %></th>
                 <td class="p-3"><%= day[:sessions] %></td>
                 <td class="p-3"><%= day[:patients] %></td>
+                <td class="p-3"><%= day[:advance] %></td>
+                <td class="p-3 font-bold text-emerald-800"><%= day[:same_day] %></td>
+                <td class="p-3"><%= day[:rescheduled_same_day] %></td>
                 <td class="p-3 font-bold text-blue-700"><%= day[:attended] %></td>
                 <td class="p-3"><%= day[:patients].positive? ? number_to_percentage(100.0 * day[:attended] / day[:patients], precision: 1) : '—' %></td>
                 <td class="p-3"><%= day[:sessions].positive? ? number_with_precision(day[:attended].to_f / day[:sessions], precision: 1) : '—' %></td>
@@ -181,6 +188,7 @@
           </tbody>
         </table>
       </div>
+      <p class="text-xs text-gray-500 mt-2">¹ As origens incluem apenas fichas ativas; o total histórico de agendados também pode conter cancelamentos e remarcações substituídas.</p>
     </section>
 
     <section id="turnos" class="bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-5 scroll-mt-24">
@@ -275,12 +283,15 @@
       </div>
       <div class="overflow-x-auto">
         <table class="min-w-full text-sm text-left">
-          <thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="p-3">Região</th><th class="p-3">Agendados</th><th class="p-3">Compareceram</th><th class="p-3">Taxa de presença</th><th class="p-3">Receitas</th><% if @analytics[:show_sales] %><th class="p-3">Compradores</th><th class="p-3">Conversão</th><th class="p-3">Faturamento</th><th class="p-3">R$ / presente</th><% end %></tr></thead>
+          <thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="p-3">Região</th><th class="p-3">Agendados</th><th class="p-3">Antecipados¹</th><th class="p-3">Encaixes¹</th><th class="p-3">Remarcados no dia¹</th><th class="p-3">Compareceram</th><th class="p-3">Taxa de presença</th><th class="p-3">Receitas</th><% if @analytics[:show_sales] %><th class="p-3">Compradores</th><th class="p-3">Conversão</th><th class="p-3">Faturamento</th><th class="p-3">R$ / presente</th><% end %></tr></thead>
           <tbody>
             <% @analytics[:regions].each do |region| %>
               <tr class="border-t border-gray-100 hover:bg-gray-50">
                 <th class="p-3 font-semibold"><%= link_to region[:label], analytics_path(@filter_params.merge(detail: "region", value: region[:label], anchor: "detalhamento")), class: "text-emerald-800 hover:underline focus:underline" %></th>
                 <td class="p-3"><%= region[:patients] %></td>
+                <td class="p-3"><%= region[:advance] %></td>
+                <td class="p-3 font-bold text-emerald-800"><%= region[:same_day] %></td>
+                <td class="p-3"><%= region[:rescheduled_same_day] %></td>
                 <td class="p-3 font-bold text-blue-700"><%= region[:attended] %></td>
                 <td class="p-3"><%= region[:patients].positive? ? number_to_percentage(100.0 * region[:attended] / region[:patients], precision: 1) : '—' %></td>
                 <td class="p-3"><%= region[:exams] %></td>
@@ -295,6 +306,7 @@
           </tbody>
         </table>
       </div>
+      <p class="text-xs text-gray-500 mt-2">¹ Apenas fichas ativas. Os dados seguem os filtros de unidade, região e captador.</p>
       <% end %>
     </section>
     <p class="text-xs text-gray-500">Os horários indicam o registro do exame, não a chegada. Receitas lançadas em outra data entram nos totais de exames, mas não no ranking horário. <% if @analytics[:show_sales] %>Cada venda é atribuída a um único comparecimento elegível, o mais recente nos 30 dias anteriores à compra. Por isso, os valores podem diferir dos relatórios semanais, que atribuem uma mesma venda a mais de uma sessão quando as janelas se sobrepõem. Períodos recentes ainda podem receber novas vendas. Faturamento significa valor dos pedidos, não recebimento de parcelas.<% end %></p>

@@ -5,7 +5,7 @@ module ClinicManagement
     # applying region/referral filters, matching Overview's reconciliation rule.
     class Drilldown
       PAGE_SIZE = 20
-      DIMENSIONS = %w[weekday shift hour day_hour region].freeze
+      DIMENSIONS = %w[weekday shift hour day_hour region booking_origin].freeze
       SHIFT_NAMES = { "morning" => "Manhã", "afternoon" => "Tarde", "night" => "Noite" }.freeze
 
       def initialize(start_date:, end_date:, service_location_id:, region_id: nil, referral_id: nil, include_sales: false)
@@ -28,21 +28,29 @@ module ClinicManagement
         appointments = Appointment.where(service_id: service_dates.keys)
                                   .includes(:prescription, :lead, invitation: :region).to_a
         sales_by_appointment = @include_sales ? SalesAttribution.new(appointments: appointments, service_dates: service_dates).call : {}
+        visible_appointments = appointments.select do |appointment|
+          invitation = appointment.invitation
+          (!@region_id || invitation&.region_id == @region_id) &&
+            (!@referral_id || invitation&.referral_id == @referral_id)
+        end
+        origin_classifier = BookingOrigin.new(appointments: visible_appointments, service_dates: service_dates)
 
-        matching = appointments.filter_map do |appointment|
+        matching = visible_appointments.filter_map do |appointment|
           date = service_dates[appointment.service_id]
           invitation = appointment.invitation
-          next unless date && (!@region_id || invitation&.region_id == @region_id)
-          next if @referral_id && invitation&.referral_id != @referral_id
+          next unless date
 
           prescription_time = appointment.prescription&.created_at&.in_time_zone
           exam_time = prescription_time if prescription_time&.to_date == date
-          next unless matches?(dimension, value, date, exam_time, invitation)
+          origin = origin_classifier.category(appointment, date)
+          next unless matches?(dimension, value, date, exam_time, invitation, origin)
 
           {
             id: appointment.id, service_id: appointment.service_id,
             date: date, time: exam_time, patient: invitation&.patient_name.presence || appointment.lead&.name.presence || "Paciente sem nome",
             region: invitation&.region&.name.presence || "Sem região",
+            booked_at: appointment.created_at&.in_time_zone,
+            booking_origin: BookingOrigin::LABELS[origin] || "Remarcado / cancelado",
             attended: appointment.attendance?, exam: appointment.prescription.present?,
             sales_amount: sales_by_appointment.fetch(appointment.id, []).sum { |sale| sale[:amount] }
           }
@@ -70,10 +78,11 @@ module ClinicManagement
         when "day_hour" then value.match?(/\A[1-7]:(?:[01]?\d|2[0-3])\z/)
         when "shift" then SHIFT_NAMES.key?(value)
         when "region" then value.present? && value.length <= 150
+        when "booking_origin" then BookingOrigin::LABELS.keys.any? { |key| key.to_s == value }
         end
       end
 
-      def matches?(dimension, value, date, exam_time, invitation)
+      def matches?(dimension, value, date, exam_time, invitation, origin)
         case dimension
         when "weekday" then date.cwday == value.to_i
         when "hour" then exam_time && exam_time.hour == value.to_i
@@ -83,6 +92,7 @@ module ClinicManagement
         when "shift"
           exam_time && shift_for(exam_time.hour) == value
         when "region" then (invitation&.region&.name.presence || "Sem região") == value
+        when "booking_origin" then origin == value.to_sym
         end
       end
 
@@ -101,6 +111,7 @@ module ClinicManagement
           "#{Overview::WEEKDAYS[weekday - 1]} · #{format('%02d:00', hour)}"
         when "shift" then "Exames no turno: #{SHIFT_NAMES[value]}"
         when "region" then "Pacientes da região: #{value}"
+        when "booking_origin" then "Origem: #{BookingOrigin::LABELS.fetch(value.to_sym)}"
         end
       end
     end

@@ -19,9 +19,23 @@ module ClinicManagement
           %i[patients attended exams sessions].each do |field|
             csv << [label_for(field), @analytics[field]]
           end
+          %i[advance_bookings same_day_bookings rescheduled_same_day_bookings].each do |field|
+            csv << [label_for(field), @analytics.fetch(field, 0)]
+          end
           if @analytics[:show_sales]
             csv << ["Compradores", @analytics[:sales]]
             csv << ["Faturamento atribuído", @analytics[:sales_amount]]
+          end
+
+          if @analytics[:booking_origins]
+            csv << []
+            csv << ["Origem das marcações (fichas ativas)"]
+            origin_columns = %i[label patients attended exams]
+            origin_columns += %i[sales sales_amount] if @analytics[:show_sales]
+            csv << origin_columns.map { |column| label_for(column) }
+            @analytics[:booking_origins].each do |group|
+              csv << origin_columns.map { |column| safe_cell(group[column]) }
+            end
           end
 
           { "Dias da semana" => @analytics[:days], "Turnos" => @analytics[:shifts],
@@ -29,6 +43,7 @@ module ClinicManagement
             csv << []
             csv << [title]
             columns = %i[label patients attended exams sessions]
+            columns += %i[advance same_day rescheduled_same_day] if ["Dias da semana", "Regiões"].include?(title)
             columns += %i[sales sales_amount] if @analytics[:show_sales]
             csv << columns.map { |column| label_for(column) }
             rows.each { |row| csv << columns.map { |column| safe_cell(row[column]) } }
@@ -59,7 +74,12 @@ module ClinicManagement
           label: "Categoria", patients: "Agendados", attended: "Compareceram",
           exams: "Receitas", sessions: "Sessões", sales: "Compradores",
           sales_amount: "Faturamento (R$)", customers: "Clientes únicos",
-          appointments: "Marcações", origin: "Região do convite"
+          appointments: "Marcações", origin: "Região do convite",
+          advance: "Antecipados (ativos)", same_day: "Encaixes no dia (ativos)",
+          rescheduled_same_day: "Remarcados no dia (ativos)",
+          advance_bookings: "Marcações antecipadas ativas",
+          same_day_bookings: "Encaixes do dia ativos",
+          rescheduled_same_day_bookings: "Remarcações no dia ativas"
         }.fetch(field)
       end
 

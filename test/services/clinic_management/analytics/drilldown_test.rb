@@ -17,6 +17,7 @@ module ClinicManagement
         assert_nil @drilldown.call(dimension: "hour", value: "25")
         assert_nil @drilldown.call(dimension: "day_hour", value: "8:16")
         assert_nil @drilldown.call(dimension: "region", value: "x" * 151)
+        assert_nil @drilldown.call(dimension: "booking_origin", value: "unknown")
       end
 
       test "returns an empty paginated detail when the dimension is valid" do
@@ -24,6 +25,9 @@ module ClinicManagement
         assert_equal 0, result[:total]
         assert_equal 1, result[:pages]
         assert_empty result[:rows]
+        booking_result = @drilldown.call(dimension: "booking_origin", value: "same_day")
+        assert_equal 0, booking_result[:total]
+        assert_equal "Origem: Encaixes no dia", booking_result[:label]
       end
     end
   end

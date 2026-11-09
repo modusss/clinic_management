@@ -5,7 +5,7 @@
       <h2 id="analytics-detail-title" class="text-xl font-bold mt-1"><%= detail[:label] %></h2>
       <p class="text-sm text-gray-600 mt-1"><%= detail[:total] %> registros encontrados · página <%= detail[:page] %> de <%= detail[:pages] %></p>
     </div>
-    <%= link_to "Fechar detalhes", analytics_path(filter_params.merge(anchor: "dias")), class: "text-sm px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500" %>
+    <%= link_to "Fechar detalhes", analytics_path(filter_params.merge(anchor: detail[:dimension] == "booking_origin" ? "origens" : "dias")), class: "text-sm px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500" %>
   </div>
   <% if detail[:rows].empty? %>
     <p class="text-sm text-gray-600 bg-gray-50 rounded-lg p-4" role="status">Não há registros nesta seleção.</p>
@@ -13,7 +13,7 @@
     <div class="overflow-x-auto rounded-lg border border-gray-200">
       <table class="min-w-full text-sm text-left">
         <thead class="bg-gray-50 text-gray-600 text-xs uppercase">
-          <tr><th scope="col" class="p-3">Data</th><th scope="col" class="p-3">Paciente</th><th scope="col" class="p-3">Região</th><th scope="col" class="p-3">Horário da receita</th><th scope="col" class="p-3">Presença</th><th scope="col" class="p-3">Receita</th><% if detail[:show_sales] %><th scope="col" class="p-3">Vendas</th><% end %><th scope="col" class="p-3">Ação</th></tr>
+          <tr><th scope="col" class="p-3">Data</th><th scope="col" class="p-3">Paciente</th><th scope="col" class="p-3">Região</th><% if detail[:dimension] == "booking_origin" %><th scope="col" class="p-3">Ficha criada em</th><% end %><th scope="col" class="p-3">Horário da receita</th><th scope="col" class="p-3">Presença</th><th scope="col" class="p-3">Receita</th><% if detail[:show_sales] %><th scope="col" class="p-3">Vendas</th><% end %><th scope="col" class="p-3">Ação</th></tr>
         </thead>
         <tbody>
           <% detail[:rows].each do |row| %>
@@ -21,6 +21,7 @@
               <td class="p-3 whitespace-nowrap"><%= l(row[:date]) %></td>
               <td class="p-3 font-medium"><%= row[:patient] %></td>
               <td class="p-3"><%= row[:region] %></td>
+              <% if detail[:dimension] == "booking_origin" %><td class="p-3 whitespace-nowrap"><%= row[:booked_at]&.strftime('%d/%m/%Y %H:%M') || '—' %></td><% end %>
               <td class="p-3 whitespace-nowrap"><%= row[:time] ? row[:time].strftime('%H:%M') : '—' %></td>
               <td class="p-3"><%= row[:attended] ? 'Presente' : 'Não marcado' %></td>
               <td class="p-3"><%= row[:exam] ? 'Registrada' : 'Sem receita' %></td>

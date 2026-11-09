@@ -78,7 +78,8 @@ module ClinicManagement
           invitation: invitation,
           status: "agendado",
           referral_code: invitation&.referral&.code,
-          registered_by_user_id: current_user&.id
+          registered_by_user_id: current_user&.id,
+          rescheduled_from_appointment_id: before_appointment.id
         }
         
         @appointment = ClinicManagement::AppointmentBooking.new(

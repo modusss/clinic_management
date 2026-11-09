@@ -1,0 +1,66 @@
+<% origins = @analytics.fetch(:booking_origins) %>
+<% active_total = origins.sum { |group| group[:patients] } %>
+<% active_attended = origins.sum { |group| group[:attended] } %>
+<% main_origins = origins.reject { |group| group[:key] == :after_date } %>
+
+<section id="origens" class="bg-white border border-gray-200 rounded-xl shadow-sm p-3 sm:p-5 mb-6 scroll-mt-24" aria-labelledby="origens-title">
+  <div class="flex flex-wrap items-start justify-between gap-2 mb-4">
+    <div>
+      <h2 id="origens-title" class="text-xl font-bold">Origem das marcações</h2>
+      <p class="text-sm text-gray-600 mt-1">Quando a ficha foi criada em relação ao dia do exame — não quando a presença foi confirmada.</p>
+    </div>
+    <span class="text-xs font-semibold bg-gray-100 text-gray-700 rounded-full px-3 py-1.5"><%= number_with_delimiter(active_total) %> fichas ativas no período</span>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+    <% main_origins.each do |group| %>
+      <% highlight = group[:key] == :same_day %>
+      <%= link_to analytics_path(@filter_params.merge(detail: "booking_origin", value: group[:key], anchor: "detalhamento")), class: "block min-w-0 p-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500 hover:shadow-sm transition #{highlight ? 'bg-emerald-50 border-emerald-200 hover:border-emerald-500' : 'bg-gray-50 border-gray-200 hover:border-gray-400'}" do %>
+        <div class="flex items-start justify-between gap-2">
+          <h3 class="text-sm font-bold <%= highlight ? 'text-emerald-900' : 'text-gray-700' %>"><%= group[:label] %></h3>
+          <span class="text-xs text-gray-500">Detalhar →</span>
+        </div>
+        <p class="text-3xl font-bold tabular-nums mt-2 <%= highlight ? 'text-emerald-800' : 'text-gray-900' %>"><%= number_with_delimiter(group[:patients]) %></p>
+        <p class="text-xs text-gray-500 mt-1"><%= active_total.positive? ? number_to_percentage(100.0 * group[:patients] / active_total, precision: 1) : '—' %> das marcações ativas</p>
+        <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-gray-200 text-sm">
+          <div><p class="text-gray-500 text-xs">Compareceram</p><p class="font-bold text-blue-800"><%= number_with_delimiter(group[:attended]) %></p></div>
+          <div><p class="text-gray-500 text-xs">Exames com receita</p><p class="font-bold"><%= number_with_delimiter(group[:exams]) %></p></div>
+        </div>
+        <% if @analytics[:show_sales] %>
+          <div class="mt-2 pt-2 border-t border-gray-200 flex flex-wrap items-baseline justify-between gap-2 text-sm">
+            <span class="text-gray-600"><%= group[:sales] %> compradores</span>
+            <strong class="text-emerald-800 tabular-nums"><%= number_to_currency(group[:sales_amount]) %></strong>
+          </div>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <% advance = origins.find { |group| group[:key] == :advance } %>
+  <% same_day = origins.find { |group| group[:key] == :same_day } %>
+  <% rescheduled = origins.find { |group| group[:key] == :rescheduled_same_day } %>
+  <% if active_attended.positive? %>
+    <div class="mt-5 rounded-lg bg-gray-50 border border-gray-100 p-3 sm:p-4">
+      <div class="flex flex-wrap justify-between gap-2 items-baseline mb-2">
+        <p class="text-sm font-semibold">Participação nos comparecimentos</p>
+        <p class="text-xs text-gray-600"><%= number_with_delimiter(active_attended) %> presenças entre fichas ativas</p>
+      </div>
+      <div class="h-3 flex w-full rounded-full overflow-hidden bg-gray-200" role="img" aria-label="<%= advance[:attended] %> comparecimentos antecipados, <%= same_day[:attended] %> encaixes e <%= rescheduled[:attended] %> remarcações no dia">
+        <% [advance, same_day, rescheduled].each_with_index do |group, index| %>
+          <div class="<%= %w[bg-slate-400 bg-emerald-500 bg-amber-400][index] %>" style="width: <%= 100.0 * group[:attended] / active_attended %>%"></div>
+        <% end %>
+      </div>
+      <div class="flex flex-wrap gap-x-5 gap-y-1 mt-2 text-xs text-gray-600">
+        <span><span class="inline-block w-2.5 h-2.5 rounded-sm bg-slate-400 mr-1"></span>Antecipados: <strong><%= advance[:attended] %></strong></span>
+        <span><span class="inline-block w-2.5 h-2.5 rounded-sm bg-emerald-500 mr-1"></span>Encaixes: <strong><%= same_day[:attended] %></strong></span>
+        <span><span class="inline-block w-2.5 h-2.5 rounded-sm bg-amber-400 mr-1"></span>Remarcados no dia: <strong><%= rescheduled[:attended] %></strong></span>
+      </div>
+    </div>
+  <% end %>
+
+  <% after_date = origins.find { |group| group[:key] == :after_date } %>
+  <% if after_date[:patients].positive? %>
+    <p class="mt-3 text-xs text-amber-800 bg-amber-50 rounded-lg p-3">Existem <%= link_to "#{after_date[:patients]} ficha(s) cadastrada(s) depois da data do exame", analytics_path(@filter_params.merge(detail: "booking_origin", value: "after_date", anchor: "detalhamento")), class: "underline font-semibold" %>. Verifique esses registros antes de interpretá-los.</p>
+  <% end %>
+  <p class="text-xs text-gray-500 mt-3">Este quadro considera fichas atualmente agendadas. Cancelamentos e fichas substituídas por remarcação permanecem nos históricos da tela, mas não são contados novamente como encaixe. Uma marcação registrada no dia não comprova, sozinha, que o paciente já estava fisicamente na unidade; a presença aparece em separado. Remarcações antigas sem vínculo explícito são identificadas quando há evidências compatíveis no histórico.</p>
+</section>
