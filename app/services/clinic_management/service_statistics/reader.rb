@@ -123,6 +123,7 @@ module ClinicManagement
       def cached_sales?(service, statistic)
         return false unless Policy.retail_sales_enabled?
         return false unless @cache_enabled && statistic.present?
+        return false unless statistic.sales_metrics_version == FinancialMetrics::VERSION
 
         if Policy.sales_frozen?(service.date)
           statistic.sales_frozen_at.present?
@@ -134,7 +135,7 @@ module ClinicManagement
       def live_sales_metrics(service)
         return [0, 0, 0] unless Policy.retail_sales_enabled?
 
-        metrics = Refresher.new(service).sales_metrics
+        metrics = FinancialMetrics.new(service: service, referral: @referral).call
         [
           metrics[:sales_customers_count],
           metrics[:sales_amount],

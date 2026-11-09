@@ -472,9 +472,11 @@ module ClinicManagement
         end
 
         if helpers.is_manager_above? && include_sales_metrics?
-          row << { header: "Vendas", content: sales_count(ser), class: "text-purple-700 font-bold" }
-          row << { header: "Montante de vendas", content: helpers.number_to_currency(sales_amount(ser)), class: "text-green-700 font-bold" }
-          row << { header: "Recebimentos", content: helpers.number_to_currency(receipts_amount(ser)), class: "text-teal-700 font-bold" }
+          metrics = service_financial_metrics(ser)
+          row << { header: "Vendas", content: metrics[:sales_customers_count], class: "text-purple-700 font-bold" }
+          row << { header: "Montante de vendas", content: helpers.number_to_currency(metrics[:sales_amount]), class: "text-green-700 font-bold" }
+          row << { header: "Recebido até agora", content: helpers.number_to_currency(metrics[:receipts_amount]), class: "text-teal-700 font-bold" }
+          row << { header: "Saldo a receber", content: helpers.number_to_currency(metrics[:pending_amount]), class: "text-amber-700 font-bold" }
         end
 
         row << { header: "Remarcados", content: rescheduled, class: "text-green-700" }
@@ -504,50 +506,26 @@ module ClinicManagement
       end
     end
 
-    # ESSENTIAL: Paid statuses must stay aligned with Order#total_paid_amount in the host app.
-    PAID_PAYMENT_STATUSES = %w[PAYMENT_RECEIVED RECEIVED CONFIRMED RECEIVED_IN_CASH PAID].freeze
-
-    # Returns customer IDs from attended appointments (optionally scoped to current referral).
-    def service_customer_ids(service)
-      attended_appointments = service.appointments.where(attendance: true)
-
-      if action_name == "index_by_referral"
-        attended_appointments = attended_appointments.select { |a| a&.invitation&.referral == @referral }
-      end
-
-      attended_appointments.map { |app| app.lead.leads_conversion&.customer_id }.compact
-    end
-
-    # Orders from attended patients within 30 days after the service date (same window as sales metrics).
-    def service_orders_scope(service)
-      customer_ids = service_customer_ids(service)
-      return Order.none if customer_ids.empty?
-
-      Order.where(customer_id: customer_ids)
-           .where(created_at: service.date.beginning_of_day..(service.date + 30.days).end_of_day)
+    # Shared with the cached weekly/monthly statistics to keep the attribution
+    # and refund rules identical between daily and aggregated screens.
+    def service_financial_metrics(service)
+      @service_financial_metrics ||= {}
+      @service_financial_metrics[service.id] ||= ServiceStatistics::FinancialMetrics.new(
+        service: service,
+        referral: action_name == "index_by_referral" ? @referral : nil
+      ).call
     end
 
     def sales_amount(service)
-      service_orders_scope(service).sum(:total_amount)
+      service_financial_metrics(service)[:sales_amount]
     end
 
     def sales_count(service)
-      service_orders_scope(service).distinct.count(:customer_id)
+      service_financial_metrics(service)[:sales_customers_count]
     end
 
-    # Sum of payments already received on orders attributed to this service (entry, pickup, installments).
     def receipts_amount(service)
-      order_ids = service_orders_scope(service).pluck(:id)
-      return 0 if order_ids.empty?
-
-      early_total = EarlyPayment.where(order_id: order_ids, status: PAID_PAYMENT_STATUSES).sum(:amount)
-      pickup_total = PickupPayment.where(order_id: order_ids, status: PAID_PAYMENT_STATUSES).sum(:amount)
-      installments_total = Installment.joins(:payment_book)
-                                        .where(payment_books: { order_id: order_ids })
-                                        .where(installments: { status: PAID_PAYMENT_STATUSES })
-                                        .sum("installments.amount")
-
-      early_total + pickup_total + installments_total
+      service_financial_metrics(service)[:receipts_amount]
     end
 
     def appointment_counts(service)

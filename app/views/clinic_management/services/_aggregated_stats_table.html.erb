@@ -20,7 +20,8 @@
         <% if show_sales %>
           <th>Vendas</th>
           <th>Montante de vendas</th>
-          <th>Recebimentos</th>
+          <th><span title="Valor líquido recebido até agora dos pedidos atribuídos a estes exames, inclusive em datas posteriores. Não é o caixa do período.">Recebido até agora ⓘ</span></th>
+          <th><span title="Valor das vendas atribuídas que permanece em aberto.">Saldo a receber</span></th>
           <th>Conversão</th>
           <th>
             <span class="services-stats-header-hint">
@@ -76,6 +77,9 @@
             <td class="services-stats-amount services-stats-amount--receipts">
               <%= number_to_currency(row[:receipts_amount]) %>
             </td>
+            <td class="services-stats-amount">
+              <%= number_to_currency([row[:sales_amount].to_d - row[:receipts_amount].to_d, 0.to_d].max) %>
+            </td>
             <td>
               <%= services_conversion_cell(
                     sales_rate,
@@ -109,8 +113,9 @@
       <% if show_sales %>
         <li><strong>Compareceram → Vendas:</strong> percentual de quem compareceu e realizou compra (até 30 dias após o atendimento).</li>
         <li><strong>Conversão final (Pacientes → Vendas):</strong> percentual total de pacientes agendados que compareceram e compraram.</li>
-        <li><strong>Montante de vendas:</strong> valor total dos pedidos atribuídos ao período.</li>
-        <li><strong>Recebimentos:</strong> valor já recebido (entrada, retirada e parcelas pagas) desses pedidos.</li>
+        <li><strong>Montante de vendas:</strong> pedidos ativos atribuídos a um único exame, até 30 dias depois do atendimento.</li>
+        <li><strong>Recebido até agora:</strong> pagamentos registrados desses pedidos, abatidos os estornos identificados, inclusive quando recebidos em outra data. Não representa o caixa do dia.</li>
+        <li><strong>Saldo a receber:</strong> diferença entre o valor das vendas e o que foi recebido até agora.</li>
       <% end %>
     </ul>
   </div>

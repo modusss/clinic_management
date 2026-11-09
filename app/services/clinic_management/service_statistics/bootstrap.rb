@@ -41,10 +41,15 @@ module ClinicManagement
 
       # @return [Boolean]
       def closed_month_services_missing_snapshot?
-        ClinicManagement::Service
-          .where("date < ?", Date.current.beginning_of_month)
-          .where.missing(:service_statistic)
-          .exists?
+        services = ClinicManagement::Service
+                     .where("date < ?", Date.current.beginning_of_month)
+        return services.where.missing(:service_statistic).exists? unless Policy.retail_sales_enabled?
+
+        services.left_joins(:service_statistic)
+                .where(
+                  "clinic_management_service_statistics.id IS NULL OR clinic_management_service_statistics.sales_metrics_version < ?",
+                  FinancialMetrics::VERSION
+                ).exists?
       end
 
       # @return [Boolean]
@@ -52,8 +57,12 @@ module ClinicManagement
         return false unless Policy.retail_sales_enabled?
 
         ClinicManagement::Service
+          .left_joins(:service_statistic)
           .where(date: Date.current.beginning_of_month...Date.current)
-          .where.missing(:service_statistic)
+          .where(
+            "clinic_management_service_statistics.id IS NULL OR clinic_management_service_statistics.sales_metrics_version < ?",
+            FinancialMetrics::VERSION
+          )
           .exists?
       end
     end

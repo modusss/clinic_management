@@ -145,6 +145,21 @@ module ClinicManagement
       service_ids.uniq.each do |id|
         ClinicManagement::RefreshServiceStatisticsJob.perform_later(id)
       end
+
+      # If attendance becomes confirmed (or is undone) after an order was made,
+      # its unique attribution may move between this and another clinic session.
+      return unless saved_change_to_attendance? && lead_id.present?
+
+      service_date = ClinicManagement::Service.where(id: service_id).pick(:date)
+      customer_id = LeadsConversion.where(clinic_management_lead_id: lead_id).pick(:customer_id)
+      return unless service_date && customer_id
+
+      Order.where(customer_id: customer_id)
+           .where(created_at: service_date.beginning_of_day..
+                              (service_date + Analytics::SalesAttribution::WINDOW_DAYS.days).end_of_day)
+           .pluck(:id).each do |order_id|
+        ServiceStatistics::Refresher.enqueue_for_order(order_id)
+      end
     end
 
     def set_registered_by_user_fallback

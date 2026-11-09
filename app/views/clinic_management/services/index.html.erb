@@ -54,6 +54,14 @@
     </div>
     <% end %>
 
+    <% if @view_type == 'daily' && is_manager_above? && services_sales_metrics_available? %>
+      <p class="mb-3 text-xs text-gray-600 leading-relaxed">
+        <strong>Valores por exame:</strong> as vendas são atribuídas a um único atendimento (pedidos realizados em até 30 dias).
+        “Recebido até agora” inclui pagamentos posteriores ao exame, com abatimento de estornos identificados;
+        não corresponde ao movimento de caixa da data exibida.
+      </p>
+    <% end %>
+
     <!-- Loading Notification -->
     <div id="loading-notification" class="fixed top-4 right-4 z-50 bg-white p-4 rounded-lg shadow-lg border-l-4 border-blue-500 flex items-center space-x-3" style="display: none;">
       <div class="loading-spinner"></div>
@@ -68,7 +76,7 @@
       </button>
     </div>
 
-    <div class="overflow-hidden border-gray-200 sm:rounded-lg">
+    <div class="overflow-x-auto border-gray-200 sm:rounded-lg">
       <% if @aggregated_stats.present? %>
         <%= render "clinic_management/services/aggregated_stats_table",
                    stats: @aggregated_stats,
