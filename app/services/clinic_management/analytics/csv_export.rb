@@ -41,9 +41,15 @@ module ClinicManagement
           if @analytics[:day_shifts]
             csv << []
             csv << ["Ranking de dias e turnos"]
-            csv << ["Dia e turno", "Exames com horário identificado"]
+            columns = ["Dia e turno", "Exames com horário identificado"]
+            columns += ["Ocorrências do turno", "Faturamento atribuído (R$)",
+                        "Recebido até agora (R$)", "Faturamento médio por turno (R$)",
+                        "Recebimento médio por turno (R$)"] if @analytics[:show_sales]
+            csv << columns
             @analytics[:day_shifts].each do |row|
-              csv << [safe_cell(row[:label]), row[:exams]]
+              values = [safe_cell(row[:label]), row[:exams]]
+              values += %i[occurrences sales_amount receipts_amount average_sales_amount average_receipts_amount].map { |field| row[field] } if @analytics[:show_sales]
+              csv << values
             end
           end
 
@@ -54,6 +60,7 @@ module ClinicManagement
             columns = %i[label patients attended exams sessions]
             columns += %i[advance same_day rescheduled_same_day] if ["Dias da semana", "Regiões"].include?(title)
             columns += %i[sales sales_amount] if @analytics[:show_sales]
+            columns += %i[receipts_amount occurrences average_sales_amount average_receipts_amount] if @analytics[:show_sales] && title == "Turnos"
             csv << columns.map { |column| label_for(column) }
             rows.each { |row| csv << columns.map { |column| safe_cell(row[column]) } }
           end
@@ -83,6 +90,10 @@ module ClinicManagement
           label: "Categoria", patients: "Agendados", attended: "Compareceram",
           exams: "Receitas", sessions: "Sessões", sales: "Compradores",
           sales_amount: "Faturamento (R$)", customers: "Clientes únicos",
+          receipts_amount: "Recebido até agora (R$)",
+          occurrences: "Ocorrências do turno",
+          average_sales_amount: "Faturamento médio por turno (R$)",
+          average_receipts_amount: "Recebimento médio por turno (R$)",
           appointments: "Marcações", origin: "Região do convite",
           advance: "Antecipados (ativos)", same_day: "Encaixes no dia (ativos)",
           rescheduled_same_day: "Remarcados no dia (ativos)",

@@ -1,0 +1,60 @@
+<%= turbo_frame_tag "clinic_shift_financials", class: "block mt-4" do %>
+  <div class="rounded-lg border border-emerald-200 bg-white p-3 sm:p-4 shadow-sm">
+    <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
+      <div>
+        <h4 class="font-bold text-gray-800">Desempenho financeiro dos turnos</h4>
+        <p class="text-xs text-gray-500 mt-1">Calculado sob demanda para o período e filtros selecionados.</p>
+      </div>
+      <div class="shift-financial-action">
+        <%= link_to "Atualizar valores", analytics_shift_financials_path(@filter_params.except(:compare, :region_view)), data: { turbo_frame: "clinic_shift_financials", turbo_prefetch: false }, class: "text-xs font-semibold text-emerald-800 hover:underline" %>
+      </div>
+    </div>
+
+    <div class="shift-financial-loader hidden items-center gap-2 rounded-lg bg-emerald-50 p-2 text-sm font-medium text-emerald-800 mb-3" role="status" aria-live="polite">
+      <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-700" aria-hidden="true"></span>
+      Atualizando resultados…
+    </div>
+
+    <h5 class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Média por turno</h5>
+    <div class="grid sm:grid-cols-3 gap-2 mb-5">
+      <% @analytics[:shifts].sort_by { |shift| -shift[:average_receipts_amount].to_d }.each do |shift| %>
+        <div class="rounded-lg bg-gray-50 border border-gray-100 p-3">
+          <p class="font-semibold text-gray-800 text-sm"><%= shift[:label] %></p>
+          <p class="text-xs text-gray-500 mt-1"><%= shift[:occurrences] %> turnos no período</p>
+          <p class="text-xs text-gray-600 mt-2">Faturamento médio: <strong class="text-emerald-800"><%= number_to_currency(shift[:average_sales_amount]) %></strong></p>
+          <p class="text-xs text-gray-600 mt-1">Recebimento médio: <strong class="text-teal-800"><%= number_to_currency(shift[:average_receipts_amount]) %></strong></p>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+      <h5 class="font-semibold text-gray-800 text-sm">Ranking financeiro por dia e turno</h5>
+      <nav class="shift-financial-action flex flex-wrap gap-1" aria-label="Ordenar ranking financeiro">
+        <% [["Exames", "exams"], ["Faturamento médio", "average_sales_amount"], ["Recebimento médio", "average_receipts_amount"]].each do |label, metric| %>
+          <%= link_to label, analytics_shift_financials_path(@filter_params.except(:compare, :region_view).merge(ranking_metric: metric)), data: { turbo_frame: "clinic_shift_financials", turbo_prefetch: false }, class: "text-xs rounded-md border px-2 py-1 #{metric == @ranking_metric ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-white text-emerald-800 border-gray-200 hover:bg-emerald-50'}", aria: { current: (metric == @ranking_metric ? "true" : nil) } %>
+        <% end %>
+      </nav>
+    </div>
+    <% metric = @ranking_metric.to_sym %>
+    <% ranked = @analytics[:day_shifts].sort_by { |entry| [-entry.fetch(metric, 0).to_d, entry[:weekday], %w[morning afternoon night].index(entry[:shift])] } %>
+    <% maximum = [ranked.first&.dig(metric).to_d, 1.to_d].max %>
+    <div class="space-y-2">
+      <% ranked.each_with_index do |entry, rank| %>
+        <div class="rounded-lg border border-gray-100 p-2">
+          <div class="flex items-center justify-between gap-2 text-sm">
+            <span class="text-gray-800"><strong class="text-emerald-800 mr-2"><%= rank + 1 %>º</strong><%= entry[:label] %></span>
+            <strong class="text-emerald-800 tabular-nums"><%= metric == :exams ? number_with_delimiter(entry[:exams]) : number_to_currency(entry.fetch(metric, 0)) %></strong>
+          </div>
+          <div class="bg-gray-100 h-1.5 rounded-full overflow-hidden mt-2"><div class="bg-emerald-500 h-full rounded-full" style="width: <%= 100.0 * entry.fetch(metric, 0).to_d / maximum %>%"></div></div>
+          <p class="text-xs text-gray-600 mt-2"><%= entry[:exams] %> exames · <%= entry[:occurrences] %> ocorrências</p>
+          <p class="text-xs text-gray-600 mt-1">Média faturada: <strong class="text-emerald-800"><%= number_to_currency(entry[:average_sales_amount]) %></strong> · Média recebida: <strong class="text-teal-800"><%= number_to_currency(entry[:average_receipts_amount]) %></strong></p>
+        </div>
+      <% end %>
+      <% if ranked.empty? %><p class="text-xs text-gray-500">Sem exames com horário identificado no período.</p><% end %>
+    </div>
+    <p class="text-xs text-gray-500 mt-3">Médias por ocorrência de turno (data + período), incluindo turnos realizados sem exames. Os recebimentos consideram pagamentos posteriores e estornos; não representam entradas no caixa naquele horário. Períodos recentes podem mudar.</p>
+    <% if @service_statistics_backfill_enqueued || ClinicManagement::ServiceStatistics::Bootstrap.backfill_pending? %>
+      <p class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-2 mt-2">A consolidação histórica está em segundo plano. Atualize este quadro depois para consultar os resultados consolidados.</p>
+    <% end %>
+  </div>
+<% end %>

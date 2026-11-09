@@ -8,13 +8,14 @@ module ClinicManagement
     # 30-day attribution window. The same rule is used by the intelligence report,
     # avoiding duplicate sales when a customer attended multiple sessions.
     class FinancialMetrics
-      VERSION = 2
+      VERSION = 3
       PAID_STATUSES = %w[PAYMENT_RECEIVED RECEIVED CONFIRMED RECEIVED_IN_CASH PAID].freeze
       EMPTY = {
         sales_customers_count: 0,
         sales_amount: 0.to_d,
         receipts_amount: 0.to_d,
-        pending_amount: 0.to_d
+        pending_amount: 0.to_d,
+        financial_by_exam_shift: {}
       }.freeze
 
       def initialize(service:, referral: nil)
@@ -23,33 +24,49 @@ module ClinicManagement
       end
 
       def call
-        order_ids = attributed_active_order_ids
-        return EMPTY.dup if order_ids.empty?
+        attributed = attributed_active_orders
+        orders = attributed.values.flatten.uniq { |sale| sale[:order_id] }
+        return EMPTY.dup if orders.empty?
 
-        orders = Order.where(id: order_ids)
-        sales_amount = orders.sum(:total_amount).to_d
-        receipts_amount = received_amount(order_ids)
+        receipts_by_order = ReceiptsByOrder.call(orders.map { |sale| sale[:order_id] })
+        sales_amount = orders.sum { |sale| sale[:amount] }
+        receipts_amount = [orders.sum { |sale| receipts_by_order.fetch(sale[:order_id], 0.to_d) }, 0.to_d].max
+        shift_amounts = {}
+        service_date = @service.date
+        appointments_by_id = @service.appointments.includes(:prescription).index_by(&:id)
+        attributed.each do |appointment_id, appointment_sales|
+          prescription_at = appointments_by_id[appointment_id]&.prescription&.created_at&.in_time_zone
+          next unless prescription_at&.to_date == service_date
+
+          shift = prescription_at.hour < 12 ? "morning" : prescription_at.hour < 18 ? "afternoon" : "night"
+          bucket = (shift_amounts[shift] ||= { sales_amount: 0.to_d, receipts_amount: 0.to_d })
+          appointment_sales.each do |sale|
+            bucket[:sales_amount] += sale[:amount]
+            bucket[:receipts_amount] += receipts_by_order.fetch(sale[:order_id], 0.to_d)
+          end
+        end
 
         {
-          sales_customers_count: orders.distinct.count(:customer_id),
+          sales_customers_count: orders.map { |sale| sale[:customer_id] }.uniq.size,
           sales_amount: sales_amount,
           receipts_amount: receipts_amount,
-          pending_amount: [sales_amount - receipts_amount, 0.to_d].max
+          pending_amount: [sales_amount - receipts_amount, 0.to_d].max,
+          financial_by_exam_shift: shift_amounts
         }
       end
 
       private
 
-      def attributed_active_order_ids
+      def attributed_active_orders
         target_appointments = @service.appointments.where(attendance: true).includes(invitation: :referral).to_a
         if @referral
           target_appointments.select! { |appointment| appointment.invitation&.referral_id == @referral.id }
         end
-        return [] if target_appointments.empty?
+        return {} if target_appointments.empty?
 
         customer_ids = LeadsConversion.where(clinic_management_lead_id: target_appointments.map(&:lead_id))
                                       .distinct.pluck(:customer_id)
-        return [] if customer_ids.empty?
+        return {} if customer_ids.empty?
 
         # Include *all* later attended appointments for these customers, even
         # those from a different captador/session, before selecting the winner.
@@ -60,37 +77,12 @@ module ClinicManagement
                       date: @service.date..(@service.date + Analytics::SalesAttribution::WINDOW_DAYS.days)
                     })
                     .includes(:service).to_a
-        return [] if visits.empty?
+        return {} if visits.empty?
 
         dates = visits.to_h { |appointment| [appointment.service_id, appointment.service.date] }
         attributed = Analytics::SalesAttribution.new(appointments: visits, service_dates: dates).call
-        ids = target_appointments.flat_map do |appointment|
-          attributed.fetch(appointment.id, []).map { |order| order[:order_id] }
-        end.uniq
-
-        # A canceled OS is not an active sale; its historical cash movements
-        # remain in the financial ledger, outside this commercial cohort total.
-        Order.where(id: ids, canceled: [false, nil]).pluck(:id)
-      end
-
-      def received_amount(order_ids)
-        entries = EarlyPayment.where(order_id: order_ids, status: PAID_STATUSES).sum(:amount)
-        pickups = PickupPayment.where(order_id: order_ids, status: PAID_STATUSES).sum(:amount)
-        # Manual installments can be settled for a different amount (discount,
-        # interest, partial settlement); prefer what was actually recorded.
-        installments = Installment.joins(:payment_book)
-                                  .where(payment_books: { order_id: order_ids })
-                                  .where(installments: { status: PAID_STATUSES })
-                                  .sum("COALESCE(installments.paid_amount, installments.amount)")
-
-        # Explicit refund cashflows preserve the original payment's paid status.
-        # Only subtract refunds tied to an original receipt; unrelated outflows
-        # and unlinked legacy movements must not silently alter this indicator.
-        refunds = Cashflow.where(
-          id: CashflowOrder.where(order_id: order_ids).select(:cashflow_id)
-        ).where(flow_type: "out").where.not(original_cashflow_id: nil).sum(:amount)
-
-        [entries.to_d + pickups.to_d + installments.to_d - refunds.to_d, 0.to_d].max
+        target_ids = target_appointments.map(&:id)
+        attributed.slice(*target_ids)
       end
     end
   end

@@ -37,7 +37,7 @@ module ClinicManagement
         earliest = @service_dates.values.min
         latest = @service_dates.values.max
         attributed = Hash.new { |hash, key| hash[key] = [] }
-        Order.where(customer_id: eligible_by_customer.keys)
+        Order.where(customer_id: eligible_by_customer.keys, canceled: [false, nil])
              .where(created_at: earliest.beginning_of_day..(latest + WINDOW_DAYS.days).end_of_day)
              .pluck(:id, :customer_id, :created_at, :total_amount).each do |order_id, customer_id, created_at, amount|
           order_date = created_at.in_time_zone.to_date

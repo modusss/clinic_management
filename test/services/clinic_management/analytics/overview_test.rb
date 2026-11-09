@@ -45,6 +45,31 @@ module ClinicManagement
         assert_equal "afternoon", ranking[1][:shift]
         assert_equal 1, ranking[1][:weekday]
       end
+
+      test "calculates financial averages by distinct date and actual exam shift" do
+        overview = Overview.new(start_date: Date.new(2026, 1, 1), end_date: Date.new(2026, 1, 31), service_location_id: nil)
+        heatmap = Array.new(7) { Array.new(24, 0) }
+        heatmap[5][9] = 4
+        financials = { [6, "morning"] => { sales_amount: 1200.to_d, receipts_amount: 800.to_d } }
+        occurrences = { [6, "morning"] => Set.new([Date.new(2026, 1, 3), Date.new(2026, 1, 10)]) }
+
+        saturday = overview.send(:ranked_day_shifts, heatmap, financials, occurrences).first
+        assert_equal 2, saturday[:occurrences]
+        assert_equal 1200.to_d, saturday[:sales_amount]
+        assert_equal 800.to_d, saturday[:receipts_amount]
+        assert_equal 600.to_d, saturday[:average_sales_amount]
+        assert_equal 400.to_d, saturday[:average_receipts_amount]
+      end
+
+      test "initial overview does not query shift receipts or cached financial snapshots" do
+        range = { start_date: Date.new(1900, 1, 1), end_date: Date.new(1900, 1, 31), service_location_id: nil }
+        ServiceStatistics::ReceiptsByOrder.stub(:call, ->(*) { flunk "receipts were requested on page load" }) do
+          ServiceStatistic.stub(:where, ->(*) { flunk "financial snapshots were requested on page load" }) do
+            result = Overview.new(**range, include_sales: true).call
+            assert_equal false, result[:show_shift_financials]
+          end
+        end
+      end
     end
   end
 end

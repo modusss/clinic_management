@@ -5,28 +5,14 @@ module ClinicManagement
     before_action :require_analytics_access!
 
     def index
-      @end_date = parse_date(params[:end_date], Date.current)
-      @start_date = parse_date(params[:start_date], @end_date - 89.days)
-      @start_date, @end_date = @end_date, @start_date if @start_date > @end_date
-      @start_date = [@start_date, @end_date - 365.days].max
-      @region_id = positive_id(params[:region_id])
-      @referral_id = positive_id(params[:referral_id])
+      set_analytics_filters
       @regions = Region.active.order(:name).pluck(:name, :id)
       @referrals = Referral.order(:name).pluck(:name, :id)
       @referral_ranking = Analytics::ReferralRanking.new(
         start_date: @start_date, end_date: @end_date,
         service_location_id: current_service_location_id, region_id: @region_id
       ).call(referrals: @referrals)
-      @compare_previous = params[:compare] == "previous"
-      @region_view = %w[invitation customer compare].include?(params[:region_view]) ? params[:region_view] : "invitation"
-      @filter_params = {
-        start_date: @start_date.iso8601, end_date: @end_date.iso8601,
-        region_id: @region_id, referral_id: @referral_id,
-        compare: (@compare_previous ? "previous" : nil),
-        region_view: (@region_view == "invitation" ? nil : @region_view)
-      }.compact
-
-      @analytics = analytics_for(@start_date, @end_date)
+      @analytics = analytics_for(@start_date, @end_date, include_shift_financials: request.format.csv?)
       if @compare_previous
         period_days = (@end_date - @start_date).to_i + 1
         @previous_end_date = @start_date - 1.day
@@ -58,18 +44,49 @@ module ClinicManagement
       end
     end
 
+    # Requested only by the explicit button in the report. Turbo replaces just
+    # this frame, without reloading the rest of the analytics dashboard.
+    def shift_financials
+      return head :forbidden unless helpers.services_sales_metrics_available?
+
+      set_analytics_filters
+      @service_statistics_backfill_enqueued = ServiceStatistics::Bootstrap.enqueue_once! if @region_id.nil? && @referral_id.nil?
+      @analytics = analytics_for(@start_date, @end_date, include_shift_financials: true)
+      render :shift_financials, layout: false
+    end
+
     private
 
     # Resolve all comparisons through the same filters, including service location.
-    def analytics_for(start_date, end_date)
+    def analytics_for(start_date, end_date, include_shift_financials: false)
       Analytics::Overview.new(
         start_date: start_date,
         end_date: end_date,
         service_location_id: current_service_location_id,
         region_id: @region_id,
         referral_id: @referral_id,
-        include_sales: helpers.services_sales_metrics_available?
+        include_sales: helpers.services_sales_metrics_available?,
+        include_shift_financials: include_shift_financials
       ).call
+    end
+
+    def set_analytics_filters
+      @end_date = parse_date(params[:end_date], Date.current)
+      @start_date = parse_date(params[:start_date], @end_date - 89.days)
+      @start_date, @end_date = @end_date, @start_date if @start_date > @end_date
+      @start_date = [@start_date, @end_date - 365.days].max
+      @region_id = positive_id(params[:region_id])
+      @referral_id = positive_id(params[:referral_id])
+      @compare_previous = params[:compare] == "previous"
+      @ranking_metric = %w[exams average_sales_amount average_receipts_amount].include?(params[:ranking_metric]) ? params[:ranking_metric] : "exams"
+      @region_view = %w[invitation customer compare].include?(params[:region_view]) ? params[:region_view] : "invitation"
+      @filter_params = {
+        start_date: @start_date.iso8601, end_date: @end_date.iso8601,
+        region_id: @region_id, referral_id: @referral_id,
+        compare: (@compare_previous ? "previous" : nil),
+        ranking_metric: (@ranking_metric == "exams" ? nil : @ranking_metric),
+        region_view: (@region_view == "invitation" ? nil : @region_view)
+      }.compact
     end
 
     def positive_id(value)

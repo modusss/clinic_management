@@ -3,6 +3,10 @@
 require "test_helper"
 
 class ClinicManagement::ServiceStatisticsPolicyTest < ActiveSupport::TestCase
+  # Policy assertions do not use the legacy host fixtures, some of which have
+  # broken foreign-key references in the isolated engine test database.
+  self.fixture_table_names = []
+
   test "remarcados are always live" do
     assert ClinicManagement::ServiceStatistics::Policy.rescheduled_always_live?
   end

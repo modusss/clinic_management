@@ -68,6 +68,29 @@ module ClinicManagement
       end
     end
 
+    test "attributes a later payment to the actual hour of the original exam" do
+      appointment_id = @first.appointments.first.id
+      insert(ClinicManagement::Prescription, appointment_id: appointment_id,
+             created_at: Time.zone.local(2026, 9, 2, 11, 50))
+      order_id = order_on(Date.new(2026, 9, 4), amount: 900)
+      insert(EarlyPayment, order_id: order_id, amount: 200, status: "RECEIVED")
+      insert(PickupPayment, order_id: order_id, amount: 500, status: "RECEIVED",
+                            paid_at: Time.zone.local(2026, 10, 30, 15))
+
+      metrics = report(@first)
+      assert_equal 900.to_d, metrics[:sales_amount]
+      assert_equal 700.to_d, metrics[:receipts_amount]
+      assert_equal({ sales_amount: 900.to_d, receipts_amount: 700.to_d },
+                   metrics[:financial_by_exam_shift]["morning"])
+      assert_nil metrics[:financial_by_exam_shift]["afternoon"]
+
+      ClinicManagement::ServiceStatistics::Refresher.call(@first)
+      snapshot = ClinicManagement::ServiceStatistic.find_by!(service_id: @first.id)
+      assert_equal ClinicManagement::ServiceStatistics::FinancialMetrics::VERSION, snapshot.sales_metrics_version
+      assert_equal "900.0", snapshot.financial_by_exam_shift.dig("morning", "sales_amount")
+      assert_equal "700.0", snapshot.financial_by_exam_shift.dig("morning", "receipts_amount")
+    end
+
     private
 
     def report(service)

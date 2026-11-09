@@ -35,6 +35,9 @@ module ClinicManagement
           statistic.sales_customers_count = metrics[:sales_customers_count]
           statistic.sales_amount = metrics[:sales_amount]
           statistic.receipts_amount = metrics[:receipts_amount]
+          statistic.financial_by_exam_shift = metrics.fetch(:financial_by_exam_shift).transform_values do |bucket|
+            bucket.transform_values { |amount| amount.to_d.to_s("F") }
+          end
           statistic.sales_computed_at = now
           statistic.sales_metrics_version = FinancialMetrics::VERSION
           statistic.sales_frozen_at = now if Policy.sales_frozen?(@service.date)
