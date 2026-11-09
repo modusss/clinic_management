@@ -16,6 +16,12 @@ module ClinicManagement
         assert_nil @drilldown.call(dimension: "orders", value: "all")
         assert_nil @drilldown.call(dimension: "hour", value: "25")
         assert_nil @drilldown.call(dimension: "day_hour", value: "8:16")
+        assert_nil @drilldown.call(dimension: "weekday_shift", value: "8:morning")
+        assert_nil @drilldown.call(dimension: "weekday_shift", value: "1:dawn")
+        assert_nil @drilldown.call(dimension: "weekday_shift", value: "6:morning")
+        assert_nil @drilldown.call(dimension: "shift", value: "morning")
+        assert_nil @drilldown.call(dimension: "hour", value: "9")
+        assert_nil @drilldown.call(dimension: "day_hour", value: "6:9")
         assert_nil @drilldown.call(dimension: "region", value: "x" * 151)
         assert_nil @drilldown.call(dimension: "booking_origin", value: "unknown")
       end

@@ -193,20 +193,26 @@
 
     <section id="turnos" class="bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-5 scroll-mt-24">
       <h2 class="text-xl font-bold mb-1">Turnos dos exames</h2>
-      <p class="text-sm text-gray-600 mb-4">Horário de lançamento da receita: manhã antes das 12h; tarde até 18h; noite após 18h.</p>
-      <div class="grid md:grid-cols-3 gap-3">
-        <% @analytics[:shifts].each_with_index do |shift, shift_index| %>
-          <%= link_to analytics_path(@filter_params.merge(detail: "shift", value: %w[morning afternoon night][shift_index], anchor: "detalhamento")), class: "block bg-emerald-50 border border-emerald-100 rounded-xl p-4 hover:border-emerald-400 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" do %>
-            <h3 class="text-sm font-semibold text-emerald-900"><%= shift[:label] %></h3>
-            <p class="text-3xl text-emerald-800 font-bold mt-2"><%= shift[:exams] %></p>
-            <p class="text-sm text-gray-600">exames com horário identificado</p>
-            <% if @analytics[:show_sales] %>
-              <div class="mt-3 border-t border-emerald-200 pt-2 text-sm">
-                <p><strong><%= shift[:sales] %></strong> compradores</p>
-                <p class="font-semibold"><%= number_to_currency(shift[:sales_amount]) %></p>
+      <p class="text-sm text-gray-600 mb-4">Ranking por quantidade de exames registrados. Manhã antes das 12h; tarde das 12h às 17h59; noite a partir das 18h.</p>
+      <% ranked_shifts = @analytics[:shifts].each_with_index.sort_by { |shift, index| [-shift[:exams], index] } %>
+      <% shift_max = [ranked_shifts.first&.first&.dig(:exams).to_i, 1].max %>
+      <div class="space-y-2">
+        <% ranked_shifts.each_with_index do |(shift, _original_index), rank| %>
+          <div class="flex items-center gap-3 rounded-lg border border-gray-200 p-3">
+            <span class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold <%= rank.zero? ? 'bg-emerald-700 text-white' : 'bg-gray-100 text-gray-600' %>"><%= rank + 1 %>º</span>
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <span class="font-semibold text-gray-800"><%= shift[:label] %></span>
+                <span class="text-sm font-bold tabular-nums text-emerald-800"><%= number_with_delimiter(shift[:exams]) %> exames</span>
               </div>
-            <% end %>
-          <% end %>
+              <div class="h-2.5 bg-gray-100 rounded-full overflow-hidden mt-2" role="img" aria-label="<%= shift[:label] %>: <%= shift[:exams] %> exames">
+                <div class="h-full bg-emerald-500 rounded-full" style="width: <%= 100.0 * shift[:exams] / shift_max %>%"></div>
+              </div>
+              <% if @analytics[:show_sales] %>
+                <p class="text-xs text-gray-600 mt-2"><%= shift[:sales] %> compradores · <span class="font-semibold text-emerald-800"><%= number_to_currency(shift[:sales_amount]) %></span></p>
+              <% end %>
+            </div>
+          </div>
         <% end %>
       </div>
     </section>
@@ -228,7 +234,7 @@
                 <% @analytics[:heatmap].each_with_index do |day_hours, day_index| %>
                   <% count = day_hours[hour] %>
                   <td class="rounded-md text-center text-xs font-semibold p-0" style="background-color: rgba(16, 185, 129, <%= count.zero? ? 0.05 : 0.15 + 0.8 * count / heat_max %>); color: <%= count > heat_max * 0.6 ? '#064e3b' : '#374151' %>">
-                    <%= link_to(count.positive? ? count : '—', analytics_path(@filter_params.merge(detail: "day_hour", value: "#{day_index + 1}:#{hour}", anchor: "detalhamento")), class: "block rounded-md p-2 hover:ring-2 hover:ring-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600", title: "#{@analytics[:days][day_index][:label]} às #{format('%02d:00', hour)} · #{count} exame(s)") %>
+                    <span class="block rounded-md p-2" title="<%= "#{@analytics[:days][day_index][:label]} às #{format('%02d:00', hour)} · #{count} exame(s)" %>"><%= count.positive? ? count : '—' %></span>
                   </td>
                 <% end %>
               </tr>
@@ -237,20 +243,53 @@
         </table>
         <p class="text-xs text-gray-500 mt-2">Verde mais intenso indica maior quantidade de exames registrados.</p>
       </div>
-      <% max_exams = [@analytics[:hours].map { |row| row[:exams] }.max.to_i, 1].max %>
-      <div class="grid sm:grid-cols-2 gap-x-8 gap-y-2">
-        <% @analytics[:hours].each do |hour| %>
-          <%= link_to analytics_path(@filter_params.merge(detail: "hour", value: @analytics[:hours].index(hour), anchor: "detalhamento")), class: "flex items-center gap-2 text-sm p-1 rounded-md hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500" do %>
-            <span class="w-12 text-gray-600 tabular-nums"><%= hour[:label] %></span>
-            <div class="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden" role="img" aria-label="<%= hour[:label] %>: <%= hour[:exams] %> exames">
-              <div class="h-full bg-emerald-500 rounded-full" style="width: <%= 100.0 * hour[:exams] / max_exams %>%"></div>
-            </div>
-            <span class="w-8 text-right font-semibold tabular-nums"><%= hour[:exams] %></span>
-            <% if @analytics[:show_sales] %>
-              <span class="w-24 text-right text-xs text-emerald-800 tabular-nums" title="Faturamento associado aos exames deste horário"><%= number_to_currency(hour[:sales_amount]) %></span>
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div class="min-w-0">
+          <h3 class="font-bold text-gray-800 mb-1">Ranking por dia e turno</h3>
+          <p class="text-xs text-gray-500 mb-3">Exemplo: sábado de manhã versus segunda à tarde.</p>
+          <% day_shift_max = [@analytics[:day_shifts].first&.dig(:exams).to_i, 1].max %>
+          <div class="space-y-2">
+            <% @analytics[:day_shifts].each_with_index do |entry, rank| %>
+              <div class="flex items-center gap-3 p-2 rounded-lg border border-gray-100">
+                <span class="w-8 text-center font-bold text-sm <%= rank.zero? ? 'text-emerald-800' : 'text-gray-500' %>"><%= rank + 1 %>º</span>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-baseline justify-between gap-2 text-sm">
+                    <span class="font-medium text-gray-800"><%= entry[:label] %></span>
+                    <span class="font-bold text-emerald-800 tabular-nums"><%= number_with_delimiter(entry[:exams]) %></span>
+                  </div>
+                  <div class="bg-gray-100 rounded-full h-2 mt-1.5 overflow-hidden" role="img" aria-label="<%= entry[:label] %>: <%= entry[:exams] %> exames">
+                    <div class="bg-emerald-500 h-full rounded-full" style="width: <%= 100.0 * entry[:exams] / day_shift_max %>%"></div>
+                  </div>
+                </div>
+              </div>
             <% end %>
-          <% end %>
-        <% end %>
+            <% if @analytics[:day_shifts].empty? %><p class="text-sm text-gray-500">Sem exames com horário identificado no período.</p><% end %>
+          </div>
+        </div>
+        <div class="min-w-0">
+          <h3 class="font-bold text-gray-800 mb-1">Ranking dos horários</h3>
+          <p class="text-xs text-gray-500 mb-3">Da hora com mais exames para a menos movimentada.</p>
+          <% ranked_hours = @analytics[:hours].each_with_index.select { |hour, _| hour[:exams].positive? }.sort_by { |hour, index| [-hour[:exams], index] } %>
+          <% max_exams = [ranked_hours.first&.first&.dig(:exams).to_i, 1].max %>
+          <div class="space-y-2">
+            <% ranked_hours.each_with_index do |(hour, _hour_index), rank| %>
+              <div class="flex items-center gap-3 p-2 rounded-lg border border-gray-100">
+                <span class="w-8 text-center font-bold text-sm <%= rank.zero? ? 'text-emerald-800' : 'text-gray-500' %>"><%= rank + 1 %>º</span>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-baseline justify-between gap-2 text-sm">
+                    <span class="font-medium text-gray-800 tabular-nums"><%= hour[:label] %></span>
+                    <span class="font-bold text-emerald-800 tabular-nums"><%= number_with_delimiter(hour[:exams]) %></span>
+                  </div>
+                  <div class="bg-gray-100 rounded-full h-2 mt-1.5 overflow-hidden" role="img" aria-label="<%= hour[:label] %>: <%= hour[:exams] %> exames">
+                    <div class="bg-emerald-500 h-full rounded-full" style="width: <%= 100.0 * hour[:exams] / max_exams %>%"></div>
+                  </div>
+                  <% if @analytics[:show_sales] %><p class="text-xs text-emerald-800 mt-1"><%= number_to_currency(hour[:sales_amount]) %> em pedidos atribuídos</p><% end %>
+                </div>
+              </div>
+            <% end %>
+            <% if ranked_hours.empty? %><p class="text-sm text-gray-500">Sem exames com horário identificado no período.</p><% end %>
+          </div>
+        </div>
       </div>
     </section>
 

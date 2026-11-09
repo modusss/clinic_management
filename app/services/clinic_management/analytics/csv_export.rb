@@ -38,6 +38,15 @@ module ClinicManagement
             end
           end
 
+          if @analytics[:day_shifts]
+            csv << []
+            csv << ["Ranking de dias e turnos"]
+            csv << ["Dia e turno", "Exames com horário identificado"]
+            @analytics[:day_shifts].each do |row|
+              csv << [safe_cell(row[:label]), row[:exams]]
+            end
+          end
+
           { "Dias da semana" => @analytics[:days], "Turnos" => @analytics[:shifts],
             "Horários" => @analytics[:hours], "Regiões" => @analytics[:regions] }.each do |title, rows|
             csv << []

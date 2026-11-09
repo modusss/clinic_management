@@ -5,6 +5,7 @@ module ClinicManagement
     # it is not an arrival timestamp. Keep undated prescriptions out of hourly rankings.
     class Overview
       WEEKDAYS = %w[Segunda Terça Quarta Quinta Sexta Sábado Domingo].freeze
+      SHIFT_RANGES = [["Manhã", "morning", 0...12], ["Tarde", "afternoon", 12...18], ["Noite", "night", 18...24]].freeze
 
       def initialize(start_date:, end_date:, service_location_id:, include_sales: false, region_id: nil, referral_id: nil)
         @start_date = start_date
@@ -111,6 +112,8 @@ module ClinicManagement
           days[date.cwday - 1][:sessions] += 1
         end
 
+        day_shifts = ranked_day_shifts(heatmap)
+
         all_groups = days + shifts.values + hours.values + regions.values + origin_groups.values
         all_groups.each { |group| finalize_sales(group) }
 
@@ -119,7 +122,7 @@ module ClinicManagement
           sales: buyer_ids.size, orders: order_ids.size, sales_amount: sales_total,
           show_sales: @include_sales,
           sessions: service_dates.size, days: days, shifts: shifts.values,
-          hours: hours.values, heatmap: heatmap,
+          hours: hours.values, heatmap: heatmap, day_shifts: day_shifts,
           booking_origins: origin_groups.values,
           advance_bookings: origin_groups[:advance][:patients],
           same_day_bookings: origin_groups[:same_day][:patients],
@@ -130,6 +133,18 @@ module ClinicManagement
       end
 
       private
+
+      def ranked_day_shifts(heatmap)
+        ranking = heatmap.each_with_index.flat_map do |daily_hours, day_index|
+          SHIFT_RANGES.map.with_index do |(name, code, hour_range), shift_index|
+            { label: "#{WEEKDAYS[day_index]} · #{name}", weekday: day_index + 1,
+              shift: code, shift_order: shift_index, exams: daily_hours[hour_range].sum }
+          end
+        end
+        ranking.select! { |row| row[:exams].positive? }
+        ranking.sort_by! { |row| [-row[:exams], row[:weekday], row[:shift_order]] }
+        ranking.each { |row| row.delete(:shift_order) }
+      end
 
       def blank_group(label)
         { label: label, patients: 0, attended: 0, exams: 0, sessions: 0,

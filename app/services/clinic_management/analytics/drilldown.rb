@@ -1,12 +1,12 @@
 module ClinicManagement
   module Analytics
-    # Provides a bounded, read-only explanation of one aggregate chart cell.
+    # Provides a bounded, read-only explanation of selected non-time aggregate indicators.
+    # Time-based rankings and heatmap cells are summary-only to avoid expensive patient lists.
     # ESSENTIAL: Order attribution is calculated on all eligible visits before
     # applying region/referral filters, matching Overview's reconciliation rule.
     class Drilldown
       PAGE_SIZE = 20
-      DIMENSIONS = %w[weekday shift hour day_hour region booking_origin].freeze
-      SHIFT_NAMES = { "morning" => "Manhã", "afternoon" => "Tarde", "night" => "Noite" }.freeze
+      DIMENSIONS = %w[weekday region booking_origin].freeze
 
       def initialize(start_date:, end_date:, service_location_id:, region_id: nil, referral_id: nil, include_sales: false)
         @start_date = start_date
@@ -74,9 +74,6 @@ module ClinicManagement
 
         case dimension
         when "weekday" then (1..7).cover?(Integer(value, exception: false)) rescue false
-        when "hour" then (0..23).cover?(Integer(value, exception: false)) rescue false
-        when "day_hour" then value.match?(/\A[1-7]:(?:[01]?\d|2[0-3])\z/)
-        when "shift" then SHIFT_NAMES.key?(value)
         when "region" then value.present? && value.length <= 150
         when "booking_origin" then BookingOrigin::LABELS.keys.any? { |key| key.to_s == value }
         end
@@ -85,19 +82,9 @@ module ClinicManagement
       def matches?(dimension, value, date, exam_time, invitation, origin)
         case dimension
         when "weekday" then date.cwday == value.to_i
-        when "hour" then exam_time && exam_time.hour == value.to_i
-        when "day_hour"
-          weekday, hour = value.split(":").map(&:to_i)
-          date.cwday == weekday && exam_time && exam_time.hour == hour
-        when "shift"
-          exam_time && shift_for(exam_time.hour) == value
         when "region" then (invitation&.region&.name.presence || "Sem região") == value
         when "booking_origin" then origin == value.to_sym
         end
-      end
-
-      def shift_for(hour)
-        hour < 12 ? "morning" : hour < 18 ? "afternoon" : "night"
       end
 
       def dimension_label(dimension, value)
@@ -105,11 +92,6 @@ module ClinicManagement
         when "weekday"
           name = Overview::WEEKDAYS[value.to_i - 1]
           value.to_i <= 5 ? "#{name}-feira" : name
-        when "hour" then "Exames entre #{format('%02d', value.to_i)}h e #{format('%02d', (value.to_i + 1) % 24)}h"
-        when "day_hour"
-          weekday, hour = value.split(":").map(&:to_i)
-          "#{Overview::WEEKDAYS[weekday - 1]} · #{format('%02d:00', hour)}"
-        when "shift" then "Exames no turno: #{SHIFT_NAMES[value]}"
         when "region" then "Pacientes da região: #{value}"
         when "booking_origin" then "Origem: #{BookingOrigin::LABELS.fetch(value.to_sym)}"
         end
