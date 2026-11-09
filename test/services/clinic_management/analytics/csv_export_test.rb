@@ -12,7 +12,12 @@ module ClinicManagement
           sales: 1, sales_amount: 200.to_d, show_sales: true,
           days: [], shifts: [], hours: [],
           regions: [{ label: "=DANGEROUS()", patients: 2, attended: 1,
-                      exams: 1, sessions: 1, sales: 1, sales_amount: 200.to_d }]
+                      exams: 1, sessions: 1, sales: 1, sales_amount: 200.to_d }],
+          customer_geography: {
+            customers: 1, with_district: 1, without_district: 0,
+            districts: [{ label: "=BAIRRO()", customers: 1, appointments: 2, attended: 1, exams: 1, sales: 1, sales_amount: 200.to_d }],
+            crossings: [{ origin: "=ORIGEM()", label: "=BAIRRO()", customers: 1, appointments: 2, attended: 1, exams: 1, sales: 1, sales_amount: 200.to_d }]
+          }
         }
 
         result = CsvExport.new(
@@ -23,6 +28,9 @@ module ClinicManagement
         assert_equal "Inteligência de Atendimentos", rows.first.first
         assert rows.any? { |row| row.first == "Faturamento atribuído" }
         assert rows.any? { |row| row.first == "'=DANGEROUS()" }
+        assert rows.any? { |row| row.first == "Bairros dos clientes" }
+        assert rows.any? { |row| row.first == "'=BAIRRO()" }
+        assert rows.any? { |row| row.first == "'=ORIGEM()" && row[1] == "'=BAIRRO()" }
       end
     end
   end

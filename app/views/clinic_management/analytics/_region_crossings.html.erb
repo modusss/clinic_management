@@ -1,0 +1,27 @@
+<% if !@analytics[:show_sales] %>
+  <p class="rounded-lg bg-amber-50 border border-amber-200 text-amber-900 p-4 text-sm">A comparação com bairros de clientes requer o cadastro comercial integrado.</p>
+<% elsif geography[:crossings].empty? %>
+  <p class="text-sm rounded-lg bg-gray-50 p-4 text-gray-600">Nenhuma conversão de paciente para cliente foi encontrada nos atendimentos deste período.</p>
+<% else %>
+  <p class="text-sm text-gray-600 mb-4">A primeira coluna corresponde ao <strong>local declarado na captação</strong>; a segunda, ao <strong>bairro do endereço do cliente</strong>. A diferença pode indicar deslocamento ou necessidade de revisão dos cadastros, não necessariamente um erro.</p>
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm text-left">
+      <thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="p-3">Região do convite</th><th class="p-3">Bairro do cliente</th><th class="p-3">Clientes únicos</th><th class="p-3">Marcações</th><th class="p-3">Comparecimentos</th><th class="p-3">Receitas</th><th class="p-3">Compradores</th><th class="p-3">Faturamento atribuído</th></tr></thead>
+      <tbody>
+        <% geography[:crossings].each do |crossing| %>
+          <tr class="border-t border-gray-100 hover:bg-gray-50">
+            <th class="p-3 font-semibold"><%= crossing[:origin] %></th>
+            <td class="p-3"><%= crossing[:label] %></td>
+            <td class="p-3 font-semibold text-emerald-800"><%= crossing[:customers] %></td>
+            <td class="p-3"><%= crossing[:appointments] %></td>
+            <td class="p-3"><%= crossing[:attended] %></td>
+            <td class="p-3"><%= crossing[:exams] %></td>
+            <td class="p-3"><%= crossing[:sales] %></td>
+            <td class="p-3 font-semibold"><%= number_to_currency(crossing[:sales_amount]) %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+  <p class="text-xs text-gray-500 mt-3">O mesmo cliente pode aparecer em mais de uma combinação quando teve marcações com regiões de convite diferentes. Por isso, não some os clientes únicos das linhas para obter o total de pessoas.</p>
+<% end %>

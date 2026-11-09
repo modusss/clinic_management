@@ -1,0 +1,48 @@
+<% if !@analytics[:show_sales] %>
+  <p class="rounded-lg bg-amber-50 border border-amber-200 text-amber-900 p-4 text-sm">Os bairros dos clientes estão disponíveis apenas nas unidades com cadastro comercial integrado.</p>
+<% else %>
+  <p class="text-sm text-gray-600 mb-4">O bairro vem de <strong>Cliente → Endereço → Bairro</strong>, associado ao paciente pela conversão de lead. Não é estimado a partir da região do convite.</p>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+    <% [["Clientes identificados", geography[:customers]], ["Com bairro cadastrado", geography[:with_district]], ["Sem bairro informado", geography[:without_district]]].each do |label, amount| %>
+      <div class="rounded-xl bg-emerald-50 border border-emerald-100 p-4">
+        <p class="text-xs uppercase font-semibold text-emerald-900"><%= label %></p>
+        <p class="text-2xl font-bold text-emerald-800 mt-1"><%= number_with_delimiter(amount) %></p>
+      </div>
+    <% end %>
+  </div>
+  <% if geography[:districts].empty? %>
+    <p class="text-sm rounded-lg bg-gray-50 p-4 text-gray-600">Nenhum paciente deste período foi associado a um cliente comercial.</p>
+  <% else %>
+    <% top_districts = geography[:districts].first(6) %>
+    <% district_max = [top_districts.map { |district| district[:sales_amount] }.max.to_d, 1.to_d].max %>
+    <h3 class="font-semibold text-sm mb-3">Bairros com maior faturamento atribuído</h3>
+    <div class="space-y-2 mb-5" role="img" aria-label="Ranking de bairros por faturamento atribuído">
+      <% top_districts.each do |district| %>
+        <div class="grid grid-cols-4 items-center gap-2 text-sm">
+          <span class="truncate font-medium" title="<%= district[:label] %>"><%= district[:label] %></span>
+          <div class="col-span-2 rounded-full h-3 bg-gray-100 overflow-hidden"><div class="h-full rounded-full bg-emerald-500" style="width: <%= 100.0 * district[:sales_amount] / district_max %>%"></div></div>
+          <span class="font-bold text-emerald-800 text-right tabular-nums"><%= number_to_currency(district[:sales_amount]) %></span>
+        </div>
+      <% end %>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm text-left">
+        <thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="p-3">Bairro cadastrado</th><th class="p-3">Clientes únicos</th><th class="p-3">Marcações</th><th class="p-3">Comparecimentos</th><th class="p-3">Receitas</th><th class="p-3">Compradores</th><th class="p-3">Faturamento atribuído</th></tr></thead>
+        <tbody>
+          <% geography[:districts].each do |district| %>
+            <tr class="border-t border-gray-100 hover:bg-gray-50">
+              <th class="p-3 font-semibold"><%= district[:label] %></th>
+              <td class="p-3 font-semibold text-emerald-800"><%= district[:customers] %></td>
+              <td class="p-3"><%= district[:appointments] %></td>
+              <td class="p-3"><%= district[:attended] %></td>
+              <td class="p-3"><%= district[:exams] %></td>
+              <td class="p-3"><%= district[:sales] %></td>
+              <td class="p-3 font-semibold"><%= number_to_currency(district[:sales_amount]) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+  <p class="text-xs text-gray-500 mt-3">Clientes únicos não são equivalentes ao número de marcações: uma mesma pessoa pode realizar mais de um exame no período. Clientes sem bairro permanecem visíveis no grupo “Bairro não informado”.</p>
+<% end %>

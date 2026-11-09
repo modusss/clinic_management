@@ -18,10 +18,12 @@ module ClinicManagement
         service_location_id: current_service_location_id, region_id: @region_id
       ).call(referrals: @referrals)
       @compare_previous = params[:compare] == "previous"
+      @region_view = %w[invitation customer compare].include?(params[:region_view]) ? params[:region_view] : "invitation"
       @filter_params = {
         start_date: @start_date.iso8601, end_date: @end_date.iso8601,
         region_id: @region_id, referral_id: @referral_id,
-        compare: (@compare_previous ? "previous" : nil)
+        compare: (@compare_previous ? "previous" : nil),
+        region_view: (@region_view == "invitation" ? nil : @region_view)
       }.compact
 
       @analytics = analytics_for(@start_date, @end_date)

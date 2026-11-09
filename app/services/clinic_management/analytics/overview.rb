@@ -36,6 +36,11 @@ module ClinicManagement
           service_dates.select! { |service_id, _| selected_service_ids.include?(service_id) }
           service_day = service_dates.to_h
         end
+        customer_geography = CustomerGeography.new(
+          appointments: appointments,
+          sales_by_appointment: sales_by_appointment,
+          include_sales: @include_sales
+        ).call
 
         days = Array.new(7) { |index| blank_group(WEEKDAYS[index]) }
         shifts = %w[Manhã Tarde Noite].index_with { |name| blank_group(name) }
@@ -100,6 +105,7 @@ module ClinicManagement
           show_sales: @include_sales,
           sessions: service_dates.size, days: days, shifts: shifts.values,
           hours: hours.values, heatmap: heatmap,
+          customer_geography: customer_geography,
           regions: regions.values.sort_by { |row| [-row[:attended], row[:label]] }
         }
       end

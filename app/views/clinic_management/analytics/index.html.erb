@@ -12,6 +12,7 @@
   </header>
 
   <%= form_with url: analytics_path, method: :get, local: true, class: "bg-white rounded-xl border border-gray-200 p-3 sm:p-4 mb-6" do |f| %>
+    <%= f.hidden_field :region_view, value: @region_view %>
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3 items-end">
       <div>
         <%= f.label :start_date, "De", class: "block text-sm font-semibold mb-1" %>
@@ -245,8 +246,19 @@
       </div>
     </section>
 
-    <section id="regioes" class="bg-white border border-gray-200 rounded-xl shadow-sm p-5 scroll-mt-24">
-      <h2 class="text-xl font-bold mb-1">Regiões de origem</h2>
+    <section id="regioes" class="bg-white border border-gray-200 rounded-xl shadow-sm p-3 sm:p-5 scroll-mt-24">
+      <h2 class="text-xl font-bold mb-1">Análise geográfica</h2>
+      <p class="text-sm text-gray-600 mb-4">Compare a região informada pelo captador com o bairro cadastrado no cliente após a conversão.</p>
+      <nav class="flex flex-wrap gap-2 mb-5" aria-label="Perspectiva geográfica">
+        <% [["Região do convite", "invitation"], ["Bairro do cliente", "customer"], ["Comparar origens", "compare"]].each do |label, view| %>
+          <%= link_to label, analytics_path(@filter_params.merge(region_view: view, anchor: "regioes")), class: "inline-flex rounded-lg border px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 #{view == @region_view ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-gray-200 bg-white text-emerald-800 hover:bg-emerald-50'}", aria: { current: (view == @region_view ? "page" : nil) } %>
+        <% end %>
+      </nav>
+      <% if @region_view == "customer" %>
+        <%= render "clinic_management/analytics/customer_regions", geography: @analytics[:customer_geography] %>
+      <% elsif @region_view == "compare" %>
+        <%= render "clinic_management/analytics/region_crossings", geography: @analytics[:customer_geography] %>
+      <% else %>
       <p class="text-sm text-gray-600 mb-4">Ranking por comparecimento; a origem vem da região registrada no convite.</p>
       <% top_regions = @analytics[:regions].first(6) %>
       <% top_max = [top_regions.map { |region| region[:attended] }.max.to_i, 1].max %>
@@ -283,6 +295,7 @@
           </tbody>
         </table>
       </div>
+      <% end %>
     </section>
     <p class="text-xs text-gray-500">Os horários indicam o registro do exame, não a chegada. Receitas lançadas em outra data entram nos totais de exames, mas não no ranking horário. <% if @analytics[:show_sales] %>Cada venda é atribuída a um único comparecimento elegível, o mais recente nos 30 dias anteriores à compra. Por isso, os valores podem diferir dos relatórios semanais, que atribuem uma mesma venda a mais de uma sessão quando as janelas se sobrepõem. Períodos recentes ainda podem receber novas vendas. Faturamento significa valor dos pedidos, não recebimento de parcelas.<% end %></p>
   <% end %>

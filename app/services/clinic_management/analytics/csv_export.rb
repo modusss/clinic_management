@@ -33,6 +33,22 @@ module ClinicManagement
             csv << columns.map { |column| label_for(column) }
             rows.each { |row| csv << columns.map { |column| safe_cell(row[column]) } }
           end
+          if @analytics[:show_sales] && (geography = @analytics[:customer_geography])
+            csv << []
+            csv << ["Clientes identificados", geography[:customers]]
+            csv << ["Clientes com bairro", geography[:with_district]]
+            csv << ["Clientes sem bairro", geography[:without_district]]
+            geographic_sections = {
+              "Bairros dos clientes" => [geography[:districts], %i[label customers appointments attended exams sales sales_amount]],
+              "Região do convite x bairro do cliente" => [geography[:crossings], %i[origin label customers appointments attended exams sales sales_amount]]
+            }
+            geographic_sections.each do |title, (rows, columns)|
+              csv << []
+              csv << [title]
+              csv << columns.map { |column| label_for(column) }
+              rows.each { |row| csv << columns.map { |column| safe_cell(row[column]) } }
+            end
+          end
         end
       end
 
@@ -42,7 +58,8 @@ module ClinicManagement
         {
           label: "Categoria", patients: "Agendados", attended: "Compareceram",
           exams: "Receitas", sessions: "Sessões", sales: "Compradores",
-          sales_amount: "Faturamento (R$)"
+          sales_amount: "Faturamento (R$)", customers: "Clientes únicos",
+          appointments: "Marcações", origin: "Região do convite"
         }.fetch(field)
       end
 
