@@ -1,0 +1,46 @@
+<section id="detalhamento" class="bg-white border-2 border-emerald-200 rounded-xl shadow-sm p-4 sm:p-5 mb-6 scroll-mt-24" aria-labelledby="analytics-detail-title">
+  <div class="flex flex-wrap justify-between items-start gap-3 mb-4">
+    <div>
+      <p class="text-xs uppercase tracking-wide font-bold text-emerald-700">Detalhamento dos indicadores</p>
+      <h2 id="analytics-detail-title" class="text-xl font-bold mt-1"><%= detail[:label] %></h2>
+      <p class="text-sm text-gray-600 mt-1"><%= detail[:total] %> registros encontrados · página <%= detail[:page] %> de <%= detail[:pages] %></p>
+    </div>
+    <%= link_to "Fechar detalhes", analytics_path(filter_params.merge(anchor: "dias")), class: "text-sm px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500" %>
+  </div>
+  <% if detail[:rows].empty? %>
+    <p class="text-sm text-gray-600 bg-gray-50 rounded-lg p-4" role="status">Não há registros nesta seleção.</p>
+  <% else %>
+    <div class="overflow-x-auto rounded-lg border border-gray-200">
+      <table class="min-w-full text-sm text-left">
+        <thead class="bg-gray-50 text-gray-600 text-xs uppercase">
+          <tr><th scope="col" class="p-3">Data</th><th scope="col" class="p-3">Paciente</th><th scope="col" class="p-3">Região</th><th scope="col" class="p-3">Horário da receita</th><th scope="col" class="p-3">Presença</th><th scope="col" class="p-3">Receita</th><% if detail[:show_sales] %><th scope="col" class="p-3">Vendas</th><% end %><th scope="col" class="p-3">Ação</th></tr>
+        </thead>
+        <tbody>
+          <% detail[:rows].each do |row| %>
+            <tr class="border-t border-gray-100 hover:bg-emerald-50/50">
+              <td class="p-3 whitespace-nowrap"><%= l(row[:date]) %></td>
+              <td class="p-3 font-medium"><%= row[:patient] %></td>
+              <td class="p-3"><%= row[:region] %></td>
+              <td class="p-3 whitespace-nowrap"><%= row[:time] ? row[:time].strftime('%H:%M') : '—' %></td>
+              <td class="p-3"><%= row[:attended] ? 'Presente' : 'Não marcado' %></td>
+              <td class="p-3"><%= row[:exam] ? 'Registrada' : 'Sem receita' %></td>
+              <% if detail[:show_sales] %><td class="p-3 font-semibold text-emerald-800 whitespace-nowrap"><%= number_to_currency(row[:sales_amount]) %></td><% end %>
+              <td class="p-3"><%= link_to "Ver atendimento", service_path(row[:service_id]), class: "text-blue-700 hover:underline whitespace-nowrap" %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+  <% if detail[:pages] > 1 %>
+    <nav aria-label="Paginação do detalhamento" class="flex justify-end items-center gap-3 mt-4">
+      <% if detail[:page] > 1 %>
+        <%= link_to "Anterior", analytics_path(filter_params.merge(detail: detail[:dimension], value: detail[:value], detail_page: detail[:page] - 1, anchor: "detalhamento")), class: "text-sm px-3 py-2 border rounded-lg hover:bg-gray-50" %>
+      <% end %>
+      <span class="text-xs text-gray-500"><%= detail[:page] %> / <%= detail[:pages] %></span>
+      <% if detail[:page] < detail[:pages] %>
+        <%= link_to "Próxima", analytics_path(filter_params.merge(detail: detail[:dimension], value: detail[:value], detail_page: detail[:page] + 1, anchor: "detalhamento")), class: "text-sm px-3 py-2 border rounded-lg hover:bg-gray-50" %>
+      <% end %>
+    </nav>
+  <% end %>
+</section>

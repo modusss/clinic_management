@@ -101,6 +101,16 @@ module ClinicManagement
     end
     helper_method :current_account
 
+    # ESSENTIAL: Strategic analytics contains commercial performance metrics.
+    # Resolve the role within the current account, never memberships.first,
+    # so a managerial role in another account does not grant access here.
+    def analytics_access_allowed?
+      return false unless current_user && current_account
+
+      current_user.memberships.where(account: current_account, role: %w[manager owner]).exists?
+    end
+    helper_method :analytics_access_allowed?
+
     # ESSENTIAL: Mirrors main ApplicationController — engine views use clinic_only? / retail_module_enabled?.
     # @return [Boolean] true when loja/vendas is active for current_account
     def retail_module_enabled?

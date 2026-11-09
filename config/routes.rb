@@ -74,6 +74,8 @@ ClinicManagement::Engine.routes.draw do
     end
   end
   get '/performance_report', to: 'invitations#performance_report', as: 'performance_report'
+  # ESSENTIAL: Manager-only strategic clinic analytics; operational reports remain unchanged.
+  get '/analytics', to: 'analytics#index', as: 'analytics'
   resources :lead_messages do
     collection do
       post :send_evolution_message

@@ -1,0 +1,289 @@
+<% breadcrumb({ title: "Atendimentos", path: services_path }, { title: "Inteligência" }) %>
+<div class="container mt-4 sm:mt-6 mb-12 text-gray-800 px-3 sm:px-4">
+  <header class="mb-6 flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-bold">Inteligência de Atendimentos</h1>
+      <p class="text-sm text-gray-600 mt-1">Dias, turnos, horários de exames e regiões de origem dos pacientes.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <%= link_to "Exportar CSV", analytics_path(@filter_params.merge(format: :csv)), class: "px-4 py-2 rounded-lg bg-emerald-700 text-white text-sm font-semibold hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" %>
+      <%= link_to "Ver atendimentos", services_path(view_type: "weekly"), class: "px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm hover:bg-gray-50" %>
+    </div>
+  </header>
+
+  <%= form_with url: analytics_path, method: :get, local: true, class: "bg-white rounded-xl border border-gray-200 p-3 sm:p-4 mb-6" do |f| %>
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3 items-end">
+      <div>
+        <%= f.label :start_date, "De", class: "block text-sm font-semibold mb-1" %>
+        <%= f.date_field :start_date, value: @start_date, class: "w-full min-w-0 border border-gray-300 rounded-lg px-3 py-2" %>
+      </div>
+      <div>
+        <%= f.label :end_date, "Até", class: "block text-sm font-semibold mb-1" %>
+        <%= f.date_field :end_date, value: @end_date, class: "w-full min-w-0 border border-gray-300 rounded-lg px-3 py-2" %>
+      </div>
+      <div>
+        <%= f.label :region_id, "Região", class: "block text-sm font-semibold mb-1" %>
+        <%= f.select :region_id, options_for_select([["Todas as regiões", ""]] + @regions, @region_id), {}, class: "w-full min-w-0 border border-gray-300 rounded-lg px-3 py-2 bg-white" %>
+      </div>
+      <div>
+        <%= f.label :referral_id, "Captador", class: "block text-sm font-semibold mb-1" %>
+        <% referral_options = @referral_ranking.map do |referral|
+             count_label = number_with_delimiter(referral[:count])
+             ["#{referral[:name]} — #{count_label} #{referral[:count] == 1 ? 'marcação' : 'marcações'}", referral[:id]]
+           end %>
+        <%= f.select :referral_id, options_for_select([["Todos os captadores", ""]] + referral_options, @referral_id), {}, class: "w-full min-w-0 border border-gray-300 rounded-lg px-3 py-2 bg-white" %>
+      </div>
+      <div>
+        <%= f.label :compare, "Comparação", class: "block text-sm font-semibold mb-1" %>
+        <%= f.select :compare, options_for_select([["Sem comparação", ""], ["Período anterior", "previous"]], @compare_previous ? "previous" : ""), {}, class: "w-full min-w-0 border border-gray-300 rounded-lg px-3 py-2 bg-white" %>
+      </div>
+      <%= f.submit "Aplicar filtros", class: "w-full bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg cursor-pointer hover:bg-emerald-800" %>
+    </div>
+    <div class="flex flex-wrap justify-between items-center gap-2 mt-3">
+      <span class="text-xs text-gray-500">Unidade: seleção atual do cabeçalho · máximo de 366 dias</span>
+      <%= link_to "Limpar filtros", analytics_path, class: "text-sm font-medium text-gray-600 hover:text-emerald-800 underline" %>
+    </div>
+  <% end %>
+
+  <% summary_cards = [
+    ["Pacientes agendados", @analytics[:patients]],
+    ["Compareceram", @analytics[:attended]],
+    ["Exames com receita", @analytics[:exams]],
+    ["Sessões realizadas", @analytics[:sessions]]
+  ] %>
+  <section aria-label="Resumo do período" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+    <% summary_cards.each do |label, value| %>
+      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <p class="text-xs uppercase tracking-wide font-semibold text-gray-500"><%= label %></p>
+        <p class="text-3xl font-bold text-emerald-800 mt-2"><%= number_with_delimiter(value) %></p>
+      </div>
+    <% end %>
+  </section>
+
+  <% if @compare_previous %>
+    <section class="bg-white border border-gray-200 rounded-xl p-5 mb-6" aria-label="Comparação com o período anterior">
+      <h2 class="font-bold text-lg mb-1">Comparação com o período anterior</h2>
+      <p class="text-sm text-gray-600 mb-4"><%= l(@start_date) %> a <%= l(@end_date) %> versus <%= l(@previous_start_date) %> a <%= l(@previous_end_date) %>, com os mesmos filtros.</p>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <% comparison_metrics = [["Agendados", :patients, false], ["Compareceram", :attended, false], ["Exames", :exams, false]] %>
+        <% comparison_metrics << ["Faturamento", :sales_amount, true] if @analytics[:show_sales] %>
+        <% comparison_metrics.each do |label, metric, currency| %>
+          <% current = @analytics[metric] %>
+          <% previous = @previous_analytics[metric] %>
+          <% difference = current - previous %>
+          <div class="border border-gray-200 rounded-lg p-3">
+            <p class="text-xs font-semibold uppercase text-gray-500"><%= label %></p>
+            <p class="text-xl font-bold mt-2"><%= currency ? number_to_currency(current) : number_with_delimiter(current) %></p>
+            <p class="text-xs text-gray-500 mt-1">Anterior: <%= currency ? number_to_currency(previous) : number_with_delimiter(previous) %></p>
+            <p class="text-sm font-semibold mt-2 <%= difference.positive? ? 'text-emerald-700' : difference.negative? ? 'text-red-600' : 'text-gray-500' %>">
+              <% if previous.positive? %>
+                <%= difference.positive? ? '+' : '' %><%= number_to_percentage(100.0 * difference / previous, precision: 1) %>
+              <% elsif current.positive? %>
+                Novo volume (base anterior zero)
+              <% else %>
+                Sem variação
+              <% end %>
+            </p>
+          </div>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+
+  <% if @analytics[:show_sales] %>
+    <section aria-label="Resultados comerciais" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+      <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <p class="text-xs uppercase font-semibold text-emerald-800">Compradores</p>
+        <p class="text-2xl font-bold text-emerald-900 mt-2"><%= @analytics[:sales] %></p>
+      </div>
+      <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <p class="text-xs uppercase font-semibold text-emerald-800">Conversão de presentes</p>
+        <p class="text-2xl font-bold text-emerald-900 mt-2"><%= @analytics[:attended].positive? ? number_to_percentage(100.0 * @analytics[:sales] / @analytics[:attended], precision: 1) : '—' %></p>
+      </div>
+      <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <p class="text-xs uppercase font-semibold text-emerald-800">Faturamento atribuído</p>
+        <p class="text-2xl font-bold text-emerald-900 mt-2"><%= number_to_currency(@analytics[:sales_amount]) %></p>
+      </div>
+      <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <p class="text-xs uppercase font-semibold text-emerald-800">Receita por presente</p>
+        <p class="text-2xl font-bold text-emerald-900 mt-2"><%= @analytics[:attended].positive? ? number_to_currency(@analytics[:sales_amount] / @analytics[:attended]) : '—' %></p>
+      </div>
+    </section>
+  <% end %>
+
+  <% if @detail %>
+    <%= render "clinic_management/analytics/drilldown", detail: @detail, filter_params: @filter_params %>
+  <% end %>
+
+  <% if @analytics[:sessions].zero? %>
+    <div class="bg-amber-50 border border-amber-200 text-amber-900 p-5 rounded-xl" role="status">
+      Nenhum atendimento foi encontrado neste período para a unidade selecionada.
+    </div>
+  <% else %>
+    <% best_day = @analytics[:days].select { |day| day[:sessions].positive? }.max_by { |day| day[:attended].to_f / day[:sessions] } %>
+    <% best_region = @analytics[:regions].select { |region| region[:attended].positive? }.max_by { |region| region[:attended] } %>
+    <% best_hour = @analytics[:hours].select { |hour| hour[:exams].positive? }.max_by { |hour| hour[:exams] } %>
+    <section class="grid md:grid-cols-3 gap-3 mb-6" aria-label="Destaques do período">
+      <% [["Dia com mais presentes por sessão", best_day && best_day[:label], best_day && number_with_precision(best_day[:attended].to_f / best_day[:sessions], precision: 1)],
+          ["Horário com mais exames", best_hour && best_hour[:label], best_hour && best_hour[:exams]],
+          ["Região com mais presentes", best_region && best_region[:label], best_region && best_region[:attended]]].each do |label, name, value| %>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <p class="text-xs uppercase font-semibold text-gray-500"><%= label %></p>
+          <p class="text-lg font-bold text-emerald-800 mt-2"><%= name || 'Dados insuficientes' %></p>
+          <% if name %><p class="text-sm text-gray-600 mt-1"><%= value %> <%= label.include?("sessão") ? 'presentes por sessão' : label.include?("Horário") ? 'exames' : 'presentes' %></p><% end %>
+        </div>
+      <% end %>
+    </section>
+    <nav aria-label="Seções da análise" class="flex flex-wrap gap-2 mb-6">
+      <% [["Dias da semana", "dias"], ["Turnos", "turnos"], ["Horários", "horarios"], ["Regiões", "regioes"]].each do |label, anchor| %>
+        <%= link_to label, "##{anchor}", class: "px-4 py-2 bg-white border border-gray-200 rounded-lg text-emerald-800 font-semibold text-sm hover:bg-emerald-50" %>
+      <% end %>
+    </nav>
+
+    <section id="dias" class="bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-5 scroll-mt-24">
+      <h2 class="text-xl font-bold mb-1">Dias da semana</h2>
+      <p class="text-sm text-gray-600 mb-4">Compare o volume e a média de comparecimento por sessão realizada.</p>
+      <% day_max = [@analytics[:days].map { |day| day[:sessions].positive? ? day[:attended].to_f / day[:sessions] : 0 }.max, 1].max %>
+      <div class="grid grid-cols-7 gap-2 mb-5" role="img" aria-label="Comparação da média de pacientes presentes por sessão, de segunda a domingo">
+        <% @analytics[:days].each_with_index do |day, day_index| %>
+          <% day_average = day[:sessions].positive? ? day[:attended].to_f / day[:sessions] : 0 %>
+          <%= link_to analytics_path(@filter_params.merge(detail: "weekday", value: day_index + 1, anchor: "detalhamento")), class: "flex flex-col items-center gap-2 rounded-lg hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 p-1", title: "Detalhar #{day[:label]}: #{number_with_precision(day_average, precision: 1)} presentes por sessão" do %>
+            <span class="text-xs font-semibold text-gray-700"><%= day[:sessions].positive? ? number_with_precision(day_average, precision: 1) : '—' %></span>
+            <div class="w-full h-24 bg-gray-100 rounded-md flex items-end overflow-hidden">
+              <div class="w-full bg-emerald-500 rounded-t-md" style="height: <%= 100.0 * day_average / day_max %>%"></div>
+            </div>
+            <span class="text-xs text-gray-600"><%= day[:label].first(3) %></span>
+          <% end %>
+        <% end %>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-left">
+          <thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="p-3">Dia</th><th class="p-3">Sessões</th><th class="p-3">Agendados</th><th class="p-3">Compareceram</th><th class="p-3">Presença</th><th class="p-3">Presentes / sessão</th><th class="p-3">Receitas</th><% if @analytics[:show_sales] %><th class="p-3">Compradores</th><th class="p-3">Conversão</th><th class="p-3">Faturamento</th><th class="p-3">R$ / sessão</th><% end %></tr></thead>
+          <tbody>
+            <% @analytics[:days].each_with_index do |day, day_index| %>
+              <tr class="border-t border-gray-100 hover:bg-gray-50">
+                <th class="p-3 font-semibold"><%= link_to day[:label], analytics_path(@filter_params.merge(detail: "weekday", value: day_index + 1, anchor: "detalhamento")), class: "text-emerald-800 hover:underline focus:underline" %></th>
+                <td class="p-3"><%= day[:sessions] %></td>
+                <td class="p-3"><%= day[:patients] %></td>
+                <td class="p-3 font-bold text-blue-700"><%= day[:attended] %></td>
+                <td class="p-3"><%= day[:patients].positive? ? number_to_percentage(100.0 * day[:attended] / day[:patients], precision: 1) : '—' %></td>
+                <td class="p-3"><%= day[:sessions].positive? ? number_with_precision(day[:attended].to_f / day[:sessions], precision: 1) : '—' %></td>
+                <td class="p-3"><%= day[:exams] %></td>
+                <% if @analytics[:show_sales] %>
+                  <td class="p-3"><%= day[:sales] %></td>
+                  <td class="p-3"><%= day[:attended].positive? ? number_to_percentage(100.0 * day[:sales] / day[:attended], precision: 1) : '—' %></td>
+                  <td class="p-3 font-semibold text-emerald-800"><%= number_to_currency(day[:sales_amount]) %></td>
+                  <td class="p-3"><%= day[:sessions].positive? ? number_to_currency(day[:sales_amount] / day[:sessions]) : '—' %></td>
+                <% end %>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="turnos" class="bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-5 scroll-mt-24">
+      <h2 class="text-xl font-bold mb-1">Turnos dos exames</h2>
+      <p class="text-sm text-gray-600 mb-4">Horário de lançamento da receita: manhã antes das 12h; tarde até 18h; noite após 18h.</p>
+      <div class="grid md:grid-cols-3 gap-3">
+        <% @analytics[:shifts].each_with_index do |shift, shift_index| %>
+          <%= link_to analytics_path(@filter_params.merge(detail: "shift", value: %w[morning afternoon night][shift_index], anchor: "detalhamento")), class: "block bg-emerald-50 border border-emerald-100 rounded-xl p-4 hover:border-emerald-400 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" do %>
+            <h3 class="text-sm font-semibold text-emerald-900"><%= shift[:label] %></h3>
+            <p class="text-3xl text-emerald-800 font-bold mt-2"><%= shift[:exams] %></p>
+            <p class="text-sm text-gray-600">exames com horário identificado</p>
+            <% if @analytics[:show_sales] %>
+              <div class="mt-3 border-t border-emerald-200 pt-2 text-sm">
+                <p><strong><%= shift[:sales] %></strong> compradores</p>
+                <p class="font-semibold"><%= number_to_currency(shift[:sales_amount]) %></p>
+              </div>
+            <% end %>
+          <% end %>
+        <% end %>
+      </div>
+    </section>
+
+    <section id="horarios" class="bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-5 scroll-mt-24">
+      <h2 class="text-xl font-bold mb-1">Horários mais movimentados</h2>
+      <p class="text-sm text-gray-600 mb-4">Distribuição por hora do registro da receita no próprio dia do atendimento.</p>
+      <% occupied_hours = @analytics[:hours].each_index.select { |hour| @analytics[:hours][hour][:exams].positive? } %>
+      <% displayed_hours = occupied_hours.any? ? ([occupied_hours.min - 1, 0].max..[occupied_hours.max + 1, 23].min) : (8..18) %>
+      <% heat_max = [@analytics[:heatmap].flatten.max.to_i, 1].max %>
+      <div class="border border-gray-200 rounded-lg p-3 mb-5 overflow-x-auto">
+        <h3 class="font-semibold text-sm mb-3">Mapa de calor · dia × horário</h3>
+        <table class="w-full min-w-max border-separate" style="border-spacing: 4px" aria-label="Quantidade de exames por dia da semana e hora">
+          <thead><tr><th scope="col" class="text-xs text-gray-500 px-2">Hora</th><% @analytics[:days].each do |day| %><th scope="col" class="text-xs text-gray-600 px-2"><%= day[:label].first(3) %></th><% end %></tr></thead>
+          <tbody>
+            <% displayed_hours.each do |hour| %>
+              <tr>
+                <th scope="row" class="text-xs text-gray-600 font-medium"><%= format('%02d:00', hour) %></th>
+                <% @analytics[:heatmap].each_with_index do |day_hours, day_index| %>
+                  <% count = day_hours[hour] %>
+                  <td class="rounded-md text-center text-xs font-semibold p-0" style="background-color: rgba(16, 185, 129, <%= count.zero? ? 0.05 : 0.15 + 0.8 * count / heat_max %>); color: <%= count > heat_max * 0.6 ? '#064e3b' : '#374151' %>">
+                    <%= link_to(count.positive? ? count : '—', analytics_path(@filter_params.merge(detail: "day_hour", value: "#{day_index + 1}:#{hour}", anchor: "detalhamento")), class: "block rounded-md p-2 hover:ring-2 hover:ring-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600", title: "#{@analytics[:days][day_index][:label]} às #{format('%02d:00', hour)} · #{count} exame(s)") %>
+                  </td>
+                <% end %>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+        <p class="text-xs text-gray-500 mt-2">Verde mais intenso indica maior quantidade de exames registrados.</p>
+      </div>
+      <% max_exams = [@analytics[:hours].map { |row| row[:exams] }.max.to_i, 1].max %>
+      <div class="grid sm:grid-cols-2 gap-x-8 gap-y-2">
+        <% @analytics[:hours].each do |hour| %>
+          <%= link_to analytics_path(@filter_params.merge(detail: "hour", value: @analytics[:hours].index(hour), anchor: "detalhamento")), class: "flex items-center gap-2 text-sm p-1 rounded-md hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500" do %>
+            <span class="w-12 text-gray-600 tabular-nums"><%= hour[:label] %></span>
+            <div class="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden" role="img" aria-label="<%= hour[:label] %>: <%= hour[:exams] %> exames">
+              <div class="h-full bg-emerald-500 rounded-full" style="width: <%= 100.0 * hour[:exams] / max_exams %>%"></div>
+            </div>
+            <span class="w-8 text-right font-semibold tabular-nums"><%= hour[:exams] %></span>
+            <% if @analytics[:show_sales] %>
+              <span class="w-24 text-right text-xs text-emerald-800 tabular-nums" title="Faturamento associado aos exames deste horário"><%= number_to_currency(hour[:sales_amount]) %></span>
+            <% end %>
+          <% end %>
+        <% end %>
+      </div>
+    </section>
+
+    <section id="regioes" class="bg-white border border-gray-200 rounded-xl shadow-sm p-5 scroll-mt-24">
+      <h2 class="text-xl font-bold mb-1">Regiões de origem</h2>
+      <p class="text-sm text-gray-600 mb-4">Ranking por comparecimento; a origem vem da região registrada no convite.</p>
+      <% top_regions = @analytics[:regions].first(6) %>
+      <% top_max = [top_regions.map { |region| region[:attended] }.max.to_i, 1].max %>
+      <div class="space-y-2 mb-5" aria-label="Seis regiões com mais comparecimentos">
+        <% top_regions.each do |region| %>
+          <%= link_to analytics_path(@filter_params.merge(detail: "region", value: region[:label], anchor: "detalhamento")), class: "grid grid-cols-4 gap-2 items-center text-sm rounded-lg p-1 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500" do %>
+            <span class="font-medium truncate" title="<%= region[:label] %>"><%= region[:label] %></span>
+            <div class="col-span-2 bg-gray-100 rounded-full h-3 overflow-hidden" role="img" aria-label="<%= region[:attended] %> comparecimentos">
+              <div class="bg-blue-500 h-full rounded-full" style="width: <%= 100.0 * region[:attended] / top_max %>%"></div>
+            </div>
+            <span class="font-semibold text-blue-800 text-right"><%= region[:attended] %></span>
+          <% end %>
+        <% end %>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-left">
+          <thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="p-3">Região</th><th class="p-3">Agendados</th><th class="p-3">Compareceram</th><th class="p-3">Taxa de presença</th><th class="p-3">Receitas</th><% if @analytics[:show_sales] %><th class="p-3">Compradores</th><th class="p-3">Conversão</th><th class="p-3">Faturamento</th><th class="p-3">R$ / presente</th><% end %></tr></thead>
+          <tbody>
+            <% @analytics[:regions].each do |region| %>
+              <tr class="border-t border-gray-100 hover:bg-gray-50">
+                <th class="p-3 font-semibold"><%= link_to region[:label], analytics_path(@filter_params.merge(detail: "region", value: region[:label], anchor: "detalhamento")), class: "text-emerald-800 hover:underline focus:underline" %></th>
+                <td class="p-3"><%= region[:patients] %></td>
+                <td class="p-3 font-bold text-blue-700"><%= region[:attended] %></td>
+                <td class="p-3"><%= region[:patients].positive? ? number_to_percentage(100.0 * region[:attended] / region[:patients], precision: 1) : '—' %></td>
+                <td class="p-3"><%= region[:exams] %></td>
+                <% if @analytics[:show_sales] %>
+                  <td class="p-3"><%= region[:sales] %></td>
+                  <td class="p-3"><%= region[:attended].positive? ? number_to_percentage(100.0 * region[:sales] / region[:attended], precision: 1) : '—' %></td>
+                  <td class="p-3 font-semibold text-emerald-800"><%= number_to_currency(region[:sales_amount]) %></td>
+                  <td class="p-3"><%= region[:attended].positive? ? number_to_currency(region[:sales_amount] / region[:attended]) : '—' %></td>
+                <% end %>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <p class="text-xs text-gray-500">Os horários indicam o registro do exame, não a chegada. Receitas lançadas em outra data entram nos totais de exames, mas não no ranking horário. <% if @analytics[:show_sales] %>Cada venda é atribuída a um único comparecimento elegível, o mais recente nos 30 dias anteriores à compra. Por isso, os valores podem diferir dos relatórios semanais, que atribuem uma mesma venda a mais de uma sessão quando as janelas se sobrepõem. Períodos recentes ainda podem receber novas vendas. Faturamento significa valor dos pedidos, não recebimento de parcelas.<% end %></p>
+  <% end %>
+</div>
