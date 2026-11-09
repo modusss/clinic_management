@@ -35,7 +35,7 @@ module ClinicManagement
           filters = {
             "Unidade" => current_service_location_id.presence || "Interna",
             "Região" => @regions.find { |_, id| id == @region_id }&.first || "Todas",
-            "Captador" => @referrals.find { |_, id| id == @referral_id }&.first || "Todos"
+            "Origem / captador" => @referrals.find { |_, id| id == @referral_id }&.first || "Todas"
           }
           send_data Analytics::CsvExport.new(@analytics, start_date: @start_date, end_date: @end_date, filters: filters).call,
                     filename: "inteligencia-atendimentos-#{@start_date}-#{@end_date}.csv",

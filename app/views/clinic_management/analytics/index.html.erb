@@ -27,12 +27,13 @@
         <%= f.select :region_id, options_for_select([["Todas as regiões", ""]] + @regions, @region_id), {}, class: "w-full min-w-0 border border-gray-300 rounded-lg px-3 py-2 bg-white" %>
       </div>
       <div>
-        <%= f.label :referral_id, "Captador", class: "block text-sm font-semibold mb-1" %>
+        <%= f.label :referral_id, "Origem / captador", class: "block text-sm font-semibold mb-1" %>
         <% referral_options = @referral_ranking.map do |referral|
              count_label = number_with_delimiter(referral[:count])
-             ["#{referral[:name]} — #{count_label} #{referral[:count] == 1 ? 'marcação' : 'marcações'}", referral[:id]]
+             name = referral[:name].to_s.casecmp?("Local") ? "Local (sem captador)" : referral[:name]
+             ["#{name} — #{count_label} #{referral[:count] == 1 ? 'marcação' : 'marcações'}", referral[:id]]
            end %>
-        <%= f.select :referral_id, options_for_select([["Todos os captadores", ""]] + referral_options, @referral_id), {}, class: "w-full min-w-0 border border-gray-300 rounded-lg px-3 py-2 bg-white" %>
+        <%= f.select :referral_id, options_for_select([["Todas as origens", ""]] + referral_options, @referral_id), {}, class: "w-full min-w-0 border border-gray-300 rounded-lg px-3 py-2 bg-white" %>
       </div>
       <div>
         <%= f.label :compare, "Comparação", class: "block text-sm font-semibold mb-1" %>
@@ -41,7 +42,7 @@
       <%= f.submit "Aplicar filtros", class: "w-full bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg cursor-pointer hover:bg-emerald-800" %>
     </div>
     <div class="flex flex-wrap justify-between items-center gap-2 mt-3">
-      <span class="text-xs text-gray-500">Unidade: seleção atual do cabeçalho · máximo de 366 dias</span>
+      <span class="text-xs text-gray-500">“Local” representa pacientes sem captação externa · máximo de 366 dias</span>
       <%= link_to "Limpar filtros", analytics_path, class: "text-sm font-medium text-gray-600 hover:text-emerald-800 underline" %>
     </div>
   <% end %>
