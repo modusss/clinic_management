@@ -68,10 +68,11 @@
 <%#= link_to 'Ver receita em PDF', pdf_appointment_prescription_path(@prescription.appointment, format: :pdf), class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
 <br>
 <br>
+<%# The bulk-send panel must remain visible even on days without appointments. %>
+<% if @today_bulk_enabled %>
+  <%= render 'clinic_management/leads/absent_bulk_panel', today_audience: true %>
+<% end %>
 <% if @services.present? %>
-  <% if @today_bulk_enabled %>
-    <%= render 'clinic_management/leads/absent_bulk_panel', today_audience: true %>
-  <% end %>
   <%= render "clinic_management/shared/day_metrics",
              services: @services,
              dom_id: "today-day-metrics",
