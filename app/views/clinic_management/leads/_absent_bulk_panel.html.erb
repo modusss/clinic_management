@@ -195,7 +195,7 @@
     <%# Shared actions column %>
     <div class="flex flex-col justify-between">
       <div>
-        <p class="text-sm font-medium text-gray-700 mb-2">Leads selecionados:</p>
+        <p class="text-sm font-medium text-gray-700 mb-2"><%= local_assigns[:today_audience] ? 'Pacientes de hoje selecionados:' : 'Leads selecionados:' %></p>
         <div class="text-4xl font-bold text-blue-600 mb-4" data-bulk-message-target="counter">0</div>
       </div>
 
@@ -231,7 +231,7 @@
     </div>
   </div>
 
-  <% if show_evolution %>
+  <% if show_evolution && !local_assigns[:today_audience] %>
   <div class="mt-4 flex flex-wrap justify-center gap-3" data-bulk-message-target="evolutionQueueActions">
     <button type="button"
             class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-2.5 px-5 rounded-lg shadow-md transition-all duration-200 flex items-center gap-2"

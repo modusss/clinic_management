@@ -695,6 +695,7 @@ module ClinicManagement
     # Envia mensagens em massa para múltiplos leads via Evolution API
     def send_bulk_messages
       begin
+        return unless validate_today_bulk_audience!
         # Validar permissões
         unless can_use_evolution_api?
           render json: {
@@ -947,6 +948,7 @@ module ClinicManagement
     # POST /leads/send_bulk_meta_messages
     # Starts a Meta WhatsApp campaign for selected absent leads.
     def send_bulk_meta_messages
+      return unless validate_today_bulk_audience!
       unless can_use_meta_bulk_for_absent?
         render json: { success: false, error: "Meta WhatsApp não está disponível para envio em massa." }, status: :forbidden
         return
@@ -982,6 +984,27 @@ module ClinicManagement
     rescue StandardError => e
       Rails.logger.error "❌ [BULK META] Erro: #{e.message}"
       render json: { success: false, error: e.message }, status: :internal_server_error
+    end
+
+    # An explicit today audience must not include patients from other dates or locations.
+    # The regular absent-patient flow remains unchanged.
+    def validate_today_bulk_audience!
+      return true unless params[:audience].to_s == 'today'
+
+      if helpers.doctor?(current_user) || helpers.referral?(current_user)
+        render json: { success: false, error: 'Sem permissão para envio em massa de pacientes do dia.' }, status: :forbidden
+        return false
+      end
+
+      requested = Array(params[:lead_ids]).map(&:to_i).uniq
+      service_ids = Service.for_location(current_service_location_id).where(date: Date.current).pluck(:id)
+      allowed = ClinicManagement::Appointment.where(service_id: service_ids)
+        .joins(:invitation).where(clinic_management_invitations: { lead_id: requested })
+        .distinct.pluck('clinic_management_invitations.lead_id')
+      return true if requested.present? && (requested - allowed).empty?
+
+      render json: { success: false, error: 'Seleção contém pacientes fora dos atendimentos de hoje.' }, status: :unprocessable_entity
+      false
     end
 
     # POST /leads/cancel_scheduled_message

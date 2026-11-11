@@ -1,4 +1,12 @@
 <%# Toggle for table/cards view. Stores preference in a cookie. %>
+<% if @today_bulk_enabled %>
+  <% bulk_default_channel = (can_use_evolution_api? || Rails.env.development?) ? 'evolution' : 'meta' %>
+  <div data-controller="bulk-message"
+       data-bulk-message-channel-value="<%= bulk_default_channel %>"
+       data-bulk-message-audience-value="today"
+       data-bulk-message-meta-preferences-key-value="clinic_today_meta_preferences_user_<%= current_user.id %>"
+       data-bulk-message-leads-data-value="<%= @today_bulk_leads.map { |lead| { id: lead.id, phone: lead.phone, name: lead.name } }.to_json.gsub('"', '&quot;') %>">
+<% end %>
 <%= render partial: "clinic_management/shared/toggle_cards_table", locals: { 
       path: ->(args = {}) { clinic_management.index_today_path(args) }, 
       cookie_name: "preferred_prescriptions_today_view", 
@@ -61,6 +69,9 @@
 <br>
 <br>
 <% if @services.present? %>
+  <% if @today_bulk_enabled %>
+    <%= render 'clinic_management/leads/absent_bulk_panel', today_audience: true %>
+  <% end %>
   <%= render "clinic_management/shared/day_metrics",
              services: @services,
              dom_id: "today-day-metrics",
@@ -131,12 +142,17 @@
   <p>Nenhum atendimento para hoje encontrado.</p>
 <% end %>
 
+<% if @today_bulk_enabled %>
+  </div>
+<% end %>
+
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const toggleButton = document.getElementById('toggleOrderNumbers');
     const container = document.getElementById('orderNumbersContainer');
     const quickJump = document.getElementById('quickJump');
     
+    if (!toggleButton || !container || !quickJump) return;
     toggleButton.addEventListener('click', function() {
       container.classList.toggle('hidden');
     });

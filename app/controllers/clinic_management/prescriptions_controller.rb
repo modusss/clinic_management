@@ -5,6 +5,15 @@
       skip_before_action :authenticate_user!, only: [:pdf]
       before_action :set_view_type, only: [:index_today, :index_next, :index_before]
       include GeneralHelper, PrescriptionsHelper
+      include MessagesHelper
+      helper_method :can_use_evolution_api?, :can_use_meta_bulk_for_absent?
+      helper_method :bulk_interval_margin_percent, :bulk_interval_default_seconds, :bulk_interval_min_seconds, :bulk_interval_max_seconds
+      helper_method :absent_meta_bulk_templates, :absent_meta_readiness
+
+      def bulk_interval_margin_percent = ClinicManagement::LeadsController::BULK_INTERVAL_MARGIN_PERCENT
+      def bulk_interval_default_seconds = ClinicManagement::LeadsController::BULK_INTERVAL_DEFAULT_SECONDS
+      def bulk_interval_min_seconds = ClinicManagement::LeadsController::BULK_INTERVAL_MIN_SECONDS
+      def bulk_interval_max_seconds = ClinicManagement::LeadsController::BULK_INTERVAL_MAX_SECONDS
 
       def index
 
@@ -25,6 +34,29 @@
             { invitation: { lead: [{ leads_conversion: :customer }, { lead_interactions: :user }] } }
           ])
         @rows = mapping_rows(@services)
+
+        # Only today's appointments from the selected service location can be selected.
+        @today_bulk_enabled = !helpers.doctor?(current_user) && !helpers.referral?(current_user) &&
+                              (can_use_evolution_api? || can_use_meta_bulk_for_absent?)
+        if @today_bulk_enabled
+          today_appointments = @services.flat_map(&:appointments).index_by(&:id)
+          @today_bulk_leads = today_appointments.values.filter_map { |ap| ap.invitation&.lead }.uniq(&:id)
+          @rows.each do |period_rows|
+            period_rows.each do |row|
+              next unless (appointment_id = row.first[:row_id].to_s[/\Aappointment-row-(\d+)\z/, 1])
+
+              ap = today_appointments[appointment_id.to_i]
+              lead = ap&.invitation&.lead
+              next unless lead
+
+              checkbox = helpers.check_box_tag(nil, lead.id, false,
+                class: 'w-5 h-5 mr-2 align-middle cursor-pointer',
+                data: { bulk_message_target: 'leadCheckbox', lead_id: lead.id, lead_phone: lead.phone,
+                        lead_name: lead.name, action: 'change->bulk-message#updateCounter' })
+              row.first[:content] = helpers.safe_join([checkbox, row.first[:content].to_s])
+            end
+          end
+        end
 
         # Check if WhatsApp instance 2 (clinica) is connected for confirmation button
         @instance_2_connected = Account.first&.instance_2_connected
