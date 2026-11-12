@@ -1,7 +1,7 @@
 module ClinicManagement
   class InvitationsController < ApplicationController
     before_action :set_invitation, only: %i[ show edit update destroy ]
-    before_action :require_manager_above!, only: [:interaction_timeline]
+    before_action :require_manager_above!, only: [:interaction_timeline, :performance_report]
     skip_before_action :redirect_referral_users, only: [:new, :create, :update, :index, :edit_patient_name, :update_patient_name, :check_existing_phone, :duplicate_patient_check]
     include GeneralHelper
 
@@ -21,71 +21,54 @@ module ClinicManagement
 
     # GET /invitations
     def index
-      @referrals = referrals_for_select
+      @can_view_all_invitations = analytics_access_allowed?
+      @referrals = @can_view_all_invitations ? referrals_for_select : []
       
       # Check if viewing annual summary
       @view_mode = params[:view_mode] || 'monthly'
       @selected_year = params[:year]&.to_i || Date.current.year
       @selected_month = params[:month]&.to_i || Date.current.month
       
-      # Check if current user is a referral (restrict to own data)
-      @is_referral_user = referral?(current_user)
-      @current_user_referral = nil
+      # Resolve the user's role within this account. Staff without manager/owner
+      # privileges must never receive another user's invitations or metrics.
+      membership = current_user.memberships.find_by(account: current_account)
+      @is_referral_user = !@can_view_all_invitations && membership&.role == 'referral'
+      @current_user_referral = @is_referral_user ? Referral.find_by(code: membership.code) : nil
+      return head :forbidden if @is_referral_user && @current_user_referral.nil?
       
-      if @is_referral_user
-        user_referral = helpers.user_referral
-        @current_user_referral = user_referral
-      end
-      
-      # Prepare available months/years for the filter
-      # For referral users: show ALL available months (pass nil to not filter by referral_id)
-      @available_dates = prepare_available_months_years(nil)
+      @available_dates = prepare_available_months_years
       
       if @view_mode == 'annual'
-        # Annual view: show monthly summaries for the selected year
-        # For referral users: show ALL referrals' data (pass nil to not filter by referral_id)
-        # This allows them to see other referrals' performance
-        referral_id_for_filter = @is_referral_user ? nil : @current_user_referral&.id
-        @annual_monthly_data = prepare_annual_monthly_data(@selected_year, referral_id_for_filter)
+        @annual_monthly_data = prepare_annual_monthly_data(@selected_year)
         @total_invitations = @annual_monthly_data.sum { |m| m[:invitations] }
         @total_reschedules = @annual_monthly_data.sum { |m| m[:reschedules] }
         @total_whatsapp = @annual_monthly_data.sum { |m| m[:whatsapp_count] || 0 }
         @total_phone = @annual_monthly_data.sum { |m| m[:phone_count] || 0 }
         @total_phone_answered = @annual_monthly_data.sum { |m| m[:phone_answered_count] || 0 }
-        @referral_period_totals = calculate_annual_referral_totals(@selected_year, referral_id_for_filter)
+        @referral_period_totals = calculate_annual_referral_totals(@selected_year)
       else
         # Monthly view: show detailed daily data
         start_date = Date.new(@selected_year, @selected_month, 1)
         end_date = start_date.end_of_month
         
-        if @is_referral_user
-          # Referrals see ALL invitations and reschedules from all referrals
-          # This allows them to see other referrals' performance in the daily table
-          @invitations = Invitation.where(date: start_date..end_date)
-                                   .includes(:lead, :region, :referral, appointments: :service)
-                                   .order(created_at: :desc)
-          @appointments = fetch_all_reschedules(start_date, end_date)
-        else
-          if params[:referral_id].present?
-            @invitations = Invitation.where(referral_id: params[:referral_id])
-                                     .where(date: start_date..end_date)
-                                     .includes(:lead, :region, appointments: :service)
-                                     .order(created_at: :desc)
-            @appointments = fetch_reschedules_for_referral(params[:referral_id], start_date, end_date)
-          else
-            @invitations = Invitation.where(date: start_date..end_date)
-                                     .includes(:lead, :region, appointments: :service)
-                                     .order(created_at: :desc)
-            @appointments = fetch_all_reschedules(start_date, end_date)
-          end
+        @invitations = visible_invitations_scope.where(date: start_date..end_date)
+        @appointments = visible_reschedules_scope(start_date, end_date)
+
+        # The captador filter is exclusively managerial. Supplying a forged
+        # referral_id must not broaden (or replace) a staff member's own scope.
+        if @can_view_all_invitations && params[:referral_id].present?
+          @invitations = @invitations.where(referral_id: params[:referral_id])
+          @appointments = @appointments.where(clinic_management_invitations: { referral_id: params[:referral_id] })
         end
+
+        @invitations = @invitations.includes(:lead, :region, :referral, appointments: :service).order(created_at: :desc)
         
         # Exclude invitations that are actually reschedules to avoid duplication
         reschedule_invitation_ids = @appointments.pluck(:invitation_id)
         @invitations = @invitations.where.not(id: reschedule_invitation_ids)
         
         # Fetch interactions for the period
-        @interactions = LeadInteraction.where(occurred_at: start_date.beginning_of_day..end_date.end_of_day)
+        @interactions = visible_interactions_scope(start_date, end_date)
 
         # Prepare data for the new elegant table
         @invitations_data = prepare_invitations_reschedules_data(@invitations, @appointments, @interactions)
@@ -100,9 +83,7 @@ module ClinicManagement
         @total_phone = interaction_totals[:phone]
         @total_phone_answered = interaction_totals[:phone_answered]
         
-        # Calculate totals per referral for the period summary
-        # Note: For referral users, @invitations and @appointments already contain ALL data
-        # from all referrals (set above), so this will show complete referral performance
+        # All totals use the same authorized scope as the visible daily rows.
         @referral_period_totals = calculate_referral_period_totals(@invitations, @appointments)
       end
     end
@@ -761,6 +742,35 @@ module ClinicManagement
         rows
       end
 
+      # Invitations do not store their creator. The appointment's registered_by_user_id
+      # is the authoritative link for internal staff; captadores own the referral
+      # assigned to the invitation, even if another staff member registered it.
+      def visible_invitations_scope
+        return Invitation.all if @can_view_all_invitations
+
+        if @is_referral_user
+          @current_user_referral ? Invitation.where(referral_id: @current_user_referral.id) : Invitation.none
+        else
+          Invitation.where(id: Appointment.where(registered_by_user_id: current_user.id).select(:invitation_id))
+        end
+      end
+
+      def visible_reschedules_scope(start_date, end_date)
+        scope = fetch_all_reschedules(start_date, end_date)
+        return scope if @can_view_all_invitations
+
+        if @is_referral_user
+          @current_user_referral ? scope.where(clinic_management_invitations: { referral_id: @current_user_referral.id }) : scope.none
+        else
+          scope.where(registered_by_user_id: current_user.id)
+        end
+      end
+
+      def visible_interactions_scope(start_date, end_date)
+        scope = LeadInteraction.where(occurred_at: start_date.beginning_of_day..end_date.end_of_day)
+        @can_view_all_invitations ? scope : scope.where(user_id: current_user.id)
+      end
+
       def fetch_reschedules_for_referral(referral_id, start_date, end_date)
         # Busca remarcações através das invitations do referral no período
         ClinicManagement::Appointment.joins(:invitation)
@@ -796,9 +806,8 @@ module ClinicManagement
                                      .order(created_at: :desc)
       end
 
-      def prepare_available_months_years(referral_id = nil)
-        # Get date range from invitations (filtered by referral if provided)
-        invitations_scope = referral_id.present? ? Invitation.where(referral_id: referral_id) : Invitation.all
+      def prepare_available_months_years
+        invitations_scope = visible_invitations_scope
         min_date = invitations_scope.minimum(:date) || Date.current
         max_date = Date.current
         
@@ -944,7 +953,7 @@ module ClinicManagement
         
         # Calculate sales amount per referral for the period
         totals.each do |referral_id, data|
-          data[:sales_amount] = calculate_referral_sales_amount(data[:referral], @selected_month, @selected_year)
+          data[:sales_amount] = @can_view_all_invitations ? calculate_referral_sales_amount(data[:referral], @selected_month, @selected_year) : 0
         end
         
         # Sort by total (invitations + reschedules) descending
@@ -992,15 +1001,12 @@ module ClinicManagement
           # Skip future months
           next nil if start_date > Date.current
           
-          invitations_scope = Invitation.where(date: start_date..end_date)
+          invitations_scope = visible_invitations_scope.where(date: start_date..end_date)
           invitations_scope = invitations_scope.where(referral_id: referral_id) if referral_id
           
           # Get reschedules
-          if referral_id
-            appointments = fetch_reschedules_for_referral(referral_id, start_date, end_date)
-          else
-            appointments = fetch_all_reschedules(start_date, end_date)
-          end
+          appointments = visible_reschedules_scope(start_date, end_date)
+          appointments = appointments.where(clinic_management_invitations: { referral_id: referral_id }) if referral_id
           
           # Exclude invitations that are reschedules
           reschedule_invitation_ids = appointments.pluck(:invitation_id)
@@ -1011,12 +1017,12 @@ module ClinicManagement
           referral_totals = calculate_month_referral_totals(invitations, appointments, year, month)
           
           # Calculate interactions for this month
-          interactions = LeadInteraction.where(occurred_at: start_date.beginning_of_day..end_date.end_of_day)
+          interactions = visible_interactions_scope(start_date, end_date)
           interaction_totals = calculate_period_interaction_totals(interactions)
           
           # Calculate clinic sales and total store sales for comparison
-          clinic_sales = calculate_month_sales_amount(year, month, referral_id)
-          total_store_sales = calculate_month_total_store_sales(year, month)
+          clinic_sales = @can_view_all_invitations ? calculate_month_sales_amount(year, month, referral_id) : 0
+          total_store_sales = @can_view_all_invitations ? calculate_month_total_store_sales(year, month) : 0
           
           {
             month: month,
@@ -1069,7 +1075,7 @@ module ClinicManagement
         
         # Calculate interactions per referral for this month
         # ESSENTIAL: Non-referral users -> attribute to Local
-        interactions = LeadInteraction.where(occurred_at: start_date.beginning_of_day..end_date.end_of_day)
+        interactions = visible_interactions_scope(start_date, end_date)
         user_referral_map = build_user_referral_map
         local_referral = Referral.find_by(name: "Local")
         
@@ -1088,7 +1094,7 @@ module ClinicManagement
         
         # Calculate sales amount per referral for this month
         totals.each do |referral_id, data|
-          data[:sales_amount] = calculate_referral_sales_amount(data[:referral], month, year)
+          data[:sales_amount] = @can_view_all_invitations ? calculate_referral_sales_amount(data[:referral], month, year) : 0
         end
         
         # Sort by total (invitations + reschedules) descending
@@ -1135,36 +1141,12 @@ module ClinicManagement
         totals = {}
         
         # Get all invitations for the year
-        invitations_scope = Invitation.where(date: start_date..end_date)
+        invitations_scope = visible_invitations_scope.where(date: start_date..end_date)
         invitations_scope = invitations_scope.where(referral_id: current_referral_id) if current_referral_id
         
         # Get all reschedules for the year
-        if current_referral_id
-          appointments = Appointment.joins(:invitation)
-            .where(clinic_management_invitations: { referral_id: current_referral_id })
-            .where(status: 'agendado')
-            .where('clinic_management_appointments.created_at >= ? AND clinic_management_appointments.created_at <= ?', 
-                   start_date.beginning_of_day, end_date.end_of_day)
-            .where(
-              'EXISTS (SELECT 1 FROM clinic_management_appointments ca2 
-               WHERE ca2.lead_id = clinic_management_appointments.lead_id 
-               AND ca2.status = ? 
-               AND ca2.created_at < clinic_management_appointments.created_at)',
-              'remarcado'
-            )
-        else
-          appointments = Appointment.joins(:invitation)
-            .where(status: 'agendado')
-            .where('clinic_management_appointments.created_at >= ? AND clinic_management_appointments.created_at <= ?', 
-                   start_date.beginning_of_day, end_date.end_of_day)
-            .where(
-              'EXISTS (SELECT 1 FROM clinic_management_appointments ca2 
-               WHERE ca2.lead_id = clinic_management_appointments.lead_id 
-               AND ca2.status = ? 
-               AND ca2.created_at < clinic_management_appointments.created_at)',
-              'remarcado'
-            )
-        end
+        appointments = visible_reschedules_scope(start_date, end_date)
+        appointments = appointments.where(clinic_management_invitations: { referral_id: current_referral_id }) if current_referral_id
         
         # Exclude invitations that are reschedules
         reschedule_invitation_ids = appointments.pluck(:invitation_id)
@@ -1186,7 +1168,7 @@ module ClinicManagement
         
         # Calculate sales amount per referral for the year
         totals.each do |referral_id, data|
-          data[:sales_amount] = calculate_annual_referral_sales(data[:referral], year)
+          data[:sales_amount] = @can_view_all_invitations ? calculate_annual_referral_sales(data[:referral], year) : 0
         end
         
         totals.values.sort_by { |t| -(t[:invitations] + t[:reschedules]) }
@@ -1227,7 +1209,7 @@ module ClinicManagement
 
       def build_user_referral_map
         referrals_by_code = Referral.all.index_by(&:code)
-        Membership.where(role: 'referral').where.not(code: nil).each_with_object({}) do |membership, map|
+        Membership.where(account: current_account, role: 'referral').where.not(code: nil).each_with_object({}) do |membership, map|
           if (referral = referrals_by_code[membership.code])
             map[membership.user_id] = referral
           end
@@ -1236,7 +1218,7 @@ module ClinicManagement
 
       # ESSENTIAL: Restrict interaction timeline JSON to manager/owner roles only.
       def require_manager_above!
-        return if is_manager_above?
+        return if analytics_access_allowed?
 
         respond_to do |format|
           format.json { head :forbidden }

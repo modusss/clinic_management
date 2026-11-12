@@ -11,7 +11,7 @@
     subject_id = referral.id
   end
   subject_label = indicator_display_name(referral)
-  manager_can_drill_down = is_manager_above?
+  manager_can_drill_down = analytics_access_allowed?
 %>
 <div class="interactions-cell">
   <%= render "interaction_badge",
