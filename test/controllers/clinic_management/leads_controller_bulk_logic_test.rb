@@ -1,4 +1,5 @@
 require "test_helper"
+require "minitest/mock"
 
 module ClinicManagement
   class LeadsControllerBulkLogicTest < ActiveSupport::TestCase
@@ -28,6 +29,20 @@ module ClinicManagement
       outcome = @controller.send(:bulk_whatsapp_check_outcome, {})
 
       assert_equal :valid_or_unknown, outcome
+    end
+
+    test "absent patient-type filter reuses latest appointment joined in base query" do
+      @controller.params = ActionController::Parameters.new(patient_type: "absent")
+      base = ClinicManagement::Lead.joins(
+        "INNER JOIN clinic_management_appointments AS main_apt ON main_apt.lead_id = clinic_management_leads.id"
+      )
+
+      filtered = @controller.stub(:current_account, nil) do
+        @controller.send(:filter_by_patient_type, base)
+      end
+
+      assert_includes filtered.to_sql, "main_apt.attendance = FALSE"
+      refute_includes filtered.to_sql, "latest_apt"
     end
   end
 end

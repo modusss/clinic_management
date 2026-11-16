@@ -13,6 +13,38 @@
      data-bulk-message-meta-preferences-key-value="clinic_absent_meta_preferences_user_<%= current_user.id %>"
      data-bulk-message-leads-data-value="<%= @leads.map { |l| { id: l.id, phone: l.phone, name: l.name } }.to_json.gsub('"', '&quot;') %>">
 
+<% if can_use_meta_bulk_for_absent? %>
+  <%# ESSENTIAL: The bulk Stimulus controller loads with the application's other
+      controllers. Restore the saved channel while the HTML is being parsed so
+      Evolution does not flash before the user's selected Meta panel appears. %>
+  <script data-absent-meta-early-channel>
+    (function (root) {
+      if (!root) return;
+      var requested = new URLSearchParams(window.location.search).get("bulk_channel");
+      if (requested === "meta" || requested === "evolution") {
+        root.dataset.bulkMessageChannelValue = requested;
+      } else {
+        try {
+          var stored = JSON.parse(localStorage.getItem(root.dataset.bulkMessageMetaPreferencesKeyValue) || "null");
+          if (stored && stored.channel === "meta") root.dataset.bulkMessageChannelValue = "meta";
+        } catch (_error) { /* storage blocked or stale */ }
+      }
+      var channel = root.dataset.bulkMessageChannelValue;
+      var filterChannel = root.querySelector('[data-bulk-message-target="filterChannel"]');
+      var eligibility = root.querySelector('[data-bulk-message-target="metaEligibilityInput"]');
+      if (filterChannel) filterChannel.value = channel;
+      if (eligibility) eligibility.disabled = channel !== "meta";
+    })(document.currentScript.parentElement);
+  </script>
+  <style>
+    [data-controller~="bulk-message"][data-bulk-message-channel-value="meta"] [data-bulk-message-target="evolutionPanel"] { display: none !important; }
+    [data-controller~="bulk-message"][data-bulk-message-channel-value="meta"] [data-bulk-message-target="metaPanel"] { display: block !important; }
+    [data-controller~="bulk-message"][data-bulk-message-channel-value="meta"] [data-bulk-message-target="metaEligibilityField"] { display: block !important; }
+    [data-controller~="bulk-message"][data-bulk-message-channel-value="meta"] [data-bulk-message-target="metaTab"] { border-color: #16a34a !important; color: #15803d !important; }
+    [data-controller~="bulk-message"][data-bulk-message-channel-value="meta"] [data-bulk-message-target="evolutionTab"] { border-color: transparent !important; color: #4b5563 !important; }
+  </style>
+<% end %>
+
 <% if referral?(current_user) %>
 <h5 class="text-xl font-semibold text-gray-800">Lista dos pacientes ausentes mais antigos que 180 dias</h5>
 <br>
@@ -85,6 +117,44 @@
   <br>
   
   <%= render "clinic_management/leads/absent_bulk_panel" %>
+
+  <% if can_use_meta_bulk_for_absent? %>
+    <%# A tiny synchronous enhancement restores phone/template/preview before
+        the full Stimulus bundle initializes. All choices are validated against
+        the server-rendered options; no API call or saved audience is involved. %>
+    <script data-absent-meta-early-selection>
+      (function (script) {
+        var root = script.closest('[data-controller~="bulk-message"]');
+        if (!root) return;
+        var saved;
+        try {
+          saved = JSON.parse(localStorage.getItem(root.dataset.bulkMessageMetaPreferencesKeyValue) || "null");
+        } catch (_error) { return; }
+        if (!saved) return;
+
+        var phone = root.querySelector('[data-bulk-message-target="metaPhoneSelect"]');
+        var select = root.querySelector('[data-bulk-message-target="metaTemplateSelect"]');
+        if (!phone || !select) return;
+
+        if (saved.phoneId && Array.from(phone.options || []).some(function (option) { return option.value === String(saved.phoneId); })) {
+          phone.value = String(saved.phoneId);
+        }
+        var source = Array.from(root.querySelectorAll('[data-bulk-message-target="metaPhoneTemplates"]'))
+          .find(function (node) { return node.dataset.phoneId === phone.value; });
+        var templates = source && source.content.querySelectorAll("option");
+        select.replaceChildren(new Option(templates && templates.length ? "Selecione um template aprovado" : "Nenhum template aprovado disponível", ""));
+        if (templates) templates.forEach(function (option) { select.appendChild(option.cloneNode(true)); });
+        select.disabled = !(templates && templates.length);
+
+        if (saved.templateId && Array.from(select.options).some(function (option) { return option.value === String(saved.templateId); })) {
+          select.value = String(saved.templateId);
+          var preview = root.querySelector('[data-bulk-message-target="metaMessagePreview"]');
+          var content = document.getElementById("preview-meta-template-" + select.value);
+          if (preview && content) preview.innerHTML = content.innerHTML;
+        }
+      })(document.currentScript);
+    </script>
+  <% end %>
   
   <style>
     /* Animação para novos logs */

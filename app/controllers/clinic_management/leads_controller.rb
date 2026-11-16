@@ -646,8 +646,6 @@ module ClinicManagement
       cleanup_expired_views if should_cleanup?
 
       # 6) Renderização
-      @absent_meta_templates = absent_meta_bulk_templates if can_use_meta_bulk_for_absent?
-
       respond_to do |format|
         format.html { render :absent }
         format.html { render :absent_download if params[:view] == 'download' }
@@ -1445,8 +1443,10 @@ module ClinicManagement
       one_year_ago = 1.year.ago.to_date
       case patient_type
       when "absent"
-        scope.joins("INNER JOIN clinic_management_appointments AS latest_apt ON latest_apt.id = (#{latest_appointment_by_service_date_subquery})")
-        .where('latest_apt.attendance = ?', false)
+        # main_apt already *is* the latest appointment from the base query.
+        # Repeating its correlated subquery as latest_apt doubles expensive
+        # work for the most frequently selected patient-type filter.
+        scope.where('main_apt.attendance = ?', false)
       when "attended_year_ago"
         scope.where('main_apt.attendance = ? AND main_svc.date < ?', true, one_year_ago)
       when "attended_year_ago_customer"
@@ -1777,6 +1777,8 @@ module ClinicManagement
         .index_by(&:id)
 
       show_lpvoz_actions = context == "absent" && lpvoz_integration_enabled? && lpvoz_call_allowed?
+      show_bulk_checkbox = can_use_evolution_api? || can_use_meta_bulk_for_absent?
+      clinic_only_mode = current_account&.clinic_only?
       lpvoz_operations = if show_lpvoz_actions && defined?(ClinicManagement::LpvozOperation)
         ClinicManagement::LpvozOperation.where(account: current_account, lead_id: leads.map(&:id)).recent_first.group_by(&:lead_id).transform_values(&:first)
       else
@@ -1806,7 +1808,6 @@ module ClinicManagement
         full_appointment = real_appointment
         
         # ESSENTIAL: Retail-only order line in Status; skip DB hit in Apenas Clínica.
-        clinic_only_mode = current_account&.clinic_only?
         order_count = if clinic_only_mode
                         0
                       else
@@ -1850,7 +1851,6 @@ module ClinicManagement
         end
         
         # Construir conteúdo da primeira coluna (Ordem + Checkbox se Evolution ou Meta bulk ativo)
-        show_bulk_checkbox = can_use_evolution_api? || can_use_meta_bulk_for_absent?
         safe_lead_name = ERB::Util.html_escape(lead.name.to_s)
         safe_lead_phone = ERB::Util.html_escape(lead.phone.to_s)
         ordem_content = if show_bulk_checkbox
@@ -2120,19 +2120,14 @@ module ClinicManagement
 
       # 🆕 Registrar visualização dos leads da página atual
       def register_page_views(leads)
-        return if leads.blank?
-        
         lead_ids = leads.map(&:id)
-        
-        # Registrar cada lead como visualizado pelo usuário atual
-        lead_ids.each do |lead_id|
-          ClinicManagement::LeadPageView.register_view(
-            lead_id,
-            current_user.id,
-            context: 'absent',
-            duration_hours: 8
-          )
-        end
+        return if lead_ids.empty?
+
+        # One bulk lookup/update/insert instead of one SELECT and one write
+        # per visible patient, preserving other users' reservations.
+        ClinicManagement::LeadPageView.register_views(
+          lead_ids, current_user.id, context: 'absent', duration_hours: 8
+        )
         
         Rails.logger.info "✅ Registradas #{lead_ids.count} visualizações para usuário #{current_user.id}"
       rescue StandardError => e

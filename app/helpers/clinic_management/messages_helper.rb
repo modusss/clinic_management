@@ -238,16 +238,22 @@ module ClinicManagement
     #
     # @return [Boolean]
     def can_use_meta_bulk_for_absent?
-      return false unless defined?(current_account) && current_account.present?
-      return false unless current_user.present?
-      return false unless current_account.meta_whatsapp_enabled?
-      return false unless meta_bulk_absent_role_allowed?
-      return false unless meta_bulk_account_operational?
+      # This helper is used in each of the 50 rendered patient rows as well as
+      # the filter/panel. The result is stable within a request: don't perform
+      # WABA/phone/template queries dozens of times during one page load.
+      return @can_use_meta_bulk_for_absent if defined?(@can_use_meta_bulk_for_absent)
 
-      bulk_meta_phone_for_absent&.can_send_message?
+      @can_use_meta_bulk_for_absent = (
+        defined?(current_account) && current_account.present? &&
+        current_user.present? &&
+        current_account.meta_whatsapp_enabled? &&
+        meta_bulk_absent_role_allowed? &&
+        meta_bulk_account_operational? &&
+        bulk_meta_phone_for_absent&.can_send_message?
+      ) || false
     rescue StandardError => e
       Rails.logger.warn("[MessagesHelper] can_use_meta_bulk_for_absent? failed: #{e.class}: #{e.message}")
-      false
+      @can_use_meta_bulk_for_absent = false
     end
 
     # Approved, current, campaign-sendable templates from the WABA that owns
@@ -372,6 +378,8 @@ module ClinicManagement
     #
     # @return [MetaPhoneNumber, nil]
     def bulk_meta_phone_for_absent
+      return @bulk_meta_phone_for_absent if defined?(@bulk_meta_phone_for_absent)
+
       account = current_account
       return nil unless account
 
@@ -380,7 +388,7 @@ module ClinicManagement
                  .merge(MetaBusinessAccount.active.where(account_id: account.id))
                  .active
                  .select(&:has_access_token?)
-      return if phones.empty?
+      return @bulk_meta_phone_for_absent = nil if phones.empty?
 
       clinic_template_counts = MetaTemplate
                                  .where(meta_business_account_id: phones.map(&:meta_business_account_id))
@@ -390,7 +398,7 @@ module ClinicManagement
                                  .group(:meta_business_account_id)
                                  .count
 
-      phones.min_by do |phone|
+      @bulk_meta_phone_for_absent = phones.min_by do |phone|
         [-clinic_template_counts.fetch(phone.meta_business_account_id, 0), phone.id]
       end
     end
