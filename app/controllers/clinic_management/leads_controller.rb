@@ -605,6 +605,9 @@ module ClinicManagement
       # 2) Aplicar filtros sequenciais encapsulados (service_location já no base_absent_leads_scope)
       @all_leads = filter_leads_with_phone(@all_leads)
       @all_leads = filter_by_whatsapp_status(@all_leads)  # Novo filtro de WhatsApp
+      if can_use_meta_bulk_for_absent? && params[:bulk_channel] == 'meta' && params[:meta_eligible] == '1'
+        @all_leads = MetaCampaignEligibility.filter(@all_leads, account: current_account)
+      end
       @all_leads = filter_by_hidden_status(@all_leads)  # Filtro de ocultação/interesse
       @all_leads = filter_by_patient_type(@all_leads)
       @all_leads = filter_by_date(@all_leads)
@@ -973,7 +976,8 @@ module ClinicManagement
         user: current_user,
         lead_ids: lead_ids,
         meta_template_id: meta_template_id,
-        meta_phone_number_id: meta_phone_number_id
+        meta_phone_number_id: meta_phone_number_id,
+        apply_meta_eligibility_filter: params[:meta_eligible] == true || params[:meta_eligible].to_s == '1'
       )
 
       if result[:success]

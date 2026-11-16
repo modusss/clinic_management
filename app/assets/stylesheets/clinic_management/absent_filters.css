@@ -81,6 +81,10 @@
   gap: 17px;
 }
 .absent-filters__field { min-width: 0; }
+.absent-filters__meta-eligibility:not(.hidden) { background: #eef8f2; border: 1px solid #b9ddc7; border-radius: 10px; padding: 12px 14px; }
+.absent-filters__field .absent-filters__meta-eligibility-label { align-items: center; color: #146c43; cursor: pointer; display: flex; font-size: 15px; font-weight: 700; gap: 10px; line-height: 1.4; margin-bottom: 0; }
+.absent-filters__meta-eligibility-label input { accent-color: #087d46; flex-shrink: 0; height: 18px; width: 18px; }
+.absent-filters__meta-eligibility small { color: #496b5a; display: block; font-size: 13px; line-height: 1.45; margin-top: 6px; }
 /* Searchable multi-select is limited to region filtering on the absent page. */
 .absent-filters__region { position: relative; }
 .absent-filters__region-toggle {

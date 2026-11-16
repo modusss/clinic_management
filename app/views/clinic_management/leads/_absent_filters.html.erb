@@ -94,6 +94,18 @@
         <%= f.select :whatsapp_status, options_for_select([['Todos', 'all'], ['Tem WhatsApp', 'has_whatsapp'], ['Sem WhatsApp', 'no_whatsapp']], params[:whatsapp_status]), {}, class: 'absent-filters__select browser-default' %>
       </div>
 
+      <% if can_use_meta_bulk_for_absent? %>
+        <div class="absent-filters__field absent-filters__meta-eligibility hidden"
+             data-bulk-message-target="metaEligibilityField">
+          <label class="absent-filters__meta-eligibility-label" for="absent-meta-eligible">
+            <%= check_box_tag :meta_eligible, '1', params[:meta_eligible] == '1', id: 'absent-meta-eligible',
+                  data: { bulk_message_target: 'metaEligibilityInput', action: 'change->bulk-message#applyMetaEligibility' } %>
+            <span>Excluir pacientes não aplicáveis para campanhas Meta</span>
+          </label>
+          <small>Filtra opt-outs, telefones inválidos e falhas recentes de entrega. Não garante que a Meta entregará a mensagem.</small>
+        </div>
+      <% end %>
+
       <div class="absent-filters__field">
         <%= f.label :sort_order, 'Ordenar por' %>
         <%= f.select :sort_order, options_for_select([['Último atendimento mais recente', 'appointment_newest_first'], ['Último atendimento mais antigo', 'appointment_oldest_first'], ['Contatado mais recente', 'contact_newest_first'], ['Contatado há mais tempo', 'contact_oldest_first']], params[:sort_order]), {}, class: 'absent-filters__select browser-default' %>
@@ -119,6 +131,7 @@
     </details>
 
     <div class="absent-filters__footer">
+      <%= f.hidden_field :bulk_channel, value: params[:bulk_channel], data: { bulk_message_target: 'filterChannel' } %>
       <span>Combine os filtros para refinar a lista de pacientes.</span>
       <%= f.submit 'Aplicar filtros', class: 'absent-filters__submit' %>
     </div>

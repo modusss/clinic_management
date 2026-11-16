@@ -7,7 +7,7 @@
     } %>
 
 <%# Wrapper para o sistema de envio em massa - ENVOLVE TODA A PÁGINA %>
-<% bulk_default_channel = (can_use_evolution_api? || Rails.env.development?) ? "evolution" : "meta" %>
+<% bulk_default_channel = params[:bulk_channel] == 'meta' && can_use_meta_bulk_for_absent? ? 'meta' : ((can_use_evolution_api? || Rails.env.development?) ? 'evolution' : 'meta') %>
 <div data-controller="bulk-message"
      data-bulk-message-channel-value="<%= bulk_default_channel %>"
      data-bulk-message-meta-preferences-key-value="clinic_absent_meta_preferences_user_<%= current_user.id %>"
