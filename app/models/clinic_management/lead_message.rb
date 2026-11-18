@@ -23,8 +23,9 @@ module ClinicManagement
       DELIVERY_CHANNELS = %w[evolution meta].freeze
 
       validates :delivery_channel, inclusion: { in: DELIVERY_CHANNELS }, allow_nil: true
-      validate :meta_template_must_be_valid_for_slot, if: -> { meta_template_id.present? }
-      
+      # Lead Messages are editable independently of Meta template lifecycle.
+      # A legacy template association must never block saving the local text.
+
       # Active Storage attachment for media files (images, audio, video, pdf)
       has_one_attached :media_file
       
@@ -116,15 +117,5 @@ module ClinicManagement
         ClinicAutomationChannelResolver.resolve(account: account, lead_message: self)
       end
 
-      private
-
-      def meta_template_must_be_valid_for_slot
-        return if meta_template.blank?
-
-        unless meta_template.approved?
-          errors.add(:meta_template, "deve estar aprovado na Meta")
-        end
-      end
     end
 end
-  
