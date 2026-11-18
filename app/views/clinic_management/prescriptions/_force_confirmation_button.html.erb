@@ -15,15 +15,16 @@
 <%#   button_label [String] - Optional. Button text (default: "Enviar Confirmações") %>
 <%#   target_scope [String] - Optional. "today" | "next" — enables status polling + anti double-submit %>
 <%# ============================================================ %>
-<% if instance_2_connected %>
 <% button_label = local_assigns[:button_label] || "Enviar Confirmações" %>
 <% target_scope = local_assigns[:target_scope] %>
 <% poll_status = target_scope.present? %>
+<% if instance_2_connected || poll_status %>
 <% if poll_status %>
 <div
   data-controller="confirmation-force-send"
   data-confirmation-force-send-status-url-value="<%= clinic_management.confirmation_jobs_status_path(target: target_scope) %>"
   data-confirmation-force-send-poll-interval-value="3000"
+  data-confirmation-force-send-send-available-value="<%= !!instance_2_connected %>"
 >
 <% end %>
 <div class="bg-white rounded-lg shadow-md p-4 mb-6">
@@ -41,16 +42,31 @@
     <div>
       <h3 class="text-lg font-medium text-gray-800"><%= title %></h3>
       <p class="text-sm text-gray-500"><%= description %></p>
+      <% unless instance_2_connected %>
+        <p class="text-sm text-red-700">Nenhum canal disponível para um novo envio. A fila existente ainda pode ser cancelada.</p>
+      <% end %>
     </div>
 
-    <div class="mt-2 sm:mt-0 shrink-0">
+    <div class="mt-2 sm:mt-0 flex flex-wrap items-center gap-2 shrink-0">
       <%= button_to button_path,
           method: :post,
           form: poll_status ? { data: { action: "turbo:submit-start->confirmation-force-send#beginSubmit" } } : {},
+          disabled: !instance_2_connected,
           class: "bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-green-600 text-white px-4 py-2 rounded text-sm transition-colors duration-200 flex items-center gap-2",
           data: { turbo_confirm: confirm_message } do %>
         <i class="fas fa-paper-plane mr-2" aria-hidden="true"></i>
         <%= button_label %>
+      <% end %>
+      <% if poll_status && local_assigns[:target_date].present? %>
+        <div data-confirmation-force-send-target="cancelContainer" class="hidden">
+          <%= button_to clinic_management.cancel_confirmation_queue_path,
+                method: :post,
+                params: { target: target_scope, service_date: local_assigns[:target_date].to_s },
+                class: "border border-red-300 bg-red-50 hover:bg-red-100 text-red-700 px-4 py-2 rounded text-sm font-medium transition-colors",
+                data: { turbo_confirm: "Cancelar TODOS os envios de confirmação ainda não iniciados para esta data e unidade (inclusive os automáticos)? Mensagens já em envio não poderão ser interrompidas." } do %>
+            <i class="fas fa-ban mr-1" aria-hidden="true"></i> Cancelar pendentes
+          <% end %>
+        </div>
       <% end %>
     </div>
   </div>

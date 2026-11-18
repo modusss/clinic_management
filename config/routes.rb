@@ -124,6 +124,7 @@ ClinicManagement::Engine.routes.draw do
   get 'prescriptions/index_today', to: "prescriptions#index_today", as: "index_today"
   post 'prescriptions/force_confirmation_today', to: "prescriptions#force_confirmation_today", as: "force_confirmation_today"
   post 'prescriptions/force_confirmation_next', to: "prescriptions#force_confirmation_next", as: "force_confirmation_next"
+  post 'prescriptions/cancel_confirmation_queue', to: "prescriptions#cancel_confirmation_queue", as: "cancel_confirmation_queue"
   # JSON status for UI polling: pending ConfirmationAppointmentJob / SendAppointmentMessageJob (confirmation wave).
   get 'prescriptions/confirmation_jobs_status', to: "prescriptions#confirmation_jobs_status", as: "confirmation_jobs_status"
   post 'prescriptions/force_reminder_today', to: "prescriptions#force_reminder_today", as: "force_reminder_today"

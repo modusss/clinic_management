@@ -1,6 +1,6 @@
   module ClinicManagement
     class PrescriptionsController < ApplicationController
-      before_action :set_appointment, except: [:index_today, :generate_order_pdf, :search_index_today, :index_next, :index_before, :force_confirmation_today, :force_confirmation_next, :force_reminder_today, :confirmation_jobs_status]
+      before_action :set_appointment, except: [:index_today, :generate_order_pdf, :search_index_today, :index_next, :index_before, :force_confirmation_today, :force_confirmation_next, :force_reminder_today, :confirmation_jobs_status, :cancel_confirmation_queue]
       skip_before_action :redirect_doctor_users, only: [:index_today, :show_today, :new_today, :edit_today, :update, :create, :search_index_today]
       skip_before_action :authenticate_user!, only: [:pdf]
       before_action :set_view_type, only: [:index_today, :index_next, :index_before]
@@ -59,7 +59,7 @@
         end
 
         # Check if WhatsApp instance 2 (clinica) is connected for confirmation button
-        @instance_2_connected = Account.first&.instance_2_connected
+        @instance_2_connected = clinic_confirmation_channel_available?
       end
 
       # POST /prescriptions/force_confirmation_today
@@ -68,8 +68,8 @@
       def force_confirmation_today
         account = Account.first
         
-        unless account&.instance_2_connected
-          flash[:alert] = "Instância do WhatsApp não conectada. Conecte a instância 'Clínica' primeiro."
+        unless clinic_confirmation_channel_available?
+          flash[:alert] = "Nenhum canal disponível para confirmações clínicas. Verifique Evolution/Meta."
           redirect_to index_today_path and return
         end
         
@@ -87,8 +87,8 @@
       def force_reminder_today
         account = Account.first
         
-        unless account&.instance_2_connected
-          flash[:alert] = "Instância do WhatsApp não conectada. Conecte a instância 'Clínica' primeiro."
+        unless clinic_confirmation_channel_available?
+          flash[:alert] = "Nenhum canal disponível para confirmações clínicas. Verifique Evolution/Meta."
           redirect_to index_today_path and return
         end
         
@@ -104,8 +104,8 @@
       def force_confirmation_next
         account = Account.first
         
-        unless account&.instance_2_connected
-          flash[:alert] = "Instância do WhatsApp não conectada. Conecte a instância 'Clínica' primeiro."
+        unless clinic_confirmation_channel_available?
+          flash[:alert] = "Nenhum canal disponível para confirmações clínicas. Verifique Evolution/Meta."
           redirect_to index_next_path and return
         end
         
@@ -122,10 +122,10 @@
       end
 
       # GET /prescriptions/confirmation_jobs_status?target=today|next
-      # JSON for the force-confirmation card: counts unfinished GoodJob rows for the confirmation
-      # orchestrator and for SendAppointmentMessageJob waves spawned with source_job ConfirmationAppointmentJob.
+      # JSON for the force-confirmation card: date/location-scoped GoodJob sends
+      # for both Evolution and Meta, plus the confirmation orchestrator.
       def confirmation_jobs_status
-        if doctor_user?
+        if doctor_user? || referral_user?
           head :forbidden and return
         end
 
@@ -135,7 +135,9 @@
         end
 
         orch_count = pending_confirmation_orchestrator_count(target)
-        send_count = pending_confirmation_send_jobs_count
+        date = confirmation_queue_date(target)
+        counts = date ? ClinicManagement::ConfirmationQueueControl.new(service_date: date, service_location_id: current_service_location_id).status : { pending: 0, queued: 0, running: 0, scheduled_for_later: 0 }
+        send_count = counts[:pending]
 
         busy = orch_count.positive? || send_count.positive?
 
@@ -143,8 +145,41 @@
           busy: busy,
           orchestrator_pending: orch_count,
           confirmation_sends_pending: send_count,
+          confirmation_sends_queued: counts[:queued],
+          confirmation_sends_running: counts[:running],
+          confirmation_sends_scheduled_for_later: counts[:scheduled_for_later],
           target: target
         }
+      end
+
+      # Cancels only unstarted confirmation sends for the date/location displayed
+      # in this page. Does not cancel other automation, and cannot stop API calls
+      # already executing in a worker.
+      def cancel_confirmation_queue
+        if doctor_user? || referral_user?
+          head :forbidden and return
+        end
+
+        target = params[:target].to_s
+        unless %w[today next].include?(target)
+          head :bad_request and return
+        end
+
+        redirect_path = target == "today" ? index_today_path : index_next_path
+        date = confirmation_queue_date(target)
+        unless date && params[:service_date].to_s == date.to_s
+          redirect_to redirect_path, alert: "A data dos atendimentos mudou. Atualize a página e tente novamente." and return
+        end
+
+        result = ClinicManagement::ConfirmationQueueControl.new(
+          service_date: date, service_location_id: current_service_location_id
+        ).cancel!
+
+        if result[:blocked]
+          redirect_to redirect_path, alert: "Ainda existe um orquestrador em execução ou agendado. Aguarde a preparação da fila antes de cancelar."
+        else
+          redirect_to redirect_path, notice: "#{result[:cancelled]} envio(s) de confirmação ainda não iniciado(s) cancelado(s). Envios já iniciados podem concluir normalmente."
+        end
       end
 
       # GET /prescriptions/index_next
@@ -167,7 +202,7 @@
           Service.none
         end
         @rows = mapping_rows(@services)
-        @instance_2_connected = Account.first&.instance_2_connected
+        @instance_2_connected = clinic_confirmation_channel_available?
       end
 
       # GET /prescriptions/index_before
@@ -353,9 +388,17 @@
 
       private
 
+      def clinic_confirmation_channel_available?
+        account = Account.first
+        account&.instance_2_connected ||
+          (account&.effective_clinic_automation_channel == "meta" && account.clinic_automation_meta_available?)
+      end
+
+      def confirmation_queue_date(target)
+        target == "today" ? Date.current : next_service_date_after_today_for_status
+      end
+
       ORCHESTRATOR_JOB_CLASS = "ConfirmationAppointmentJob"
-      SEND_JOB_CLASS = "SendAppointmentMessageJob"
-      CONFIRMATION_SOURCE_SNIPPET = "ConfirmationAppointmentJob"
 
       # Pending ConfirmationAppointmentJob rows in GoodJob (queued or running).
       # @param target [String] "today" | "next"
@@ -375,14 +418,6 @@
         else
           0
         end
-      end
-
-      # SendAppointmentMessageJob rows scheduled by ConfirmationAppointmentJob (not reminders/recovery).
-      def pending_confirmation_send_jobs_count
-        good_job_pending_scope(SEND_JOB_CLASS).where(
-          "serialized_params::text LIKE ?",
-          "%#{CONFIRMATION_SOURCE_SNIPPET}%"
-        ).count
       end
 
       def good_job_pending_scope(job_class)

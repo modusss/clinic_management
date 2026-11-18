@@ -14,7 +14,8 @@
       button_path: clinic_management.force_confirmation_next_path,
       confirm_message: "Tem certeza que deseja enviar as mensagens de confirmação para #{next_date_formatted}? Isso pode enviar mensagens duplicadas se já foram enviadas.",
       instance_2_connected: @instance_2_connected,
-      target_scope: "next"
+      target_scope: "next",
+      target_date: @next_date
     } %>
   <% end %>
 <% end %>
@@ -52,4 +53,4 @@
   <% end %>
 <% else %>
   <p>Nenhum atendimento futuro encontrado.</p>
-<% end %> 
+<% end %>
