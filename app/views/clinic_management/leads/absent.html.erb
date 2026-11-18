@@ -8,10 +8,13 @@
 
 <%# Wrapper para o sistema de envio em massa - ENVOLVE TODA A PÁGINA %>
 <% bulk_default_channel = params[:bulk_channel] == 'meta' && can_use_meta_bulk_for_absent? ? 'meta' : ((can_use_evolution_api? || Rails.env.development?) ? 'evolution' : 'meta') %>
-<div data-controller="bulk-message"
+<div data-controller="bulk-message absent-status-feedback"
      data-bulk-message-channel-value="<%= bulk_default_channel %>"
      data-bulk-message-meta-preferences-key-value="clinic_absent_meta_preferences_user_<%= current_user.id %>"
      data-bulk-message-leads-data-value="<%= @leads.map { |l| { id: l.id, phone: l.phone, name: l.name } }.to_json.gsub('"', '&quot;') %>">
+
+<%# A fixed toast confirms status changes even when the user is far down the table. %>
+<div id="absent-status-toast" class="absent-status-toast-host" aria-live="polite" aria-atomic="true"></div>
 
 <% if can_use_meta_bulk_for_absent? %>
   <%# ESSENTIAL: The bulk Stimulus controller loads with the application's other

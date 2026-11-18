@@ -439,22 +439,11 @@ module ClinicManagement
     def hide_from_absent
       @lead = ClinicManagement::Lead.find(params[:id])
       @lead.update!(hidden_from_absent: true)
-      
-      respond_to do |format|
-        format.turbo_stream do
-          # Se vier da página show, redirecionar para atualizar a interface
-          if request.referer&.include?("/leads/#{@lead.id}")
-            redirect_to lead_path(@lead), notice: "Lead ocultado da listagem com sucesso"
-          else
-            # Se vier da listagem, apenas remover o card
-            render turbo_stream: turbo_stream.remove("lead-card-#{@lead.id}")
-          end
-        end
-        format.html do
-          redirect_to lead_path(@lead), notice: "Lead ocultado da listagem com sucesso"
-        end
-        format.json { render json: { success: true, message: "Lead ocultado da listagem com sucesso" } }
-      end
+
+      respond_with_absent_status_feedback(
+        "Contato futuro registrado para #{@lead.name}.",
+        status_label: "Contato futuro registrado"
+      )
     end
 
     def mark_no_whatsapp
@@ -481,43 +470,21 @@ module ClinicManagement
     def mark_no_interest
       @lead = ClinicManagement::Lead.find(params[:id])
       @lead.update!(no_interest: true)
-      
-      respond_to do |format|
-        format.turbo_stream do
-          # Se vier da página show, redirecionar para atualizar a interface
-          if request.referer&.include?("/leads/#{@lead.id}")
-            redirect_to lead_path(@lead), notice: "Lead marcado como 'sem interesse'"
-          else
-            # Se vier da listagem, apenas remover o card
-            render turbo_stream: turbo_stream.remove("lead-card-#{@lead.id}")
-          end
-        end
-        format.html do
-          redirect_to lead_path(@lead), notice: "Lead marcado como 'sem interesse'"
-        end
-        format.json { render json: { success: true, message: "Lead marcado como 'sem interesse'" } }
-      end
+
+      respond_with_absent_status_feedback(
+        "#{@lead.name} marcado como Sem interesse.",
+        status_label: "Sem interesse registrado"
+      )
     end
 
     def mark_wrong_phone
       @lead = ClinicManagement::Lead.find(params[:id])
       @lead.update!(wrong_phone: true)
-      
-      respond_to do |format|
-        format.turbo_stream do
-          # Se vier da página show, redirecionar para atualizar a interface
-          if request.referer&.include?("/leads/#{@lead.id}")
-            redirect_to lead_path(@lead), notice: "Lead marcado como 'telefone errado'"
-          else
-            # Se vier da listagem, apenas remover o card
-            render turbo_stream: turbo_stream.remove("lead-card-#{@lead.id}")
-          end
-        end
-        format.html do
-          redirect_to lead_path(@lead), notice: "Lead marcado como 'telefone errado'"
-        end
-        format.json { render json: { success: true, message: "Lead marcado como 'telefone errado'" } }
-      end
+
+      respond_with_absent_status_feedback(
+        "#{@lead.name} marcado como Telefone errado.",
+        status_label: "Telefone errado registrado"
+      )
     end
 
     def toggle_whatsapp_status
@@ -544,22 +511,11 @@ module ClinicManagement
         no_interest: false,
         wrong_phone: false
       )
-      
-      respond_to do |format|
-        format.turbo_stream do
-          # Se vier da página show, redirecionar de volta para show
-          if request.referer&.include?("/leads/#{@lead.id}")
-            redirect_to lead_path(@lead), notice: "Lead restaurado na listagem com sucesso"
-          else
-            # Se vier da listagem, recarregar a página de ausentes
-            redirect_to absent_leads_path
-          end
-        end
-        format.html do
-          redirect_to lead_path(@lead), notice: "Lead restaurado na listagem com sucesso"
-        end
-        format.json { render json: { success: true, message: "Lead restaurado na listagem com sucesso" } }
-      end
+
+      respond_with_absent_status_feedback(
+        "#{@lead.name} restaurado para a lista de disponíveis.",
+        status_label: "Paciente restaurado"
+      )
     end
 
     # ============================================================================
@@ -1259,6 +1215,31 @@ module ClinicManagement
     end
 
     private
+
+    # The client briefly highlights the confirmed status before removing the
+    # row/card. It also displays a persistent toast, since an instant removal
+    # looks like a click that did nothing to staff working through the list.
+    def respond_with_absent_status_feedback(message, status_label:)
+      respond_to do |format|
+        format.turbo_stream do
+          if request.referer&.include?("/leads/#{@lead.id}")
+            redirect_to lead_path(@lead), notice: message
+          else
+            render turbo_stream: [
+              turbo_stream.update(
+                "absent-status-toast",
+                partial: "clinic_management/leads/absent_status_toast",
+                locals: { message: message }
+              ),
+              turbo_stream.turbo_stream_action_tag(:remove, target: "lead-row-#{@lead.id}", data: { absent_status_label: status_label }),
+              turbo_stream.turbo_stream_action_tag(:remove, target: "lead-card-#{@lead.id}", data: { absent_status_label: status_label })
+            ]
+          end
+        end
+        format.html { redirect_to lead_path(@lead), notice: message }
+        format.json { render json: { success: true, message: message } }
+      end
+    end
     
     # Returns a single instance name for individual message sends.
     # Priority: 1) Bulk instances (round-robin), 2) Referral instances, 3) Account instance 2.

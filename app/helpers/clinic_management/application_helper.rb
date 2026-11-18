@@ -406,7 +406,7 @@ def table_body(rows, fix_to)
         
         # Adicionar botões de ação como última coluna se estiver na view de ausentes
         if controller_name == 'leads' && action_name == 'absent'
-          action_buttons_cell = content_tag(:td, class: "px-6 py-4 text-center") do
+          action_buttons_cell = content_tag(:td, class: "px-6 py-4 text-center", data: { absent_status_actions: true }) do
             lead = controller.instance_variable_get(:@leads)[row_index]
             
             if params[:hidden_status] == "visible" || params[:hidden_status].blank?
@@ -415,9 +415,11 @@ def table_body(rows, fix_to)
                 btn1 = button_to clinic_management.hide_from_absent_lead_path(lead), 
                   method: :patch,
                   remote: true,
+                  form: { data: { absent_status_form: true } },
                   data: { 
                     turbo_method: :patch,
                     turbo_stream: true,
+                    turbo_submits_with: "Salvando...",
                     confirm: "Tem certeza que deseja ocultar este lead da listagem?"
                   },
                   class: "bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-xs px-2 py-1 rounded shadow-sm flex items-center gap-1 whitespace-nowrap",
@@ -428,9 +430,11 @@ def table_body(rows, fix_to)
                 btn2 = button_to clinic_management.mark_no_interest_lead_path(lead), 
                   method: :patch,
                   remote: true,
+                  form: { data: { absent_status_form: true } },
                   data: { 
                     turbo_method: :patch,
                     turbo_stream: true,
+                    turbo_submits_with: "Salvando...",
                     confirm: "Marcar este lead como 'Sem interesse'?"
                   },
                   class: "bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-sm flex items-center gap-1 whitespace-nowrap",
@@ -441,9 +445,11 @@ def table_body(rows, fix_to)
                 btn3 = button_to clinic_management.mark_wrong_phone_lead_path(lead), 
                   method: :patch,
                   remote: true,
+                  form: { data: { absent_status_form: true } },
                   data: { 
                     turbo_method: :patch,
                     turbo_stream: true,
+                    turbo_submits_with: "Salvando...",
                     confirm: "Marcar este lead como 'Telefone errado'?"
                   },
                   class: "bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white text-xs px-2 py-1 rounded shadow-sm flex items-center gap-1 whitespace-nowrap",
@@ -458,9 +464,11 @@ def table_body(rows, fix_to)
               button_to clinic_management.restore_lead_lead_path(lead), 
                 method: :patch,
                 remote: true,
+                form: { data: { absent_status_form: true } },
                 data: { 
                   turbo_method: :patch,
                   turbo_stream: true,
+                  turbo_submits_with: "Salvando...",
                   confirm: "Tem certeza que deseja restaurar este lead na listagem principal?"
                 },
                 class: "bg-green-500 hover:bg-green-600 active:bg-green-700 text-white text-xs px-3 py-1 rounded shadow-sm flex items-center gap-1 mx-auto",
