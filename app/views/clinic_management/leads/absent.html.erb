@@ -34,15 +34,12 @@
       }
       var channel = root.dataset.bulkMessageChannelValue;
       var filterChannel = root.querySelector('[data-bulk-message-target="filterChannel"]');
-      var eligibility = root.querySelector('[data-bulk-message-target="metaEligibilityInput"]');
       if (filterChannel) filterChannel.value = channel;
-      if (eligibility) eligibility.disabled = channel !== "meta";
     })(document.currentScript.parentElement);
   </script>
   <style>
     [data-controller~="bulk-message"][data-bulk-message-channel-value="meta"] [data-bulk-message-target="evolutionPanel"] { display: none !important; }
     [data-controller~="bulk-message"][data-bulk-message-channel-value="meta"] [data-bulk-message-target="metaPanel"] { display: block !important; }
-    [data-controller~="bulk-message"][data-bulk-message-channel-value="meta"] [data-bulk-message-target="metaEligibilityField"] { display: block !important; }
     [data-controller~="bulk-message"][data-bulk-message-channel-value="meta"] [data-bulk-message-target="metaTab"] { border-color: #16a34a !important; color: #15803d !important; }
     [data-controller~="bulk-message"][data-bulk-message-channel-value="meta"] [data-bulk-message-target="evolutionTab"] { border-color: transparent !important; color: #4b5563 !important; }
   </style>
